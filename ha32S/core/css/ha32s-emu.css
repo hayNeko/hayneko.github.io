@@ -1,0 +1,40 @@
+@import url("/medias/css/root.css");
+@import url("/medias/css/index.css");
+
+* {
+	margin: 0;
+	padding: 0;
+}
+
+header {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
+	padding: 1rem;
+	color: var(--text-color-primary);
+	background-color: var(--dock-menu-hover-bg);
+	border: 1px solid var(--border-color-primary);
+	border-radius: 15px;
+	font-size: 1.25rem;
+}
+
+main {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
+	padding: 1rem;
+	color: var(--text-color-primary);
+	background-color: var(--dock-menu-hover-bg);
+	border: 1px solid var(--border-color-primary);
+	border-radius: 15px;
+	font-size: 0.875rem;
+	overflow: hidden;
+	z-index: var(--index-very-top);
+	top: 2vh;
+	bottom: 10vh;
+	left: 2.5vw;
+	right: 2.5vw;
+}

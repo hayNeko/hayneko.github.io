@@ -20,6 +20,9 @@ html:lang(zh-TW) {
 html:lang(ja) {
 	font-family: jp-sans-serif, sans-serif;
 }
+html:lang(ko) {
+	font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
 
 html.light-theme body::before {
 	content: "";

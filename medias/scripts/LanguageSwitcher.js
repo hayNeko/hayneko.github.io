@@ -23,7 +23,7 @@ const DEFAULT_LANGUAGE_DATA = {
 			"no-tools-available": "No tools available at the moment.",
 			"simulation": "Simulations",
 			"physics-simulation": "Physics Simulation (Version 1.0)",
-			"physics-simulation-newtoon-second-law": "Newton's Second Law Simulation (Version 1.0)",
+			"physics-simulation-newton-second-law": "Newton's Second Law Simulation (Version 1.0)",
 
 			"docs": "Useful Documents",
 			"docs-i386": "Intel 80386 Programmer's Reference Manual",
@@ -38,7 +38,7 @@ const DEFAULT_LANGUAGE_DATA = {
 const LanguageManager = {
 data: null,
 currentLanguage: localStorage.getItem('siteLanguage') || 'en',
-languageOrder: ['en', 'zh-CN', 'zh-TW', 'ja'],
+languageOrder: ['en', 'zh-CN', 'zh-TW', 'ja', 'ko'],
 
 async LoadLanguageData() {
 	try {

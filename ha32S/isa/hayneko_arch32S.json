@@ -1,0 +1,3922 @@
+{
+	"instructions": {
+		"control": {
+			"NOP": {
+				"opcode": "0x00",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					null
+				],
+				"description": "No Operation - Does nothing for one instruction cycle, or occupies 1 byte in the instruction stream for alignment."
+			},
+			"ENTR": {
+				"opcode": "0x02",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Enter (MOV bp, sp) - Creates a new stack frame by moving the value of the stack pointer register to the base pointer register."
+			},
+			"LEAV": {
+				"opcode": "0x03",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Leave (MOV sp, bp) - Destroys the current stack frame by moving the value of the base pointer register to the stack pointer register."
+			},
+			"CMP": {
+				"opcode": "0x07",
+				"length": 3,
+				"format": [
+					"OPC",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Compare - Compares(subtracts) the values of two source registers and sets the flags accordingly."
+			},
+			"JMP": {
+				"opcode": "0x08",
+				"length": 3,
+				"format": [
+					"OPC",
+					"A16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Jump near - Unconditionally jumps to the specified 2 byte address."
+			},
+			"JMPR": {
+				"opcode": "0x09",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"0x0"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Jump Register - Unconditionally jumps to the address contained in the source register."
+			},
+			"JMPFAR": {
+				"opcode": "0x3E",
+				"length": 5,
+				"format": [
+					"OPC",
+					"A32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L1",
+				"can_use_with_prefixes": [],
+				"description": "Jump far - Unconditionally jumps to the specified 4 byte address."
+			},
+
+			"CALL": {
+				"opcode": "0x2E",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Call near - Calls the subroutine at the specified 2 byte offset."
+			},
+			"CALLR": {
+				"opcode": "0x0A",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"0x0"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Call Register - Calls the subroutine at the address contained in the source register."
+			},
+			"RET": {
+				"opcode": "0x2F",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Return - Returns from the current subroutine."
+			},
+			"IMM": {
+				"opcode": "0x50",
+				"sub_opcode": "0xA",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Load Immediate - Loads the 4 byte immediate value into the destination register."
+			},
+			"IMMB": {
+				"opcode": "0x50",
+				"sub_opcode": "0xB",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"IM8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Load Immediate Byte - Loads the 1 byte immediate value into the destination register."
+			},
+			"IMMBSX": {
+				"opcode": "0x50",
+				"sub_opcode": "0xC",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"IM8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Load Immediate Byte with Sign Extension - Loads the 1 byte immediate value into the destination register with sign extension."
+			},
+			"LEA": {
+				"opcode": "0x04",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"OF8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Load Effective Address - Loads the effective address calculated by adding the signed 1 byte offset to the value in the source register into the destination register."
+			},
+			"LEASC": {
+				"opcode": "0x05",
+				"length": 4,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"SCL",
+					"SR2",
+					"OF8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Load Effective Address with Scale - Loads the effective address calculated by adding the signed 1 byte offset to the value in the source register plus the value in the second source register multiplied by the scale factor into the destination register. (Effective Address = SR1 + (SR2 * SCL) + OF8)"
+			},
+			"CLI": {
+				"opcode": "0x94",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Clear Interrupt Flag - Disables maskable hardware interrupts by clearing the interrupt flag in the flags register."
+			},
+			"STI": {
+				"opcode": "0x98",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Set Interrupt Flag - Enables maskable hardware interrupts by setting the interrupt flag in the flags register."
+			},
+			"COPYIP": {
+				"opcode": "0x5B",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"0x0"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Copy Instruction Pointer - Copies the current value of the instruction pointer into the destination register."
+			},
+
+			"NOP2": {
+				"opcode": "0x80",
+				"sub_opcode": "0x2",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 2 - Does nothing for one instruction cycle, or occupies 2 bytes in the instruction stream for alignment."
+			},
+			"NOP3": {
+				"opcode": "0x80",
+				"sub_opcode": "0x3",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 3 - Does nothing for one instruction cycle, or occupies 3 bytes in the instruction stream for alignment."
+			},
+			"NOP4": {
+				"opcode": "0x80",
+				"sub_opcode": "0x4",
+				"length": 4,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"IM8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 4 - Does nothing for one instruction cycle, or occupies 4 bytes in the instruction stream for alignment."
+			},
+			"NOP5": {
+				"opcode": "0x80",
+				"sub_opcode": "0x5",
+				"length": 5,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"I16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 5 - Does nothing for one instruction cycle, or occupies 5 bytes in the instruction stream for alignment."
+			},
+			"NOP6": {
+				"opcode": "0x80",
+				"sub_opcode": "0x6",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 6 - Does nothing for one instruction cycle, or occupies 6 bytes in the instruction stream for alignment."
+			},
+			"NOP7": {
+				"opcode": "0x80",
+				"sub_opcode": "0x7",
+				"length": 7,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 7 - Does nothing for one instruction cycle, or occupies 7 bytes in the instruction stream for alignment."
+			},
+			"NOP8": {
+				"opcode": "0x80",
+				"sub_opcode": "0x8",
+				"length": 8,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"OF8",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 8 - Does nothing for one instruction cycle, or occupies 8 bytes in the instruction stream for alignment."
+			},
+			"NOP9": {
+				"opcode": "0x80",
+				"sub_opcode": "0x9",
+				"length": 9,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"O16",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 9 - Does nothing for one instruction cycle, or occupies 9 bytes in the instruction stream for alignment."
+			},
+			"NOP10": {
+				"opcode": "0x80",
+				"sub_opcode": "0xA",
+				"length": 10,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"O32",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 10 - Does nothing for one instruction cycle, or occupies 10 bytes in the instruction stream for alignment."
+			},
+			"NOP11": {
+				"opcode": "0x80",
+				"sub_opcode": "0xB",
+				"length": 11,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"O32",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 11 - Does nothing for one instruction cycle, or occupies 11 bytes in the instruction stream for alignment."
+			},
+			"NOP12": {
+				"opcode": "0x80",
+				"sub_opcode": "0xC",
+				"length": 12,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"PRT",
+					"O32",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 12 - Does nothing for one instruction cycle, or occupies 12 bytes in the instruction stream for alignment."
+			},
+			"NOP13": {
+				"opcode": "0x80",
+				"sub_opcode": "0xD",
+				"length": 13,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"PRT",
+					"O16",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 13 - Does nothing for one instruction cycle, or occupies 13 bytes in the instruction stream for alignment."
+			},
+			"NOP14": {
+				"opcode": "0x80",
+				"sub_opcode": "0xE",
+				"length": 14,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"PRT",
+					"A16",
+					"I32",
+					"O32"
+
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 14 - Does nothing for one instruction cycle, or occupies 14 bytes in the instruction stream for alignment."
+			},
+			"NOP15": {
+				"opcode": "0x80",
+				"sub_opcode": "0xF",
+				"length": 15,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2",
+					"A32",
+					"I32",
+					"O32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "No Operation 15 - Does nothing for one instruction cycle, or occupies 15 bytes in the instruction stream for alignment."
+			}
+		},
+		"stack": {
+			"PUSH ra": {
+				"opcode": "0x41",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push ra - Pushes the value of ra onto the stack."
+			},
+			"POP ra": {
+				"opcode": "0x49",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop ra - Pops the value on the stack to ra."
+			},
+			"PUSH rb": {
+				"opcode": "0x42",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push rb - Pushes the value of rb onto the stack."
+			},
+			"POP rb": {
+				"opcode": "0x4A",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop rb - Pops the value on the stack to rb."
+			},
+			"PUSH rc": {
+				"opcode": "0x43",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push rc - Pushes the value of rc onto the stack."
+			},
+			"POP rc": {
+				"opcode": "0x4B",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop rc - Pops the value on the stack to rc."
+			},
+			"PUSH rd": {
+				"opcode": "0x44",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push rd - Pushes the value of rd onto the stack."
+			},
+			"POP rd": {
+				"opcode": "0x4C",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop rd - Pops the value on the stack to rd."
+			},
+			"PUSH ri": {
+				"opcode": "0x45",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push ri - Pushes the value of ri onto the stack."
+			},
+			"POP ri": {
+				"opcode": "0x4D",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop ri - Pops the value on the stack to ri."
+			},
+			"PUSH bp": {
+				"opcode": "0x46",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push bp - Pushes the value of bp onto the stack."
+			},
+			"POP bp": {
+				"opcode": "0x4E",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop bp - Pops the value on the stack to bp."
+			},
+
+			"PUSHIMMB": {
+				"opcode": "0x48",
+				"sub_opcode": "0x0",
+				"length": 3,
+				"format": [
+					"OPC",
+					"0x0",
+					"SOP",
+					"IM8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Push Immediate - Pushes the 1 byte immediate value onto the stack."
+			},
+
+			"ADDSP": {
+				"opcode": "0x47",
+				"length": 2,
+				"format": [
+					"OPC",
+					"IM8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Add Stack Pointer - Adds the 1 byte immediate value to the stack pointer and stores the result in the stack pointer register."
+			},
+			"SUBSP": {
+				"opcode": "0x4F",
+				"length": 2,
+				"format": [
+					"OPC",
+					"IM8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Subtract Stack Pointer - Subtracts the 1 byte immediate value from the stack pointer and stores the result in the stack pointer register."
+			},
+
+			"PUSHIMMDW": {
+				"opcode": "0x40",
+				"length": 5,
+				"format": [
+					"OPC",
+					"I32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Push Immediate - Pushes the 4 byte immediate value onto the stack."
+			},
+			"PUSHIMMW": {
+				"opcode": "0x48",
+				"sub_opcode": "0x4",
+				"length": 3,
+				"format": [
+					"OPC",
+					"0x0",
+					"SOP",
+					"IM16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push Word Immediate - Pushes the 2 byte immediate value onto the stack."
+			},
+
+			"PUSH": {
+				"opcode": "0x48",
+				"sub_opcode": "0x8",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push - Pushes the value of the source register onto the stack."
+			},
+			"POP": {
+				"opcode": "0x48",
+				"sub_opcode": "0x9",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop - Pops the value on the stack to the destination register."
+			},
+
+			"PUSHF": {
+				"opcode": "0x48",
+				"sub_opcode": "0xC",
+				"length": 2,
+				"format": [
+					"OPC",
+					"0x0",
+					"SOP"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Push Flags - Pushes the value of the flags register onto the stack."
+			},
+			"POPF": {
+				"opcode": "0x48",
+				"sub_opcode": "0xD",
+				"length": 2,
+				"format": [
+					"OPC",
+					"0x0",
+					"SOP"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Pop Flags - Pops the value on the stack to the flags register."
+			},
+			"PUSHIP": {
+				"opcode": "0x48",
+				"sub_opcode": "0xE",
+				"length": 2,
+				"format": [
+					"OPC",
+					"0x0",
+					"SOP"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Push Instruction Pointer - Pushes the value of the instruction pointer onto the stack."
+			},
+			"LDSTVAL": {
+				"opcode": "0x48",
+				"sub_opcode": "0xA",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"OF8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Load Stack Value - Loads a value from the stack at an offset from the stack pointer into the destination register. (Offset is a signed 1 byte value.) (x86: MOV reg, [SP + offset])"
+			},
+			"STSTVAL": {
+				"opcode": "0x48",
+				"sub_opcode": "0xB",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"OF8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Store Stack Value - Stores a value from the source register into the stack at an offset from the stack pointer. (Offset is a signed 1 byte value.) (x86: MOV [SP + offset], reg)"
+			},
+			"LDSTVALOW": {
+				"opcode": "0x48",
+				"sub_opcode": "0x6",
+				"length": 4,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"OF16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Load Stack Value - Loads a value from the stack at an offset from the stack pointer into the destination register. (Offset is a signed 2 byte value.) (x86: MOV reg, [SP + offset])"
+			},
+			"STSTVALOW": {
+				"opcode": "0x48",
+				"sub_opcode": "0x7",
+				"length": 4,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"OF16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Store Stack Value - Stores a value from the source register into the stack at an offset from the stack pointer. (Offset is a signed 2 byte value.) (x86: MOV [SP + offset], reg)"
+			},
+
+			"PUSHTR": {
+				"opcode": "0x48",
+				"sub_opcode": "0x1",
+				"length": 3,
+				"format": [
+					"OPC",
+					"SR1",
+					"SOP",
+					"SR2",
+					"SR3"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Push triple register - Pushes the values of three source registers onto the stack in order: SR1, SR2, SR3."
+			},
+			"POPTR": {
+				"opcode": "0x48",
+				"sub_opcode": "0x5",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Pop triple register - Pops the top three values from the stack into the destination registers in order: SR1, SR2, SR3."
+			}
+		},
+		"arithmetic": {
+			"ADD": {
+				"opcode": "0x70",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"0x0",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Add - Adds the values of two source registers and stores the result in the destination register."
+			},
+			"SUB": {
+				"opcode": "0x74",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"0x0",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Subtract - Subtracts the value of the second source register from the first source register and stores the result in the destination register."
+			},
+			"INC": {
+				"opcode": "0x68",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Increment - Increases the value in the source register by 1 and stores the result in the destination register."
+			},
+			"DEC": {
+				"opcode": "0x6C",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Decrement - Decreases the value in the source register by 1 and stores the result in the destination register."
+			},
+			"NEG": {
+				"opcode": "0x69",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Negate - Negates the value in the source register (two's complement) and stores the result in the destination register."
+			},
+			"ABS": {
+				"opcode": "0x6D",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Absolute Value - Computes the absolute value of the value in the source register and stores the result in the destination register."
+			},
+			"INC rc": {
+				"opcode": "0x6B",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					null
+				],
+				"description": "Increment rc - Increases the value in the rc register by 1."
+			},
+			"DEC rc": {
+				"opcode": "0x6F",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					null
+				],
+				"description": "Decrement rc - Decreases the value in the rc register by 1."
+			},
+			"ADDIB": {
+				"opcode": "0x62",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Add Immediate Byte - Adds the 1 byte immediate value to the value in the source register and stores the result in the destination register."
+			},
+			"SUBIB": {
+				"opcode": "0x65",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Subtract Immediate Byte - Subtracts the 1 byte immediate value from the value in the source register and stores the result in the destination register."
+			},
+			"ADDIDW": {
+				"opcode": "0x6A",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Add Immediate Double Word - Adds the 4 byte immediate value to the value in the source register and stores the result in the destination register."
+			},
+			"SUBIDW": {
+				"opcode": "0x6E",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Subtract Immediate Double Word - Subtracts the 4 byte immediate value from the value in the source register and stores the result in the destination register."
+			},
+
+			"MUL": {
+				"opcode": "0x60",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"SR2",
+					"SR3"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Multiply - Multiplies the values of two source registers and stores the lower 32 bits of the result in the destination register, and the upper 32 bits in a SR3 register."
+			},
+			"DIV": {
+				"opcode": "0x61",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"SR2",
+					"SR3"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Divide - Divides the value in the source register by the value in the second source register and stores the quotient in the destination register and the remainder in a SR3 register."
+			},
+			"SMUL": {
+				"opcode": "0x63",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"SR2",
+					"SR3"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Signed Multiply - Multiplies the signed values of two source registers and stores the lower 32 bits of the result in the destination register, and the upper 32 bits in a SR3 register."
+			},
+			"SDIV": {
+				"opcode": "0x64",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"SR2",
+					"SR3"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Signed Divide - Divides the signed value in the source register by the signed value in the second source register and stores the quotient in the destination register and the remainder in a SR3 register."
+			},
+			"RANDOM": {
+				"opcode": "0x66",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Random Number Generator - Generates a random number and stores it in the RD register."
+			}
+		},
+		"logic": {
+			"XOR": {
+				"opcode": "0x50",
+				"sub_opcode": "0x1",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Exclusive OR - Performs a bitwise exclusive OR operation between the values in the two source registers and stores the result in the destination register."
+			},
+			"AND": {
+				"opcode": "0x50",
+				"sub_opcode": "0x2",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "AND - Performs a bitwise AND operation between the values in the two source registers and stores the result in the destination register."
+			},
+			"OR": {
+				"opcode": "0x50",
+				"sub_opcode": "0x3",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "OR - Performs a bitwise OR operation between the values in the two source registers and stores the result in the destination register."
+			},
+			"NOT": {
+				"opcode": "0x54",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "NOT - Performs a bitwise NOT operation on the value in the source register and stores the result in the destination register."
+			},
+			"XNOR": {
+				"opcode": "0x50",
+				"sub_opcode": "0x5",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Exclusive NOR - Performs a bitwise exclusive NOR operation between the values in the two source registers and stores the result in the destination register."
+			},
+			"NAND": {
+				"opcode": "0x50",
+				"sub_opcode": "0x6",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "NAND - Performs a bitwise NAND operation between the values in the two source registers and stores the result in the destination register."
+			},
+			"NOR": {
+				"opcode": "0x50",
+				"sub_opcode": "0x7",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"SR2"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "NOR - Performs a bitwise NOR operation between the values in the two source registers and stores the result in the destination register."
+			},
+
+			"XORI": {
+				"opcode": "0x51",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Exclusive OR Immediate - Performs a bitwise exclusive OR operation between the value in the source register and the 1 byte immediate value, storing the result in the destination register."
+			},
+			"ANDI": {
+				"opcode": "0x52",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "AND Immediate - Performs a bitwise AND operation between the value in the source register and the 1 byte immediate value, storing the result in the destination register."
+			},
+			"ORI": {
+				"opcode": "0x53",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "OR Immediate - Performs a bitwise OR operation between the value in the source register and the 1 byte immediate value, storing the result in the destination register."
+			},
+			"XNORI": {
+				"opcode": "0x55",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Exclusive NOR Immediate - Performs a bitwise exclusive NOR operation between the value in the source register and the 1 byte immediate value, storing the result in the destination register."
+			},
+			"NANDI": {
+				"opcode": "0x56",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "NAND Immediate - Performs a bitwise NAND operation between the value in the source register and the 1 byte immediate value, storing the result in the destination register."
+			},
+			"NORI": {
+				"opcode": "0x57",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "NOR Immediate - Performs a bitwise NOR operation between the value in the source register and the 1 byte immediate value, storing the result in the destination register."
+			},
+
+			"SHL": {
+				"opcode": "0x58",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Shift Left - Shifts the bits in the source register to the left by the number of positions specified in the immediate value, filling the least significant bits with zeros, and stores the result in the destination register."
+			},
+			"SHR": {
+				"opcode": "0x59",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Shift Right - Shifts the bits in the source register to the right by the number of positions specified in the immediate value, filling the most significant bits with zeros, and stores the result in the destination register."
+			},
+			"ROL": {
+				"opcode": "0x5E",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Rotate Left - Rotates the bits in the source register to the left by the number of positions specified in the immediate value, wrapping the bits around, and stores the result in the destination register."
+			},
+			"ROR": {
+				"opcode": "0x5F",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Rotate Right - Rotates the bits in the source register to the right by the number of positions specified in the immediate value, wrapping the bits around, and stores the result in the destination register."
+			},
+			"SAR": {
+				"opcode": "0x5B",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"IM8"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Shift Arithmetic Right - Shifts the bits in the source register to the right by the number of positions specified in the immediate value, preserving the sign bit (most significant bit), and stores the result in the destination register."
+			},
+
+			"BTLE": {
+				"opcode": "0x50",
+				"sub_opcode": "0x0",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Big endian to little endian - Converts the value in the source register from big-endian to little-endian format and stores the result in the destination register."
+			},
+			"BTBE": {
+				"opcode": "0x50",
+				"sub_opcode": "0x4",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Little endian to big endian - Converts the value in the source register from little-endian to big-endian format and stores the result in the destination register."
+			},
+
+			"XCHG": {
+				"opcode": "0x5C",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Exchange - Swaps the values between the destination and source registers."
+			},
+
+			"SHLR": {
+				"opcode": "0x50",
+				"sub_opcode": "0x8",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"0x0"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Shift Half Left - Shifts the bits in the source register to the left, filling the least significant bits with zeros, and stores the result in the destination register. The maximum shift amount is 32."
+			},
+			"SHRR": {
+				"opcode": "0x50",
+				"sub_opcode": "0x9",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"0x0"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Shift Half Right - Shifts the bits in the source register to the right, filling the most significant bits with zeros, and stores the result in the destination register. The maximum shift amount is 32."
+			},
+			"SARR": {
+				"opcode": "0x50",
+				"sub_opcode": "0xD",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"0x0"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Shift Arithmetic Left - Shifts the bits in the source register to the left, preserving the sign bit (most significant bit), and stores the result in the destination register. The maximum shift amount is 32."
+			},
+			"ROLR": {
+				"opcode": "0x50",
+				"sub_opcode": "0xE",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"0x0"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Rotate Left - Rotates the bits in the source register to the left, wrapping the bits around, and stores the result in the destination register. The maximum rotate amount is 32."
+			},
+			"RORR": {
+				"opcode": "0x50",
+				"sub_opcode": "0xF",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SOP",
+					"SR1",
+					"0x0"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Rotate Right - Rotates the bits in the source register to the right, wrapping the bits around, and stores the result in the destination register. The maximum rotate amount is 32."
+			},
+
+			"XORIDW": {
+				"opcode": "0x71",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Exclusive OR Immediate Double Word - Performs a bitwise exclusive OR operation between the value in the source register and the 4 byte immediate value, storing the result in the destination register."
+			},
+			"ANDIDW": {
+				"opcode": "0x72",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "AND Immediate Double Word - Performs a bitwise AND operation between the value in the source register and the 4 byte immediate value, storing the result in the destination register."
+			},
+			"ORIDW": {
+				"opcode": "0x73",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "OR Immediate Double Word - Performs a bitwise OR operation between the value in the source register and the 4 byte immediate value, storing the result in the destination register."
+			},
+			"XNORIDW": {
+				"opcode": "0x75",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Exclusive NOR Immediate Double Word - Performs a bitwise exclusive NOR operation between the value in the source register and the 4 byte immediate value, storing the result in the destination register."
+			},
+			"NANDIDW": {
+				"opcode": "0x76",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "NAND Immediate Double Word - Performs a bitwise NAND operation between the value in the source register and the 4 byte immediate value, storing the result in the destination register."
+			},
+			"NORIDW": {
+				"opcode": "0x77",
+				"length": 6,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"I32"
+				],
+				"modify_flags": [
+					"ZF",
+					"CF",
+					"OF",
+					"NF"
+				],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "NOR Immediate Double Word - Performs a bitwise NOR operation between the value in the source register and the 4 byte immediate value, storing the result in the destination register."
+			}
+		},
+		"data_transfer": {
+			"MOV": {
+				"opcode": "0x01",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move - Copies the value of the source register to the destination register."
+			},
+			"CLR ra": {
+				"opcode": "0x5A",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					null
+				],
+				"description": "Clear ra - Sets the value of the ra register to zero."
+			}
+		},
+		"branch": {
+			"JZ": {
+				"opcode": "0x20",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Zero - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the zero flag (ZF) is set."
+			},
+			"JC": {
+				"opcode": "0x21",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Carry - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the carry flag (CF) is set."
+			},
+			"JO": {
+				"opcode": "0x22",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Overflow - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the overflow flag (OF) is set."
+			},
+			"JN": {
+				"opcode": "0x23",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Negative - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the negative flag (NF) is set."
+			},
+			"JNZ": {
+				"opcode": "0x24",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Not Zero - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the zero flag (ZF) is not set."
+			},
+			"JNC": {
+				"opcode": "0x25",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Not Carry - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the carry flag (CF) is not set."
+			},
+			"JNO": {
+				"opcode": "0x26",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Not Overflow - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the overflow flag (OF) is not set."
+			},
+			"JNN": {
+				"opcode": "0x27",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Not Negative - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the negative flag (NF) is not set."
+			},
+
+			"JL": {
+				"opcode": "0x28",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Less - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the signed comparison indicates the first value is less than the second. (NF != OF)"
+			},
+			"JGE": {
+				"opcode": "0x29",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Greater or Equal - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the signed comparison indicates the first value is greater than or equal to the second. (NF == OF)"
+			},
+			"JA": {
+				"opcode": "0x2A",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Above - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the unsigned comparison indicates the first value is above the second. (CF == 0 && ZF == 0)"
+			},
+			"JBE": {
+				"opcode": "0x2B",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Below or Equal - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the unsigned comparison indicates the first value is below or equal to the second. (CF == 1 || ZF == 1)"
+			},
+			"JLE": {
+				"opcode": "0x2C",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Less or Equal - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the signed comparison indicates the first value is less than or equal to the second. (ZF == 1 || NF != OF)"
+			},
+			"JAG": {
+				"opcode": "0x2D",
+				"length": 3,
+				"format": [
+					"OPC",
+					"O16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"BRH_H"
+				],
+				"description": "Jump if Above or Greater - Jumps to the current 2 byte address plus the specified 2 byte offset (signed) if the unsigned comparison indicates the first value is above and the signed comparison indicates the first value is greater than the second. (CF == 0 && ZF == 0 && NF == OF)"
+			}
+		},
+		"condition_move": {
+			"MOVZ": {
+				"opcode": "0x30",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Zero - Moves the value from the source register to the destination register if the zero flag (ZF) is set."
+			},
+			"MOVC": {
+				"opcode": "0x31",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Carry - Moves the value from the source register to the destination register if the carry flag (CF) is set."
+			},
+			"MOVO": {
+				"opcode": "0x32",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Overflow - Moves the value from the source register to the destination register if the overflow flag (OF) is set."
+			},
+			"MOVN": {
+				"opcode": "0x33",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Negative - Moves the value from the source register to the destination register if the negative flag (NF) is set."
+			},
+			"MOVNZ": {
+				"opcode": "0x34",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Not Zero - Moves the value from the source register to the destination register if the zero flag (ZF) is not set."
+			},
+			"MOVNC": {
+				"opcode": "0x35",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Not Carry - Moves the value from the source register to the destination register if the carry flag (CF) is not set."
+			},
+			"MOVNO": {
+				"opcode": "0x36",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Not Overflow - Moves the value from the source register to the destination register if the overflow flag (OF) is not set."
+			},
+			"MOVNN": {
+				"opcode": "0x37",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Not Negative - Moves the value from the source register to the destination register if the negative flag (NF) is not set."
+			},
+			"MOVL": {
+				"opcode": "0x38",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Less - Moves the value from the source register to the destination register if the signed comparison indicates the first value is less than the second. (NF != OF)"
+			},
+			"MOVGE": {
+				"opcode": "0x39",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Greater or Equal - Moves the value from the source register to the destination register if the signed comparison indicates the first value is greater than or equal to the second. (NF == OF)"
+			},
+			"MOVA": {
+				"opcode": "0x3A",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Above - Moves the value from the source register to the destination register if the unsigned comparison indicates the first value is above the second. (CF == 0 && ZF == 0)"
+			},
+			"MOVBE": {
+				"opcode": "0x3B",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Below or Equal - Moves the value from the source register to the destination register if the unsigned comparison indicates the first value is below or equal to the second. (CF == 1 || ZF == 1)"
+			},
+			"MOVLE": {
+				"opcode": "0x3C",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Less or Equal - Moves the value from the source register to the destination register if the signed comparison indicates the first value is less than or equal to the second. (ZF == 1 || NF != OF)"
+			},
+			"MOVAG": {
+				"opcode": "0x3D",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move if Above or Greater - Moves the value from the source register to the destination register if the unsigned comparison indicates the first value is above and the signed comparison indicates the first value is greater than the second. (CF == 0 && ZF == 0 && NF == OF)"
+			}
+		},
+		"io": {
+			"IN": {
+				"opcode": "0x0D",
+				"length": 2,
+				"format": [
+					"OPC",
+					"PRT"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L3",
+				"can_use_with_prefixes": [],
+				"description": "Input - Reads a byte from the specified port into the ri register."
+			},
+			"OUT": {
+				"opcode": "0x0E",
+				"length": 2,
+				"format": [
+					"OPC",
+					"PRT"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L3",
+				"can_use_with_prefixes": [],
+				"description": "Output - Writes the value in the ri register to the specified port."
+			}
+		},
+		"load_store": {
+			"LD": {
+				"opcode": "0x10",
+				"length": 3,
+				"format": [
+					"OPC",
+					"DRG",
+					"SR1",
+					"OF8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Load - Loads the value in the source register + the 1 byte offset as a signed value into the destination register. (DRG = [SR1 + OF8])"
+			},
+			"ST": {
+				"opcode": "0x11",
+				"length": 3,
+				"format": [
+					"OPC",
+					"SR1",
+					"DRG",
+					"OF8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Store - Stores the value in the source register into the destination register + the 1 byte offset as a signed value. (DRG = [SR1 + OF8])"
+			},
+			"LDOFIP": {
+				"opcode": "0x18",
+				"length": 4,
+				"format": [
+					"OPC",
+					"DRG",
+					"0x0",
+					"OF16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Load Offset from Instruction Pointer - Loads the value at the current instruction pointer plus the 2 byte offset (signed) into the destination register. (DRG = [IP + OF16])"
+			},
+			"STOFIP": {
+				"opcode": "0x19",
+				"length": 4,
+				"format": [
+					"OPC",
+					"SR1",
+					"0x0",
+					"OF16"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Store Offset from Instruction Pointer - Stores the value in the source register into the current instruction pointer plus the 2 byte offset (signed). ( [IP + OF16] = SR1 )"
+			}
+		},
+		"system": {
+			"SYSCALL": {
+				"opcode": "0x0F",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "System Call - Triggers a system call interrupt to request services from the operating system."
+			},
+			"SYSRET": {
+				"opcode": "0x9F",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "System Return - Returns from a system call interrupt back to user mode."
+			},
+			"HALT": {
+				"opcode": "0x90",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L3",
+				"can_use_with_prefixes": [],
+				"description": "Halt - Halts the processor until the next external interrupt is received."
+			},
+			"LDIDT": {
+				"opcode": "0x91",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Load IDT - Loads the IDT register to rb. (LD rb, [IDT])"
+			},
+			"MODIDT": {
+				"opcode": "0x92",
+				"length": 6,
+				"format": [
+					"OPC",
+					"OF8",
+					"A32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Modify IDT - Reads the address in IDT register, adds the 1 byte offset (unsigned) to it as the address and writes the new address to that location. (LD [IDT + OF8], A32)"
+			},
+			"SETIDT": {
+				"opcode": "0x93",
+				"length": 5,
+				"format": [
+					"OPC",
+					"A32"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Set IDT - Writes the address in A32 to the IDT register. (ST [IDT], A32)"
+			},
+			"MOVK": {
+				"opcode": "0x95",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRC",
+					"SR1"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Move Control - Move the value from the source register to the destination control register."
+			},
+			"COPK": {
+				"opcode": "0x99",
+				"length": 2,
+				"format": [
+					"OPC",
+					"DRG",
+					"SRC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [
+					"REX"
+				],
+				"description": "Copy from Control - Move the value from the source control register to the destination general purpose register."
+			},
+			"BRK": {
+				"opcode": "0x06",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L0",
+				"can_use_with_prefixes": [],
+				"description": "Breakpoint - Triggers a breakpoint interrupt to request services from the operating system."
+			},
+			"INT": {
+				"opcode": "0x0B",
+				"length": 2,
+				"format": [
+					"OPC",
+					"IM8"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Interrupt - Triggers an interrupt to request services from the operating system."
+			},
+			"IRET": {
+				"opcode": "0x0C",
+				"length": 1,
+				"format": [
+					"OPC"
+				],
+				"modify_flags": [],
+				"needs_coprocessor": null,
+				"mode": "L2",
+				"can_use_with_prefixes": [],
+				"description": "Interrupt Return - Returns from an interrupt back to the previous mode."
+			}
+		}
+	},
+	"micro_rom_instruction_translations": {
+		"PUSH ra": {
+			"opcode": "0x41",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "PUSH",
+					"operands": [ "{ra}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Push ra - Pushes the value of the ra register onto the stack"
+		},
+		"POP ra": {
+			"opcode": "0x49",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "POP",
+					"operands": [ "{ra}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Pop ra - Pops the top value from the stack into the ra register"
+		},
+		"PUSH rb": {
+			"opcode": "0x42",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "PUSH",
+					"operands": [ "{rb}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Push rb - Pushes the value of the rb register onto the stack"
+		},
+		"POP rb": {
+			"opcode": "0x4A",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "POP",
+					"operands": [ "{rb}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Pop rb - Pops the top value from the stack into the rb register"
+		},
+		"PUSH rc": {
+			"opcode": "0x43",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "PUSH",
+					"operands": [ "{rc}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Push rc - Pushes the value of the rc register onto the stack"
+		},
+		"POP rc": {
+			"opcode": "0x4B",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "POP",
+					"operands": [ "{rc}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Pop rc - Pops the top value from the stack into the rc register"
+		},
+		"PUSH rd": {
+			"opcode": "0x44",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "PUSH",
+					"operands": [ "{rd}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Push rd - Pushes the value of the rd register onto the stack"
+		},
+		"POP rd": {
+			"opcode": "0x4C",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "POP",
+					"operands": [ "{rd}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Pop rd - Pops the top value from the stack into the rd register"
+		},
+		"PUSH ri": {
+			"opcode": "0x45",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "PUSH",
+					"operands": [ "{ri}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Push ri - Pushes the value of the ri register onto the stack"
+		},
+		"POP ri": {
+			"opcode": "0x4D",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "POP",
+					"operands": [ "{ri}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Pop ri - Pops the top value from the stack into the ri register"
+		},
+		"PUSH bp": {
+			"opcode": "0x46",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "PUSH",
+					"operands": [ "{bp}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Push bp - Pushes the value of the bp register onto the stack"
+		},
+		"POP bp": {
+			"opcode": "0x4E",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "POP",
+					"operands": [ "{bp}" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Pop bp - Pops the top value from the stack into the bp register"
+		},
+		"ENTR": {
+			"opcode": "0x02",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [],
+			"translate_to": [
+				{
+					"instruction": "MOV",
+					"operands": [ "bp", "sp" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Enter Routine - Sets up a new stack frame by moving the current stack pointer (sp) into the base pointer (bp) register."
+		},
+		"LEAV": {
+			"opcode": "0x03",
+			"length": 1,
+			"format": [
+				"OPC"
+			],
+			"modify_flags": [],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [],
+			"translate_to": [
+				{
+					"instruction": "MOV",
+					"operands": [ "sp", "bp" ]
+				}
+			],
+			"length_after": 2,
+			"description": "Leave Routine - Restores the stack pointer (sp) to the value stored in the base pointer (bp) register."
+		}
+	},
+	"psuedo_instructions": {
+		"SAL": {
+			"length": 3,
+			"format": [
+				"OPC",
+				"DRG",
+				"SR1",
+				"IM8"
+			],
+			"modify_flags": [
+				"ZF",
+				"CF",
+				"OF",
+				"NF"
+			],
+			"needs_coprocessor": null,
+			"mode": "L0",
+			"can_use_with_prefixes": [
+				"REX"
+			],
+			"translate_to": [
+				{
+					"instruction": "SHL",
+					"operands": [ "{DRG}", "{SR1}", "{IM8}" ]
+				}
+			],
+			"length_after": 3,
+			"description": "Shift Arithmetic Left - Alias for SHL instruction."
+		}
+	},
+	"prefixes": {
+		"types": {
+			"REX": {
+				"length": 1,
+				"mnemonic": "REX.XT",
+				"format": [
+					"1",
+					"1",
+					"1",
+					"0",
+					[ "DRG", "SR1", "SR2", "SR3" ]
+				],
+				"description": "Register Extension Prefix - if any bits in the REX prefix are set, the instruction extends that register fields to allow access 0-15 -> 16-31 of the 32-bit general-purpose registers, or f0-f15 -> d0-d15 of the"
+			},
+			"BRH_H": {
+				"length": 1,
+				"mnemonic": [ "BRH_H.NT", "BRH_H.T" ],
+				"format": [
+					"1",
+					"1",
+					"1",
+					"1",
+					"0",
+					"0",
+					"1",
+					[ "BHT" ]
+				],
+				"description": "Branch Hint Prefix - provides a hint to the processor about the likely direction of a branch instruction to optimize instruction pipelining. Must be used before a branch instruction, or the hint is ignored. It modifies the BH bit in the instruction to indicate whether the branch is likely to be taken or not taken."
+			},
+			"LOCK": {
+				"length": 1,
+				"mnemonic": "LOCK",
+				"format": [
+					"1",
+					"1",
+					"1",
+					"1",
+					"0",
+					"1",
+					"0",
+					"0"
+				],
+				"description": "Lock Prefix - ensures exclusive access to shared memory in multi-processor environments by preventing other processors from accessing the memory location being modified until the operation is complete."
+			},
+			"ISL": {
+				"length": 1,
+				"mnemonic": "ISL.L",
+				"format": [
+					"1",
+					"1",
+					"0",
+					"1",
+					[ "ISL" ],
+					[ "ISL" ],
+					[ "ISL" ],
+					[ "ISL" ]
+				],
+				"description": "Instruction Specific Length Prefix - specifies the length of the instruction in bytes, from 4 to 16 bytes. Values 0-3 are invalid. This prefix may improve performance by allowing the processor to decode the instruction faster."
+			},
+			"XTU": {
+				"length": 1,
+				"mnemonic": "XTU.EN",
+				"format": [
+					"1",
+					"1",
+					"1",
+					"1",
+					"0",
+					"1",
+					"0",
+					"1"
+				],
+				"description": "Extended Instruction Unit Prefix - the following instruction is executed in XTU."
+			},
+			"BMU": {
+				"length": 1,
+				"mnemonic": "BMU.EN",
+				"format": [
+					"1",
+					"1",
+					"1",
+					"1",
+					"0",
+					"1",
+					"1",
+					"0"
+				],
+				"description": "Big Math Unit Prefix - the following instruction is executed in BMU."
+			},
+			"DBI": {
+				"length": 1,
+				"mnemonic": null,
+				"format": [
+					"1",
+					"1",
+					"1",
+					"1",
+					"0",
+					"0",
+					"0",
+					"0"
+				],
+				"description": "Double Byte Instruction Prefix - escape byte to allow the use of 2-byte instructions."
+			},
+			"TBI": {
+				"length": 1,
+				"mnemonic": null,
+				"format": [
+					"1",
+					"1",
+					"1",
+					"1",
+					"0",
+					"0",
+					"0",
+					"1"
+				],
+				"description": "Triple Byte Instruction Prefix - escape byte to allow the use of 3-byte instructions."
+			},
+			"SIG": {
+				"length": 1,
+				"mnemonic": "SIG",
+				"format": [
+					"1",
+					"1",
+					"1",
+					"1",
+					"1",
+					"1",
+					"1",
+					"0"
+				],
+				"description": "Sign Prefix - the following instruction is allowed to set the flag."
+			}
+		},
+		"order": [
+			"ISL",
+			"BRH_H",
+			"LOCK",
+			"REX",
+			[ "XTU", "BMU" ],
+			[ "DBI", "TBI" ],
+			"SIG",
+			"OPC"
+		],
+		"max_size": 4
+	},
+	"encode": {
+		"OPC": {
+			"size": 8,
+			"description": "Opcode field, specifies the operation to be performed by the processor."
+		},
+		"SOP": {
+			"size": 4,
+			"description": "Sub-Opcode field, specifies a variant of the main opcode operation."
+		},
+		"ISL": {
+			"size": 4,
+			"description": "Instruction Size Length field, specifies the length of the instruction in bytes."
+		},
+
+		"GB1": {
+			"size": 1,
+			"description": "General encode bit, used for instructions that have a 1-bit immediate value."
+		},
+		"GB2": {
+			"size": 2,
+			"description": "General encode bit, used for instructions that have a 2-bit immediate value."
+		},
+
+		"DRG": {
+			"size": 4,
+			"description": "Destination Register field, specifies the register where the result of the operation is stored."
+		},
+		"SR1": {
+			"size": 4,
+			"description": "Source Register 1 field, specifies the first source register for the operation."
+		},
+		"SR2": {
+			"size": 4,
+			"description": "Source Register 2 field, specifies the second source register for the operation."
+		},
+		"SR3": {
+			"size": 4,
+			"description": "Source Register 3 field, specifies the third source register for the operation."
+		},
+
+		"DRC": {
+			"size": 4,
+			"description": "Destination Control Register field, specifies the control register where the result of the operation is stored."
+		},
+		"SRC": {
+			"size": 4,
+			"description": "Source Control Register field, specifies the source control register for the operation."
+		},
+
+		"DFR": {
+			"size": 4,
+			"description": "Destination Floating-point Register field, specifies the floating-point register where the result of the operation is stored."
+		},
+		"SF1": {
+			"size": 4,
+			"description": "Source Floating-point Register 1 field, specifies the first source floating-point register for the operation."
+		},
+		"SF2": {
+			"size": 4,
+			"description": "Source Floating-point Register 2 field, specifies the second source floating-point register for the operation."
+		},
+		"SF3": {
+			"size": 4,
+			"description": "Source Floating-point Register 3 field, specifies the third source floating-point register for the operation."
+		},
+
+		"IM8": {
+			"size": 8,
+			"description": "Immediate field, specifies a constant value or address for the operation."
+		},
+		"I16": {
+			"size": 16,
+			"description": "Immediate field, specifies a constant value or address for the operation."
+		},
+		"I32": {
+			"size": 32,
+			"description": "Immediate field, specifies a constant value or address for the operation."
+		},
+
+		"OF8": {
+			"size": 8,
+			"description": "Offset field, specifies an offset value for memory access."
+		},
+		"O16": {
+			"size": 16,
+			"description": "Offset field, specifies an offset value for memory access."
+		},
+		"O32": {
+			"size": 32,
+			"description": "Offset field, specifies an offset value for memory access."
+		},
+
+		"AD8": {
+			"size": 8,
+			"description": "Address field, specifies an address for memory access."
+		},
+		"A16": {
+			"size": 16,
+			"description": "Address field, specifies an address for memory access."
+		},
+		"A32": {
+			"size": 32,
+			"description": "Address field, specifies an address for memory access."
+		},
+
+		"SCL": {
+			"size": 4,
+			"description": "Scale field, specifies the scaling factor for indexed addressing."
+		},
+
+		"PRT": {
+			"size": 8,
+			"description": "Port field, specifies the I/O port to be accessed."
+		},
+
+		"CR": {
+			"size": 4,
+			"description": "Control Register field, specifies the system control register to be accessed."
+		}
+	},
+	"interrupt_vectors": {
+		"#BRK": {
+			"vector": 0,
+			"description": "Breakpoint interrupt vector."
+		},
+		"#DIV": {
+			"vector": 1,
+			"description": "Divide-by-zero error interrupt vector."
+		},
+		"#NMI": {
+			"vector": 2,
+			"description": "Non-maskable interrupt vector."
+		},
+		"#HLT": {
+			"vector": 3,
+			"description": "Halt instruction interrupt vector."
+		},
+		"#MCC": {
+			"vector": 4,
+			"description": "Machine check interrupt vector."
+		},
+		"#MAV": {
+			"vector": 5,
+			"description": "Memory access violation interrupt vector."
+		},
+		"#UDI": {
+			"vector": 6,
+			"description": "Undefined instruction interrupt vector."
+		},
+		"#PGF": {
+			"vector": 7,
+			"description": "Page fault interrupt vector."
+		}
+	},
+	"flags": {
+		"ZF": {
+			"bit_position": 0,
+			"mask": "0x00000001",
+			"description": "Zero Flag - Set if the result of an operation is zero."
+		},
+		"CF": {
+			"bit_position": 1,
+			"mask": "0x00000002",
+			"description": "Carry Flag - Set if an arithmetic operation generates a carry out or borrow into the most significant bit."
+		},
+		"OF": {
+			"bit_position": 2,
+			"mask": "0x00000004",
+			"description": "Overflow Flag - Set if an arithmetic operation results in a signed overflow."
+		},
+		"NF": {
+			"bit_position": 3,
+			"mask": "0x00000008",
+			"description": "Negative Flag - Set if the result of an operation is negative."
+		},
+		"DF": {
+			"bit_position": 4,
+			"mask": "0x00000010",
+			"description": "Direction Flag - Controls the direction of string operations (0 = increment, 1 = decrement)."
+		},
+
+		"FLZ": {
+			"bit_position": 5,
+			"mask": "0x00000020",
+			"description": "Floating-Point Divide-by-Zero Flag - Set if a floating-point division by zero occurs."
+		},
+		"FLO": {
+			"bit_position": 6,
+			"mask": "0x00000040",
+			"description": "Floating-Point Overflow Flag - Set if a floating-point operation results in an overflow."
+		},
+		"FLV": {
+			"bit_position": 7,
+			"mask": "0x00000080",
+			"description": "Floating-Point Result Inaccurate Flag - Set if a floating-point operation results in an inaccurate result."
+		},
+
+		"IF": {
+			"bit_position": 8,
+			"mask": "0x00000100",
+			"description": "Interrupt Flag - Controls the enabling and disabling of maskable interrupts."
+		},
+
+		"BE": {
+			"bit_position": 12,
+			"mask": "0x00001000",
+			"description": "Big Endian Flag - Set if the processor is using a big-endian byte order."
+		},
+		"AC": {
+			"bit_position": 13,
+			"mask": "0x00002000",
+			"description": "Alignment Check Flag - Enables alignment checking for memory accesses."
+		}
+	},
+	"status_flags": {
+		"PROT": {
+			"bit_position": 16,
+			"mask": "0x00010000",
+			"description": "Protected mode Flag - If flag enabled, the processor will abort when operating a invalid memory address or other operations."
+		}
+	},
+	"architecture": {
+		"name": "Hayneko_Arch32S",
+		"architecture": "RISC-like, Harvard architecture",
+		"copyright": "Copyright (c) 2025 Hayneko, all rights reserved.",
+		"opensource_license": {
+			"name": "MIT"
+		},
+		"document": "HAYNEKO_ARCH32S_DOC.md",
+		"bit_size": 32,
+		"endian": "little",
+		"is_support_fpu": true,
+		"description": "Hayneko_Arch32S is a 32-bit RISC-like architecture with a Harvard architecture design, supporting floating-point operations. It is designed for efficient performance, security, and ease of use. .",
+		"hardware_info": {
+			"GPR": 32,
+			"FPR": 32,
+			"CR": 4,
+			"memory_size": 4294967296,
+			"instruction_length_type": "float",
+			"instruction_length": [
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8,
+				9,
+				10,
+				11,
+				12,
+				13,
+				14,
+				15,
+				16
+			],
+			"floating_point_format": "IEEE 754",
+			"floating_point_precision": "single precision (32-bit) and double precision (64-bit)"
+		}
+	},
+	"register_renaming": {},
+	"registers": {
+		"interger": {
+			"minimum_privileged_level": "L0",
+			"x0": {
+				"number": 0,
+				"type": "GPR",
+				"description": "Zero register, always holds the value 0."
+			},
+			"ra": {
+				"number": 1,
+				"type": "GPR",
+				"description": "Return Address register, holds the return address for function calls."
+			},
+			"rb": {
+				"number": 2,
+				"type": "GPR",
+				"description": "Base register, used for base addressing."
+			},
+			"rc": {
+				"number": 3,
+				"type": "GPR",
+				"description": "Counter register, used for loop counting."
+			},
+			"rd": {
+				"number": 4,
+				"type": "GPR",
+				"description": "Data register, used for general data storage."
+			},
+			"ri": {
+				"number": 5,
+				"type": "GPR",
+				"description": "Index register, used for indexed addressing."
+			},
+			"bp": {
+				"number": 6,
+				"type": "GPR",
+				"description": "Base Pointer register, used for stack frame management."
+			},
+			"sp": {
+				"number": 7,
+				"type": "GPR",
+				"description": "Stack Pointer register, points to the top of the stack."
+			},
+
+			"r8": {
+				"number": 8,
+				"type": "GPR",
+				"description": "General Purpose Register 8."
+			},
+			"r9": {
+				"number": 9,
+				"type": "GPR",
+				"description": "General Purpose Register 9."
+			},
+			"r10": {
+				"number": 10,
+				"type": "GPR",
+				"description": "General Purpose Register 10."
+			},
+			"r11": {
+				"number": 11,
+				"type": "GPR",
+				"description": "General Purpose Register 11."
+			},
+			"r12": {
+				"number": 12,
+				"type": "GPR",
+				"description": "General Purpose Register 12."
+			},
+			"r13": {
+				"number": 13,
+				"type": "GPR",
+				"description": "General Purpose Register 13."
+			},
+			"r14": {
+				"number": 14,
+				"type": "GPR",
+				"description": "General Purpose Register 14."
+			},
+			"r15": {
+				"number": 15,
+				"type": "GPR",
+				"description": "General Purpose Register 15."
+			},
+
+			"r16": {
+				"number": 16,
+				"type": "GPR",
+				"description": "General Purpose Register 16."
+			},
+			"r17": {
+				"number": 17,
+				"type": "GPR",
+				"description": "General Purpose Register 17."
+			},
+			"r18": {
+				"number": 18,
+				"type": "GPR",
+				"description": "General Purpose Register 18."
+			},
+			"r19": {
+				"number": 19,
+				"type": "GPR",
+				"description": "General Purpose Register 19."
+			},
+			"r20": {
+				"number": 20,
+				"type": "GPR",
+				"description": "General Purpose Register 20."
+			},
+			"r21": {
+				"number": 21,
+				"type": "GPR",
+				"description": "General Purpose Register 21."
+			},
+			"r22": {
+				"number": 22,
+				"type": "GPR",
+				"description": "General Purpose Register 22."
+			},
+			"r23": {
+				"number": 23,
+				"type": "GPR",
+				"description": "General Purpose Register 23."
+			},
+
+			"t0": {
+				"number": 24,
+				"type": "GPR",
+				"description": "Temporary Register 0."
+			},
+			"t1": {
+				"number": 25,
+				"type": "GPR",
+				"description": "Temporary Register 1."
+			},
+			"t2": {
+				"number": 26,
+				"type": "GPR",
+				"description": "Temporary Register 2."
+			},
+			"t3": {
+				"number": 27,
+				"type": "GPR",
+				"description": "Temporary Register 3."
+			},
+			"t4": {
+				"number": 28,
+				"type": "GPR",
+				"description": "Temporary Register 4."
+			},
+			"t5": {
+				"number": 29,
+				"type": "GPR",
+				"description": "Temporary Register 5."
+			},
+			"t6": {
+				"number": 30,
+				"type": "GPR",
+				"description": "Temporary Register 6."
+			},
+			"t7": {
+				"number": 31,
+				"type": "GPR",
+				"description": "Temporary Register 7."
+			}
+		},
+		"floating_point": {
+			"float": {
+				"minimum_privileged_level": "L0",
+				"f0": {
+					"number": 0,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 0."
+				},
+				"f1": {
+					"number": 1,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 1."
+				},
+				"f2": {
+					"number": 2,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 2."
+				},
+				"f3": {
+					"number": 3,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 3."
+				},
+				"f4": {
+					"number": 4,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 4."
+				},
+				"f5": {
+					"number": 5,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 5."
+				},
+				"f6": {
+					"number": 6,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 6."
+				},
+				"f7": {
+					"number": 7,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 7."
+				},
+				"f8": {
+					"number": 8,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 8."
+				},
+				"f9": {
+					"number": 9,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 9."
+				},
+				"f10": {
+					"number": 10,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 10."
+				},
+				"f11": {
+					"number": 11,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 11."
+				},
+				"f12": {
+					"number": 12,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 12."
+				},
+				"f13": {
+					"number": 13,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 13."
+				},
+				"f14": {
+					"number": 14,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 14."
+				},
+				"f15": {
+					"number": 15,
+					"type": "FPR",
+					"description": "Single Precision Floating Point Register 15."
+				}
+			},
+			"double": {
+				"minimum_privileged_level": "L0",
+				"d0": {
+					"number": 16,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 0."
+				},
+				"d1": {
+					"number": 17,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 1."
+				},
+				"d2": {
+					"number": 18,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 2."
+				},
+				"d3": {
+					"number": 19,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 3."
+				},
+				"d4": {
+					"number": 20,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 4."
+				},
+				"d5": {
+					"number": 21,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 5."
+				},
+				"d6": {
+					"number": 22,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 6."
+				},
+				"d7": {
+					"number": 23,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 7."
+				},
+				"d8": {
+					"number": 24,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 8."
+				},
+				"d9": {
+					"number": 25,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 9."
+				},
+				"d10": {
+					"number": 26,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 10."
+				},
+				"d11": {
+					"number": 27,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 11."
+				},
+				"d12": {
+					"number": 28,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 12."
+				},
+				"d13": {
+					"number": 29,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 13."
+				},
+				"d14": {
+					"number": 30,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 14."
+				},
+				"d15": {
+					"number": 31,
+					"type": "FPR",
+					"description": "Double Precision Floating Point Register 15."
+				}
+			}
+		},
+		"control": {
+			"minimum_privileged_level": "L2",
+			"cr0": {
+				"number": 0,
+				"type": "CR",
+				"description": "Control Register 0 - Used for system control and configuration."
+			},
+			"cr1": {
+				"number": 1,
+				"type": "CR",
+				"description": "Control Register 1 - Used for memory management and protection."
+			},
+			"cr2": {
+				"number": 2,
+				"type": "CR",
+				"description": "Control Register 2 - Used for interrupt handling and status."
+			},
+			"cr3": {
+				"number": 3,
+				"type": "CR",
+				"description": "Control Register 3 - Used for system performance monitoring."
+			}
+		},
+		"kernel": {
+			"minimum_privileged_level": "L2",
+			"mode": {
+				"number": 0,
+				"type": "KR",
+				"description": "Kernel Mode Register - Indicates the current operating mode."
+			},
+			"status": {
+				"number": 1,
+				"type": "KR",
+				"description": "Kernel Status Register - Holds status flags and information."
+			},
+			"ip": {
+				"number": 2,
+				"type": "KR",
+				"description": "Program Counter Register - Holds the address of the next instruction to be executed. Can be modified in kernel mode or hardware mode."
+			},
+			"idt": {
+				"number": 3,
+				"type": "KR",
+				"description": "Interrupt Descriptor Table Register - Points to the interrupt descriptor table used for handling interrupts."
+			}
+		}
+	},
+	"ABI": {
+		"format": {
+			"interger_return_value_register": "ra",
+			"interger_register_parameters": [
+				"rb",
+				"rd",
+				"ri",
+				"r8",
+				"r9",
+				"r10",
+				"r11",
+				"r12"
+			],
+			"floating_point_return_value_register": [
+				"f0",
+				"d0"
+			],
+			"floating_point_register_parameters": [
+				"f1",
+				"f2",
+				"f3",
+				"f4",
+				"f5",
+				"f6",
+				"f7",
+				"f8",
+				"d1",
+				"d2",
+				"d3",
+				"d4",
+				"d5",
+				"d6",
+				"d7",
+				"d8"
+			],
+			"system_call_parameters": [
+				"ra",
+				"rc",
+				"r13",
+				"r14",
+				"r15"
+			]
+		}
+	}
+}

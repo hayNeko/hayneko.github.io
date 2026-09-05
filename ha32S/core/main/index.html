@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Hayneko Arch 32 S Emulator | Hayneko's Blog</title>
+
+	<link rel="stylesheet" href="/ha32S/core/css/ha32s-emu.css">
+	<link rel="stylesheet" href="/medias/css/dock.css">
+</head>
+<body>
+	<header>
+		<h1>Hayneko Arch 32 S Emulator</h1>
+	</header>
+	<main>
+		<nav class="control">
+			<button id="start-btn">Start</button>
+			<button id="stop-btn">Stop</button>
+			<button id="reset-btn">Reset</button>
+			<div class="tick-adjust">
+				<label for="tick-rate">Tick Rate: <span id="tick-rate-value">00000</span></label>
+				<!-- tick rate range: 1 - 32768, the slider changes the value with logarithmic scale -->
+				<input type="range" id="tick-rate" value="1" min="1" max="128"> ticks/sec
+			</div>
+		</nav>
+		<div class="emulator">
+			<canvas id="emulator-canvas"></canvas>
+		</div>
+	</main>
+
+
+
+
+	<footer>
+		<p>Copyright &copy; 2024 Hayneko. All rights reserved.</p>
+	</footer>
+	
+</body>
+
+<!-- DOM loaded -->
+<script>
+	document.addEventListener('DOMContentLoaded', async function() {
+		// 初始化语言系统
+		if (window.InitializeLanguageSystem) {
+			await InitializeLanguageSystem();
+		}
+		
+		// 延迟初始化菜单系统
+		setTimeout(() => {
+			if (window.InitializeMenuSystem) {
+				InitializeMenuSystem();
+			}
+		}, 100);
+	});
+</script>
+<!-- end DOM loaded -->
+
+<!-- service worker -->
+<script>
+if ('serviceWorker' in navigator) {
+	window.addEventListener('load', function() {
+		// 获取正确的 Service Worker 路径
+		const swPath = window.location.pathname.includes('/repo-name/') ? '/repo-name/service-worker.js' : '/service-worker.js';
+		
+		navigator.serviceWorker.register(swPath)
+			.then(function(registration) {
+				console.log('ServiceWorker registration successful');
+			})
+			.catch(function(err) {
+				console.log('ServiceWorker registration failed: ', err);
+			});
+	});
+}
+</script>
+<!-- end service worker -->
+
+<!-- <script src="/ha32S/core/script/ha32s-emu.js"></script> -->
+<script src="/ha32S/core/script/pageInteractionLogic.js"></script>
+
+
+</html>

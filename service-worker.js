@@ -1,109 +1,93 @@
 // GitHub Pages Service Worker
-const APP_VERSION = '1.0.2';
-const CACHE_NAME = `hayneko-${APP_VERSION}`;
+// 缓存策略：
+// 1) 静态资源（字体 / 图片 / Icon 以及 /medias/files/ 目录下的“文件”）→ 缓存优先
+// 2) 其余内容（HTML/CSS/JS/接口等）→ 网络优先：用户访问时即时加载最新内容，
+//    成功后写入“运行时缓存”；断网时回退到已访问缓存或离线页。
+const APP_VERSION = '2.1.0';
+
+// 静态资源缓存：体积大、几乎不变，采用缓存优先
+const STATIC_CACHE = `hayneko-static-${APP_VERSION}`;
+// 运行时缓存：仅在用户访问过后才写入，用于离线回退
+const RUNTIME_CACHE = `hayneko-runtime-${APP_VERSION}`;
+const CURRENT_CACHES = [STATIC_CACHE, RUNTIME_CACHE];
+
 const OFFLINE_URL = '/offline.html';
 
-// 多层缓存策略配置
-const CACHE_POLICIES = {
-	fonts: {
-		cacheName: 'hayneko-fonts-v1',
-		maxEntries: 20,
-		maxAgeSeconds: 60 * 60 * 24 * 30 // 30天
-	},
-	images: {
-		cacheName: 'hayneko-images-v1',
-		maxEntries: 100,
-		maxAgeSeconds: 60 * 60 * 24 * 7 // 7天
-	},
-	static: {
-		cacheName: 'hayneko-static-v1',
-		maxEntries: 150,
-		maxAgeSeconds: 60 * 60 * 24 * 365 // 1年
-	},
-	api: {
-		cacheName: 'hayneko-api-v1',
-		maxEntries: 50,
-		maxAgeSeconds: 60 * 60 // 1小时
+// 需要缓存的静态资源后缀：字体、图片、Icon（不含 JS/脚本，JS 归入“其余”按网络优先）
+const STATIC_EXT_PATTERN = /\.(ttf|otf|woff|woff2|eot|jpg|jpeg|png|gif|webp|svg|ico|avif|bmp)$/i;
+// medias/files 目录整体视为“文件”，不限后缀，一律按静态资源缓存
+const FILES_DIR_PATTERN = /\/medias\/files\//i;
+
+/* ---------------- 缓存策略辅助函数 ---------------- */
+
+// 缓存优先：命中缓存直接返回；未命中才请求网络并写入缓存
+async function cacheFirst(request, cacheName) {
+	try {
+		const cache = await caches.open(cacheName);
+		const cached = await cache.match(request);
+		if (cached) {
+			return cached;
+		}
+		const response = await fetch(request);
+		// 仅缓存成功的有效响应；写入失败不影响本次返回
+		if (response && response.ok) {
+			cache.put(request, response.clone()).catch(() => {});
+		}
+		return response;
+	} catch (err) {
+		// 缓存异常时退化为直接请求网络
+		try {
+			return await fetch(request);
+		} catch (e) {
+			return new Response('Resource not available', { status: 503 });
+		}
 	}
-};
-
-// 需要预缓存的资源（关键资源）
-const PRECACHE_RESOURCES = [
-	OFFLINE_URL,
-	'/index.html',
-	'/medias/css/root.css',
-	'/medias/css/index.css',
-	'/medias/css/main-page.css',
-	'/medias/fonts/WenYuanSerifSCC-Regular.ttf',
-	'/medias/fonts/PatuaOne-Regular.ttf',
-	'/medias/fonts/LorchinSansP0.woff2',
-	'/medias/picures/background.jpg',
-];
-
-// 资源类型判断规则
-const RESOURCE_PATTERNS = {
-	fonts: /\.(ttf|woff|woff2|otf)$/i,
-	images: /\.(jpg|jpeg|png|gif|webp|svg)$/i,
-	static: /\.(js|css|json|ico|xml|txt)$/i,
-	api: /\/api\//i
-};
-
-// 工具函数：根据URL获取缓存策略
-function getCachePolicy(url) {
-	const pathname = new URL(url).pathname;
-	if (RESOURCE_PATTERNS.fonts.test(pathname)) return CACHE_POLICIES.fonts;
-	if (RESOURCE_PATTERNS.images.test(pathname)) return CACHE_POLICIES.images;
-	if (RESOURCE_PATTERNS.api.test(url)) return CACHE_POLICIES.api;
-	if (RESOURCE_PATTERNS.static.test(pathname)) return CACHE_POLICIES.static;
-	return CACHE_POLICIES.static;
 }
 
-// 工具函数：清理过期缓存
-async function cleanExpiredCache(cacheName, maxAgeSeconds) {
-	const cache = await caches.open(cacheName);
-	const keys = await cache.keys();
-	
-	for (const request of keys) {
-		const response = await cache.match(request);
-		if (!response) continue;
-		
-		const dateHeader = response.headers.get('date');
-		if (dateHeader) {
-			const cacheTime = new Date(dateHeader).getTime();
-			const now = Date.now();
-			if (now - cacheTime > maxAgeSeconds * 1000) {
-				await cache.delete(request);
+// 网络优先：用户访问时在线获取最新内容并写入运行时缓存；
+// 网络失败时回退到已访问的缓存，页面导航最终回退到离线页。
+async function networkFirst(request) {
+	let cache = null;
+	try {
+		cache = await caches.open(RUNTIME_CACHE);
+	} catch (err) {
+		// 缓存不可用时仍正常访问网络
+	}
+	try {
+		const response = await fetch(request);
+		// 成功后写入缓存，供下次离线访问；写入失败不影响本次返回
+		if (response && response.ok && cache) {
+			cache.put(request, response.clone()).catch(() => {});
+		}
+		return response;
+	} catch (err) {
+		if (cache) {
+			const cached = await cache.match(request).catch(() => null);
+			if (cached) {
+				return cached;
 			}
 		}
+		// 页面导航断网时返回预缓存的离线页
+		if (request.mode === 'navigate') {
+			const offline = await caches.match(OFFLINE_URL).catch(() => null);
+			if (offline) {
+				return offline;
+			}
+		}
+		return new Response('Network error', { status: 503 });
 	}
 }
 
-// 工具函数：限制缓存条目数量
-async function limitCacheSize(cacheName, maxEntries) {
-	const cache = await caches.open(cacheName);
-	const keys = await cache.keys();
-	
-	if (keys.length > maxEntries) {
-		const keysToDelete = keys.slice(0, keys.length - maxEntries);
-		for (const key of keysToDelete) {
-			await cache.delete(key);
-		}
-	}
-}
+/* ---------------- 生命周期 ---------------- */
 
 self.addEventListener('install', (event) => {
 	console.log('[Service Worker] Installing version:', APP_VERSION);
+	// 仅预缓存离线页面，其余内容在用户访问时才加载并缓存
 	event.waitUntil(
-		caches.open(CACHE_NAME)
-			.then((cache) => {
-				console.log('[Service Worker] Pre-caching critical resources');
-				return cache.addAll(PRECACHE_RESOURCES)
-					.catch(err => {
-						console.error('[Service Worker] Pre-cache failed:', err);
-						// 继续执行，即使某些资源缓存失败
-					});
-			})
-			.then(() => self.skipWaiting())
+		caches.open(RUNTIME_CACHE).then((cache) => {
+			console.log('[Service Worker] Caching offline page');
+			return cache.add(OFFLINE_URL);
+		}).then(() => self.skipWaiting())
 	);
 });
 
@@ -111,193 +95,58 @@ self.addEventListener('activate', (event) => {
 	console.log('[Service Worker] Activating version:', APP_VERSION);
 	event.waitUntil(
 		Promise.all([
-			// 清理旧缓存
+			// 清理旧版本 / 不再使用的缓存
 			caches.keys().then(cacheNames => {
 				return Promise.all(
 					cacheNames.map(cacheName => {
-						// 保留当前版本的所有缓存
-						const isCurrentVersion = cacheName.startsWith('hayneko-');
-						if (!isCurrentVersion) {
+						if (!CURRENT_CACHES.includes(cacheName)) {
 							console.log('[Service Worker] Deleting old cache:', cacheName);
 							return caches.delete(cacheName);
 						}
 					})
 				);
 			}),
-			// 立即控制所有页面
 			self.clients.claim()
 		])
 	);
 });
 
+/* ---------------- 请求拦截 ---------------- */
+
 self.addEventListener('fetch', (event) => {
 	const { request } = event;
-	const url = new URL(request.url);
-	
-	// 跳过非 HTTP(S) 请求
-	if (!request.url.startsWith('http')) return;
-	
-	// 跳过浏览器扩展请求
-	if (url.hostname === 'extensions' || url.protocol === 'chrome-extension:') return;
-	
-	// 获取该资源的缓存策略
-	const cachePolicy = getCachePolicy(request.url);
-	
-	// 针对不同类型的资源使用不同策略
-	if (cachePolicy === CACHE_POLICIES.fonts) {
-		// 字体：缓存优先，长期有效
-		event.respondWith(cacheThenNetwork(request, cachePolicy));
-	} else if (cachePolicy === CACHE_POLICIES.static) {
-		// 静态资源（JS/CSS）：缓存优先，同时检查更新
-		event.respondWith(cacheThenNetworkWithUpdate(request, cachePolicy));
-	} else if (cachePolicy === CACHE_POLICIES.images) {
-		// 图片：缓存优先，后台更新
-		event.respondWith(cacheThenNetwork(request, cachePolicy));
-	} else if (cachePolicy === CACHE_POLICIES.api) {
-		// API：网络优先，缓存备用
-		event.respondWith(networkThenCache(request, cachePolicy));
-	} else {
-		// 默认：缓存优先
-		event.respondWith(cacheThenNetwork(request, cachePolicy));
+
+	// 仅拦截 GET 与 HTTP(S) 请求，其余（含浏览器扩展）直接放行
+	if (request.method !== 'GET' || !request.url.startsWith('http')) {
+		return;
 	}
+
+	const url = new URL(request.url);
+	if (url.hostname === 'extensions' || url.protocol === 'chrome-extension:') {
+		return;
+	}
+
+	// 1) 静态资源（字体 / 图片 / medias/files 目录）：缓存优先
+	const isStatic =
+		STATIC_EXT_PATTERN.test(url.pathname) || FILES_DIR_PATTERN.test(url.pathname);
+
+	if (isStatic) {
+		event.respondWith(cacheFirst(request, STATIC_CACHE));
+		return;
+	}
+
+	// 2) 其余资源（HTML/CSS/JS/接口等）：网络优先，访问成功后写入缓存
+	event.respondWith(networkFirst(request));
 });
 
-// 缓存优先策略
-async function cacheThenNetwork(request, cachePolicy) {
-	try {
-		const cachedResponse = await caches.match(request);
-		if (cachedResponse) {
-			return cachedResponse;
-		}
-		
-		// 网络获取
-		const networkResponse = await fetch(request);
-		if (networkResponse && networkResponse.status === 200) {
-			// 存入缓存
-			const cacheCopy = networkResponse.clone();
-			const cache = await caches.open(cachePolicy.cacheName);
-			cache.put(request, cacheCopy).then(() => {
-				limitCacheSize(cachePolicy.cacheName, cachePolicy.maxEntries);
-			});
-		}
-		return networkResponse;
-	} catch (error) {
-		// 离线或网络错误
-		const cached = await caches.match(request);
-		if (cached) {
-			return cached;
-		}
-		
-		// 返回离线页面或错误响应
-		if (request.mode === 'navigate') {
-			return caches.match(OFFLINE_URL);
-		}
-		
-		return new Response('Offline - Resource not available', {
-			status: 503,
-			statusText: 'Service Unavailable'
-		});
-	}
-}
-
-// 缓存优先 + 后台更新策略（Stale-While-Revalidate）
-async function cacheThenNetworkWithUpdate(request, cachePolicy) {
-	try {
-		const cachedResponse = await caches.match(request);
-		
-		// 异步更新缓存
-		fetch(request)
-			.then(networkResponse => {
-				if (networkResponse && networkResponse.status === 200) {
-					const cacheCopy = networkResponse.clone();
-					caches.open(cachePolicy.cacheName).then(cache => {
-						cache.put(request, cacheCopy).then(() => {
-							limitCacheSize(cachePolicy.cacheName, cachePolicy.maxEntries);
-						});
-					});
-				}
-			})
-			.catch(() => {
-				// 网络失败，保留缓存
-			});
-		
-		// 立即返回缓存
-		if (cachedResponse) {
-			return cachedResponse;
-		}
-		
-		// 如果没有缓存，等待网络响应
-		return await fetch(request);
-	} catch (error) {
-		const cached = await caches.match(request);
-		return cached || new Response('Resource not available', { status: 503 });
-	}
-}
-
-// 网络优先策略
-async function networkThenCache(request, cachePolicy) {
-	try {
-		const networkResponse = await fetch(request);
-		if (networkResponse && networkResponse.status === 200) {
-			// 存入缓存
-			const cacheCopy = networkResponse.clone();
-			caches.open(cachePolicy.cacheName).then(cache => {
-				cache.put(request, cacheCopy).then(() => {
-					limitCacheSize(cachePolicy.cacheName, cachePolicy.maxEntries);
-				});
-			});
-		}
-		return networkResponse;
-	} catch (error) {
-		// 网络失败，使用缓存
-		const cached = await caches.match(request);
-		if (cached) {
-			return cached;
-		}
-		
-		if (request.mode === 'navigate') {
-			return caches.match(OFFLINE_URL);
-		}
-		
-		return new Response('Network error', { status: 503 });
-	}
-}
-
-// 接收来自客户端的消息，例如清除缓存、更新检查等
+// 接收客户端消息以手动更新或清理缓存
 self.addEventListener('message', (event) => {
 	if (event.data.action === 'skipWaiting') {
-		console.log('[Service Worker] Skipping waiting period');
 		self.skipWaiting();
 	}
-	
 	if (event.data.action === 'clearCache') {
-		console.log('[Service Worker] Clearing all caches');
 		caches.keys().then(cacheNames => {
 			Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
-		});
-	}
-	
-	if (event.data.action === 'clearSpecificCache') {
-		const cacheName = event.data.cacheName;
-		console.log('[Service Worker] Clearing cache:', cacheName);
-		caches.delete(cacheName).then(success => {
-			event.ports[0]?.postMessage({ cleared: success });
-		});
-	}
-	
-	if (event.data.action === 'getCacheStats') {
-		// 获取缓存统计信息
-		caches.keys().then(cacheNames => {
-			const stats = {};
-			Promise.all(cacheNames.map(cacheName => 
-				caches.open(cacheName).then(cache => 
-					cache.keys().then(keys => {
-						stats[cacheName] = keys.length;
-					})
-				)
-			)).then(() => {
-				event.ports[0]?.postMessage({ stats });
-			});
 		});
 	}
 });

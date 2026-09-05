@@ -8,14 +8,15 @@
 					<img class="body_header_logo protected-media" src="/medias/picures/avatarMikuHatsune.jpg" alt="Hayneko's blog" />
 					<h1 class="body_header_title" data-i18n="title">Hayneko's blog</h1>
 				</a>
-				<button class="body_header_menu_login-button" id="body_header_menu_login-button" data-i18n="login" onclick="javascript:ToggleMenu('dock_menu_header_login-menu');">Login</button>
+				<button class="body_header_menu_login-button" id="body_header_menu_login-button" data-i18n="login" onclick="javascript:alert(' Login feature is not available yet \\n 登录功能尚未开放 \\n 登錄功能尚未開放 \\n ログイン機能はまだご利用いただけません \\n 로그인 기능은 아직 사용할 수 없습니다');">Login</button>
 			</header>
-		`,
+		`, // ToggleMenu('dock_menu_header_login-menu');
 
 		footer: `
 			<footer class="body_footer">
 				<p class="body_footer_text" data-i18n="body_footer_text-0">Hayneko. Created on Jan 10, 2026.</p>
 				<p class="body_footer_text" data-i18n="body_footer_text-1">This site has been refactored 4 times.</p>
+				<p class="body_footer_text" data-i18n="body_footer_text-translation_disclaimer">This site is translated into multiple languages, but the translations may not be accurate. Please refer to the original English/Chinese version for the most accurate information.</p>
 				<a href="https://github.com/hayNeko" target="_blank" class="body_footer_link"><i class="fa-brands fa-github"></i>GitHub</a>
 			</footer>
 		`,
@@ -36,6 +37,7 @@
 						<li class="dock_menu_option" onclick="javascript:SetLanguage('zh-CN');window.location.reload();"><span>中文(简体)</span><i class="fa-solid fa-check check-icon"></i></li>
 						<li class="dock_menu_option" onclick="javascript:SetLanguage('zh-TW');window.location.reload();"><span>中文(繁體)</span><i class="fa-solid fa-check check-icon"></i></li>
 						<li class="dock_menu_option" onclick="javascript:SetLanguage('ja');window.location.reload();"><span>日本語</span><i class="fa-solid fa-check check-icon"></i></li>
+						<li class="dock_menu_option" onclick="javascript:SetLanguage('ko');window.location.reload();"><span>한국어</span><i class="fa-solid fa-check check-icon"></i></li>
 					</menu>
 				</div>
 				<div class="dock_search-menu" id="dock_search">

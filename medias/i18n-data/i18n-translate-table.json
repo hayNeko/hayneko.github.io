@@ -36,12 +36,13 @@
 
 			"body_footer_text-0": "© Hayneko. Created on Jan 10, 2026.",
 			"body_footer_text-1": "This site has been refactored 4 times.",
+			"body_footer_text-translation_disclaimer": "This site is translated into multiple languages, but the translations may not be accurate. Please refer to the original English/Chinese version for the most accurate information.",
 
 			"info_email": "Email",
 			"info_hobbies": "Hobbies",
 			"info_games": "Games",
 			"info_hobbies_content": "Music, Anime, Programming",
-			"info_games_content": "Minecraft, Genshin Impact"
+			"info_games_content": "Minecraft, NTE"
 		}
 	},
 	"zh-CN": {
@@ -81,12 +82,13 @@
 
 			"body_footer_text-0": "© Hayneko. 创建于2026年1月10日",
 			"body_footer_text-1": "本网站已重构4次",
+			"body_footer_text-translation_disclaimer": "本网站已翻译成多种语言，但翻译可能不准确。请参考原始英文/中文版本以获取最准确的信息。",
 
 			"info_email": "邮箱",
 			"info_hobbies": "兴趣",
 			"info_games": "游戏",
 			"info_hobbies_content": "音乐、动漫、编程",
-			"info_games_content": "Minecraft、原神"
+			"info_games_content": "Minecraft、异环"
 		}
 	},
 	"zh-TW": {
@@ -126,12 +128,13 @@
 
 			"body_footer_text-0": "© Hayneko. 建立於2026年1月10日",
 			"body_footer_text-1": "本網站已重構4次",
+			"body_footer_text-translation_disclaimer": "本網站已翻譯成多種語言，但翻譯可能不準確。請參考原始英文/中文版本以獲取最準確的資訊。",
 
 			"info_email": "電子郵件",
 			"info_hobbies": "興趣",
 			"info_games": "遊戲",
 			"info_hobbies_content": "音樂、動漫、程式編寫",
-			"info_games_content": "Minecraft、原神"
+			"info_games_content": "Minecraft、異環"
 		}
 	},
 	"ja": {
@@ -171,13 +174,60 @@
 
 			"body_footer_text-0": "© Hayneko. 2026年1月10日作成",
 			"body_footer_text-1": "このサイトは4回リファクタリングされました",
+			"body_footer_text-translation_disclaimer": "このサイトは複数の言語に翻訳されていますが、翻訳は正確でない場合があります。最も正確な情報については、元の英語/中国語版を参照してください。",
 
 			"info_email": "電子メール",
 			"info_hobbies": "趣味",
-			"info_games": "ゲーム",
-			"info_hobbies_content": "音楽、アニメ、プログラム作成",
-			"info_games_content": "Minecraft、原神"
+			"info_games": "ゲーム",
+			"info_hobbies_content": "音楽、アニメ、プログラミング",
+			"info_games_content": "Minecraft、NTE"
 		}
 	},
-	"languages": ["en", "zh-CN", "zh-TW", "ja"]
+	"ko": {
+		"name": "한국어",
+		"translations": {
+			"home": "홈",
+			"album": "앨범",
+			"storage": "다운로드",
+			"friendly-links": "친구 링크",
+			"projects": "프로젝트",
+			"contact": "연락처",
+			"language": "언어",
+			"switch-theme": "테마 변경",
+			"search": "검색",
+			"tools": "도구",
+			"title": "Hayneko의 블로그",
+			"title-storage": "다운로드",
+			"title_leave-message": "미쿠! 또 보러 와 줘 ",
+			"login": "로그인",
+
+			"construction": "사이트 공사 중",
+			"no-more-file": "더 이상 다운로드할 파일이 없습니다.",
+
+			"contact-via-github": "GitHub로 연락하기",
+			"contact-via-instagram": "Instagram으로 연락하기",
+
+			"no-tools-available": "현재 사용 가능한 도구가 없습니다.",
+			"simulation": "시뮬레이션",
+			"physics-simulation": "물리 시뮬레이션 (버전 1.0)",
+			"physics-simulation-newton-second-law": "뉴턴의 제2법칙 시뮬레이션 (버전 1.0)",
+			"physics-simulation-lens": "렌즈 시뮬레이션 (버전 1.0)",
+
+			"docs": "유용한 문서",
+			"docs-i386": "Intel 80386 프로그래머 참조 매뉴얼",
+
+			"no-friendly-link": "아직 친구 링크가 없습니다. 링크를 추가하려면 저에게 연락해 주세요.",
+
+			"body_footer_text-0": "© Hayneko. 2026년 1월 10일에 생성됨",
+			"body_footer_text-1": "이 사이트는 4번 리팩터링되었습니다",
+			"body_footer_text-translation_disclaimer": "이 사이트는 여러 언어로 번역되었지만, 번역본은 정확하지 않을 수 있습니다. 가장 정확한 정보는 원본 영어/중국어 버전을 참조해 주세요.",
+
+			"info_email": "이메일",
+			"info_hobbies": "취미",
+			"info_games": "게임",
+			"info_hobbies_content": "음악, 애니메이션, 프로그래밍",
+			"info_games_content": "Minecraft, 이환"
+		}
+	},
+	"languages": ["en", "zh-CN", "zh-TW", "ja", "ko"]
 }
