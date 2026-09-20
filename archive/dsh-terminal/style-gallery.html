@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Style Gallery → dsh://terminal</title>
+	<meta http-equiv="refresh" content="0; url=index.html#/gallery">
+	<link rel="canonical" href="index.html#/gallery">
+	<link rel="stylesheet" href="styles/root.css">
+	<style>
+		body { display: grid; place-items: center; min-height: 100vh; }
+		.redirect { font-size: 13px; color: var(--fg-faint); text-align: center; }
+		.redirect a { color: var(--accent); border-bottom: 1px solid currentColor; }
+	</style>
+</head>
+<body>
+	<p class="redirect">
+		正在跳转到 index.html#/gallery …<br>
+		<a href="index.html#/gallery">若未自动跳转, 请点击这里</a>
+	</p>
+	<script>
+		/* 风格画廊现在是单页应用的一个路由, 这里保留旧地址做重定向。 */
+		location.replace('/index.html' + (location.search || '') + '#/gallery');
+	</script>
+</body>
+</html>

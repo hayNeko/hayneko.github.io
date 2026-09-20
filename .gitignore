@@ -1,0 +1,6 @@
+# 本地临时文件 —— 验证脚本用的浏览器 profile、截图等, 不要提交
+.tmp-*/
+.tmp-*
+.verify/
+_check*.mjs
+_verify*.mjs

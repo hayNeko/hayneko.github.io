@@ -1,0 +1,99 @@
+<!-- pages/tools.html — 工具页面 -->
+<header class="page-head">
+	<h1 class="page-head__title" data-smear="drop">
+		<span i18n-key="tools.title">工具页面</span>
+	</h1>
+	<p class="page-head__sub" data-smear i18n-key="tools.subtitle">
+		下面是几个直接跑在浏览器里的迷你工具。终端支持历史记录(↑/↓)、Tab 补全与内置虚拟文件系统。
+	</p>
+</header>
+
+<section class="section" style="margin-top:0">
+	<div class="term" data-terminal data-smear>
+		<div class="term__bar">
+			<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="term__title">guest@dsh: ~/tools</span>
+			<span class="term-window__tag" i18n-key="tools.term.tag">交互终端</span>
+		</div>
+		<div class="term__body" tabindex="-1"></div>
+		<div class="term__prompt-line" style="padding:0 18px 14px">
+			<span class="term__ps1">guest@dsh:~/tools$</span>
+			<input class="term__input" type="text" spellcheck="false" autocomplete="off"
+				aria-label="terminal input" i18n-attr="aria-label" i18n-key="tools.term.input">
+		</div>
+	</div>
+
+	<div class="term-suggest" data-smear>
+		<button type="button" data-cmd="help">help</button>
+		<button type="button" data-cmd="ls">ls</button>
+		<button type="button" data-cmd="cat about.md">cat about.md</button>
+		<button type="button" data-cmd="neofetch">neofetch</button>
+		<button type="button" data-cmd="uuid 3">uuid 3</button>
+		<button type="button" data-cmd="accent green">accent green</button>
+		<button type="button" data-cmd="clear">clear</button>
+	</div>
+</section>
+
+<section class="section">
+	<header class="section__head">
+		<h2 class="section__title" data-smear="slide" i18n-key="tools.grid.title">工具清单</h2>
+		<p class="section__sub" i18n-key="tools.grid.subtitle">全部在前端完成, 不会把数据发到任何服务器。</p>
+	</header>
+
+	<div class="grid grid--3">
+		<article class="card card--blue" data-smear>
+			<span class="card__idx">01</span>
+			<h3 class="card__title" i18n-key="tools.card.1.title">Base64 编解码</h3>
+			<p class="card__body" i18n-key="tools.card.1.body">b64 / b64d 两个命令, 支持 UTF-8 文本的往返转换。</p>
+			<footer class="card__foot"><span class="badge badge--blue">b64</span><span class="badge">b64d</span></footer>
+		</article>
+
+		<article class="card card--green" data-smear>
+			<span class="card__idx">02</span>
+			<h3 class="card__title" i18n-key="tools.card.2.title">UUID v4 生成</h3>
+			<p class="card__body" i18n-key="tools.card.2.body">优先使用 crypto.randomUUID, 不支持时回退到 getRandomValues。</p>
+			<footer class="card__foot"><span class="badge badge--green">uuid 5</span></footer>
+		</article>
+
+		<article class="card card--plain" data-smear>
+			<span class="card__idx">03</span>
+			<h3 class="card__title" i18n-key="tools.card.3.title">JSON 格式化</h3>
+			<p class="card__body" i18n-key="tools.card.3.body">把压缩的一行 JSON 展开成缩进结构, 并给出解析错误位置。</p>
+			<footer class="card__foot"><span class="badge">json</span></footer>
+		</article>
+
+		<article class="card card--red" data-smear>
+			<span class="card__idx">04</span>
+			<h3 class="card__title" i18n-key="tools.card.4.title">SHA-256 摘要</h3>
+			<p class="card__body" i18n-key="tools.card.4.body">基于 WebCrypto 的摘要计算, 需要 https 或 localhost 环境。</p>
+			<footer class="card__foot"><span class="badge badge--red">sha256</span></footer>
+		</article>
+
+		<article class="card card--blue" data-smear>
+			<span class="card__idx">05</span>
+			<h3 class="card__title" i18n-key="tools.card.5.title">主题强调色</h3>
+			<p class="card__body" i18n-key="tools.card.5.body">accent red | green | blue 实时切换整站强调色, 并记忆到本地。</p>
+			<footer class="card__foot"><span class="badge badge--blue">accent</span></footer>
+		</article>
+
+		<article class="card card--green" data-smear>
+			<span class="card__idx">06</span>
+			<h3 class="card__title" i18n-key="tools.card.6.title">页面跳转</h3>
+			<p class="card__body" i18n-key="tools.card.6.body">在终端里直接输入 open contact 之类的命令即可切换页面。</p>
+			<footer class="card__foot"><span class="badge badge--green">open</span></footer>
+		</article>
+	</div>
+</section>
+
+<section class="section">
+	<div class="term-window term-window--bare" data-smear>
+		<div class="term-window__bar">
+			<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="term-window__title">note.txt</span>
+		</div>
+		<div class="term-window__body">
+			<p class="term-line term-line--dim"><span class="term-line__prompt">$</span> <span class="term-line__cmd">cat note.txt</span></p>
+			<p class="term-line" i18n-key="tools.note">提示: 终端是纯前端的演示实现, 命令与输出都在本地生成。按 Ctrl+L 可以清屏。</p>
+		</div>
+	</div>
+</section>

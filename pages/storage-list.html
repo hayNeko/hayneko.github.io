@@ -3,191 +3,26 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<!-- <meta name="description" content="Hayneko's first blog!"> -->
-	<!-- <meta name="keyword" content="Hayneko, blog, web development, haynekogithubio, acg, programmer, hayneko的博客, 博客, 个人网站, 个人博客, 二次元, 动画, 音乐, miku"> -->
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		
-	<title>Hayneko's blog | Storage List</title>
-
-	<link rel="manifest" href="/manifest.json">
-	
-	<!-- 对于 iOS -->
-	<meta name="mobile-web-app-capable" content="yes">
-	<!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> -->
-	
-	<link rel="icon" href="medias/picures/miku.JPG" sizes="32x32">
-
-	<!-- css waifu -->
-	<!-- <link rel="stylesheet" href="live2dqw/assets/waifu.css"> -->
-
-	<!-- css -->
-	<link rel="stylesheet" href="/medias/css/index.css">
-	<link rel="stylesheet" href="/medias/css/dock.css">
-	<link rel="stylesheet" href="/medias/css/main-page.css">
-	<link rel="stylesheet" href="/medias/css/main-page_storage.css">
-
-	
+	<title>Storage · Hayneko</title>
+	<meta http-equiv="refresh" content="0; url=../index.html#/storage">
+	<link rel="canonical" href="../index.html#/storage">
+	<link rel="icon" href="../medias/picures/miku.JPG" sizes="32x32">
+	<link rel="stylesheet" href="../styles/tokens.css">
+	<style>
+		body { display: grid; place-items: center; min-height: 100vh; }
+		.redirect { font-size: 13px; color: var(--fg-faint); text-align: center; }
+		.redirect a { color: var(--accent); border-bottom: 1px solid currentColor; }
+	</style>
 </head>
 <body>
-
-<!-- No data-i18n (translate table) provided -->
-<main>
-	<h2 class="storage_list_title">Storage List</h2>
-
-	<menu class="storage_list_menu-storage-list">
-		<h3 class="storage_list_menu_title">Game Storage</h3>
-		<li class="storage_list_menu_item">
-			<a href="/medias/files/games/PVP.zip" target="_blank" rel="noopener noreferrer">Minecraft 1.21.1 (Java Edition) PvP Map (with datapack inside) (updated on 2026-1-27) (Not longer available)</a>
-		</li>
-		<li class="storage_list_menu_item">
-			<a href="/medias/files/games/1.21.1_command.zip" target="_blank" rel="noopener noreferrer">Minecraft 1.21.1 (Java Edition) PvP Map Full Map (updated on 2026-2-7) (Not longer available)</a>
-		</li>
-	</menu>
-
-	<menu class="storage_list_menu-storage-list">
-		<h3 class="storage_list_menu_title">Other Storage</h3>
-		<li class="storage_list_menu_item">
-			<a href="/medias/files/programming/nlohmann_json.hpp" target="_blank" rel="noopener noreferrer">nlohmann/json.hpp version 3.12.0 | JSON for Modern C++ (updated on 2026-1-27)</a>
-		</li>
-	</menu>
-
-	<menu class="storage_list_menu-storage-list">
-		<h3 class="storage_list_menu_title" data-i18n="no-more-file">There should be no more file available to download...</h3>
-	</menu>
-
-</main>
-
-
-
-
+	<p class="redirect">
+		Loading /index.html#/storage …<br>
+		<a href="../index.html#/storage">Click here if you are not redirected</a>
+	</p>
+	<script>
+		/* 资源列表现在是单页应用的一个路由(#/storage)。
+		   保留旧地址做重定向, 老链接不会失效。 */
+		location.replace('../index.html' + (location.search || '') + '#/storage');
+	</script>
 </body>
-<!-- DOM loaded -->
-<script>
-	document.addEventListener('DOMContentLoaded', async function() {
-		// 初始化语言系统
-		if (window.InitializeLanguageSystem) {
-			await InitializeLanguageSystem();
-		}
-		
-		// 延迟初始化菜单系统
-		setTimeout(() => {
-			if (window.InitializeMenuSystem) {
-				InitializeMenuSystem();
-			}
-		}, 100);
-	});
-</script>
-<!-- end DOM loaded -->
-
-<script src="/medias/scripts/GlobalElements.js"></script>
-
-<!-- service worker -->
-<script>
-if ('serviceWorker' in navigator) {
-	window.addEventListener('load', function() {
-		// 获取正确的 Service Worker 路径
-		const swPath = window.location.pathname.includes('/repo-name/') ? '/repo-name/service-worker.js' : '/service-worker.js';
-		
-		navigator.serviceWorker.register(swPath)
-			.then(function(registration) {
-				console.log('ServiceWorker registration successful');
-			})
-			.catch(function(err) {
-				console.log('ServiceWorker registration failed: ', err);
-			});
-	});
-}
-</script>
-
-<!-- end service worker -->
-
-<script src="/medias/scripts/CreateParticle.js"></script>
-<script src="/medias/scripts/DockInitializer.js"></script>
-<script src="/medias/scripts/LanguageSwitcher.js"></script>
-<script src="/medias/scripts/ThemeSwitcher.js"></script>
-<script src="/medias/scripts/DockMenuSystem.js"></script>
-
-<!-- title -->
-<script>
-	document.addEventListener('DOMContentLoaded', async function() {
-		// 等待语言系统初始化
-		await InitializeLanguageSystem();
-		
-		// 获取当前语言的离开消息
-		const langData = LanguageManager.GetCurrentLanguageData();
-		leaveMessage = langData.translations['title_leave-message'] || "Miku! ";
-		originalTitle = langData.translations['title'] || originalTitle;
-	});
-
-	document.addEventListener("visibilitychange", function () {
-		if (document.hidden) {
-			document.title = " (>_<) " + leaveMessage + originalTitle;
-		} else {
-			document.title = originalTitle;
-		}
-	});
-
-</script>
-<!-- end title -->
-
-<!-- live-2d -->
-<!-- <script src="live2dqw/assets/jquery.min.js?v=3.3.1"></script>
-<script src="live2dqw/assets/jquery-ui.min.js?v=1.12.1"></script>
-<script src="live2dqw/assets/waifu-tips.js"></script>
-<script src="live2dqw/assets/live2d.js"></script>
-<script type="text/javascript">
-	/* 可直接修改部分参数 */
-	live2d_settings['modelId'] = 2;                  // 默认模型 ID
-	live2d_settings['modelTexturesId'] = 87;         // 默认材质 ID
-	live2d_settings['modelStorage'] = false;         // 不储存模型 ID
-	live2d_settings['canCloseLive2d'] = false;       // 隐藏 关闭看板娘 按钮
-	live2d_settings['canTurnToHomePage'] = false;    // 隐藏 返回首页 按钮
-	live2d_settings['waifuSize'] = '350x300';        // 看板娘大小
-	live2d_settings['waifuTipsSize'] = '300x120';    // 提示框大小
-	live2d_settings['waifuFontSize'] = '20px';       // 提示框字体
-	live2d_settings['waifuToolFont'] = '20px';       // 工具栏字体
-	live2d_settings['waifuToolLine'] = '30px';       // 工具栏行高
-	live2d_settings['waifuToolTop'] = '-60px';       // 工具栏顶部边距
-	live2d_settings['waifuDraggable'] = 'disable';    // 拖拽样式
-	/* 在 initModel 前添加 */
-	initModel("live2dqw/assets/waifu-tips.json?v=1.4.2")
-</script> -->
-<!-- end live-2d -->
-
-<!-- fontawesome -->
-<script src="https://kit.fontawesome.com/1600b40260.js" crossorigin="anonymous"></script>
-<!-- end fontawesome -->
-
-<!-- protected media -->
-<script>
-	const protectedMediaElements = document.querySelectorAll('.protected-media');
-
-	protectedMediaElements.forEach(element => {
-		// 禁用右键菜单
-		element.addEventListener('contextmenu', event => {
-			event.preventDefault();
-		});
-
-		// 禁用拖拽
-		element.setAttribute('draggable', false);
-
-		// 禁用拖动
-		element.addEventListener('dragstart', event => {
-			event.preventDefault();
-		});
-
-		// 禁用复制
-		element.addEventListener('copy', event => {
-			event.preventDefault();
-		});
-
-		// 禁用长按
-		element.addEventListener('pointercancel', event => {
-			event.preventDefault();
-		});
-	});
-</script>
-
-<!-- end protected media -->
-
 </html>

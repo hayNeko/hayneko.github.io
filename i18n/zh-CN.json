@@ -1,0 +1,204 @@
+{
+	"a11y": {
+		"skip": "跳到主内容"
+	},
+	"dock": {
+		"album": "相册",
+		"aria": "程序坞",
+		"avatar": {
+			"tip": "Hayneko"
+		},
+		"contact": "联系",
+		"home": "首页",
+		"lab": "物理实验室",
+		"language": "语言",
+		"links": "友情链接",
+		"menu": {
+			"contact": {
+				"title": "联系"
+			},
+			"lab": {
+				"title": "物理实验室"
+			},
+			"language": {
+				"title": "语言"
+			},
+			"search": {
+				"empty": "没有匹配的条目。",
+				"placeholder": "grep -i …",
+				"title": "搜索"
+			}
+		},
+		"projects": "项目",
+		"search": "搜索",
+		"storage": "资源下载",
+		"terminal": "终端",
+		"theme": "切换主题",
+		"toast": {
+			"soon": "相册尚未开放。"
+		}
+	},
+	"footer": {
+		"status": "在线",
+		"text": {
+			"0": "© Hayneko. 创建于 2026 年 1 月 10 日。",
+			"1": "本站已重构 5 次。"
+		}
+	},
+	"header": {
+		"hint": "悬停 / 点击展开"
+	},
+	"home": {
+		"card": {
+			"lab": {
+				"desc": "学习时写的三个交互模拟:力与运动、牛顿第二定律、透镜成像。",
+				"title": "物理实验室"
+			},
+			"links": {
+				"desc": "还是空的。如果你有值得一看的站点, 来找我, 我把它加在这里。",
+				"title": "友情链接"
+			},
+			"storage": {
+				"desc": "我留着的地图、库和手册 —— 并如实标注哪些还能下载。",
+				"title": "资源下载"
+			}
+		},
+		"cta": {
+			"lab": "物理实验室",
+			"storage": "打开资源下载"
+		},
+		"eyebrow": "系统在线 · 全部服务正常",
+		"quick": {
+			"sub": "文件、模拟和链接。",
+			"title": "随便逛逛"
+		},
+		"subtitle": "音乐、动漫与编程, 还有一点对 Miku 的偏爱。平时写点小东西, 都放在这里。",
+		"title": "Hayneko"
+	},
+	"info": {
+		"email": "邮箱",
+		"games": "游戏",
+		"games_content": "Minecraft、异环",
+		"hobbies": "兴趣",
+		"hobbies_content": "音乐、动漫、编程",
+		"name": "名字",
+		"projects": "项目",
+		"role": "学生 · 业余开发者",
+		"status": "乐于尝试新东西"
+	},
+	"lab": {
+		"docs": {
+			"i386": {
+				"desc": "解释 x86 为什么长成这样的那本手册。",
+				"title": "Intel 80386 编程参考手册 (1986)"
+			},
+			"sub": "我经常回头翻的东西。",
+			"title": "参考文档"
+		},
+		"heading": "物理实验室",
+		"open": "打开",
+		"sim": {
+			"default": {
+				"desc": "一个物块、一个外力, 实时输出速度与加速度。",
+				"title": "力与运动"
+			},
+			"lens": {
+				"desc": "拖动物体、移动焦点, 跟着光路图看像如何形成。",
+				"title": "透镜成像"
+			},
+			"ntlaw2": {
+				"desc": "改变质量与外力, 看 F = ma 从数字里自然浮现。",
+				"title": "牛顿第二定律"
+			}
+		},
+		"subtitle": "学习物理时写的交互模拟。"
+	},
+	"links": {
+		"empty": {
+			"badge": "空",
+			"body": "如果你有站点想加进来, 发邮件或到 GitHub 找我。",
+			"cta": "打个招呼",
+			"title": "这里还什么都没有"
+		},
+		"heading": "友情链接",
+		"self": {
+			"github": "本站全部源码, 以及一些没搬上来的实验。",
+			"instagram": "照片, 偶尔有画。",
+			"lab": {
+				"desc": "不是外链, 但这是我最可能发给你的东西。",
+				"title": "物理实验室"
+			}
+		},
+		"subtitle": "值得花时间的地方。这个列表故意很短。"
+	},
+	"nav": {
+		"aria": "主导航",
+		"item": {
+			"home": {
+				"desc": "我是谁, 这个站点在做什么",
+				"label": "首页"
+			},
+			"lab": {
+				"desc": "可以动手操作的物理模拟",
+				"label": "物理实验室"
+			},
+			"links": {
+				"desc": "我真正会去看的网站",
+				"label": "友情链接"
+			},
+			"storage": {
+				"desc": "值得留着的文件",
+				"label": "资源下载"
+			},
+			"terminal": {
+				"desc": "一个真的能用的 shell",
+				"label": "终端"
+			}
+		},
+		"meta": {
+			"hint": "快捷键 <kbd>Ctrl</kbd>+<kbd>K</kbd> 开关导航, <kbd>Esc</kbd> 关闭"
+		}
+	},
+	"storage": {
+		"file": {
+			"1": {
+				"meta": "zip · 1.8 MB · 更新于 2026-01-27 · 已失效"
+			},
+			"2": {
+				"meta": "zip · 更新于 2026-02-07 · 已失效"
+			}
+		},
+		"group": {
+			"docs": "文档",
+			"games": "游戏存档",
+			"more": "应该没有更多文件了…",
+			"other": "其它资源"
+		},
+		"heading": "资源下载",
+		"note": "如果链接 404, 说明文件真的没了 —— 不是链接坏了。",
+		"state": {
+			"available": "下载",
+			"dead": "已失效"
+		},
+		"subtitle": "我愿意上传的东西都在这里。体积是约数; 失效的条目保留下来作为记录。"
+	},
+	"tab": {
+		"away": "Miku! 快回来看看 "
+	},
+	"terminal": {
+		"heading": "终端",
+		"subtitle": "输入 help 看看这个 shell 能做什么。",
+		"term": {
+			"input": "终端输入",
+			"tag": "交互式"
+		}
+	},
+	"title": {
+		"default": "Hayneko",
+		"home": "首页 · Hayneko",
+		"lab": "物理实验室 · Hayneko",
+		"links": "友情链接 · Hayneko",
+		"storage": "资源下载 · Hayneko",
+		"terminal": "终端 · Hayneko"
+	}
+}

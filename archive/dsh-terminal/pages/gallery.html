@@ -1,0 +1,115 @@
+<!-- pages/gallery.html — 风格画廊 -->
+<header class="page-head">
+	<h1 class="page-head__title" data-smear="drop">
+		<span i18n-key="gallery.title">风格画廊</span>
+	</h1>
+	<p class="page-head__sub" data-smear i18n-key="gallery.subtitle">
+		站内复用组件与配色一览。所有元素共用同一套设计令牌, 切换强调色后整体会即时改变。
+	</p>
+</header>
+
+<section class="gallery-block" data-smear>
+	<h2 class="gallery-block__title" i18n-key="gallery.section.buttons">按钮 Buttons</h2>
+	<div class="gallery-demo">
+		<button class="btn btn--primary" type="button"><span i18n-key="gallery.btn.primary">主要操作</span></button>
+		<button class="btn" type="button"><span i18n-key="gallery.btn.default">次要操作</span><span class="btn__arrow" aria-hidden="true">→</span></button>
+		<button class="btn btn--ghost" type="button"><span i18n-key="gallery.btn.ghost">幽灵按钮</span></button>
+		<button class="btn btn--success" type="button"><span i18n-key="gallery.btn.success">成功</span></button>
+		<button class="btn btn--danger" type="button"><span i18n-key="gallery.btn.danger">危险</span></button>
+		<button class="btn btn--sm" type="button"><span i18n-key="gallery.btn.small">小尺寸</span></button>
+		<button class="btn" type="button" disabled><span i18n-key="gallery.btn.disabled">禁用</span></button>
+	</div>
+</section>
+
+<section class="gallery-block" data-smear>
+	<h2 class="gallery-block__title" i18n-key="gallery.section.badges">徽章 Badges</h2>
+	<div class="gallery-demo">
+		<span class="badge">default</span>
+		<span class="badge badge--red">red</span>
+		<span class="badge badge--green">green</span>
+		<span class="badge badge--blue">blue</span>
+		<span class="badge badge--solid">accent</span>
+		<span class="eyebrow" style="margin:0"><span class="eyebrow__pulse"></span><span i18n-key="gallery.badge.live">live</span></span>
+		<span class="kbd">Ctrl</span>
+		<span class="kbd">K</span>
+	</div>
+</section>
+
+<section class="gallery-block" data-smear>
+	<h2 class="gallery-block__title" i18n-key="gallery.section.cards">卡片 Cards</h2>
+	<div class="grid grid--3">
+		<article class="card card--red">
+			<span class="card__idx">RED</span>
+			<h3 class="card__title">#ff4d5a</h3>
+			<p class="card__body" i18n-key="gallery.card.body">左侧色条由 CSS 渐变生成, 悬停时展开到整条边。</p>
+		</article>
+		<article class="card card--green">
+			<span class="card__idx">GREEN</span>
+			<h3 class="card__title">#3ce07b</h3>
+			<p class="card__body" i18n-key="gallery.card.body2">卡片使用极低透明度的渐变背景, 保持黑色的整体基调。</p>
+		</article>
+		<article class="card card--blue">
+			<span class="card__idx">BLUE</span>
+			<h3 class="card__title">#4d9dff</h3>
+			<p class="card__body" i18n-key="gallery.card.body3">悬停时卡片上浮 3px, 边框提亮, 并触发一次顶边扫光。</p>
+		</article>
+	</div>
+</section>
+
+<section class="gallery-block" data-smear>
+	<h2 class="gallery-block__title" i18n-key="gallery.section.forms">表单 Forms</h2>
+	<div class="gallery-demo gallery-demo--col">
+		<div class="grid grid--2">
+			<div class="field">
+				<label class="field__label" for="g-input" i18n-key="gallery.form.input.label">文本输入</label>
+				<input class="input" id="g-input" type="text" placeholder="user@dsh:~$" i18n-attr="placeholder" i18n-key="gallery.form.input.ph">
+			</div>
+			<div class="field">
+				<label class="field__label" for="g-select" i18n-key="gallery.form.select">下拉选择</label>
+				<select class="select" id="g-select">
+					<option i18n-key="gallery.form.option1">选项一</option>
+					<option i18n-key="gallery.form.option2">选项二</option>
+				</select>
+			</div>
+		</div>
+		<div class="field">
+			<label class="field__label" for="g-textarea" i18n-key="gallery.form.textarea.label">多行文本</label>
+			<textarea class="textarea" id="g-textarea" placeholder="// TODO" i18n-attr="placeholder" i18n-key="gallery.form.textarea.ph"></textarea>
+		</div>
+		<label class="checkbox"><input type="checkbox" checked><span i18n-key="gallery.form.checkbox">启用运动模糊拖影</span></label>
+	</div>
+</section>
+
+<section class="gallery-block" data-smear>
+	<h2 class="gallery-block__title" i18n-key="gallery.section.data">数据 Data</h2>
+	<div class="gallery-demo gallery-demo--col" style="gap:20px">
+		<table class="table">
+			<thead>
+				<tr>
+					<th i18n-key="gallery.table.name">名称</th>
+					<th i18n-key="gallery.table.value">取值</th>
+					<th i18n-key="gallery.table.state">状态</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr><td>router</td><td>hash</td><td><span class="badge badge--green">ok</span></td></tr>
+				<tr><td>smear</td><td>6 ghosts · 26ms lag</td><td><span class="badge badge--blue">armed</span></td></tr>
+				<tr><td>canvas</td><td>polygon + grid</td><td><span class="badge badge--green">ok</span></td></tr>
+				<tr><td>i18n</td><td>zh-CN / zh-TW / en-US</td><td><span class="badge">ready</span></td></tr>
+			</tbody>
+		</table>
+		<div class="progress" style="width:100%"><i style="width:72%"></i></div>
+	</div>
+</section>
+
+<section class="gallery-block" data-smear>
+	<h2 class="gallery-block__title" i18n-key="gallery.section.colors">配色 Palette</h2>
+	<div class="swatch-row">
+		<div class="swatch"><i style="background:#04060a;border:1px solid rgba(230,237,243,.14)"></i>bg #04060a</div>
+		<div class="swatch"><i style="background:#e6edf3"></i>fg #e6edf3</div>
+		<div class="swatch"><i style="background:#ff4d5a"></i>red #ff4d5a</div>
+		<div class="swatch"><i style="background:#3ce07b"></i>green #3ce07b</div>
+		<div class="swatch"><i style="background:#4d9dff"></i>blue #4d9dff</div>
+		<div class="swatch"><i style="background:linear-gradient(90deg,#ff4d5a,#3ce07b,#4d9dff)"></i>gradient</div>
+	</div>
+</section>

@@ -1,0 +1,258 @@
+{
+	"a11y": {
+		"skip": "Skip to main content"
+	},
+	"contact": {
+		"availability": {
+			"focus": {
+				"label": "Focus",
+				"value": "Motion · visualisation · accessibility"
+			},
+			"reply": "1 – 2 business days",
+			"status": "Current status",
+			"tz": "Response time",
+			"value": "Open to new work"
+		},
+		"channel": {
+			"email": {
+				"label": "Email",
+				"tag": "fastest"
+			},
+			"github": {
+				"label": "Repository",
+				"tag": "open source"
+			},
+			"social": {
+				"label": "Social",
+				"tag": "daily"
+			},
+			"title": "Channels",
+			"tz": {
+				"label": "Timezone",
+				"tag": "GMT+8",
+				"value": "UTC+8 · usually online 10:00 – 19:00"
+			}
+		},
+		"form": {
+			"copy": "Send me a copy",
+			"email": "Email",
+			"error": {
+				"email": {
+					"empty": "Please enter an email address",
+					"invalid": "That email address looks invalid"
+				},
+				"message": "A few more characters, please (8 minimum)",
+				"name": "Please enter a name",
+				"toast": "Some fields still need attention"
+			},
+			"message": "Message",
+			"name": "Name",
+			"note": "This is a front-end demo: the form validates and reports status, but never actually sends mail.",
+			"placeholder": {
+				"email": "you@example.com",
+				"message": "Say something…",
+				"name": "Ada Lovelace"
+			},
+			"sending": "Sending…",
+			"submit": "Send",
+			"success": "Message recorded (front-end demo)",
+			"title": "Send a message",
+			"topic": {
+				"label": "Topic",
+				"other": "Other",
+				"project": "Project",
+				"question": "Question"
+			}
+		},
+		"subtitle": "Pick whichever channel you like. For project work the form below works too — it validates locally and tells you what it thinks.",
+		"title": "Get in touch"
+	},
+	"footer": {
+		"status": "system online",
+		"tagline": "All motion built with CSS / JavaScript / Canvas"
+	},
+	"gallery": {
+		"badge": {
+			"live": "live"
+		},
+		"btn": {
+			"danger": "Danger",
+			"default": "Secondary",
+			"disabled": "Disabled",
+			"ghost": "Ghost button",
+			"primary": "Primary action",
+			"small": "Small",
+			"success": "Success"
+		},
+		"card": {
+			"body": "The side bar is a CSS gradient that grows to the full edge on hover.",
+			"body2": "Cards use a very low-opacity gradient so the black base stays dominant.",
+			"body3": "On hover a card lifts 3px, brightens its border and sweeps a highlight across the top edge."
+		},
+		"form": {
+			"checkbox": "Enable motion-blur trails",
+			"input": {
+				"label": "Text input",
+				"ph": "user@dsh:~$"
+			},
+			"option1": "Option one",
+			"option2": "Option two",
+			"select": "Select",
+			"textarea": {
+				"label": "Textarea",
+				"ph": "// TODO"
+			}
+		},
+		"section": {
+			"badges": "Badges",
+			"buttons": "Buttons",
+			"cards": "Cards",
+			"colors": "Palette",
+			"data": "Data",
+			"forms": "Forms"
+		},
+		"subtitle": "The reusable components and the palette, all in one place. Every element shares the same design tokens, so switching the accent repaints the whole site at once.",
+		"table": {
+			"name": "Name",
+			"state": "State",
+			"value": "Value"
+		},
+		"title": "Style gallery"
+	},
+	"header": {
+		"hint": "Hover / click to expand"
+	},
+	"home": {
+		"about": {
+			"line1": "# dsh://terminal",
+			"line2": "A zero-dependency single-page site that treats the terminal as its interface language:",
+			"tag": "read-only"
+		},
+		"cta": {
+			"body": "The tools page ships a working terminal: try help, ls, neofetch, or use accent to change the highlight colour.",
+			"button": "Open the tools page",
+			"contact": "Get in touch",
+			"title": "Want to poke at it right now?",
+			"tools": "Open the toolbox"
+		},
+		"eyebrow": "System online · all services nominal",
+		"feature": {
+			"1": {
+				"body": "Perspective grid, drifting wireframe polygons and constellation links — all drawn live on canvas, with the shape count scaling to the viewport.",
+				"title": "Animated geometry"
+			},
+			"2": {
+				"body": "When the navigation expands, every link drags a string of ghosts that lag behind the same path, fading and blurring — composited with screen blending for a glow.",
+				"title": "Motion-blur trails"
+			},
+			"3": {
+				"body": "Hash routing with prefetched fragments: the old view blurs and drifts up, the new one blurs in behind it, and the page never once reloads.",
+				"title": "Reload-free routing"
+			},
+			"4": {
+				"body": "Full keyboard navigation, visible focus styles and ARIA labels; with “reduce motion” enabled, the trails and background animation switch themselves off.",
+				"title": "Accessible by default"
+			}
+		},
+		"features": {
+			"subtitle": "Four things: geometry, motion, no reloads, restraint.",
+			"title": "Core features"
+		},
+		"stat": {
+			"1": {
+				"label": "Page reloads"
+			},
+			"2": {
+				"label": "Canvas background"
+			},
+			"3": {
+				"label": "Locales / accents"
+			},
+			"4": {
+				"label": "External deps"
+			}
+		},
+		"subtitle": "A terminal-flavoured metaphor: CSS, JavaScript and Canvas used to build an interaction that feels fluid, restrained and tactile. Every page swap happens in the same DOM — nothing is ever reloaded.",
+		"title": {
+			"a": "Building",
+			"b": "digital",
+			"c": "interfaces"
+		}
+	},
+	"nav": {
+		"aria": "Main navigation",
+		"item": {
+			"contact": {
+				"desc": "Email, repositories and collaboration",
+				"label": "Contact"
+			},
+			"gallery": {
+				"desc": "Buttons, badges, forms and more",
+				"label": "Style gallery"
+			},
+			"home": {
+				"desc": "Start here — what this site is about",
+				"label": "Home"
+			},
+			"tools": {
+				"desc": "A mini terminal that actually works, plus small utilities",
+				"label": "Tools"
+			}
+		},
+		"meta": {
+			"hint": "Press <kbd>Ctrl</kbd>+<kbd>K</kbd> to toggle, <kbd>Esc</kbd> to close"
+		}
+	},
+	"tab": {
+		"away": {
+			"1": "👋 Still there?",
+			"2": "📡 Listening…"
+		}
+	},
+	"title": {
+		"contact": "Contact · DSH://TERMINAL",
+		"default-title": "DSH://TERMINAL",
+		"gallery": "Style gallery · DSH://TERMINAL",
+		"home": "Home · DSH://TERMINAL",
+		"tools": "Tools · DSH://TERMINAL"
+	},
+	"tools": {
+		"card": {
+			"1": {
+				"body": "Two commands, b64 and b64d, with full UTF-8 round-tripping.",
+				"title": "Base64 encode / decode"
+			},
+			"2": {
+				"body": "Prefers crypto.randomUUID and falls back to getRandomValues.",
+				"title": "UUID v4 generator"
+			},
+			"3": {
+				"body": "Expands minified JSON into an indented tree and reports where parsing failed.",
+				"title": "JSON formatter"
+			},
+			"4": {
+				"body": "WebCrypto hashing — available over https or localhost.",
+				"title": "SHA-256 digest"
+			},
+			"5": {
+				"body": "accent red | green | blue recolours the whole site and remembers your choice.",
+				"title": "Accent colour"
+			},
+			"6": {
+				"body": "Type open contact (or any other page) into the terminal to switch views.",
+				"title": "In-shell navigation"
+			}
+		},
+		"grid": {
+			"subtitle": "Everything happens client-side; nothing is ever sent to a server.",
+			"title": "Inside the box"
+		},
+		"note": "Note: the terminal is a front-end demo — commands and output are generated locally. Press Ctrl+L to clear the screen.",
+		"subtitle": "A handful of utilities that run entirely in the browser. The terminal keeps history (↑/↓), completes on Tab and ships a tiny virtual filesystem.",
+		"term": {
+			"input": "terminal input",
+			"tag": "live terminal"
+		},
+		"title": "Tools"
+	}
+}

@@ -1,0 +1,44 @@
+<!-- views/links.html -->
+<header class="page-head">
+	<h1 class="page-head__title" data-smear="drop" data-fx-split><span data-fx-text i18n-key="links.heading">Friendly Links</span></h1>
+	<p class="page-head__sub" data-smear i18n-key="links.subtitle">
+		Places worth your time. This list is short on purpose.
+	</p>
+</header>
+
+<section class="section" style="margin-top:0">
+	<div class="empty-state" data-smear>
+		<pre class="empty-state__art" aria-hidden="true">   .-------.
+  /  n/a    \
+ |  no link  |
+  \         /
+   '-------'</pre>
+		<span class="badge" i18n-key="links.empty.badge">empty</span>
+		<h2 class="section__title" style="font-size:18px" i18n-key="links.empty.title">Nothing here yet</h2>
+		<p i18n-key="links.empty.body">If you run a site and want it listed here, send me an email or ping me on GitHub.</p>
+		<a class="btn btn--ghost" href="mailto:haydenwong825@gmail.com">
+			<span i18n-key="links.empty.cta">Say hello</span>
+			<span class="btn__arrow" aria-hidden="true">→</span>
+		</a>
+	</div>
+</section>
+
+<section class="section">
+	<div class="grid grid--3">
+		<a class="card card--green" href="https://github.com/hayNeko" target="_blank" rel="noopener noreferrer" data-smear>
+			<span class="card__idx">01 / GITHUB</span>
+			<h3 class="card__title">github.com/hayNeko</h3>
+			<p class="card__body" i18n-key="links.self.github">Source for everything on this site, plus experiments that never made it here.</p>
+		</a>
+		<a class="card card--blue" href="https://www.instagram.com/hayneko_dword/" target="_blank" rel="noopener noreferrer" data-smear>
+			<span class="card__idx">02 / INSTAGRAM</span>
+			<h3 class="card__title">@hayneko_dword</h3>
+			<p class="card__body" i18n-key="links.self.instagram">Photos and the occasional drawing.</p>
+		</a>
+		<a class="card card--red" href="#/lab" data-route="lab" data-smear>
+			<span class="card__idx">03 / LAB</span>
+			<h3 class="card__title" i18n-key="links.self.lab.title">Physics lab</h3>
+			<p class="card__body" i18n-key="links.self.lab.desc">Not a link out, but the thing I am most likely to send you.</p>
+		</a>
+	</div>
+</section>

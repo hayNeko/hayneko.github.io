@@ -1,0 +1,204 @@
+{
+	"a11y": {
+		"skip": "Skip to content"
+	},
+	"dock": {
+		"album": "Album",
+		"aria": "Dock",
+		"avatar": {
+			"tip": "Hayneko"
+		},
+		"contact": "Contact",
+		"home": "Home",
+		"lab": "Physics lab",
+		"language": "Language",
+		"links": "Friendly links",
+		"menu": {
+			"contact": {
+				"title": "Contact"
+			},
+			"lab": {
+				"title": "Physics lab"
+			},
+			"language": {
+				"title": "Language"
+			},
+			"search": {
+				"empty": "No matching entry.",
+				"placeholder": "grep -i …",
+				"title": "Search"
+			}
+		},
+		"projects": "Projects",
+		"search": "Search",
+		"storage": "Storage",
+		"terminal": "Terminal",
+		"theme": "Switch theme",
+		"toast": {
+			"soon": "The album is not open yet."
+		}
+	},
+	"footer": {
+		"status": "online",
+		"text": {
+			"0": "© Hayneko. Created on Jan 10, 2026.",
+			"1": "This site has been refactored 5 times."
+		}
+	},
+	"header": {
+		"hint": "Hover / click to expand"
+	},
+	"home": {
+		"card": {
+			"lab": {
+				"desc": "Three interactive simulations built while studying: force & motion, Newton's second law, and lenses.",
+				"title": "Physics lab"
+			},
+			"links": {
+				"desc": "Still empty. If you have a site worth reading, say hello and I will add it here.",
+				"title": "Friendly links"
+			},
+			"storage": {
+				"desc": "Maps, libraries and manuals I keep around — with honest labels about what is still available.",
+				"title": "Storage"
+			}
+		},
+		"cta": {
+			"lab": "Physics lab",
+			"storage": "Open storage"
+		},
+		"eyebrow": "System online · all services nominal",
+		"quick": {
+			"sub": "Files, simulations and links.",
+			"title": "Jump in"
+		},
+		"subtitle": "Music, anime and programming — with a soft spot for Miku. I build small things on the web, and this is where I keep them.",
+		"title": "Hayneko"
+	},
+	"info": {
+		"email": "Email",
+		"games": "Games",
+		"games_content": "Minecraft, NTE",
+		"hobbies": "Hobbies",
+		"hobbies_content": "Music, Anime, Programming",
+		"name": "Name",
+		"projects": "Projects",
+		"role": "Student · Hobbyist developer",
+		"status": "Open to new things"
+	},
+	"lab": {
+		"docs": {
+			"i386": {
+				"desc": "The manual that explains why x86 looks the way it does.",
+				"title": "Intel 80386 Programmer's Reference Manual (1986)"
+			},
+			"sub": "Things I keep coming back to.",
+			"title": "Reference documents"
+		},
+		"heading": "Physics Lab",
+		"open": "Open",
+		"sim": {
+			"default": {
+				"desc": "A block, a force, and a readout of velocity and acceleration in real time.",
+				"title": "Force & motion"
+			},
+			"lens": {
+				"desc": "Drag the object, move the focal point, and follow the ray diagram as the image forms.",
+				"title": "Lenses"
+			},
+			"ntlaw2": {
+				"desc": "Change mass and applied force, watch F = ma fall out of the numbers.",
+				"title": "Newton's second law"
+			}
+		},
+		"subtitle": "Interactive simulations I wrote while studying physics."
+	},
+	"links": {
+		"empty": {
+			"badge": "empty",
+			"body": "If you run a site and want it listed here, send me an email or ping me on GitHub.",
+			"cta": "Say hello",
+			"title": "Nothing here yet"
+		},
+		"heading": "Friendly Links",
+		"self": {
+			"github": "Source for everything on this site, plus experiments that never made it here.",
+			"instagram": "Photos and the occasional drawing.",
+			"lab": {
+				"desc": "Not a link out, but the thing I am most likely to send you.",
+				"title": "Physics lab"
+			}
+		},
+		"subtitle": "Places worth your time. This list is short on purpose."
+	},
+	"nav": {
+		"aria": "Main navigation",
+		"item": {
+			"home": {
+				"desc": "Who I am, and what this site is",
+				"label": "Home"
+			},
+			"lab": {
+				"desc": "Interactive physics simulations",
+				"label": "Physics Lab"
+			},
+			"links": {
+				"desc": "Sites I actually visit",
+				"label": "Friendly Links"
+			},
+			"storage": {
+				"desc": "Files worth keeping around",
+				"label": "Storage"
+			},
+			"terminal": {
+				"desc": "A shell that actually works",
+				"label": "Terminal"
+			}
+		},
+		"meta": {
+			"hint": "Press <kbd>Ctrl</kbd>+<kbd>K</kbd> to toggle, <kbd>Esc</kbd> to close"
+		}
+	},
+	"storage": {
+		"file": {
+			"1": {
+				"meta": "zip · 1.8 MB · updated 2026-01-27 · no longer available"
+			},
+			"2": {
+				"meta": "zip · updated 2026-02-07 · no longer available"
+			}
+		},
+		"group": {
+			"docs": "Documents",
+			"games": "Game storage",
+			"more": "There should be no more files…",
+			"other": "Other storage"
+		},
+		"heading": "Storage",
+		"note": "If a link 404s, it means the file is really gone — not that the link is broken.",
+		"state": {
+			"available": "Download",
+			"dead": "Unavailable"
+		},
+		"subtitle": "Everything I have bothered to upload. Sizes are approximate; dead entries are kept for the record."
+	},
+	"tab": {
+		"away": "Miku! Come back soon to "
+	},
+	"terminal": {
+		"heading": "Terminal",
+		"subtitle": "Type help to see what this shell can do.",
+		"term": {
+			"input": "terminal input",
+			"tag": "interactive"
+		}
+	},
+	"title": {
+		"default": "Hayneko",
+		"home": "Home · Hayneko",
+		"lab": "Physics Lab · Hayneko",
+		"links": "Friendly Links · Hayneko",
+		"storage": "Storage · Hayneko",
+		"terminal": "Terminal · Hayneko"
+	}
+}

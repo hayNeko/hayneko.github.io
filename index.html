@@ -1,108 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-accent="green" data-theme="dark">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="description" content="Hayneko's first blog!">
-	<meta name="keyword" content="Hayneko, blog, web development, haynekogithubio, acg, programmer, hayneko的博客, 博客, 个人网站, 个人博客, 二次元, 动画, 音乐, miku">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		
-	<title>Hayneko's blog</title>
+	<meta name="color-scheme" content="dark light">
+	<meta name="description" content="Hayneko — 科技风 / 终端风格的个人站点: 资源下载、物理模拟实验室、友情链接。">
+	<meta name="keyword" content="Hayneko, haynekogithubio, blog, web development, acg, programmer, 博客, 个人网站, 二次元, miku, physics simulation">
+	<title i18n-key="title.default">Hayneko</title>
 
-	<link rel="manifest" href="/manifest.json">
-	
-	<!-- 对于 iOS -->
+	<link rel="icon" href="medias/picures/miku.JPG" sizes="32x32">
+	<link rel="manifest" href="manifest.json">
 	<meta name="mobile-web-app-capable" content="yes">
-	<!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"> -->
-	
-	<link rel="icon" href="/medias/picures/miku.JPG" sizes="32x32">
 
-	<!-- css waifu -->
-	<!-- <link rel="stylesheet" href="live2dqw/assets/waifu.css"> -->
+	<link rel="stylesheet" href="styles/tokens.css">
+	<link rel="stylesheet" href="styles/base.css">
+	<link rel="stylesheet" href="styles/header.css">
+	<link rel="stylesheet" href="styles/components.css">
+	<link rel="stylesheet" href="styles/dock.css">
+	<link rel="stylesheet" href="styles/pages.css">
+	<link rel="stylesheet" href="styles/motion.css">
 
-	<!-- css -->
-	<link rel="stylesheet" href="/medias/css/index.css">
-	<link rel="stylesheet" href="/medias/css/dock.css">
-	<link rel="stylesheet" href="/medias/css/main-page.css">
+	<!-- 国际化配置: 必须在 i18n.js 之前定义 -->
+	<script>
+		window.I18N_CONFIG = {
+			defaultLocale: 'en',
+			locales: ['en', 'zh-CN', 'zh-TW', 'ja', 'ko'],
+			basePath: 'i18n/',
+			detect: true,
+			persist: true,
+			debug: false
+		};
+	</script>
 
-	
+	<script src="scripts/motion-pref.js" defer></script>
+	<script src="scripts/i18n.js" defer></script>
+	<script src="scripts/smear.js" defer></script>
+	<script src="scripts/geometry-bg.js" defer></script>
+	<script src="scripts/motion.js" defer></script>
+	<script src="scripts/router.js" defer></script>
+	<script src="scripts/header-nav.js" defer></script>
+	<script src="scripts/terminal.js" defer></script>
+	<script src="scripts/dock.js" defer></script>
+	<script src="scripts/app.js" defer></script>
 </head>
 <body>
+	<a class="skip-link" href="#main" i18n-key="a11y.skip">Skip to content</a>
 
-<main>
-	<!-- <h1 style="display:flex;justify-content:center;align-items:center;min-height:100vh;color:red;font-size:64px;text-align:center;" data-i18n="construction">NEW SITE IS UNDER CONSTRUCTION</h1> -->
+	<!-- ===================== 动态几何背景 ===================== -->
+	<canvas id="bg-canvas" class="bg-canvas" aria-hidden="true"></canvas>
+	<div class="bg-overlay bg-overlay--grid" aria-hidden="true"></div>
+	<div class="bg-overlay bg-overlay--scan" aria-hidden="true"></div>
+	<div class="bg-overlay bg-overlay--vignette" aria-hidden="true"></div>
 
-	<aside class="info">
-		<figure class="info_avatar">
-			<img src="/medias/picures/avatarMikuHatsune1.jpg" alt="avatar" class="info_avatar protected-media">
-			<figcaption class="info_avatar_name">Hayneko</figcaption>
-		</figure>
-		<section class="info_section">
-			<hr>
-			<!-- <p class="info_section_text">Email: <a href="mailto:haydenwong825@gmail.com">haydenwong825@gmail.com</a></p>
-			<p class="info_section_text" data-i18n="info_hobbies">Hobbies: Music, Anime, Programming</p>
-			<p class="info_section_text" data-i18n="info_games">Games: Minecraft, NTE</p> -->
-			<span class="info_section_text" data-i18n="info_email">Email: </span>
-			<span class="info_section_text-value"><a href="mailto:haydenwong825@gmail.com" class="not-link">haydenwong825@gmail.com</a></span>
-			<span class="info_section_text-value"><a href="mailto:mikudword_t32@hotmail.com" class="not-link">mikudword_t32@hotmail.com</a></span>
+	<!-- ===================== 顶栏 / 导航 ===================== -->
+	<header class="site-header" id="site-header" data-open="false">
+		<div class="site-header__bar" id="header-bar" role="button" tabindex="0"
+			aria-expanded="false" aria-controls="site-nav">
+			<span class="site-header__glyph" aria-hidden="true">▚</span>
+			<span class="site-header__prompt">hayneko@blog</span><span class="site-header__sep">:</span><span class="site-header__path" id="header-path">~/home</span><span class="site-header__caret-sym" aria-hidden="true">$</span>
+			<span class="site-header__spacer"></span>
+			<span class="site-header__status" id="header-status" data-state="idle">[ ready ]</span>
+			<span class="site-header__hint" i18n-key="header.hint">Hover / click to expand</span>
+			<span class="site-header__chev" aria-hidden="true"></span>
+		</div>
 
-			<span class="info_section_text" data-i18n="info_hobbies">Hobbies: </span>
-			<span class="info_section_text-value" data-i18n="info_hobbies_content">Music, Anime, Programming</span>
+		<div class="site-header__panel" id="site-nav-panel">
+			<div class="site-header__panel-bg" aria-hidden="true"></div>
 
-			<span class="info_section_text" data-i18n="info_games">Games: </span>
-			<span class="info_section_text-value" data-i18n="info_games_content">Minecraft, NTE</span>
-		</section>
-	</aside>
+			<nav class="site-nav" id="site-nav" aria-label="Main navigation" i18n-attr="aria-label" i18n-key="nav.aria">
+				<a class="nav-item" href="#/home" data-route="home">
+					<span class="nav-item__idx">01</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.home.label">Home</span>
+						<span class="nav-item__desc" i18n-key="nav.item.home.desc">Who I am, and what this site is</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
 
-</main>
+				<a class="nav-item" href="#/terminal" data-route="terminal">
+					<span class="nav-item__idx">02</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.terminal.label">Terminal</span>
+						<span class="nav-item__desc" i18n-key="nav.item.terminal.desc">A shell that actually works</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
 
-</body>
-<script src="/medias/scripts/GlobalElements.js"></script>
+				<a class="nav-item" href="#/storage" data-route="storage">
+					<span class="nav-item__idx">03</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.storage.label">Storage</span>
+						<span class="nav-item__desc" i18n-key="nav.item.storage.desc">Files worth keeping around</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
 
-<!-- DOM loaded -->
-<script>
-	document.addEventListener('DOMContentLoaded', async function() {
-		// 初始化语言系统
-		if (window.InitializeLanguageSystem) {
-			await InitializeLanguageSystem();
+				<a class="nav-item" href="#/lab" data-route="lab">
+					<span class="nav-item__idx">04</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.lab.label">Physics Lab</span>
+						<span class="nav-item__desc" i18n-key="nav.item.lab.desc">Interactive physics simulations</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
+
+				<a class="nav-item" href="#/links" data-route="links">
+					<span class="nav-item__idx">05</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.links.label">Friendly Links</span>
+						<span class="nav-item__desc" i18n-key="nav.item.links.desc">Sites I actually visit</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
+
+				<div class="nav-meta">
+					<span class="nav-meta__hint" i18n-key="nav.meta.hint" i18n-html>Press <kbd>Ctrl</kbd>+<kbd>K</kbd> to toggle, <kbd>Esc</kbd> to close</span>
+					<span class="accent-switch" role="group" aria-label="Accent colour">
+						<button type="button" data-accent="red" title="red"></button>
+						<button type="button" data-accent="green" title="green"></button>
+						<button type="button" data-accent="blue" title="blue"></button>
+					</span>
+				</div>
+			</nav>
+		</div>
+	</header>
+
+	<!-- ===================== 主体 ===================== -->
+	<main class="site-main" id="main">
+		<div class="route-progress" id="route-progress" aria-hidden="true"><i></i></div>
+		<div class="page wrap" id="page" data-route="" data-state="idle" aria-live="polite">
+			<div class="page__loader"><span>LOADING</span></div>
+		</div>
+	</main>
+
+	<!-- ===================== 页脚 ===================== -->
+	<footer class="site-footer">
+		<div class="site-footer__inner">
+			<span i18n-key="footer.text.0">© Hayneko. Created on Jan 10, 2026.</span>
+			<span i18n-key="footer.text.1">This site has been refactored 5 times.</span>
+			<span class="site-footer__status">
+				<a href="https://github.com/hayNeko" target="_blank" rel="noopener noreferrer">GitHub</a>
+				<span class="dot dot--green"></span><span i18n-key="footer.status">online</span>
+			</span>
+		</div>
+	</footer>
+
+	<!-- ===================== 启动屏 ===================== -->
+	<div class="boot" id="boot-screen">
+		<div class="boot__inner">
+			<pre class="boot__logo"><span class="l1">██╗  ██╗ █████╗ ██╗   ██╗███╗   ██╗███████╗██╗  ██╗ ██████╗</span>
+<span class="l2">██║  ██║██╔══██╗╚██╗ ██╔╝████╗  ██║██╔════╝██║ ██╔╝██╔═══██╗</span>
+<span class="l3">███████║███████║ ╚████╔╝ ██╔██╗ ██║█████╗  █████╔╝ ██║   ██║</span>
+<span class="l1">██╔══██║██╔══██║  ╚██╔╝  ██║╚██╗██║██╔══╝  ██╔═██╗ ██║   ██║</span>
+<span class="l2">██║  ██║██║  ██║   ██║   ██║ ╚████║███████╗██║  ██╗╚██████╔╝</span>
+<span class="l3">╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ </span></pre>
+			<div class="boot__bar"><i></i></div>
+			<ul class="boot__log"></ul>
+		</div>
+	</div>
+
+	<noscript>
+		<div class="noscript">
+			<p><strong>This site needs JavaScript.</strong></p>
+			<p>页面切换、dock 菜单与 Canvas 背景都依赖 JavaScript。</p>
+		</div>
+	</noscript>
+
+	<script>
+		/* 旧站注册过 service worker, 缓存的是旧文件列表。
+		   这里主动注销, 避免更新后仍然命中旧缓存。 */
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.getRegistrations().then(function (regs) {
+				regs.forEach(function (r) { r.unregister(); });
+			}).catch(function () {});
 		}
-		
-		// 延迟初始化菜单系统
-		setTimeout(() => {
-			if (window.InitializeMenuSystem) {
-				InitializeMenuSystem();
-			}
-		}, 100);
-	});
-</script>
-<!-- end DOM loaded -->
-
-<!-- service worker -->
-<script>
-if ('serviceWorker' in navigator) {
-	window.addEventListener('load', function() {
-		// 获取正确的 Service Worker 路径
-		const swPath = window.location.pathname.includes('/repo-name/') ? '/repo-name/service-worker.js' : '/service-worker.js';
-		
-		navigator.serviceWorker.register(swPath)
-			.then(function(registration) {
-				console.log('ServiceWorker registration successful');
-			})
-			.catch(function(err) {
-				console.log('ServiceWorker registration failed: ', err);
-			});
-	});
-}
-</script>
-<!-- end service worker -->
-
-<script src="/medias/scripts/CreateParticle.js"></script>
-<script src="/medias/scripts/LanguageSwitcher.js"></script>
-<script src="/medias/scripts/ThemeSwitcher.js"></script>
-<script src="/medias/scripts/DockMenuSystem.js"></script>
-<script src="/medias/scripts/DockInitializer.js"></script>
-<script src="https://kit.fontawesome.com/1600b40260.js" crossorigin="anonymous"></script>
-
-
-
+	</script>
+</body>
 </html>

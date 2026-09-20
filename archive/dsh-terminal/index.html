@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-accent="blue">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="color-scheme" content="dark">
+	<meta name="description" content="DSH://TERMINAL — 科技风 · Linux Terminal 风格的单页站点:Canvas 几何背景、smear 运动模糊、无刷新页面切换。">
+	<title i18n-key="title.default-title">DSH://TERMINAL</title>
+
+	<link rel="stylesheet" href="styles/root.css">
+	<link rel="stylesheet" href="styles/layout.css">
+	<link rel="stylesheet" href="styles/header.css">
+	<link rel="stylesheet" href="styles/general-components.css">
+	<link rel="stylesheet" href="styles/pages.css">
+
+	<!-- 国际化配置: 必须在 Internationalization.js 之前定义 -->
+	<script>
+		window.I18N_CONFIG = {
+			defaultLocale: 'zh-CN',
+			locales: ['zh-CN', 'zh-TW', 'en-US'],
+			basePath: 'i18n/',
+			detect: true,
+			persist: true,
+			debug: false
+		};
+	</script>
+
+	<script src="scripts/Internationalization.js" defer></script>
+	<script src="scripts/smear.js" defer></script>
+	<script src="scripts/geometry-bg.js" defer></script>
+	<script src="scripts/terminal.js" defer></script>
+	<script src="scripts/router.js" defer></script>
+	<script src="scripts/header-nav.js" defer></script>
+	<script src="scripts/TitleChange.js" defer></script>
+	<script src="scripts/app.js" defer></script>
+</head>
+<body>
+	<a class="skip-link" href="#main" i18n-key="a11y.skip">跳到主内容</a>
+
+	<!-- ===================== 动态几何背景 (canvas) ===================== -->
+	<canvas id="bg-canvas" class="bg-canvas" aria-hidden="true"></canvas>
+	<div class="bg-overlay bg-overlay--grid" aria-hidden="true"></div>
+	<div class="bg-overlay bg-overlay--scan" aria-hidden="true"></div>
+	<div class="bg-overlay bg-overlay--vignette" aria-hidden="true"></div>
+
+	<!-- ===================== 顶栏 / 导航 ===================== -->
+	<header class="site-header" id="site-header" data-open="false">
+		<div class="site-header__bar" id="header-bar" role="button" tabindex="0"
+			aria-expanded="false" aria-controls="site-nav">
+			<span class="site-header__glyph" aria-hidden="true">▚</span>
+			<span class="site-header__prompt">guest@dsh</span><span class="site-header__sep">:</span><span class="site-header__path" id="header-path">~/home</span><span class="site-header__caret-sym" aria-hidden="true">$</span>
+			<span class="site-header__spacer"></span>
+			<span class="site-header__status" id="header-status" data-state="idle">[ ready ]</span>
+			<span class="site-header__hint" i18n-key="header.hint">悬停 / 点击展开</span>
+			<span class="site-header__chev" aria-hidden="true"></span>
+		</div>
+
+		<div class="site-header__panel" id="site-nav-panel">
+			<div class="site-header__panel-bg" aria-hidden="true"></div>
+
+			<nav class="site-nav" id="site-nav" aria-label="主导航" i18n-attr="aria-label" i18n-key="nav.aria">
+				<a class="nav-item" href="#/home" data-route="home">
+					<span class="nav-item__idx">01</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.home.label">主页</span>
+						<span class="nav-item__desc" i18n-key="nav.item.home.desc">回到起点, 看看这个站点在做什么</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
+
+				<a class="nav-item" href="#/tools" data-route="tools">
+					<span class="nav-item__idx">02</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.tools.label">工具页面</span>
+						<span class="nav-item__desc" i18n-key="nav.item.tools.desc">一个真的能用的迷你终端与小工具集</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
+
+				<a class="nav-item" href="#/contact" data-route="contact">
+					<span class="nav-item__idx">03</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.contact.label">联络方式</span>
+						<span class="nav-item__desc" i18n-key="nav.item.contact.desc">邮件、代码仓库与合作入口</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
+
+				<a class="nav-item" href="#/gallery" data-route="gallery">
+					<span class="nav-item__idx">04</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.gallery.label">风格画廊</span>
+						<span class="nav-item__desc" i18n-key="nav.item.gallery.desc">按钮、徽章、表单等组件一览</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
+
+				<div class="nav-meta">
+					<span class="nav-meta__hint" i18n-key="nav.meta.hint" i18n-html>快捷键 <kbd>Ctrl</kbd>+<kbd>K</kbd> 开关导航, <kbd>Esc</kbd> 关闭</span>
+					<span class="lang-switch" role="group" aria-label="Language">
+						<button type="button" data-locale="zh-CN">中文</button>
+						<button type="button" data-locale="zh-TW">繁中</button>
+						<button type="button" data-locale="en-US">EN</button>
+					</span>
+					<span class="accent-switch" role="group" aria-label="Accent colour">
+						<button type="button" data-accent="red" title="red"></button>
+						<button type="button" data-accent="green" title="green"></button>
+						<button type="button" data-accent="blue" title="blue"></button>
+					</span>
+				</div>
+			</nav>
+		</div>
+	</header>
+
+	<!-- ===================== 主体 ===================== -->
+	<main class="site-main" id="main">
+		<div class="route-progress" id="route-progress" aria-hidden="true"><i></i></div>
+		<div class="page wrap" id="page" data-route="" data-state="idle" aria-live="polite">
+			<div class="page__loader"><span>LOADING</span></div>
+		</div>
+	</main>
+
+	<!-- ===================== 页脚 ===================== -->
+	<footer class="site-footer">
+		<div class="site-footer__inner">
+			<span>© <span id="footer-year">2026</span> <code>dsh://terminal</code></span>
+			<span i18n-key="footer.tagline">全部动效由 CSS / JavaScript / Canvas 实现</span>
+			<span class="site-footer__status"><span class="dot dot--green"></span><span i18n-key="footer.status">系统在线</span></span>
+		</div>
+	</footer>
+
+	<!-- ===================== 启动屏 ===================== -->
+	<div class="boot" id="boot-screen">
+		<div class="boot__inner">
+			<pre class="boot__logo"><span class="l1">██████╗ ███████╗██╗  ██╗</span>
+<span class="l2">██╔══██╗██╔════╝██║  ██║</span>
+<span class="l3">██║  ██║███████╗███████║</span>
+<span class="l1">██║  ██║╚════██║██╔══██║</span>
+<span class="l2">██████╔╝███████║██║  ██║</span>
+<span class="l3">╚═════╝ ╚══════╝╚═╝  ╚═╝</span></pre>
+			<div class="boot__bar"><i></i></div>
+			<ul class="boot__log"></ul>
+		</div>
+	</div>
+
+	<noscript>
+		<div class="noscript">
+			<p><strong>需要启用 JavaScript。</strong></p>
+			<p>本站使用 hash 路由实现无刷新页面切换, 并依赖 Canvas 绘制动态几何背景。</p>
+		</div>
+	</noscript>
+</body>
+</html>

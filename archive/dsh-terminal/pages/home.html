@@ -1,0 +1,116 @@
+<!-- pages/home.html — 首页 -->
+<section class="hero">
+	<p class="eyebrow" data-smear="slide">
+		<span class="eyebrow__pulse" aria-hidden="true"></span>
+		<span i18n-key="home.eyebrow">系统在线 · 全部服务正常</span>
+	</p>
+
+	<h1 class="hero__title" data-smear="drop">
+		<span class="hero__prompt" aria-hidden="true">$</span>
+		<span class="hero__line">
+			<span i18n-key="home.title.a">构建</span><span class="rgb-text" i18n-key="home.title.b">数字</span><span i18n-key="home.title.c">界面</span>
+		</span>
+		<span class="caret" aria-hidden="true"></span>
+	</h1>
+
+	<p class="hero__sub" data-smear i18n-key="home.subtitle">
+		以终端为隐喻, 用 CSS、JavaScript 与 Canvas 打造流畅、克制而富有质感的交互体验。所有页面切换都在同一份 DOM 里完成, 没有一次重新加载。
+	</p>
+
+	<div class="hero__actions" data-smear>
+		<a class="btn btn--primary" href="#/tools" data-route="tools">
+			<span i18n-key="home.cta.tools">打开工具箱</span>
+			<span class="btn__arrow" aria-hidden="true">→</span>
+		</a>
+		<a class="btn btn--ghost" href="#/contact" data-route="contact">
+			<span i18n-key="home.cta.contact">联络方式</span>
+		</a>
+	</div>
+
+	<ul class="stats" data-smear>
+		<li class="stat">
+			<span class="stat__v">0<em>×</em></span>
+			<span class="stat__l" i18n-key="home.stat.1.label">页面重载</span>
+		</li>
+		<li class="stat">
+			<span class="stat__v">60<em>fps</em></span>
+			<span class="stat__l" i18n-key="home.stat.2.label">Canvas 背景</span>
+		</li>
+		<li class="stat">
+			<span class="stat__v">3<em>+1</em></span>
+			<span class="stat__l" i18n-key="home.stat.3.label">语言 / 强调色</span>
+		</li>
+		<li class="stat">
+			<span class="stat__v">0<em>kb</em></span>
+			<span class="stat__l" i18n-key="home.stat.4.label">外部依赖</span>
+		</li>
+	</ul>
+</section>
+
+<section class="section">
+	<div class="term-window about-window" data-smear>
+		<div class="term-window__bar">
+			<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="term-window__title">guest@dsh: ~/about.md</span>
+			<span class="term-window__tag" i18n-key="home.about.tag">只读</span>
+		</div>
+		<div class="term-window__body">
+			<p class="term-line"><span class="term-line__prompt">$</span> <span class="term-line__cmd">cat about.md</span></p>
+			<p class="term-line term-line--info" i18n-key="home.about.line1"># dsh://terminal</p>
+			<p class="term-line">&nbsp;</p>
+			<p class="term-line" i18n-key="home.about.line2">一个零依赖的单页站点, 把"终端"当作界面语言:</p>
+			<p class="term-line term-line--dim">- background ...... <span class="text-blue">canvas</span> 实时绘制的几何图形</p>
+			<p class="term-line term-line--dim">- navigation ...... hash 路由, <span class="text-green">无刷新</span> 平滑过渡</p>
+			<p class="term-line term-line--dim">- motion ......... DOM <span class="text-red">smear</span> / 运动模糊拖影</p>
+			<p class="term-line term-line--dim">- palette ........ black · white · <span class="text-red">red</span> · <span class="text-green">green</span> · <span class="text-blue">blue</span></p>
+			<p class="term-line">&nbsp;</p>
+			<p class="term-line term-line--ok">$ <span class="caret" aria-hidden="true"></span></p>
+		</div>
+	</div>
+</section>
+
+<section class="section">
+	<header class="section__head">
+		<h2 class="section__title" data-smear="slide" i18n-key="home.features.title">核心特性</h2>
+		<p class="section__sub" i18n-key="home.features.subtitle">四件事:几何、动效、无刷新与克制。</p>
+	</header>
+
+	<div class="grid grid--4">
+		<article class="card card--blue" data-smear>
+			<span class="card__idx">01 / CANVAS</span>
+			<h3 class="card__title" i18n-key="home.feature.1.title">几何动态背景</h3>
+			<p class="card__body" i18n-key="home.feature.1.body">透视网格、漂浮线框多边形与星座连线, 全部由 Canvas 实时绘制, 图形数量随视口自适应。</p>
+		</article>
+
+		<article class="card card--red" data-smear>
+			<span class="card__idx">02 / SMEAR</span>
+			<h3 class="card__title" i18n-key="home.feature.2.title">运动模糊拖影</h3>
+			<p class="card__body" i18n-key="home.feature.2.body">导航展开时, 每个链接都会拖出一串沿轨迹滞后、逐渐变淡变模糊的残影, 并用屏幕混合叠加出发光感。</p>
+		</article>
+
+		<article class="card card--green" data-smear>
+			<span class="card__idx">03 / ROUTER</span>
+			<h3 class="card__title" i18n-key="home.feature.3.title">无刷新页面切换</h3>
+			<p class="card__body" i18n-key="home.feature.3.body">hash 路由 + 片段预取: 旧内容模糊上移淡出, 新内容模糊上移淡入, 全程没有一次整页加载。</p>
+		</article>
+
+		<article class="card card--plain" data-smear>
+			<span class="card__idx">04 / A11Y</span>
+			<h3 class="card__title" i18n-key="home.feature.4.title">可访问与可降级</h3>
+			<p class="card__body" i18n-key="home.feature.4.body">完整键盘导航、焦点样式与 ARIA 标注; 开启"减少动态效果"后自动关闭拖影与背景动画。</p>
+		</article>
+	</div>
+</section>
+
+<section class="section">
+	<div class="cta-band" data-smear>
+		<div class="cta-band__text">
+			<h2 class="cta-band__title" i18n-key="home.cta.title">想直接上手试试?</h2>
+			<p class="cta-band__body" i18n-key="home.cta.body">工具箱里有一个真的能用的终端:试试 help、ls、neofetch, 或者用 accent 换一个强调色。</p>
+		</div>
+		<a class="btn btn--primary" href="#/tools" data-route="tools">
+			<span i18n-key="home.cta.button">进入工具页面</span>
+			<span class="btn__arrow" aria-hidden="true">→</span>
+		</a>
+	</div>
+</section>

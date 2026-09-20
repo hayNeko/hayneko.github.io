@@ -1,0 +1,125 @@
+<!-- pages/contact.html — 联络方式 -->
+<header class="page-head">
+	<h1 class="page-head__title" data-smear="drop">
+		<span i18n-key="contact.title">联络方式</span>
+	</h1>
+	<p class="page-head__sub" data-smear i18n-key="contact.subtitle">
+		随便挑一个通道。如果是合作或项目咨询, 用下面的表单也可以 —— 它会在本地校验后给出反馈。
+	</p>
+</header>
+
+<section class="section" style="margin-top:0">
+	<div class="split">
+		<div>
+			<header class="section__head">
+				<h2 class="section__title" data-smear="slide" i18n-key="contact.channel.title">通道</h2>
+			</header>
+
+			<ul class="channel-list" data-smear>
+				<li class="channel channel--blue">
+					<span class="channel__arrow" aria-hidden="true">→</span>
+					<span>
+						<span class="channel__label" i18n-key="contact.channel.email.label">电子邮件</span>
+						<span class="channel__value">hello@dsh.dev</span>
+					</span>
+					<span class="badge badge--blue" i18n-key="contact.channel.email.tag">最快</span>
+				</li>
+				<li class="channel channel--green">
+					<span class="channel__arrow" aria-hidden="true">→</span>
+					<span>
+						<span class="channel__label" i18n-key="contact.channel.github.label">代码仓库</span>
+						<span class="channel__value">github.com/dsh</span>
+					</span>
+					<span class="badge badge--green" i18n-key="contact.channel.github.tag">开源</span>
+				</li>
+				<li class="channel channel--red">
+					<span class="channel__arrow" aria-hidden="true">→</span>
+					<span>
+						<span class="channel__label" i18n-key="contact.channel.social.label">社交平台</span>
+						<span class="channel__value">@dsh_terminal</span>
+					</span>
+					<span class="badge badge--red" i18n-key="contact.channel.social.tag">日常</span>
+				</li>
+				<li class="channel">
+					<span class="channel__arrow" aria-hidden="true">→</span>
+					<span>
+						<span class="channel__label" i18n-key="contact.channel.tz.label">时区</span>
+						<span class="channel__value" i18n-key="contact.channel.tz.value">UTC+8 · 通常 10:00 – 19:00 在线</span>
+					</span>
+					<span class="badge" i18n-key="contact.channel.tz.tag">GMT+8</span>
+				</li>
+			</ul>
+
+			<div class="status-panel" data-smear style="margin-top:26px">
+				<div class="status-panel__row">
+					<span i18n-key="contact.availability.status">当前状态</span>
+					<b><span class="dot dot--green"></span> <span i18n-key="contact.availability.value">接受新的合作</span></b>
+				</div>
+				<div class="status-panel__row">
+					<span i18n-key="contact.availability.tz">响应时间</span>
+					<b i18n-key="contact.availability.reply">1 – 2 个工作日</b>
+				</div>
+				<div class="status-panel__row">
+					<span i18n-key="contact.availability.focus.label">关注方向</span>
+					<b i18n-key="contact.availability.focus.value">前端动效 · 可视化 · 无障碍</b>
+				</div>
+			</div>
+		</div>
+
+		<form class="contact-form" id="contact-form" novalidate data-smear>
+			<h2 class="section__title" style="font-size:18px" i18n-key="contact.form.title">发一条消息</h2>
+
+			<div class="contact-form__row">
+				<div class="field">
+					<label class="field__label" for="cf-name">
+						<span i18n-key="contact.form.name">称呼</span> <span class="req">*</span>
+					</label>
+					<input class="input" id="cf-name" name="name" type="text" autocomplete="name"
+						placeholder="Ada Lovelace" i18n-attr="placeholder" i18n-key="contact.form.placeholder.name">
+					<span class="field__error" data-error-for="name" aria-live="polite"></span>
+				</div>
+
+				<div class="field">
+					<label class="field__label" for="cf-email">
+						<span i18n-key="contact.form.email">邮箱</span> <span class="req">*</span>
+					</label>
+					<input class="input" id="cf-email" name="email" type="email" autocomplete="email"
+						placeholder="you@example.com" i18n-attr="placeholder" i18n-key="contact.form.placeholder.email">
+					<span class="field__error" data-error-for="email" aria-live="polite"></span>
+				</div>
+			</div>
+
+			<div class="field">
+				<label class="field__label" for="cf-topic" i18n-key="contact.form.topic.label">主题</label>
+				<select class="select" id="cf-topic" name="topic">
+					<option value="project" i18n-key="contact.form.topic.project">项目合作</option>
+					<option value="question" i18n-key="contact.form.topic.question">技术问题</option>
+					<option value="other" i18n-key="contact.form.topic.other">其它</option>
+				</select>
+			</div>
+
+			<div class="field">
+				<label class="field__label" for="cf-message">
+					<span i18n-key="contact.form.message">内容</span> <span class="req">*</span>
+				</label>
+				<textarea class="textarea" id="cf-message" name="message"
+					placeholder="随便说点什么…" i18n-attr="placeholder" i18n-key="contact.form.placeholder.message"></textarea>
+				<span class="field__error" data-error-for="message" aria-live="polite"></span>
+			</div>
+
+			<label class="checkbox">
+				<input type="checkbox" id="cf-copy" name="copy">
+				<span i18n-key="contact.form.copy">抄送一份到我的邮箱</span>
+			</label>
+
+			<button class="btn btn--primary btn--block" type="submit">
+				<span data-submit-label i18n-key="contact.form.submit">发送</span>
+				<span class="btn__arrow" aria-hidden="true">↵</span>
+			</button>
+
+			<p class="mono-faint" style="font-size:11.5px" i18n-key="contact.form.note">
+				这是纯前端演示: 提交不会真的发出邮件, 只做校验与状态反馈。
+			</p>
+		</form>
+	</div>
+</section>

@@ -1,0 +1,358 @@
+/* ============================================================================
+   dock.css — 底部程序坞 + 弹出菜单
+   保留旧站 macOS Dock 的交互(图标放大、tooltip、点击弹出菜单),
+   视觉换成终端语言: 黑白 + RGB、等宽字体、细线边框、克制渐变。
+   ========================================================================== */
+
+.dock {
+	position: fixed;
+	left: 50%;
+	bottom: 18px;
+	z-index: var(--z-dock);
+	display: flex;
+	align-items: center;
+	gap: var(--dock-gap);
+	height: var(--dock-h);
+	padding: 0 12px;
+	transform: translateX(-50%);
+	background: var(--dock-bg);
+	border: 1px solid var(--dock-border);
+	border-radius: var(--dock-radius);
+	box-shadow: var(--dock-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+	backdrop-filter: blur(18px) saturate(150%);
+	-webkit-backdrop-filter: blur(18px) saturate(150%);
+	transition: border-color var(--dur-2) ease, background var(--dur-2) ease;
+}
+.dock:hover { border-color: var(--line-strong); }
+
+/* 顶边一条极细的 RGB 线, 展开菜单时亮起 */
+.dock::before {
+	content: "";
+	position: absolute;
+	left: 14px;
+	right: 14px;
+	top: -1px;
+	height: 1px;
+	background: var(--grad-rgb);
+	opacity: 0.35;
+	transition: opacity var(--dur-3) var(--ease-out);
+}
+.dock.has-open-menu::before { opacity: 1; }
+
+/* ------------------------------------------------------------- 坞内元素 */
+
+.dock__item {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--dock-item);
+	height: var(--dock-item);
+	border-radius: 11px;
+	color: var(--fg-dim);
+	cursor: pointer;
+	background: transparent;
+	border: 1px solid transparent;
+	transition:
+		transform 260ms var(--ease-smear),
+		background var(--dur-2) ease,
+		border-color var(--dur-2) ease,
+		color var(--dur-2) ease;
+}
+.dock__item {
+	transition:
+		transform 240ms var(--ease-pop),
+		background var(--dur-2) ease,
+		border-color var(--dur-2) ease,
+		color var(--dur-2) ease;
+}
+.dock__item:hover,
+.dock__item:focus-visible {
+	color: var(--fg);
+	background: rgba(230, 237, 243, 0.07);
+	border-color: var(--line);
+	transform: scale(1.14);
+}
+.dock__item:active { transform: scale(0.9); }
+.dock__item.is-active { color: var(--accent); }
+.dock__item[disabled] { opacity: 0.35; pointer-events: none; }
+
+/* 坞底部的滑动光点: 跟着鼠标走, 离开后停在当前页面对应的图标下面 */
+.dock__indicator {
+	position: absolute;
+	left: 0;
+	bottom: 5px;
+	width: 5px;
+	height: 5px;
+	margin-left: -2.5px;
+	border-radius: 50%;
+	background: var(--accent);
+	box-shadow: 0 0 10px var(--accent), 0 0 3px var(--accent);
+	pointer-events: none;
+	opacity: 0;
+	will-change: transform;
+	transition:
+		transform 500ms var(--ease-smear),
+		opacity 260ms ease,
+		background 260ms ease,
+		/* 拖尾要能淡出, 不然 .is-moving 摘掉时会"啪"地消失 */
+		box-shadow 340ms ease,
+		filter 340ms ease;
+}
+
+.dock__icon { width: 20px; height: 20px; display: block; }
+.dock__icon svg { width: 100%; height: 100%; display: block; }
+
+/* tooltip */
+.dock__item::before {
+	content: attr(data-tip);
+	position: absolute;
+	bottom: calc(100% + 12px);
+	left: 50%;
+	padding: 5px 11px;
+	font-size: 11.5px;
+	letter-spacing: 0.06em;
+	white-space: nowrap;
+	color: var(--fg);
+	background: var(--panel-raised);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-sm);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	opacity: 0;
+	transform: translate(-50%, 6px);
+	transition: opacity var(--dur-2) ease, transform var(--dur-3) var(--ease-smear);
+	pointer-events: none;
+	z-index: 1;
+}
+.dock__item:hover::before,
+.dock__item:focus-visible::before { opacity: 1; transform: translate(-50%, 0); }
+
+/* 头像 */
+.dock__avatar {
+	order: -1;
+	width: calc(var(--dock-item) + 4px);
+	height: calc(var(--dock-item) + 4px);
+	padding: 0;
+	border-radius: 50%;
+	overflow: hidden;
+	border: 1px solid var(--line-strong);
+	cursor: pointer;
+	background: none;
+	transition: transform 240ms var(--ease-pop), box-shadow var(--dur-2) ease, border-color var(--dur-2) ease;
+}
+.dock__avatar:active { transform: scale(0.9); }
+.dock__avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	-webkit-user-drag: none;
+	user-select: none;
+}
+.dock__avatar:hover {
+	transform: scale(1.1);
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--accent-soft), 0 10px 24px -12px rgba(0, 0, 0, 0.9);
+}
+.dock__avatar.is-clicked img { animation: dock-avatar-pop 320ms var(--ease-smear); }
+@keyframes dock-avatar-pop {
+	0%   { transform: scale(1); }
+	45%  { transform: scale(0.88); }
+	100% { transform: scale(1); }
+}
+
+.dock__sep {
+	width: 1px;
+	height: 26px;
+	margin: 0 4px;
+	background: var(--line);
+	flex: 0 0 auto;
+}
+
+.dock__spacer { flex: 1 1 auto; }
+
+/* 坞右侧的状态小字(等宽, 像终端状态栏) */
+.dock__status {
+	padding: 0 6px 0 10px;
+	font-size: 11px;
+	letter-spacing: 0.1em;
+	color: var(--fg-ghost);
+	white-space: nowrap;
+	user-select: none;
+}
+.dock__status b { color: var(--green); font-weight: 600; }
+
+/* ------------------------------------------------------------- 粒子 */
+
+.dock-particle {
+	position: fixed;
+	z-index: var(--z-particle);
+	border-radius: 50%;
+	pointer-events: none;
+}
+
+/* ------------------------------------------------------------- 弹出菜单 */
+
+.dock-menu {
+	position: fixed;
+	left: 50%;
+	bottom: var(--dock-menu-bottom);
+	z-index: var(--z-dock-menu);
+	width: var(--dock-menu-w);
+	max-height: min(62vh, 520px);
+	overflow-y: auto;
+	padding: 14px 14px 16px;
+	background: var(--grad-panel);
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius);
+	box-shadow: 0 34px 80px -34px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+	backdrop-filter: blur(18px) saturate(150%);
+	-webkit-backdrop-filter: blur(18px) saturate(150%);
+
+	/* 收起态 */
+	opacity: 0;
+	visibility: hidden;
+	transform: translate(-50%, 18px) scale(0.97);
+	transform-origin: bottom center;
+	pointer-events: none;
+	/* 与展开同一时长/同一曲线, 收起时不会多停留一拍 */
+	transition:
+		opacity var(--nav-dur) var(--nav-ease),
+		transform var(--nav-dur) var(--nav-ease),
+		visibility 0s linear var(--nav-dur);
+}
+.dock-menu.is-open {
+	opacity: 1;
+	visibility: visible;
+	transform: translate(-50%, 0) scale(1);
+	pointer-events: auto;
+	transition:
+		opacity var(--nav-dur) var(--nav-ease),
+		transform var(--nav-dur) var(--nav-ease),
+		visibility 0s;
+}
+
+.dock-menu__head {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 0 4px 11px;
+	margin-bottom: 10px;
+	border-bottom: 1px solid var(--line);
+	font-size: 12px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--fg-dim);
+}
+.dock-menu__head::before { content: "#"; color: var(--accent); }
+.dock-menu__head span { flex: 1 1 auto; }
+.dock-menu__head code { font-size: 10.5px; color: var(--fg-ghost); letter-spacing: 0.08em; }
+
+.dock-menu__list { display: flex; flex-direction: column; gap: 2px; }
+
+.dock-menu__item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 10px 12px;
+	text-align: left;
+	color: var(--fg-dim);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+
+	/* 收起态 + 与顶栏共用的收放时序 */
+	opacity: 0;
+	transform: translateY(-12px);
+	transition:
+		opacity var(--nav-dur) var(--nav-ease),
+		transform var(--nav-dur) var(--nav-ease),
+		background var(--dur-2) ease,
+		color var(--dur-2) ease,
+		border-color var(--dur-2) ease,
+		padding-left var(--dur-3) var(--ease-smear);
+}
+/* delay 只写在展开态 → 收起时所有项同时消失 */
+.dock-menu.is-open .dock-menu__item {
+	opacity: 1;
+	transform: none;
+	transition-delay: calc(var(--i, 0) * 26ms), calc(var(--i, 0) * 26ms), 0s, 0s, 0s, 0s;
+}
+.dock-menu__item:hover,
+.dock-menu__item:focus-visible {
+	color: var(--fg);
+	background: rgba(230, 237, 243, 0.05);
+	border-color: var(--line);
+	padding-left: 18px;
+}
+.dock-menu__item .dock__icon { width: 17px; height: 17px; flex: 0 0 auto; color: var(--accent); }
+.dock-menu__item b { font-weight: 600; color: var(--fg); }
+.dock-menu__item small { display: block; font-size: 11.5px; color: var(--fg-ghost); }
+
+.dock-menu__text { flex: 1 1 auto; min-width: 0; }
+.dock-menu__arrow { color: var(--fg-ghost); font-size: 12px; }
+.dock-menu__item:hover .dock-menu__arrow { color: var(--accent); }
+
+.dock-menu__item .check {
+	margin-left: auto;
+	color: var(--accent);
+	opacity: 0;
+	transform: translateX(-4px);
+	transition: opacity var(--dur-2) ease, transform var(--dur-3) var(--ease-smear);
+}
+.dock-menu__item.is-active .check { opacity: 1; transform: none; }
+.dock-menu__item.is-active { background: var(--accent-soft); border-color: rgba(var(--accent-rgb), 0.35); }
+
+.dock-menu__group {
+	margin-top: 12px;
+	padding: 0 12px;
+	font-size: 11px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--fg-ghost);
+}
+.dock-menu__group:first-child { margin-top: 0; }
+
+.dock-menu__note {
+	margin-top: 12px;
+	padding: 10px 12px;
+	font-size: 12px;
+	color: var(--fg-faint);
+	border: 1px dashed var(--line);
+	border-radius: var(--radius-sm);
+}
+
+/* 搜索 */
+.dock-menu__search { display: flex; gap: 8px; margin-bottom: 10px; }
+.dock-menu__search .input { flex: 1 1 auto; }
+.dock-menu__empty {
+	padding: 16px 12px;
+	text-align: center;
+	font-size: 12.5px;
+	color: var(--fg-ghost);
+}
+
+/* ------------------------------------------------------------- 响应式 */
+
+@media (max-width: 900px) {
+	.dock__status { display: none; }
+}
+
+@media (max-width: 720px) {
+	:root {
+		--dock-h: 54px;
+		--dock-item: 38px;
+		--dock-menu-w: 94vw;
+		--dock-menu-bottom: calc(var(--dock-h) + 30px);
+	}
+	.dock { bottom: 12px; padding: 0 8px; gap: 2px; }
+	.dock__icon { width: 18px; height: 18px; }
+	.dock-menu { padding: 12px 12px 14px; }
+}
+
+@media (max-width: 420px) {
+	.dock__item[data-compact-hide] { display: none; }
+}

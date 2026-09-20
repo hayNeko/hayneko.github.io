@@ -1,0 +1,258 @@
+{
+	"a11y": {
+		"skip": "跳到主內容"
+	},
+	"contact": {
+		"availability": {
+			"focus": {
+				"label": "關注方向",
+				"value": "前端動效 · 視覺化 · 無障礙"
+			},
+			"reply": "1 – 2 個工作日",
+			"status": "目前狀態",
+			"tz": "回應時間",
+			"value": "接受新的合作"
+		},
+		"channel": {
+			"email": {
+				"label": "電子郵件",
+				"tag": "最快"
+			},
+			"github": {
+				"label": "程式碼倉庫",
+				"tag": "開源"
+			},
+			"social": {
+				"label": "社群平台",
+				"tag": "日常"
+			},
+			"title": "通道",
+			"tz": {
+				"label": "時區",
+				"tag": "GMT+8",
+				"value": "UTC+8 · 通常 10:00 – 19:00 在線"
+			}
+		},
+		"form": {
+			"copy": "副本寄一份到我的信箱",
+			"email": "電子郵件",
+			"error": {
+				"email": {
+					"empty": "請填寫電子郵件",
+					"invalid": "電子郵件格式不正確"
+				},
+				"message": "再多寫幾個字吧(至少 8 個字元)",
+				"name": "請填寫稱呼",
+				"toast": "表單還有未通過驗證的欄位"
+			},
+			"message": "內容",
+			"name": "稱呼",
+			"note": "這是純前端示範: 送出不會真的寄出郵件, 只做驗證與狀態回饋。",
+			"placeholder": {
+				"email": "you@example.com",
+				"message": "隨便說點什麼…",
+				"name": "Ada Lovelace"
+			},
+			"sending": "傳送中…",
+			"submit": "傳送",
+			"success": "訊息已記錄(純前端示範)",
+			"title": "發一則訊息",
+			"topic": {
+				"label": "主題",
+				"other": "其他",
+				"project": "專案合作",
+				"question": "技術問題"
+			}
+		},
+		"subtitle": "隨便挑一個通道。如果是合作或專案諮詢, 用下面的表單也可以 —— 它會在本機驗證後給出回饋。",
+		"title": "聯絡方式"
+	},
+	"footer": {
+		"status": "系統在線",
+		"tagline": "全部動效由 CSS / JavaScript / Canvas 實作"
+	},
+	"gallery": {
+		"badge": {
+			"live": "live"
+		},
+		"btn": {
+			"danger": "危險",
+			"default": "次要操作",
+			"disabled": "停用",
+			"ghost": "幽靈按鈕",
+			"primary": "主要操作",
+			"small": "小尺寸",
+			"success": "成功"
+		},
+		"card": {
+			"body": "左側色條由 CSS 漸層產生, 懸停時展開到整條邊。",
+			"body2": "卡片使用極低透明度的漸層背景, 保持整體黑色調性。",
+			"body3": "懸停時卡片上浮 3px, 邊框提亮, 並觸發一次頂邊掃光。"
+		},
+		"form": {
+			"checkbox": "啟用運動模糊拖影",
+			"input": {
+				"label": "文字輸入",
+				"ph": "user@dsh:~$"
+			},
+			"option1": "選項一",
+			"option2": "選項二",
+			"select": "下拉選擇",
+			"textarea": {
+				"label": "多行文字",
+				"ph": "// TODO"
+			}
+		},
+		"section": {
+			"badges": "徽章 Badges",
+			"buttons": "按鈕 Buttons",
+			"cards": "卡片 Cards",
+			"colors": "配色 Palette",
+			"data": "資料 Data",
+			"forms": "表單 Forms"
+		},
+		"subtitle": "站內複用元件與配色一覽。所有元素共用同一套設計令牌, 切換強調色後整體會即時改變。",
+		"table": {
+			"name": "名稱",
+			"state": "狀態",
+			"value": "取值"
+		},
+		"title": "風格畫廊"
+	},
+	"header": {
+		"hint": "懸停 / 點擊展開"
+	},
+	"home": {
+		"about": {
+			"line1": "# dsh://terminal",
+			"line2": "一個零依賴的單頁站點, 把「終端」當作介面語言:",
+			"tag": "唯讀"
+		},
+		"cta": {
+			"body": "工具箱裡有一個真的能用的終端:試試 help、ls、neofetch, 或者用 accent 換一個強調色。",
+			"button": "進入工具頁面",
+			"contact": "聯絡方式",
+			"title": "想直接上手試試?",
+			"tools": "打開工具箱"
+		},
+		"eyebrow": "系統在線 · 全部服務正常",
+		"feature": {
+			"1": {
+				"body": "透視網格、漂浮線框多邊形與星座連線, 全部由 Canvas 即時繪製, 圖形數量隨視口自適應。",
+				"title": "幾何動態背景"
+			},
+			"2": {
+				"body": "導覽展開時, 每個連結都會拖出一串沿軌跡滯後、逐漸變淡變模糊的殘影, 並用螢幕混合疊加出發光感。",
+				"title": "運動模糊拖影"
+			},
+			"3": {
+				"body": "hash 路由 + 片段預取: 舊內容模糊上移淡出, 新內容模糊上移淡入, 全程沒有一整頁重新載入。",
+				"title": "無重新載入頁面切換"
+			},
+			"4": {
+				"body": "完整鍵盤導覽、焦點樣式與 ARIA 標註; 開啟「減少動態效果」後自動關閉拖影與背景動畫。",
+				"title": "可存取與可降級"
+			}
+		},
+		"features": {
+			"subtitle": "四件事:幾何、動效、無重新載入與克制。",
+			"title": "核心特性"
+		},
+		"stat": {
+			"1": {
+				"label": "頁面重載"
+			},
+			"2": {
+				"label": "Canvas 背景"
+			},
+			"3": {
+				"label": "語言 / 強調色"
+			},
+			"4": {
+				"label": "外部依賴"
+			}
+		},
+		"subtitle": "以終端為隱喻, 用 CSS、JavaScript 與 Canvas 打造流暢、克制而富有質感的互動體驗。所有頁面切換都在同一份 DOM 裡完成, 沒有一次重新載入。",
+		"title": {
+			"a": "構建",
+			"b": "數位",
+			"c": "介面"
+		}
+	},
+	"nav": {
+		"aria": "主導覽",
+		"item": {
+			"contact": {
+				"desc": "郵件、程式碼倉庫與合作入口",
+				"label": "聯絡方式"
+			},
+			"gallery": {
+				"desc": "按鈕、徽章、表單等元件一覽",
+				"label": "風格畫廊"
+			},
+			"home": {
+				"desc": "回到起點, 看看這個站點在做什麼",
+				"label": "首頁"
+			},
+			"tools": {
+				"desc": "一個真的能用的迷你終端與小工具集",
+				"label": "工具頁面"
+			}
+		},
+		"meta": {
+			"hint": "快速鍵 <kbd>Ctrl</kbd>+<kbd>K</kbd> 開關導覽, <kbd>Esc</kbd> 關閉"
+		}
+	},
+	"tab": {
+		"away": {
+			"1": "👋 回來看看?",
+			"2": "📡 正在監聽…"
+		}
+	},
+	"title": {
+		"contact": "聯絡 · DSH://TERMINAL",
+		"default-title": "DSH://TERMINAL",
+		"gallery": "風格畫廊 · DSH://TERMINAL",
+		"home": "首頁 · DSH://TERMINAL",
+		"tools": "工具 · DSH://TERMINAL"
+	},
+	"tools": {
+		"card": {
+			"1": {
+				"body": "b64 / b64d 兩個指令, 支援 UTF-8 文字的往返轉換。",
+				"title": "Base64 編解碼"
+			},
+			"2": {
+				"body": "優先使用 crypto.randomUUID, 不支援時回退到 getRandomValues。",
+				"title": "UUID v4 產生"
+			},
+			"3": {
+				"body": "把壓縮的一行 JSON 展開成縮排結構, 並指出解析錯誤位置。",
+				"title": "JSON 格式化"
+			},
+			"4": {
+				"body": "基於 WebCrypto 的摘要計算, 需要 https 或 localhost 環境。",
+				"title": "SHA-256 摘要"
+			},
+			"5": {
+				"body": "accent red | green | blue 即時切換全站強調色, 並記憶到本機。",
+				"title": "主題強調色"
+			},
+			"6": {
+				"body": "在終端裡直接輸入 open contact 之類的指令即可切換頁面。",
+				"title": "頁面跳轉"
+			}
+		},
+		"grid": {
+			"subtitle": "全部在前端完成, 不會把資料送到任何伺服器。",
+			"title": "工具清單"
+		},
+		"note": "提示: 終端是純前端的示範實作, 指令與輸出都在本機產生。按 Ctrl+L 可以清屏。",
+		"subtitle": "下面是幾個直接跑在瀏覽器裡的迷你工具。終端支援歷史紀錄(↑/↓)、Tab 補全與內建虛擬檔案系統。",
+		"term": {
+			"input": "終端輸入",
+			"tag": "互動終端"
+		},
+		"title": "工具頁面"
+	}
+}

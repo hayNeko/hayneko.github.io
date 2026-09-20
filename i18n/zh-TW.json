@@ -1,0 +1,204 @@
+{
+	"a11y": {
+		"skip": "跳到主內容"
+	},
+	"dock": {
+		"album": "相簿",
+		"aria": "程式塢",
+		"avatar": {
+			"tip": "Hayneko"
+		},
+		"contact": "聯絡",
+		"home": "首页",
+		"lab": "物理實驗室",
+		"language": "語言",
+		"links": "友情連結",
+		"menu": {
+			"contact": {
+				"title": "聯絡"
+			},
+			"lab": {
+				"title": "物理實驗室"
+			},
+			"language": {
+				"title": "語言"
+			},
+			"search": {
+				"empty": "沒有符合的條目。",
+				"placeholder": "grep -i …",
+				"title": "搜尋"
+			}
+		},
+		"projects": "專案",
+		"search": "搜索",
+		"storage": "資源下載",
+		"terminal": "終端機",
+		"theme": "切換主題",
+		"toast": {
+			"soon": "相簿尚未開放。"
+		}
+	},
+	"footer": {
+		"status": "在線",
+		"text": {
+			"0": "© Hayneko. 建立於 2026 年 1 月 10 日。",
+			"1": "本站已重構 5 次。"
+		}
+	},
+	"header": {
+		"hint": "懸停 / 點擊展開"
+	},
+	"home": {
+		"card": {
+			"lab": {
+				"desc": "學習時寫的三個互動模擬:力與運動、牛頓第二定律、透鏡成像。",
+				"title": "物理實驗室"
+			},
+			"links": {
+				"desc": "還是空的。如果你有值得一看的站點, 來找我, 我把它加在這裡。",
+				"title": "友情連結"
+			},
+			"storage": {
+				"desc": "我留著的地圖、函式庫和手冊 —— 並如實標註哪些還能下載。",
+				"title": "資源下載"
+			}
+		},
+		"cta": {
+			"lab": "物理實驗室",
+			"storage": "打開資源下載"
+		},
+		"eyebrow": "系統在線 · 全部服務正常",
+		"quick": {
+			"sub": "檔案、模擬和連結。",
+			"title": "隨便逛逛"
+		},
+		"subtitle": "音樂、動漫與程式編寫, 還有一點對 Miku 的偏愛。平時寫點小東西, 都放在這裡。",
+		"title": "Hayneko"
+	},
+	"info": {
+		"email": "電子郵件",
+		"games": "遊戲",
+		"games_content": "Minecraft、異環",
+		"hobbies": "興趣",
+		"hobbies_content": "音樂、動漫、程式編寫",
+		"name": "名字",
+		"projects": "專案",
+		"role": "學生 · 業餘開發者",
+		"status": "樂於嘗試新東西"
+	},
+	"lab": {
+		"docs": {
+			"i386": {
+				"desc": "解釋 x86 為什麼長成這樣的那些手冊。",
+				"title": "Intel 80386 程式設計參考手冊 (1986)"
+			},
+			"sub": "我經常回頭翻的東西。",
+			"title": "參考文件"
+		},
+		"heading": "物理實驗室",
+		"open": "開啟",
+		"sim": {
+			"default": {
+				"desc": "一個物塊、一個外力, 即時輸出速度與加速度。",
+				"title": "力與運動"
+			},
+			"lens": {
+				"desc": "拖動物體、移動焦點, 跟著光路圖看像如何形成。",
+				"title": "透鏡成像"
+			},
+			"ntlaw2": {
+				"desc": "改變質量與外力, 看 F = ma 從數字裡自然浮現。",
+				"title": "牛頓第二定律"
+			}
+		},
+		"subtitle": "學習物理時寫的互動模擬。"
+	},
+	"links": {
+		"empty": {
+			"badge": "空",
+			"body": "如果你有站點想加進來, 寄信或到 GitHub 找我。",
+			"cta": "打個招呼",
+			"title": "這裡還什麼都沒有"
+		},
+		"heading": "友情連結",
+		"self": {
+			"github": "本站全部原始碼, 以及一些沒搬上來的實驗。",
+			"instagram": "照片, 偶爾有畫。",
+			"lab": {
+				"desc": "不是外部連結, 但這是我最可能傳給你的東西。",
+				"title": "物理實驗室"
+			}
+		},
+		"subtitle": "值得花時間的地方。這個列表故意很短。"
+	},
+	"nav": {
+		"aria": "主導覽",
+		"item": {
+			"home": {
+				"desc": "我是誰, 這個站點在做什麼",
+				"label": "首頁"
+			},
+			"lab": {
+				"desc": "可以動手操作的物理模擬",
+				"label": "物理實驗室"
+			},
+			"links": {
+				"desc": "我真正會去看的網站",
+				"label": "友情連結"
+			},
+			"storage": {
+				"desc": "值得留著的檔案",
+				"label": "資源下載"
+			},
+			"terminal": {
+				"desc": "一個真的能用的 shell",
+				"label": "終端機"
+			}
+		},
+		"meta": {
+			"hint": "快速鍵 <kbd>Ctrl</kbd>+<kbd>K</kbd> 開關導覽, <kbd>Esc</kbd> 關閉"
+		}
+	},
+	"storage": {
+		"file": {
+			"1": {
+				"meta": "zip · 1.8 MB · 更新於 2026-01-27 · 已失效"
+			},
+			"2": {
+				"meta": "zip · 更新於 2026-02-07 · 已失效"
+			}
+		},
+		"group": {
+			"docs": "文件",
+			"games": "遊戲存檔",
+			"more": "應該沒有更多檔案了…",
+			"other": "其它資源"
+		},
+		"heading": "資源下載",
+		"note": "如果連結 404, 代表檔案真的沒了 —— 不是連結壞了。",
+		"state": {
+			"available": "下載",
+			"dead": "已失效"
+		},
+		"subtitle": "我願意上傳的東西都在這裡。體積是約數; 失效的條目保留下來作為紀錄。"
+	},
+	"tab": {
+		"away": "Miku! 快回來看看 "
+	},
+	"terminal": {
+		"heading": "終端機",
+		"subtitle": "輸入 help 看看這個 shell 能做什麼。",
+		"term": {
+			"input": "終端機輸入",
+			"tag": "互動式"
+		}
+	},
+	"title": {
+		"default": "Hayneko",
+		"home": "首頁 · Hayneko",
+		"lab": "物理實驗室 · Hayneko",
+		"links": "友情連結 · Hayneko",
+		"storage": "資源下載 · Hayneko",
+		"terminal": "終端機 · Hayneko"
+	}
+}

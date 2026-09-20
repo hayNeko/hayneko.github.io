@@ -1,0 +1,204 @@
+{
+	"a11y": {
+		"skip": "본문으로 건너뛰기"
+	},
+	"dock": {
+		"album": "앨범",
+		"aria": "독",
+		"avatar": {
+			"tip": "Hayneko"
+		},
+		"contact": "연락처",
+		"home": "홈",
+		"lab": "물리 랩",
+		"language": "언어",
+		"links": "친구 링크",
+		"menu": {
+			"contact": {
+				"title": "연락처"
+			},
+			"lab": {
+				"title": "물리 랩"
+			},
+			"language": {
+				"title": "언어"
+			},
+			"search": {
+				"empty": "일치하는 항목이 없습니다.",
+				"placeholder": "grep -i …",
+				"title": "검색"
+			}
+		},
+		"projects": "프로젝트",
+		"search": "검색",
+		"storage": "저장소",
+		"terminal": "터미널",
+		"theme": "테마 전환",
+		"toast": {
+			"soon": "앨범은 아직 공개되지 않았습니다."
+		}
+	},
+	"footer": {
+		"status": "온라인",
+		"text": {
+			"0": "© Hayneko. 2026년 1월 10일 생성.",
+			"1": "이 사이트는 5번 리팩터링되었습니다."
+		}
+	},
+	"header": {
+		"hint": "호버 / 클릭하여 펼치기"
+	},
+	"home": {
+		"card": {
+			"lab": {
+				"desc": "공부하면서 만든 세 개의 시뮬레이션:힘과 운동, 뉴턴의 제2법칙, 렌즈.",
+				"title": "물리 랩"
+			},
+			"links": {
+				"desc": "아직 비어 있습니다. 읽을 만한 사이트가 있다면 알려 주세요, 여기에 추가하겠습니다.",
+				"title": "친구 링크"
+			},
+			"storage": {
+				"desc": "제가 모아 둔 지도, 라이브러리, 매뉴얼 — 무엇이 아직 받을 수 있는지도 솔직하게 적었습니다.",
+				"title": "저장소"
+			}
+		},
+		"cta": {
+			"lab": "물리 랩",
+			"storage": "저장소 열기"
+		},
+		"eyebrow": "시스템 정상 · 모든 서비스 가동 중",
+		"quick": {
+			"sub": "파일, 시뮬레이션, 링크.",
+			"title": "둘러보기"
+		},
+		"subtitle": "음악, 애니메이션, 프로그래밍. 미쿠를 조금 좋아합니다. 작은 것들을 만들고 여기에 모아 둡니다.",
+		"title": "Hayneko"
+	},
+	"info": {
+		"email": "이메일",
+		"games": "게임",
+		"games_content": "Minecraft, 이환",
+		"hobbies": "취미",
+		"hobbies_content": "음악, 애니메이션, 프로그래밍",
+		"name": "이름",
+		"projects": "프로젝트",
+		"role": "학생 · 취미 개발자",
+		"status": "새로운 것을 환영"
+	},
+	"lab": {
+		"docs": {
+			"i386": {
+				"desc": "x86 이 왜 이런 모습인지 설명해 주는 매뉴얼.",
+				"title": "Intel 80386 프로그래머 참조 매뉴얼 (1986)"
+			},
+			"sub": "자꾸 다시 찾게 되는 것들.",
+			"title": "참고 문서"
+		},
+		"heading": "물리 랩",
+		"open": "열기",
+		"sim": {
+			"default": {
+				"desc": "물체와 힘, 그리고 속도·가속도의 실시간 표시.",
+				"title": "힘과 운동"
+			},
+			"lens": {
+				"desc": "물체를 끌고 초점을 옮기며 광선도로 상이 맺히는 과정을 따라갑니다.",
+				"title": "렌즈"
+			},
+			"ntlaw2": {
+				"desc": "질량과 힘을 바꾸며 F = ma 가 숫자에서 나오는 것을 확인합니다.",
+				"title": "뉴턴의 제2법칙"
+			}
+		},
+		"subtitle": "물리 공부를 하며 작성한 인터랙티브 시뮬레이션."
+	},
+	"links": {
+		"empty": {
+			"badge": "비어 있음",
+			"body": "올리고 싶은 사이트가 있다면 이메일이나 GitHub 로 알려 주세요.",
+			"cta": "인사하기",
+			"title": "아직 아무것도 없습니다"
+		},
+		"heading": "친구 링크",
+		"self": {
+			"github": "이 사이트의 모든 소스와, 여기까지 오지 못한 실험들.",
+			"instagram": "사진, 그리고 가끔 그림.",
+			"lab": {
+				"desc": "외부 링크는 아니지만, 제가 가장 자주 보내는 것입니다.",
+				"title": "물리 랩"
+			}
+		},
+		"subtitle": "시간을 쓸 만한 곳. 이 목록은 일부러 짧습니다."
+	},
+	"nav": {
+		"aria": "메인 내비게이션",
+		"item": {
+			"home": {
+				"desc": "저는 누구이고, 이 사이트는 무엇인지",
+				"label": "홈"
+			},
+			"lab": {
+				"desc": "직접 만져 볼 수 있는 물리 시뮬레이션",
+				"label": "물리 랩"
+			},
+			"links": {
+				"desc": "제가 실제로 찾아가는 사이트",
+				"label": "친구 링크"
+			},
+			"storage": {
+				"desc": "남겨 둘 만한 파일",
+				"label": "저장소"
+			},
+			"terminal": {
+				"desc": "실제로 동작하는 셸",
+				"label": "터미널"
+			}
+		},
+		"meta": {
+			"hint": "<kbd>Ctrl</kbd>+<kbd>K</kbd> 로 열고 닫기, <kbd>Esc</kbd> 로 닫기"
+		}
+	},
+	"storage": {
+		"file": {
+			"1": {
+				"meta": "zip · 1.8 MB · 2026-01-27 갱신 · 배포 종료"
+			},
+			"2": {
+				"meta": "zip · 2026-02-07 갱신 · 배포 종료"
+			}
+		},
+		"group": {
+			"docs": "문서",
+			"games": "게임 저장소",
+			"more": "더 이상 파일이 없어야 합니다…",
+			"other": "기타 저장소"
+		},
+		"heading": "저장소",
+		"note": "링크가 404라면 파일이 정말 사라진 것입니다 — 링크가 깨진 것이 아닙니다.",
+		"state": {
+			"available": "다운로드",
+			"dead": "배포 종료"
+		},
+		"subtitle": "업로드한 것은 전부 여기에 있습니다. 용량은 대략적인 값이고, 만료된 항목은 기록으로 남겨 둡니다."
+	},
+	"tab": {
+		"away": "미쿠! 또 보러 와 줘 "
+	},
+	"terminal": {
+		"heading": "터미널",
+		"subtitle": "help 를 입력하면 이 셸로 무엇을 할 수 있는지 볼 수 있습니다.",
+		"term": {
+			"input": "터미널 입력",
+			"tag": "인터랙티브"
+		}
+	},
+	"title": {
+		"default": "Hayneko",
+		"home": "홈 · Hayneko",
+		"lab": "물리 랩 · Hayneko",
+		"links": "친구 링크 · Hayneko",
+		"storage": "다운로드 · Hayneko",
+		"terminal": "터미널 · Hayneko"
+	}
+}

@@ -1,0 +1,386 @@
+/* ============================================================================
+   motion.css — 交互反馈动效
+   ========================================================================== */
+
+/* ------------------------------------------------------------- 涟漪 */
+
+.fx-ripple {
+	position: absolute;
+	z-index: 0;
+	border-radius: 50%;
+	pointer-events: none;
+	background: radial-gradient(circle, rgba(var(--accent-rgb), 0.34) 0%, rgba(var(--accent-rgb), 0.16) 45%, rgba(var(--accent-rgb), 0) 72%);
+	transform: scale(0);
+	animation: fx-ripple-out 500ms var(--ease-out) forwards;
+}
+@keyframes fx-ripple-out {
+	0%   { transform: scale(0); opacity: 0.85; }
+	100% { transform: scale(1); opacity: 0; }
+}
+
+/* 涟漪要有地方渲染 */
+.file-row,
+.dock-menu__item { position: relative; overflow: hidden; }
+.card > * ,
+.btn > * { position: relative; z-index: 1; }
+
+/* ---------------------------------------------------------------------------
+   统一的悬停 / 按下反馈
+   规则: 悬停放大(**不上移**), 按下缩小; 曲线带一点回弹。
+   --------------------------------------------------------------------------- */
+
+/* 先把 transform 接进各自的过渡(各自重写一遍, 不改动原文件里的其它属性) */
+.btn {
+	transition: transform 220ms var(--ease-pop), color var(--dur-2) ease,
+		border-color var(--dur-2) ease, background var(--dur-2) ease;
+}
+.card,
+.sim-card,
+.profile-card,
+.avatar-card {
+	transition: transform 300ms var(--ease-pop), border-color var(--dur-3) ease,
+		box-shadow var(--dur-3) ease;
+}
+.file-row {
+	transition: transform 240ms var(--ease-pop), background var(--dur-2) ease,
+		padding-left var(--dur-3) var(--ease-smear);
+}
+.term-suggest button {
+	transition: transform 220ms var(--ease-pop), color var(--dur-2) ease,
+		border-color var(--dur-2) ease, background var(--dur-2) ease;
+}
+.badge {
+	transition: transform 220ms var(--ease-pop), border-color var(--dur-2) ease,
+		color var(--dur-2) ease;
+}
+/* 菜单项展开时靠 transition-delay 错位, 悬停时把延迟清掉才跟手 */
+.dock-menu.is-open .dock-menu__item:hover { transition-delay: 0s, 0s, 0s, 0s, 0s, 0s; }
+
+/* --- 悬停: 放大 --- */
+.btn:hover { transform: scale(1.05); }
+.btn--sm:hover { transform: scale(1.08); }
+.card:hover,
+.sim-card:hover,
+.profile-card:hover,
+.avatar-card:hover { transform: scale(1.022); }
+.term-suggest button:hover { transform: scale(1.08); }
+.badge:hover { transform: scale(1.08); }
+.file-row:hover { transform: scale(1.006); }
+.dock__item:hover,
+.dock__item:focus-visible { transform: scale(1.14); }
+.dock__avatar:hover { transform: scale(1.1); }
+
+/* --- 按下: 缩小 --- */
+.btn:active { transform: scale(0.93); }
+.btn--sm:active { transform: scale(0.9); }
+.card:active,
+.sim-card:active,
+.profile-card:active,
+.avatar-card:active { transform: scale(0.99); }
+.term-suggest button:active { transform: scale(0.9); }
+.badge:active { transform: scale(0.94); }
+.dock__item:active { transform: scale(0.88); }
+.dock__item:active .dock__icon { transform: scale(1.12); }
+.dock__avatar:active { transform: scale(0.9); }
+.file-row:active { transform: scale(0.998); background: rgba(var(--accent-rgb), 0.12); }
+.nav-item:active { transform: scale(0.99); }
+
+/* ------------------------------------------------------------- 图标小动作 */
+
+.dock__item.is-spinning .dock__icon { animation: fx-spin 500ms var(--ease-smear); }
+@keyframes fx-spin {
+	0%   { transform: rotate(0deg) scale(1); }
+	45%  { transform: rotate(190deg) scale(0.82); }
+	100% { transform: rotate(360deg) scale(1); }
+}
+
+.dock__item.is-popped { animation: fx-pop 460ms var(--ease-smear); }
+@keyframes fx-pop {
+	0%   { transform: translateY(-5px) scale(1.09); }
+	35%  { transform: translateY(-9px) scale(1.2); }
+	65%  { transform: translateY(-2px) scale(0.98); }
+	100% { transform: translateY(-5px) scale(1.09); }
+}
+
+.dock__avatar.is-clicked img { animation: fx-avatar 420ms var(--ease-smear); }
+@keyframes fx-avatar {
+	0%   { transform: scale(1) rotate(0deg); }
+	40%  { transform: scale(0.84) rotate(-7deg); }
+	70%  { transform: scale(1.06) rotate(4deg); }
+	100% { transform: scale(1) rotate(0deg); }
+}
+
+/* ------------------------------------------------------------- 主题擦除 */
+
+.theme-wipe {
+	position: fixed;
+	inset: 0;
+	z-index: 9800;
+	pointer-events: none;
+	transform: scaleY(0);
+	transition: transform 420ms var(--nav-ease), opacity 320ms ease;
+	will-change: transform, opacity;
+}
+.theme-wipe[data-to="light"] { background: linear-gradient(180deg, #f3f6f9, #dfe5ec); }
+.theme-wipe[data-to="dark"]  { background: linear-gradient(180deg, #04060a, #0d141c); }
+.theme-wipe.is-active { transform: scaleY(1); }
+.theme-wipe.is-out { opacity: 0; }
+/* 前沿的一条 RGB 亮边 */
+.theme-wipe::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: var(--grad-rgb);
+	box-shadow: 0 0 26px rgba(var(--blue-rgb), 0.75);
+}
+.theme-wipe[data-to="light"]::after { bottom: -1px; }
+.theme-wipe[data-to="dark"]::after { top: -1px; }
+
+/* ------------------------------------------------------------- 路由扫描带 */
+
+.fx-sweep {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 30vh;
+	z-index: 9600;
+	pointer-events: none;
+	background: linear-gradient(
+		to bottom,
+		transparent,
+		rgba(var(--blue-rgb), 0.07) 42%,
+		rgba(var(--green-rgb), 0.05) 55%,
+		transparent
+	);
+	animation: fx-sweep-down 500ms var(--ease-out) forwards;
+	will-change: transform, opacity;
+}
+@keyframes fx-sweep-down {
+	0%   { transform: translateY(-34vh); opacity: 0; }
+	12%  { opacity: 1; }
+	100% { transform: translateY(104vh); opacity: 0; }
+}
+
+/* ------------------------------------------------------------- 链接下划线 */
+
+.site-footer__status a,
+.profile-row__val a,
+.dock-menu__item b {
+	background-image: linear-gradient(currentColor, currentColor);
+	background-size: 0% 1px;
+	background-position: 0 100%;
+	background-repeat: no-repeat;
+	transition: background-size 320ms var(--ease-smear), color var(--dur-2) ease;
+}
+.site-footer__status a:hover,
+.profile-row__val a:hover { background-size: 100% 1px; }
+
+html.reduce-motion .fx-ripple,
+html.reduce-motion .fx-sweep,
+html.reduce-motion .theme-wipe { display: none; }
+
+/* ------------------------------------------------------------- 主题按钮双图标 */
+
+.dock__icon--dual { position: relative; }
+.dock__icon--dual svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	transition: transform 480ms var(--ease-smear), opacity 300ms ease;
+}
+[data-theme="dark"] .dock__icon--dual .icon-sun { opacity: 0; transform: rotate(-100deg) scale(0.35); }
+[data-theme="dark"] .dock__icon--dual .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
+[data-theme="light"] .dock__icon--dual .icon-moon { opacity: 0; transform: rotate(100deg) scale(0.35); }
+[data-theme="light"] .dock__icon--dual .icon-sun { opacity: 1; transform: rotate(0deg) scale(1); }
+
+/* ============================================================================
+   入场编排 (由 motion.js 的 entrance() 驱动)
+   ========================================================================== */
+
+/* 只有 JS 可用且非降级时才隐藏未入场的元素 —— 否则没有动画时内容会消失 */
+html.fx-ready [data-smear]:not(.is-revealed) { opacity: 0; }
+
+/* ------------------------------------------------------------- 标题逐字 */
+
+.fx-char {
+	display: inline-block;
+	will-change: transform, opacity, filter;
+	animation: fx-char-in 480ms var(--ease-smear) both;
+	animation-delay: calc(var(--ci, 0) * 34ms);
+}
+@keyframes fx-char-in {
+	0%   { opacity: 0; transform: translateY(-0.3em) scale(1.14); filter: blur(4px); }
+	55%  { opacity: 1; filter: blur(0); }
+	100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+/* ------------------------------------------------------------- 标题下划线 */
+
+.section__title,
+.page-head__title { position: relative; padding-bottom: 9px; }
+
+.section__title::after,
+.page-head__title::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: min(140px, 42%);
+	height: 2px;
+	background: var(--grad-rgb);
+	transform: scaleX(0);
+	transform-origin: left center;
+	transition: transform 500ms var(--ease-smear) 120ms;
+}
+.section__title.is-revealed::after,
+.page-head__title.is-revealed::after { transform: scaleX(1); }
+
+/* ------------------------------------------------------------- 卡片跟随高光 */
+
+.card, .sim-card, .profile-card, .avatar-card, .file-list, .term-window { position: relative; }
+
+.card::after,
+.sim-card::after,
+.profile-card::after,
+.avatar-card::after,
+.file-list::after,
+.term-window::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 340ms ease;
+	/* 两层: 跟随指针的高光 + 一层整体提亮
+	   (提亮用透明度过渡而不是换背景渐变 —— 渐变插值不了, 会"啪"地跳) */
+	background:
+		radial-gradient(
+			260px circle at var(--mx, 50%) var(--my, 50%),
+			rgba(var(--accent-rgb), 0.15),
+			transparent 68%
+		),
+		linear-gradient(var(--tint-hover), var(--tint-hover));
+}
+.card:hover::after,
+.sim-card:hover::after,
+.profile-card:hover::after,
+.avatar-card:hover::after,
+.file-list:hover::after,
+.term-window:hover::after { opacity: 1; }
+
+/* ------------------------------------------------------------- 按钮扫光 */
+
+/* 覆盖 components.css 里的淡入式 sheen, 改成真正扫过去的一条 */
+.btn::after {
+	background: linear-gradient(105deg, transparent 32%, var(--sheen) 48%, transparent 64%);
+	opacity: 1;
+	transform: translateX(-135%);
+	transition: transform 500ms var(--ease-smear);
+}
+.btn:hover::after { opacity: 1; transform: translateX(135%); }
+.btn--primary::after { background: linear-gradient(105deg, transparent 34%, rgba(255, 255, 255, 0.45) 50%, transparent 66%); }
+
+html.reduce-motion [data-smear]:not(.is-revealed) { opacity: 1; }
+html.reduce-motion .fx-char { animation: none; opacity: 1; filter: none; }
+html.reduce-motion .section__title::after,
+html.reduce-motion .page-head__title::after { transform: scaleX(1); }
+html.reduce-motion .btn::after { display: none; }
+
+/* ============================================================================
+   悬停时的描边动画: 一圈高光绕着元素跑
+   ========================================================================== */
+
+/* @property 让自定义属性可以插值, 否则 conic-gradient 的角度没法动。
+   不支持时降级为"静态一圈高光", 仍然会出现, 只是不转。 */
+/* 画笔长度: 0% = 一点都没画, 100% = 画满一圈。
+   注册成 <percentage> 之后自定义属性才可以插值,
+   于是悬停时它是"绕一圈逐渐画出来", 取消悬停时沿原路退回 —— 而不是一直转圈。 */
+@property --fx-draw {
+	syntax: '<percentage>';
+	initial-value: 0%;
+	inherits: false;
+}
+
+.badge { position: relative; }
+
+.btn::before,
+.badge::before,
+.term-suggest button::before,
+.dock__item::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 2px;
+	/* 从 12 点方向顺时针画: 起笔偏暗, 笔尖最亮 */
+	background: conic-gradient(
+		from 0deg,
+		rgba(var(--accent-rgb), 0.35) 0%,
+		var(--accent) calc(var(--fx-draw) * 0.55),
+		var(--accent) calc(var(--fx-draw) * 0.9),
+		#ffffff var(--fx-draw),
+		transparent var(--fx-draw)
+	);
+	-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+	mask-composite: exclude;
+	pointer-events: none;
+	/* 只在画笔长度上过渡; 不透明度不用管 —— 0% 时渐变整圈都是透明的 */
+	transition: --fx-draw 500ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:hover::before,
+.btn:focus-visible::before,
+.badge:hover::before,
+.term-suggest button:hover::before,
+.dock__item:hover::after,
+.dock__item:focus-visible::after {
+	--fx-draw: 100%;
+}
+
+/* 细一点的元素(徽章/终端 chip)用 1.5px 就够 */
+.badge::before,
+.term-suggest button::before { padding: 1.5px; }
+
+/* ============================================================================
+   位移中的运动模糊
+   任何"会动"的过渡(transform / padding-left / top / left)一开始,
+   motion.js 就给元素加上 .is-moving, 过渡结束再摘掉。
+   ========================================================================== */
+
+.is-moving {
+	filter: blur(0.7px);
+}
+/* 卡片这种大块的给强一点, 小图标给弱一点 */
+.dock__item.is-moving,
+.badge.is-moving,
+.term-suggest button.is-moving { filter: blur(0.45px); }
+.card.is-moving,
+.sim-card.is-moving,
+.file-row.is-moving { filter: blur(0.9px); }
+
+/* ============================================================================
+   Dock 底部光点: 移动时拉出拖尾
+   ========================================================================== */
+
+.dock__indicator.is-moving {
+	--ind-stretch: 5.5;
+	filter: blur(1.3px);
+	box-shadow:
+		0 0 12px var(--accent),
+		calc(-11px * var(--dir, 1)) 0 10px 3px rgba(var(--accent-rgb), 0.9),
+		calc(-24px * var(--dir, 1)) 0 9px 3px rgba(var(--accent-rgb), 0.74),
+		calc(-39px * var(--dir, 1)) 0 8px 2px rgba(var(--accent-rgb), 0.6),
+		calc(-56px * var(--dir, 1)) 0 8px 2px rgba(var(--accent-rgb), 0.48),
+		calc(-75px * var(--dir, 1)) 0 7px 2px rgba(var(--accent-rgb), 0.37),
+		calc(-97px * var(--dir, 1)) 0 7px 1px rgba(var(--accent-rgb), 0.27),
+		calc(-122px * var(--dir, 1)) 0 6px 1px rgba(var(--accent-rgb), 0.18),
+		calc(-150px * var(--dir, 1)) 0 6px 0 rgba(var(--accent-rgb), 0.11),
+		calc(-182px * var(--dir, 1)) 0 5px 0 rgba(var(--accent-rgb), 0.05);
+}

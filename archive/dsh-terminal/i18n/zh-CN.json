@@ -1,0 +1,258 @@
+{
+	"a11y": {
+		"skip": "跳到主内容"
+	},
+	"contact": {
+		"availability": {
+			"focus": {
+				"label": "关注方向",
+				"value": "前端动效 · 可视化 · 无障碍"
+			},
+			"reply": "1 – 2 个工作日",
+			"status": "当前状态",
+			"tz": "响应时间",
+			"value": "接受新的合作"
+		},
+		"channel": {
+			"email": {
+				"label": "电子邮件",
+				"tag": "最快"
+			},
+			"github": {
+				"label": "代码仓库",
+				"tag": "开源"
+			},
+			"social": {
+				"label": "社交平台",
+				"tag": "日常"
+			},
+			"title": "通道",
+			"tz": {
+				"label": "时区",
+				"tag": "GMT+8",
+				"value": "UTC+8 · 通常 10:00 – 19:00 在线"
+			}
+		},
+		"form": {
+			"copy": "抄送一份到我的邮箱",
+			"email": "邮箱",
+			"error": {
+				"email": {
+					"empty": "请填写邮箱",
+					"invalid": "邮箱格式不正确"
+				},
+				"message": "再多写几个字吧(至少 8 个字符)",
+				"name": "请填写称呼",
+				"toast": "表单还有未通过校验的字段"
+			},
+			"message": "内容",
+			"name": "称呼",
+			"note": "这是纯前端演示: 提交不会真的发出邮件, 只做校验与状态反馈。",
+			"placeholder": {
+				"email": "you@example.com",
+				"message": "随便说点什么…",
+				"name": "Ada Lovelace"
+			},
+			"sending": "发送中…",
+			"submit": "发送",
+			"success": "消息已记录(纯前端演示)",
+			"title": "发一条消息",
+			"topic": {
+				"label": "主题",
+				"other": "其它",
+				"project": "项目合作",
+				"question": "技术问题"
+			}
+		},
+		"subtitle": "随便挑一个通道。如果是合作或项目咨询, 用下面的表单也可以 —— 它会在本地校验后给出反馈。",
+		"title": "联络方式"
+	},
+	"footer": {
+		"status": "系统在线",
+		"tagline": "全部动效由 CSS / JavaScript / Canvas 实现"
+	},
+	"gallery": {
+		"badge": {
+			"live": "live"
+		},
+		"btn": {
+			"danger": "危险",
+			"default": "次要操作",
+			"disabled": "禁用",
+			"ghost": "幽灵按钮",
+			"primary": "主要操作",
+			"small": "小尺寸",
+			"success": "成功"
+		},
+		"card": {
+			"body": "左侧色条由 CSS 渐变生成, 悬停时展开到整条边。",
+			"body2": "卡片使用极低透明度的渐变背景, 保持黑色的整体基调。",
+			"body3": "悬停时卡片上浮 3px, 边框提亮, 并触发一次顶边扫光。"
+		},
+		"form": {
+			"checkbox": "启用运动模糊拖影",
+			"input": {
+				"label": "文本输入",
+				"ph": "user@dsh:~$"
+			},
+			"option1": "选项一",
+			"option2": "选项二",
+			"select": "下拉选择",
+			"textarea": {
+				"label": "多行文本",
+				"ph": "// TODO"
+			}
+		},
+		"section": {
+			"badges": "徽章 Badges",
+			"buttons": "按钮 Buttons",
+			"cards": "卡片 Cards",
+			"colors": "配色 Palette",
+			"data": "数据 Data",
+			"forms": "表单 Forms"
+		},
+		"subtitle": "站内复用组件与配色一览。所有元素共用同一套设计令牌, 切换强调色后整体会即时改变。",
+		"table": {
+			"name": "名称",
+			"state": "状态",
+			"value": "取值"
+		},
+		"title": "风格画廊"
+	},
+	"header": {
+		"hint": "悬停 / 点击展开"
+	},
+	"home": {
+		"about": {
+			"line1": "# dsh://terminal",
+			"line2": "一个零依赖的单页站点, 把「终端」当作界面语言:",
+			"tag": "只读"
+		},
+		"cta": {
+			"body": "工具箱里有一个真的能用的终端:试试 help、ls、neofetch, 或者用 accent 换一个强调色。",
+			"button": "进入工具页面",
+			"contact": "联络方式",
+			"title": "想直接上手试试?",
+			"tools": "打开工具箱"
+		},
+		"eyebrow": "系统在线 · 全部服务正常",
+		"feature": {
+			"1": {
+				"body": "透视网格、漂浮线框多边形与星座连线, 全部由 Canvas 实时绘制, 图形数量随视口自适应。",
+				"title": "几何动态背景"
+			},
+			"2": {
+				"body": "导航展开时, 每个链接都会拖出一串沿轨迹滞后、逐渐变淡变模糊的残影, 并用屏幕混合叠加出发光感。",
+				"title": "运动模糊拖影"
+			},
+			"3": {
+				"body": "hash 路由 + 片段预取: 旧内容模糊上移淡出, 新内容模糊上移淡入, 全程没有一次整页加载。",
+				"title": "无刷新页面切换"
+			},
+			"4": {
+				"body": "完整键盘导航、焦点样式与 ARIA 标注; 开启「减少动态效果」后自动关闭拖影与背景动画。",
+				"title": "可访问与可降级"
+			}
+		},
+		"features": {
+			"subtitle": "四件事:几何、动效、无刷新与克制。",
+			"title": "核心特性"
+		},
+		"stat": {
+			"1": {
+				"label": "页面重载"
+			},
+			"2": {
+				"label": "Canvas 背景"
+			},
+			"3": {
+				"label": "语言 / 强调色"
+			},
+			"4": {
+				"label": "外部依赖"
+			}
+		},
+		"subtitle": "以终端为隐喻, 用 CSS、JavaScript 与 Canvas 打造流畅、克制而富有质感的交互体验。所有页面切换都在同一份 DOM 里完成, 没有一次重新加载。",
+		"title": {
+			"a": "构建",
+			"b": "数字",
+			"c": "界面"
+		}
+	},
+	"nav": {
+		"aria": "主导航",
+		"item": {
+			"contact": {
+				"desc": "邮件、代码仓库与合作入口",
+				"label": "联络方式"
+			},
+			"gallery": {
+				"desc": "按钮、徽章、表单等组件一览",
+				"label": "风格画廊"
+			},
+			"home": {
+				"desc": "回到起点, 看看这个站点在做什么",
+				"label": "主页"
+			},
+			"tools": {
+				"desc": "一个真的能用的迷你终端与小工具集",
+				"label": "工具页面"
+			}
+		},
+		"meta": {
+			"hint": "快捷键 <kbd>Ctrl</kbd>+<kbd>K</kbd> 开关导航, <kbd>Esc</kbd> 关闭"
+		}
+	},
+	"tab": {
+		"away": {
+			"1": "👋 回来看看?",
+			"2": "📡 正在监听…"
+		}
+	},
+	"title": {
+		"contact": "联络 · DSH://TERMINAL",
+		"default-title": "DSH://TERMINAL",
+		"gallery": "风格画廊 · DSH://TERMINAL",
+		"home": "主页 · DSH://TERMINAL",
+		"tools": "工具 · DSH://TERMINAL"
+	},
+	"tools": {
+		"card": {
+			"1": {
+				"body": "b64 / b64d 两个命令, 支持 UTF-8 文本的往返转换。",
+				"title": "Base64 编解码"
+			},
+			"2": {
+				"body": "优先使用 crypto.randomUUID, 不支持时回退到 getRandomValues。",
+				"title": "UUID v4 生成"
+			},
+			"3": {
+				"body": "把压缩的一行 JSON 展开成缩进结构, 并给出解析错误位置。",
+				"title": "JSON 格式化"
+			},
+			"4": {
+				"body": "基于 WebCrypto 的摘要计算, 需要 https 或 localhost 环境。",
+				"title": "SHA-256 摘要"
+			},
+			"5": {
+				"body": "accent red | green | blue 实时切换整站强调色, 并记忆到本地。",
+				"title": "主题强调色"
+			},
+			"6": {
+				"body": "在终端里直接输入 open contact 之类的命令即可切换页面。",
+				"title": "页面跳转"
+			}
+		},
+		"grid": {
+			"subtitle": "全部在前端完成, 不会把数据发到任何服务器。",
+			"title": "工具清单"
+		},
+		"note": "提示: 终端是纯前端的演示实现, 命令与输出都在本地生成。按 Ctrl+L 可以清屏。",
+		"subtitle": "下面是几个直接跑在浏览器里的迷你工具。终端支持历史记录(↑/↓)、Tab 补全与内置虚拟文件系统。",
+		"term": {
+			"input": "终端输入",
+			"tag": "交互终端"
+		},
+		"title": "工具页面"
+	}
+}

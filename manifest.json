@@ -8,12 +8,12 @@
 	"theme_color": "#1e5e68",
 	"icons": [
 	{
-		"src": "/medias/picures/miku.JPG",
+		"src": "medias/picures/miku.JPG",
 		"sizes": "192x192",
 		"type": "image/jpeg"
 	},
 	{
-		"src": "/medias/picures/miku.JPG",
+		"src": "medias/picures/miku.JPG",
 		"sizes": "512x512",
 		"type": "image/jpeg"
 	}

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>运动模糊 / Smear 演示 — 快速位移</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #0e1116;
+    color: #e6edf3;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #stage { position: fixed; inset: 0; display: block; }
+  #ui {
+    position: fixed;
+    left: 50%;
+    bottom: 56px;
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+  #toggle {
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    padding: 13px 32px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(255,255,255,.07);
+    color: #e6edf3;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transition: background .18s ease, transform .08s ease, border-color .18s ease;
+    user-select: none;
+  }
+  #toggle:hover { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.28); }
+  #toggle:active { transform: scale(.96); }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="ui"><button id="toggle">移到右边 →</button></div>
+
+<script>
+(function () {
+  'use strict';
+
+  const canvas = document.getElementById('stage');
+  const ctx = canvas.getContext('2d');
+  const btn = document.getElementById('toggle');
+
+  const TEXT = '运动模糊 Smear';
+
+  /* ============ 可调参数 ============ */
+  const DURATION = 500;    // 动画时长 ms —— 0.5 秒
+  const SHUTTER  = 0.125;  // 模拟快门时间 s —— 决定拖影长度
+  const MAX_BLUR = 340;    // 拖影长度上限 px
+  const CP = [0.15, 1, 0, 1];  // cubic-bezier(0.15, 1, 0, 1)
+  /* ================================= */
+
+  let W = 0, H = 0, dpr = 1;
+  let fontSize = 64, fontString = '';
+  let textWidth = 0;
+  let leftX = 0, rightX = 0, baseY = 0;
+
+  let sprite = null, spW = 0, spH = 0, spOffX = 0, spOffY = 0;
+
+  let side = 'left';
+  let x = 0, fromX = 0, toX = 0;
+  let startTime = 0, animating = false, v = 0;
+
+  const fontOf = (s) =>
+    `800 ${s}px "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif`;
+
+  /* ---------- 三次贝塞尔缓动 cubic-bezier(x1,y1,x2,y2) ---------- */
+  function bezX(t) {
+    const m = 1 - t;
+    return 3 * m * m * t * CP[0] + 3 * m * t * t * CP[2] + t * t * t;
+  }
+  function bezY(t) {
+    const m = 1 - t;
+    return 3 * m * m * t * CP[1] + 3 * m * t * t * CP[3] + t * t * t;
+  }
+  function bezDX(t) {
+    const m = 1 - t;
+    return 3 * m * m * CP[0] + 6 * m * t * (CP[2] - CP[0]) + 3 * t * t * (1 - CP[2]);
+  }
+  function bezDY(t) {
+    const m = 1 - t;
+    return 3 * m * m * CP[1] + 6 * m * t * (CP[3] - CP[1]) + 3 * t * t * (1 - CP[3]);
+  }
+  // 已知归一化时间 p，二分反解贝塞尔参数 t
+  function solveT(p) {
+    if (p <= 0) return 0;
+    if (p >= 1) return 1;
+    let lo = 0, hi = 1, t = p;
+    for (let i = 0; i < 24; i++) {
+      if (bezX(t) < p) lo = t; else hi = t;
+      t = (lo + hi) * 0.5;
+    }
+    return t;
+  }
+
+  /* ---------- 文字预渲染成离屏画布 ---------- */
+  function buildSprite() {
+    const padX = Math.ceil(fontSize * 0.8);
+    const w = Math.ceil(textWidth) + padX * 2;
+    const h = Math.ceil(fontSize * 1.6);
+
+    const c = document.createElement('canvas');
+    c.width  = Math.ceil(w * dpr);
+    c.height = Math.ceil(h * dpr);
+
+    const g = c.getContext('2d');
+    g.scale(dpr, dpr);
+    g.font = fontString;
+    g.textAlign = 'left';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#e8f1ff';
+    g.fillText(TEXT, padX, h / 2);
+
+    sprite = c;
+    spW = w; spH = h;
+    spOffX = padX;
+    spOffY = h / 2;
+  }
+
+  function layout() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+
+    canvas.width  = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const margin = Math.max(24, W * 0.06);
+
+    let size = Math.min(84, W * 0.085);
+    ctx.font = fontOf(size);
+    let tw = ctx.measureText(TEXT).width;
+
+    const maxW = W - margin * 2;
+    if (tw > maxW) {
+      size *= maxW / tw;
+      ctx.font = fontOf(size);
+      tw = ctx.measureText(TEXT).width;
+    }
+
+    fontSize   = size;
+    fontString = fontOf(size);
+    textWidth  = tw;
+
+    leftX  = margin;
+    rightX = Math.max(margin, W - margin - tw);
+    baseY  = H * 0.42;
+
+    buildSprite();
+
+    toX = side === 'left' ? leftX : rightX;
+    if (!animating) { x = toX; fromX = toX; }
+  }
+
+  /* ---------- 绘制 ---------- */
+  function draw() {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#0e1116';
+    ctx.fillRect(0, 0, W, H);
+
+    const blurLen = Math.min(Math.abs(v) * SHUTTER, MAX_BLUR);
+
+    // 速度极低 —— 清晰文字
+    if (blurLen < 2) {
+      ctx.drawImage(sprite, x - spOffX, baseY - spOffY, spW, spH);
+      return;
+    }
+
+    const N    = Math.max(8, Math.min(56, Math.round(blurLen / 5)));
+    const span = v * SHUTTER;   // 快门时间内走过的位移（带符号）
+
+    // 沿速度反方向在 [x - span, x] 上均匀取样并叠加
+    ctx.globalCompositeOperation = 'lighter';
+
+    for (let i = 0; i < N; i++) {
+      const tt = (i + 0.5) / N;                 // 0 = 拖尾末端, 1 = 当前位置
+      const px = x - span * (1 - tt);
+      ctx.globalAlpha = 0.55 * (0.22 + 0.78 * tt);  // 尾淡头浓
+      ctx.drawImage(sprite, px - spOffX, baseY - spOffY, spW, spH);
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  /* ---------- 主循环 ---------- */
+  function frame(now) {
+    if (animating) {
+      const p = Math.min((now - startTime) / DURATION, 1);
+      const t = solveT(p);
+
+      x = fromX + (toX - fromX) * bezY(t);
+
+      const dx = bezDX(t);
+      const slope = dx > 1e-7 ? bezDY(t) / dx : 0;   // d(eased)/dp
+      v = (toX - fromX) * slope / (DURATION / 1000); // px/s
+
+      if (p >= 1) {
+        x = toX; v = 0; animating = false;
+      }
+    } else {
+      v = 0;
+    }
+
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- 交互 ---------- */
+  btn.addEventListener('pointerdown', () => {
+    side  = side === 'left' ? 'right' : 'left';
+    fromX = x;                                        // 从当前位置出发
+    toX   = side === 'left' ? leftX : rightX;
+    startTime = performance.now();
+    animating = true;
+    btn.textContent = side === 'left' ? '移到右边 →' : '← 移到左边';
+  });
+
+  window.addEventListener('resize', () => {
+    layout();
+    animating = false;
+    v = 0;
+    x = side === 'left' ? leftX : rightX;
+    toX = x; fromX = x;
+  });
+
+  layout();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
