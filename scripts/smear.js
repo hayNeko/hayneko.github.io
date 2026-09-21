@@ -45,14 +45,21 @@
 		return host;
 	}
 
+	/*
+	 * 调参要点 —— "看起来是糊的" vs "看起来是两个元素":
+	 *   拖影之间隔的是**时间**(lag), 元素动得快时 lag 大 = 空间上离得远 = 一眼看出是两份;
+	 *   所以 lag 要小、层数要多, 让相邻残影互相叠住连成一片;
+	 *   同时第一层就得有足够模糊, 否则它就是一份清晰的拷贝。
+	 */
 	var DEFAULTS = {
 		duration: 500,
 		easing: 'cubic-bezier(0.15, 1, 0, 1)',
 		delay: 0,
-		ghosts: 5,
-		lag: 30,
-		blur: 1.6,
-		fade: 0.52,
+		ghosts: 7,
+		lag: 9,
+		blur: 3.6,
+		/* 第一层就已经很淡: 否则实心元素(徽章/按钮)的残影会被看成"复制的第二份" */
+		fade: 0.4,
 		blend: 'screen',
 		tail: 150,
 		ghostsOnly: false
@@ -96,7 +103,8 @@
 	/** 把一组 keyframes 变成第 i 层残影的 keyframes: 降透明度 + 加方向性模糊 */
 	function ghostKeyframes(keyframes, index, opts) {
 		var factor = Math.pow(opts.fade, index);
-		var blurPx = opts.blur * index;
+		/* 模糊半径也要封顶, 否则最外层是一团 20px+ 的糊, 又贵又难看 */
+		var blurPx = Math.min(opts.blur * index, 14);
 		return keyframes.map(function (kf) {
 			var out = {};
 			for (var key in kf) {
@@ -198,11 +206,14 @@
 		var opts = options || {};
 		var stretch = opts.stretch == null ? 1.34 : opts.stretch;
 		var squash = opts.squash == null ? 0.95 : opts.squash;
+		/* filter 的模糊量跟着速度走: 起手最快 -> 最糊, 落位就清晰。
+		   这是"真·运动模糊", 而且完全不产生副本元素。 */
 		var kfs = [
-			{ offset: 0, transform: 'translateY(-205%) scaleY(' + stretch + ')', opacity: 0 },
-			{ offset: 0.62, transform: 'translateY(9%) scaleY(' + squash + ')', opacity: 1 },
-			{ offset: 0.82, transform: 'translateY(-2.5%) scaleY(1.02)', opacity: 1 },
-			{ offset: 1, transform: 'translateY(0) scaleY(1)', opacity: 1 }
+			{ offset: 0,    transform: 'translateY(-205%) scaleY(' + stretch + ')', opacity: 0, filter: 'blur(9px)' },
+			{ offset: 0.45, transform: 'translateY(3%) scaleY(1.03)', opacity: 1, filter: 'blur(5px)' },
+			{ offset: 0.62, transform: 'translateY(9%) scaleY(' + squash + ')', opacity: 1, filter: 'blur(2.4px)' },
+			{ offset: 0.82, transform: 'translateY(-2.5%) scaleY(1.02)', opacity: 1, filter: 'blur(0.7px)' },
+			{ offset: 1,    transform: 'translateY(0) scaleY(1)', opacity: 1, filter: 'blur(0px)' }
 		];
 		return play(el, kfs, opts);
 	}
@@ -223,22 +234,24 @@
 		var opts = options || {};
 		var from = opts.from == null ? -26 : opts.from;
 		var kfs = [
-			{ offset: 0, transform: 'translateX(' + from + 'px)', opacity: 0 },
-			{ offset: 0.7, transform: 'translateX(3px)', opacity: 1 },
-			{ offset: 1, transform: 'translateX(0)', opacity: 1 }
+			{ offset: 0,    transform: 'translateX(' + from + 'px)', opacity: 0, filter: 'blur(5.5px)' },
+			{ offset: 0.45, transform: 'translateX(-4px)', opacity: 1, filter: 'blur(2.6px)' },
+			{ offset: 0.7,  transform: 'translateX(3px)', opacity: 1, filter: 'blur(0.8px)' },
+			{ offset: 1,    transform: 'translateX(0)', opacity: 1, filter: 'blur(0px)' }
 		];
-		return play(el, kfs, Object.assign({ duration: 460, delay: opts.delay || 0, ghosts: 4 }, opts));
+		return play(el, kfs, Object.assign({ duration: 460, delay: opts.delay || 0, ghosts: 7, blur: 3.4, fade: 0.4 }, opts));
 	}
 
 	/** 缩放淡入 */
 	function popIn(el, options) {
 		var opts = options || {};
 		var kfs = [
-			{ offset: 0, transform: 'translateY(16px) scale(0.97)', opacity: 0 },
-			{ offset: 0.7, transform: 'translateY(-2px) scale(1.004)', opacity: 1 },
-			{ offset: 1, transform: 'translateY(0) scale(1)', opacity: 1 }
+			{ offset: 0,   transform: 'translateY(16px) scale(0.97)', opacity: 0, filter: 'blur(4.5px)' },
+			{ offset: 0.5, transform: 'translateY(4px) scale(0.995)', opacity: 1, filter: 'blur(1.8px)' },
+			{ offset: 0.7, transform: 'translateY(-2px) scale(1.004)', opacity: 1, filter: 'blur(0.5px)' },
+			{ offset: 1,   transform: 'translateY(0) scale(1)', opacity: 1, filter: 'blur(0px)' }
 		];
-		return play(el, kfs, Object.assign({ duration: 480, ghosts: 3, blur: 1.2 }, opts));
+		return play(el, kfs, Object.assign({ duration: 480, ghosts: 6, blur: 3.6, fade: 0.4 }, opts));
 	}
 
 	global.Smear = {

@@ -117,11 +117,11 @@
 			var mode = el.getAttribute('data-smear') || 'pop';
 			var delay = Math.min(i * 62, 420);
 			if (mode === 'drop') {
-				Smear.dropIn(el, { duration: 500, delay: delay, ghosts: 5, lag: 26, blur: 1.8 });
+				Smear.dropIn(el, { duration: 500, delay: delay, ghosts: 0 });
 			} else if (mode === 'slide') {
-				Smear.slideIn(el, { duration: 500, delay: delay, ghosts: 4, lag: 24, blur: 1.4 });
+				Smear.slideIn(el, { duration: 500, delay: delay, ghosts: 0 });
 			} else {
-				Smear.popIn(el, { duration: 500, delay: delay, ghosts: 4, lag: 22, blur: 1.4 });
+				Smear.popIn(el, { duration: 500, delay: delay, ghosts: 0 });
 			}
 		});
 	}

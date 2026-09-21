@@ -2,8 +2,23 @@
    motion.css — 交互反馈动效
    ========================================================================== */
 
+/* 涟漪要有地方渲染 */
+.file-row,
+.dock-menu__item { position: relative; overflow: hidden; }
+.card > * ,
+.btn > * { position: relative; z-index: 1; }
+
 /* ------------------------------------------------------------- 涟漪 */
 
+/*
+ * ⚠️ 这条**必须**排在上面 ".card > * / .btn > *" 的后面。
+ * 两者特异性完全相同(都是 0,1,0), 谁赢完全看先后顺序。
+ *
+ * 如果涟漪写在前面, 上面那条 position: relative 就会把它顶掉 ——
+ * 涟漪变成参与布局的普通元素, 而它的大小是按钮的 2.1 倍,
+ * 于是**点一下按钮就会"超级大, 然后缩回去"**。
+ * 同理它也必须在 components.css 的 .btn > * 之后(motion.css 整体在其后, 没问题)。
+ */
 .fx-ripple {
 	position: absolute;
 	z-index: 0;
@@ -17,12 +32,6 @@
 	0%   { transform: scale(0); opacity: 0.85; }
 	100% { transform: scale(1); opacity: 0; }
 }
-
-/* 涟漪要有地方渲染 */
-.file-row,
-.dock-menu__item { position: relative; overflow: hidden; }
-.card > * ,
-.btn > * { position: relative; z-index: 1; }
 
 /* ---------------------------------------------------------------------------
    统一的悬停 / 按下反馈
@@ -92,14 +101,6 @@
 	0%   { transform: rotate(0deg) scale(1); }
 	45%  { transform: rotate(190deg) scale(0.82); }
 	100% { transform: rotate(360deg) scale(1); }
-}
-
-.dock__item.is-popped { animation: fx-pop 460ms var(--ease-smear); }
-@keyframes fx-pop {
-	0%   { transform: translateY(-5px) scale(1.09); }
-	35%  { transform: translateY(-9px) scale(1.2); }
-	65%  { transform: translateY(-2px) scale(0.98); }
-	100% { transform: translateY(-5px) scale(1.09); }
 }
 
 .dock__avatar.is-clicked img { animation: fx-avatar 420ms var(--ease-smear); }
@@ -369,18 +370,4 @@ html.reduce-motion .btn::after { display: none; }
    Dock 底部光点: 移动时拉出拖尾
    ========================================================================== */
 
-.dock__indicator.is-moving {
-	--ind-stretch: 5.5;
-	filter: blur(1.3px);
-	box-shadow:
-		0 0 12px var(--accent),
-		calc(-11px * var(--dir, 1)) 0 10px 3px rgba(var(--accent-rgb), 0.9),
-		calc(-24px * var(--dir, 1)) 0 9px 3px rgba(var(--accent-rgb), 0.74),
-		calc(-39px * var(--dir, 1)) 0 8px 2px rgba(var(--accent-rgb), 0.6),
-		calc(-56px * var(--dir, 1)) 0 8px 2px rgba(var(--accent-rgb), 0.48),
-		calc(-75px * var(--dir, 1)) 0 7px 2px rgba(var(--accent-rgb), 0.37),
-		calc(-97px * var(--dir, 1)) 0 7px 1px rgba(var(--accent-rgb), 0.27),
-		calc(-122px * var(--dir, 1)) 0 6px 1px rgba(var(--accent-rgb), 0.18),
-		calc(-150px * var(--dir, 1)) 0 6px 0 rgba(var(--accent-rgb), 0.11),
-		calc(-182px * var(--dir, 1)) 0 5px 0 rgba(var(--accent-rgb), 0.05);
-}
+/* 小横条不甩尾: 它的运动全在 dock.css 的 left/width 过渡里, 这里不需要任何拖影规则 */

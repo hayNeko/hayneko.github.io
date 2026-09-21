@@ -139,15 +139,21 @@
 		if (!global.Smear || reduced()) return;
 
 		var mode = el.getAttribute('data-smear') || 'pop';
-		var base = { duration: 500, delay: delay, ghosts: 4, lag: 22, blur: 1.4, fade: 0.5 };
+
+		/* 入场**不生成克隆残影**(ghosts: 0)。
+		   克隆残影的本质就是"同一份内容的另一个 DOM 节点", 只要它和主体拉开几像素,
+		   看着就是"复制了一份元素/有虚影" —— 调模糊和不透明度只能减轻, 治不了根。
+		   运动模糊改由 keyframes 里的 filter: blur() 提供: 速度快时糊、落位清晰。
+		   克隆拖影只留给 header 的菜单和开机屏(那里本来就想要"残影"的味道)。 */
+		var base = { duration: 500, delay: delay, ghosts: 0 };
 		var handle = null;
 		var total = 0;
 
 		if (mode === 'drop') {
-			handle = global.Smear.dropIn(el, { duration: 500, delay: delay, ghosts: 5, lag: 26, blur: 1.8, fade: 0.5 });
+			handle = global.Smear.dropIn(el, { duration: 500, delay: delay, ghosts: 0 });
 			total = delay + 500;
 		} else if (mode === 'slide') {
-			handle = global.Smear.slideIn(el, { duration: 500, delay: delay, ghosts: 4, lag: 22, blur: 1.3, fade: 0.48 });
+			handle = global.Smear.slideIn(el, { duration: 500, delay: delay, ghosts: 0 });
 			total = delay + 500;
 		} else {
 			handle = global.Smear.popIn(el, base);
@@ -216,10 +222,8 @@
 
 	/* ------------------------------------------------------------ 位移中的运动模糊 */
 
-	/* 注意: 这里**不能**包含 .dock__indicator。
-	   光点的 .is-moving 由 dock.js 专门管理(它还要负责 --dir / --ind-stretch),
-	   而 --ind-stretch 会改变 transform → 又触发 transitionrun → 再加 .is-moving,
-	   两边互相触发会变成死循环, 光点会一直抖。 */
+	/* 只挑交互反馈类元素。坞里的按钮本身没有 transform 过渡以外的花样,
+	   而且坞底那条指示条已经删掉了, 不需要再排除谁。 */
 	var MOVE_SELECTOR = '.btn, .badge, .card, .sim-card, .dock__item, .dock-menu__item, ' +
 		'.file-row, .term-suggest button';
 	var MOVE_PROPS = { transform: 1, 'padding-left': 1, 'padding-right': 1, top: 1, left: 1 };
@@ -315,14 +319,6 @@
 		setTimeout(function () { el.classList.remove('is-spinning'); }, 500);
 	}
 
-	function pop(el) {
-		if (!el || reduced()) return;
-		el.classList.remove('is-popped');
-		void el.offsetWidth;
-		el.classList.add('is-popped');
-		setTimeout(function () { el.classList.remove('is-popped'); }, 500);
-	}
-
 	/* ------------------------------------------------------------ 初始化 */
 
 	function init() {
@@ -346,7 +342,6 @@
 		themeWipe: themeWipe,
 		routeSweep: routeSweep,
 		spin: spin,
-		pop: pop,
 		get reduced() { return reduced(); }
 	};
 })(window);

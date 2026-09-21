@@ -77,28 +77,17 @@
 .dock__item.is-active { color: var(--accent); }
 .dock__item[disabled] { opacity: 0.35; pointer-events: none; }
 
-/* 坞底部的滑动光点: 跟着鼠标走, 离开后停在当前页面对应的图标下面 */
-.dock__indicator {
-	position: absolute;
-	left: 0;
-	bottom: 5px;
-	width: 5px;
-	height: 5px;
-	margin-left: -2.5px;
-	border-radius: 50%;
-	background: var(--accent);
-	box-shadow: 0 0 10px var(--accent), 0 0 3px var(--accent);
-	pointer-events: none;
-	opacity: 0;
-	will-change: transform;
-	transition:
-		transform 500ms var(--ease-smear),
-		opacity 260ms ease,
-		background 260ms ease,
-		/* 拖尾要能淡出, 不然 .is-moving 摘掉时会"啪"地消失 */
-		box-shadow 340ms ease,
-		filter 340ms ease;
-}
+/*
+ * 坞底原本还有一条"滑动指示条"(光点 → 小横条), 已经删掉了。
+ * 试过三种做法都不理想:
+ *   1. 圆点 + 克隆残影 —— 拖影会被看成"复制了一份元素";
+ *   2. 圆点 + 按实际位移限制拖尾长度 —— 尾巴相对光点当前位置往后甩,
+ *      刚起步时光点还在起点上, 于是会甩到起点后面, 出现"超长拖影";
+ *   3. 小横条 + 两段式伸缩 —— 动画本身没问题, 但坞里腾不出足够空间,
+ *      横条总会和图标那圈 1px 边框打架(坞高加到 68px 也只能勉强贴住)。
+ *
+ * 现在"当前在哪一页"由图标本身的配色区分, 见上面的 .dock__item.is-active。
+ */
 
 .dock__icon { width: 20px; height: 20px; display: block; }
 .dock__icon svg { width: 100%; height: 100%; display: block; }

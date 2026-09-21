@@ -225,13 +225,6 @@ html.reduce-motion .fx-sweep,
 html.reduce-motion .theme-wipe,
 html.reduce-motion .dock-particle { display: none; }
 
-/* 光点不再拉长甩尾 */
-html.reduce-motion .dock__indicator.is-moving {
-	--ind-stretch: 1;
-	filter: none;
-	box-shadow: 0 0 10px var(--accent);
-}
-
 /* 入场动画在 JS 侧也不会播, 元素保持可见 */
 html.reduce-motion [data-smear]:not(.is-revealed) { opacity: 1; }
 

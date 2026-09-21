@@ -174,7 +174,6 @@
 			items +
 			'<span class="dock__spacer"></span>' +
 			'<span class="dock__status" id="dock-status"><b>online</b> <span data-dock-locale>en</span></span>' +
-			'<span class="dock__indicator" id="dock-indicator" aria-hidden="true"></span>' +
 			'</nav>' +
 			labMenu + contactMenu + langMenu + searchMenu;
 	}
@@ -347,65 +346,13 @@
 		if (el) el.textContent = global.i18n ? global.i18n.getLocale() : 'en';
 	}
 
-	/* ------------------------------------------------------------ 坞底滑动光点 */
-
-	var indicator = null;
-	var hoveredItem = null;
-	var indicatorX = null;
-	var indicatorTimer = 0;
-
-	function moveIndicator(item) {
-		if (!indicator || !indicator.isConnected) indicator = doc.getElementById('dock-indicator');
-		if (!indicator || !dockEl) return;
-
-		var target = item || hoveredItem || dockEl.querySelector('.dock__item.is-active');
-		if (!target) { indicator.style.opacity = '0'; return; }
-
-		var r = target.getBoundingClientRect();
-		var d = dockEl.getBoundingClientRect();
-		if (!r.width || !d.width) { indicator.style.opacity = '0'; return; }
-
-		var x = r.left - d.left + r.width / 2;
-		var from = indicatorX == null ? x : indicatorX;
-		var moved = Math.abs(x - from) > 1.5;
-
-		/* --dir 告诉 CSS 拖尾往哪边甩, --ind-stretch 让光点在移动时拉长成一道，
-		   这两个都由 motion.css 里的 .is-moving 控制 */
-		indicator.style.setProperty('--dir', x >= from ? '1' : '-1');
-		indicator.style.opacity = '1';
-		indicator.style.transform = 'translateX(' + x.toFixed(1) + 'px) scaleX(var(--ind-stretch, 1))';
-		indicatorX = x;
-
-		if (moved) {
-			indicator.classList.add('is-moving');
-			clearTimeout(indicatorTimer);
-			/* 比 transform 的 520ms 再长一点, 让拖影"留"一会儿 */
-			indicatorTimer = setTimeout(function () { indicator.classList.remove('is-moving'); }, 500);
-		}
-	}
-
-	function wireIndicator() {
-		if (!dockEl) return;
-		dockEl.addEventListener('pointerover', function (e) {
-			var item = e.target.closest ? e.target.closest('.dock__item') : null;
-			if (!item) return;
-			hoveredItem = item;
-			moveIndicator(item);
-		});
-		dockEl.addEventListener('pointerleave', function () {
-			hoveredItem = null;
-			moveIndicator(null);
-		});
-		global.addEventListener('resize', function () { moveIndicator(null); });
-	}
-
 	function syncActive() {
 		var route = global.Router ? global.Router.current : null;
+		/* 当前页面靠图标本身的 is-active 配色区分(dock.css 里 .dock__item.is-active) */
 		root.querySelectorAll('[data-dock]').forEach(function (btn) {
 			var id = btn.getAttribute('data-dock');
 			btn.classList.toggle('is-active', id === route);
 		});
-		moveIndicator(null);
 	}
 
 	function syncLocale() {
@@ -452,7 +399,8 @@
 		var action = def.act;
 		if (action.indexOf('route:') === 0) {
 			closeMenus();
-			if (global.Motion) global.Motion.pop(btn);
+			/* 这里以前会调 Motion.pop() 做个"弹跳"(fx-pop: 上移 9px + 放大到 1.2)。
+			   但其它坞按钮都只有悬停放大 / 按下缩小, 就这五个会弹, 看着不统一, 去掉了。 */
 			if (global.Router) global.Router.navigate(action.slice(6));
 			return;
 		}
@@ -499,7 +447,6 @@
 
 		initTheme();
 		renderSearch('');
-		wireIndicator();
 
 		root.addEventListener('click', onClick);
 
@@ -533,8 +480,6 @@
 
 		syncActive();
 		syncLocale();
-		/* 等一帧, 让 dock 完成布局后再把光点放到当前页面对应的图标下面 */
-		global.requestAnimationFrame(function () { moveIndicator(null); });
 
 		API.mounted = true;
 
