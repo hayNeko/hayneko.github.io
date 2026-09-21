@@ -49,9 +49,26 @@
 	/* 按钮扫光用的高光色(浅色主题下换成深色) */
 	--sheen: rgba(255, 255, 255, 0.17);
 
-	/* ---- 字体 ---- */
+	/* ---- 字体 ----
+	 *
+	 * 默认正文 = **英文等宽 + 中日韩衬线**。
+	 *
+	 * 这不需要什么字体混排技术, 靠的就是字体回退本身:
+	 * 等宽字体(JetBrains Mono / Cascadia Mono / Consolas / ...)基本都不含 CJK 字形,
+	 * 浏览器排到中文时会自动继续往下找, 于是落到后面那串衬线字体(宋体 / 明朝体)。
+	 *
+	 * ⚠️ 顺序不能反, 中间也不能插泛型 serif —— 泛型会先被解析成一个具体字体,
+	 * 一旦它带 CJK 字形, 中文就轮不到后面的衬线了。
+	 */
+	--font-cjk-serif: "Noto Serif CJK SC", "Source Han Serif SC", "Source Han Serif CN",
+		"Songti SC", "STSong", "SimSun", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN",
+		"Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
 	--font-mono: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", "SF Mono", Menlo,
 		Consolas, "Liberation Mono", "Courier New", ui-monospace, monospace;
+	/* 拉丁部分单独列出来(不带末尾的泛型 monospace), 好把它塞在衬线之前 */
+	--font-latin-mono: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", "SF Mono", Menlo,
+		Consolas, "Liberation Mono", "Courier New", ui-monospace;
+	--font: var(--font-latin-mono), var(--font-cjk-serif);
 	--font-sans: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
 		"Microsoft YaHei", "Noto Sans SC", sans-serif;
 
@@ -121,7 +138,8 @@ body {
 	min-height: 100vh;
 	background: var(--bg-0);
 	color: var(--fg);
-	font-family: var(--font-mono);
+	/* 英文等宽 + 中日韩衬线, 见上面 --font 的说明 */
+	font-family: var(--font);
 	font-size: 15px;
 	line-height: 1.7;
 	letter-spacing: 0.01em;

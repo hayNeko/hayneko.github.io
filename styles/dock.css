@@ -342,6 +342,29 @@
 	.dock-menu { padding: 12px 12px 14px; }
 }
 
-@media (max-width: 420px) {
+/* ≤430px: 坞里排不下十来个按钮 —— 先减项, 再收窄图标与间距。
+   不收的话整条坞会比屏幕还宽, 左右两边各被裁掉一截
+   (实测 420px 下坞宽 495px, 两边各溢出 37px)。
+   窄屏基本没有 hover, tooltip 也一并关掉, 免得被 overflow 切一半。 */
+/* 宽度不够时: 先减两项(links / album, 顶栏导航里都还在), 再整体收窄。
+   坞的满量宽度约 575px(12 个图标 * 38), 所以 600px 以下就必须开始收,
+   否则 600 到 575 之间的窗口里坞会被屏幕两边裁掉。
+   实测: 10 个图标 * 32 + 头像 32 + 3 条分隔线(含外边距)9 + 内边距 12 = 373px。 */
+@media (max-width: 600px) {
+	:root { --dock-item: 32px; }
+	.dock { gap: 0; padding: 0 6px; }
+	.dock__sep { margin: 0 1px; }
+	.dock__avatar { width: 32px; height: 32px; }
+	.dock__icon { width: 16px; height: 16px; }
+	.dock__item::before { display: none; }
 	.dock__item[data-compact-hide] { display: none; }
+}
+
+/* 再窄一档(360 / 320): 10 * 27 + 28 + 3 + 10 = 311px */
+@media (max-width: 380px) {
+	:root { --dock-item: 27px; }
+	.dock { padding: 0 5px; }
+	.dock__sep { margin: 0; }
+	.dock__avatar { width: 28px; height: 28px; }
+	.dock__icon { width: 14px; height: 14px; }
 }

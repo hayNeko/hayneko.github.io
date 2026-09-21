@@ -63,7 +63,7 @@ function usedKeysInHtml() {
  * 这类 key 不在 HTML 里出现, 之前不会被校验 —— 漏翻译了也检查不出来。
  * 只认已知命名空间下的点号 key, 并且先剥掉注释, 避免误报。
  */
-const KEY_NAMESPACES = /^(a11y|title|tab|header|nav|home|info|storage|lab|links|footer|dock|contact|gallery|tools|common|boot|toast)\./;
+const KEY_NAMESPACES = /^(a11y|title|tab|header|nav|home|info|storage|lab|games|links|footer|dock|contact|gallery|tools|common|boot|toast)\./;
 const JS_KEY_RE = /["']([A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_-]+)+)["']/g;
 /* 形如 contact.txt / about.md 的文件名会被上面的正则命中, 明确排除掉 */
 const FILE_EXT_RE = /\.(txt|md|json|json5|mjs?|cjs|ts|css|html?|xml|ya?ml|toml|ini|hpp|hxx|h|c|cc|cpp|cs|java|py|rb|go|rs|sh|pdf|zip|gz|tar|jpe?g|png|gif|webp|avif|svg|ico|bmp|woff2?|ttf|otf|eot|map|log|dat|bin|exe|dll)$/i;

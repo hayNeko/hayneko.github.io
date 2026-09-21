@@ -52,6 +52,7 @@ styles/                 设计层
   components.css          按钮 / 卡片 / 徽章 / 表单 / 表格 / 终端窗
   dock.css                Dock 与弹出菜单
   pages.css               各页面布局 + 交互终端样式
+  games.css               小游戏页: 卡片架 + 俄罗斯方块机台
   motion.css              滚动入场 / 涟漪 / 卡片高光 / 主题擦除 / 路由扫描带
 scripts/
   i18n.js                 轻量 i18n 引擎
@@ -61,11 +62,12 @@ scripts/
   router.js               hash 路由 + 页面转场
   header-nav.js           顶栏展开/收起编排
   terminal.js             交互终端
+  games.js                小游戏引擎(俄罗斯方块) + 机台挂载
   dock.js                 Dock: 图标、菜单、粒子、主题、搜索
   app.js                  引导
   check-i18n.mjs          语言包校验(含 JS 引用扫描与运行时解析校验)
 views/                  NEW  路由片段
-  home.html  terminal.html  storage.html  lab.html  links.html
+  home.html  terminal.html  storage.html  lab.html  games.html  links.html
 i18n/                   NEW  en / zh-CN / zh-TW / ja / ko (key 集合完全一致)
 
 pages/physics-sim/      未改动 —— 三个物理学学习页面, 样式保持原样
@@ -87,6 +89,7 @@ medias/                 未改动 —— 图片 / 字体 / 文件 / 旧 CSS 与�
 | `#/terminal` | 交互终端（见下） |
 | `#/storage` | 资源下载（含失效条目标注） |
 | `#/lab` | 三个物理模拟的入口 + 参考文档 |
+| `#/games` | 小游戏（目前只有俄罗斯方块, 见下） |
 | `#/links` | 友情链接（目前为空） |
 
 `pages/storage-list.html` 保留为旧地址的重定向，老链接不会失效。
@@ -101,7 +104,62 @@ medias/                 未改动 —— 图片 / 字体 / 文件 / 旧 CSS 与�
 `sim [n]`（打开物理模拟）、`theme dark|light`、`accent red|green|blue`、
 `b64` / `b64d`、`uuid [n]`、`json`、`sha256`、`neofetch`。
 
-支持 ↑/↓ 历史与 Tab 补全；虚拟文件系统内容在 `VFS` 里（about.md / contact.txt / sims.txt）。
+支持 ↑/↓ 历史与 Tab 补全；虚拟文件系统内容在 `VFS` 里（about.md / contact.txt / sims.txt / games.txt）。
+
+---
+
+## 小游戏
+
+`views/games.html` + `scripts/games.js` + `styles/games.css`，路由 `#/games`。
+目前只有俄罗斯方块，但页面是按"多款"搭的：上面是卡片架，下面是机台，
+`games.js` 里的 `GAMES` 是唯一事实来源（卡片、dock 搜索、终端 `games` 命令都读它）。
+
+三个入口走的是同一个引擎：
+
+| 入口 | 行为 |
+| --- | --- |
+| dock 的「小游戏」按钮 / 顶栏 `05 Games` / `g` `g` | 进 `#/games`，机台停在 ready，等你按开始 |
+| 卡片上的 `Play` | 进页面并把机台滚到眼前，直接开局 |
+| 终端 `play tetris`（`games` 只列清单） | 同上 —— 命令行也能开局 |
+
+引擎要点：
+
+- **7-bag 随机**：每七个方块里七种形状各出现一次，不会连着来五个 S；
+- **旋转 + 踢墙**：`KICKS` 依次试「原地 → 左/右各两格 → 上抬一格」，贴地也转得动；
+- **幽灵落点**只描一圈边；**暂存**（`C`）一回合只能用一次；
+- 落地有 **430ms 宽限**，期间挪动会重新计时（最多重置 12 次，防止原地无限转）；
+- **消行闪光** 150ms；计分 `100 / 300 / 500 / 800` × 等级，软降 1 分/格、硬降 2 分/格；
+- 等级 = 消行数 / 10 + 1，下落间隔 `max(70, 800 × 0.85^(level-1))` ms，最高分写在
+  `localStorage` 的 `hayneko.game.tetris.best`。
+
+操作：`←` `→` 移动、`↑` / `X` / `Z` 旋转、`↓` 软降、`Space` 硬降、`C` 暂存、`P` / `Esc` 暂停。
+屏幕下面还有一排按钮，触屏也能玩。
+
+长按连发是引擎自己排的（浏览器自带的方向键重复节奏对不上），手感参数就这四个，在 `games.js` 顶部：
+
+```js
+var DAS_MS = 250;      // 按住多久才开始连发
+var ARR_MS = 110;      // 连发的间隔
+var SOFT_DAS_MS = 140; // 软降起步 / 连发, 往下滑过头不心疼
+var SOFT_ARR_MS = 70;
+```
+
+> **这两个值别往回缩。** 一开始写的是 170 / 55，按住一秒能横移 **17 格** ——
+> 想挪一两格时手一抖就滑到墙上。现在 250 / 110 实测按住一秒走 **8 格**，
+> 而且松手不会补跳：120ms 的点按只走 1 格。
+> 浏览器自己在长按时会每 30ms 左右补发一次 `keydown`，这些重复事件由 `held` 挡掉，
+> 不会被当成新的点击（实测连发 36 次 `keydown` 也只按上面的节奏走）。
+
+> **画布尺寸量的是 `clientWidth`，不是 `getBoundingClientRect()`。**
+> 入场动画会给 `.page` 挂 `transform`，量矩形拿到的是缩放后的尺寸，
+> 画布就会按错的宽度建，画面发糊 —— 而且不会自愈，要等下一次 resize。
+
+> **离开页面要收干净。** `route:changed` 里销毁控制器（摘掉 keydown / ResizeObserver /
+> 监听器并停掉 rAF），主循环里还有一道 `canvas.isConnected` 兜底；
+> 切走标签页（`visibilitychange`）自动暂停。不然旧机台会在后台一直空转。
+
+> **机台正在跑时，`g` 前缀快捷键不抢按键**（`app.js` 里一问 `Games.active()` 就退出），
+> 否则玩着玩着按到 `g` `h` 就跳页了。
 
 ---
 
@@ -110,7 +168,7 @@ medias/                 未改动 —— 图片 / 字体 / 文件 / 旧 CSS 与�
 | 位置 | 项 | 行为 |
 | --- | --- | --- |
 | 左 | 头像 | 点击迸发粒子并回到首页 |
-| | 首页 / 终端 / 资源下载 / 物理实验室 / 友情链接 | 站内路由 |
+| | 首页 / 终端 / 资源下载 / 物理实验室 / 小游戏 / 友情链接 | 站内路由 |
 | | 搜索 | 打开搜索菜单（索引覆盖页面与模拟）|
 | | 联系 | GitHub / Instagram / 邮箱 |
 | | 语言 | en / zh-CN / zh-TW / ja / ko |
@@ -118,6 +176,13 @@ medias/                 未改动 —— 图片 / 字体 / 文件 / 旧 CSS 与�
 | | 项目 | 打开 GitHub |
 | | 相册 | 占位（提示尚未开放）|
 | 右 | 状态 | 等宽的 `online <locale>` |
+
+> **窄屏的坞。** 坞的满量宽度约 **575px**（12 个按钮 × 38px + 头像 + 分隔线），
+> 以前没有任何收窄规则，窗口一窄过 575px，整条坞就被屏幕两边裁掉 ——
+> 实测 420px 下坞宽 **495px**，左右各溢出 37px；加了「小游戏」之后还要再多 40px。
+> 现在 600px 以下先隐藏两个 `data-compact-hide` 项（`links` / `album`，两者顶栏导航里都还在），
+> 再把图标收到 32px（总宽 373px）；380px 以下收到 27px（总宽 311px），并关掉窄屏没有意义的 tooltip。
+> 逐档实测 320 / 360 / 375 / 390 / 420 / 430 / 440px 均不再溢出，601px 以上外观与之前完全一致。
 
 菜单从 Dock 上方展开，菜单项用 `--i` 依次错位入场。
 
@@ -257,6 +322,35 @@ index.html?motion=auto    # 恢复跟随系统
 --nav-ease: cubic-bezier(0.15, 1, 0, 1);
 ```
 
+### 字体
+
+正文默认 = **英文等宽 + 中日韩衬线**（`tokens.css` 的 `--font`）。
+
+```css
+--font-cjk-serif: "Noto Serif CJK SC", "Source Han Serif SC", "Source Han Serif CN",
+    "Songti SC", "STSong", "SimSun", "Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN",
+    "Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
+--font-latin-mono: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", "SF Mono", Menlo,
+    Consolas, "Liberation Mono", "Courier New", ui-monospace;
+--font: var(--font-latin-mono), var(--font-cjk-serif);
+```
+
+**不是字体混排，就是字体回退本身**：等宽字体基本不含 CJK 字形，浏览器排到中文时
+会自动继续往下找，于是落到后面那串衬线（宋体 / 明朝体）。
+
+> ⚠️ 顺序不能反，拉丁那段也**不能带末尾的泛型 `monospace`** ——
+> 泛型会先被解析成一个具体字体，一旦它带 CJK 字形，中文就轮不到后面的衬线了。
+> 所以拉丁部分单独拆成 `--font-latin-mono`。
+
+实测（无头 Edge，同一台机器）：
+
+| | 判定方式 | 结果 |
+| --- | --- | --- |
+| 英文 | 量 `Hayneko 1234` 的宽度 | **281.25 == Cascadia Mono**（Consolas 263.91、Arial 257.97 都对不上） |
+| 中文 | 与参考字体并排渲染对比 | 与**泛型 `serif`** 逐像素一致 → 宋体 ✓ |
+
+`code` / `kbd` / `pre` / 终端仍然用 `--font-mono`（连中文也是等宽），因为那里要对齐。
+
 ### 时长约定
 
 所有动效**单个不超过 0.5s**：`--dur-4` = 500ms（顶栏箭头 / 卡片 / 进度条），
@@ -266,7 +360,7 @@ index.html?motion=auto    # 恢复跟随系统
 
 ### 交互式终端
 
-`views/terminal.html` + `scripts/terminal.js`，**43 个命令**，Tab 补全、上下键翻历史、
+`views/terminal.html` + `scripts/terminal.js`，**45 个命令**，Tab 补全、上下键翻历史、
 支持单/双引号（引号里的空格不会被拆开）。
 
 | 分组 | 命令 |
@@ -276,6 +370,7 @@ index.html?motion=auto    # 恢复跟随系统
 | 数字 / 时间 | `calc` `base` `ts` `uuid` `pass` `color` `cron` |
 | 文本 | `text <op>` `count` `lorem` |
 | 系统 | `whoami` `date` `history` `env` `theme` `accent` `neofetch` |
+| 小游戏 | `games` `play <game>` |
 | 彩蛋 | `matrix` `sudo` `vim` |
 
 几个值得一试的：

@@ -33,12 +33,17 @@
 			'',
 			'Run "sim 2" to open one.'
 		],
+		'games.txt': [
+			'1  tetris        classic falling-block puzzle',
+			'',
+			'Run "play tetris" to open one.'
+		],
 		'.help': [
-			'Try: help, ls, cat about.md, sim 2, theme light, accent blue, neofetch.'
+			'Try: help, ls, cat about.md, sim 2, play tetris, theme light, neofetch.'
 		]
 	};
 
-	var EPOCH_FILES = ['about.md', 'contact.txt', 'sims.txt', '.help'];
+	var EPOCH_FILES = ['about.md', 'contact.txt', 'sims.txt', 'games.txt', '.help'];
 
 	/* 物理模拟入口(sim 命令用) */
 	var SIMS = [
@@ -46,6 +51,14 @@
 		{ name: 'phy-ntlaw2', href: 'pages/physics-sim/phy-ntlaw2/' },
 		{ name: 'phy-lens', href: 'pages/physics-sim/phy-lens/' }
 	];
+
+	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准 */
+	var GAMES_FALLBACK = [{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle' }];
+
+	function gameList() {
+		if (global.Games && global.Games.list) return global.Games.list();
+		return GAMES_FALLBACK;
+	}
 
 	var instances = [];
 
@@ -104,9 +117,13 @@
 				['ls', 'list virtual files'],
 				['tree', 'virtual files as a tree'],
 				['cat <file>', 'print a virtual file'],
-				['open <page>', 'navigate: home | terminal | storage | lab | links'],
+				['open <page>', 'navigate: home | terminal | storage | lab | games | links'],
 				['sim [n]', 'list / open a physics simulation'],
 				['clear', 'clear the screen']
+			] },
+			{ title: 'games', rows: [
+				['games', 'list the mini games on this site'],
+				['play <game>', 'open a mini game and start it (tetris)']
 			] },
 			{ title: 'encode & hash', rows: [
 				['b64 <text>', 'base64 encode'],
@@ -288,6 +305,38 @@
 			print('opening ' + pick.name + ' ...', 't-info');
 			scrollToEnd();
 			global.open(pick.href, '_blank', 'noopener');
+		}
+
+		/* 小游戏: 清单由 scripts/games.js 提供, 开局也走它的 launch() */
+		function cmdGames() {
+			var list = gameList();
+			if (!list.length) { print('games: nothing installed', 't-err'); return; }
+			print('Available mini games', 't-info');
+			list.forEach(function (g, i) {
+				print('  ' + (i + 1) + '  ' + g.id.padEnd(12, ' ') + (g.desc || ''));
+			});
+			print('');
+			print('usage: play <game>', 't-dim');
+		}
+
+		function cmdPlay(args) {
+			var name = (args[0] || '').toLowerCase();
+			if (!name) { cmdGames(); return; }
+			var list = gameList();
+			var found = null;
+			list.forEach(function (g) { if (g.id === name) found = g; });
+			if (!found) {
+				print('play: no game named "' + args[0] + '"', 't-err');
+				print('  try: ' + list.map(function (g) { return g.id; }).join(' | '), 't-dim');
+				return;
+			}
+			if (!global.Games || !global.Games.launch) {
+				print('play: the games page is not loaded on this build', 't-err');
+				return;
+			}
+			print('starting ' + found.id + ' ...', 't-ok');
+			scrollToEnd();
+			global.Games.launch(found.id);
 		}
 
 		function cmdTheme(args) {
@@ -939,6 +988,10 @@
 			neofetch: cmdNeofetch,
 			sim: cmdSim,
 			sims: cmdSim,
+
+			/* 小游戏 */
+			games: cmdGames,
+			play: cmdPlay,
 
 			/* 彩蛋 */
 			matrix: cmdMatrix,

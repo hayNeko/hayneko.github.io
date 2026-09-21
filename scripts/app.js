@@ -151,6 +151,8 @@
 				return;
 			}
 			if (typing) return;
+			/* 机台正在跑的时候方向键 / 空格都归游戏, 别在这里抢 */
+			if (global.Games && global.Games.active && global.Games.active()) return;
 
 			if (e.key === 'g') {
 				pending = true;
@@ -158,7 +160,7 @@
 				return;
 			}
 			if (!pending) return;
-			var map = { h: 'home', s: 'storage', l: 'lab', k: 'links' };
+			var map = { h: 'home', s: 'storage', l: 'lab', k: 'links', g: 'games', t: 'terminal' };
 			var target = map[e.key.toLowerCase()];
 			if (target && global.Router) {
 				e.preventDefault();

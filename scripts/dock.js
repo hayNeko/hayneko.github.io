@@ -34,7 +34,8 @@
 		doc: '<path d="M14 2.5H6.5A1.5 1.5 0 0 0 5 4v16a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 20V7.5z"/><path d="M14 2.5V7.5h5"/><path d="M8.5 12.5h7M8.5 16h5"/>',
 		external: '<path d="M14 3.5h6.5V10"/><path d="M20.5 3.5 11 13"/><path d="M18.5 14v5.5a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 19.5V8a1.5 1.5 0 0 1 1.5-1.5H11"/>',
 		check: '<path d="m4.5 12.5 5 5 10-11"/>',
-		grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>'
+		grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
+		gamepad: '<path d="M8 8.2h8a4.6 4.6 0 0 1 4.5 5.5l-.8 3.2a2.35 2.35 0 0 1-4.2 1l-.9-1.1H9.4l-.9 1.1a2.35 2.35 0 0 1-4.2-1l-.8-3.2A4.6 4.6 0 0 1 8 8.2z"/><path d="M7.4 11.2v2.6M6.1 12.5h2.6"/><circle cx="16" cy="11.4" r=".95"/><circle cx="17.8" cy="13.4" r=".95"/>'
 	};
 
 	function svg(name, cls) {
@@ -74,6 +75,7 @@
 		{ id: 'terminal', icon: 'term', key: 'dock.terminal', act: 'route:terminal' },
 		{ id: 'storage', icon: 'box', key: 'dock.storage', act: 'route:storage' },
 		{ id: 'lab', icon: 'flask', key: 'dock.lab', act: 'menu:lab' },
+		{ id: 'games', icon: 'gamepad', key: 'dock.games', act: 'route:games' },
 		{ id: 'links', icon: 'link', key: 'dock.links', act: 'route:links', compact: true },
 		{ sep: true },
 		{ id: 'search', icon: 'search', key: 'dock.search', act: 'menu:search' },
@@ -299,6 +301,7 @@
 		{ label: 'Terminal', key: 'dock.terminal', route: 'terminal', icon: 'term' },
 		{ label: 'Storage', key: 'dock.storage', route: 'storage', icon: 'box' },
 		{ label: 'Lab', key: 'dock.lab', route: 'lab', icon: 'flask' },
+		{ label: 'Games', key: 'dock.games', route: 'games', icon: 'gamepad' },
 		{ label: 'Links', key: 'dock.links', route: 'links', icon: 'link' }
 	].concat(SIMS.map(function (s) {
 		return { label: s.key, key: 'lab.' + s.key + '.title', href: s.href, icon: s.icon };

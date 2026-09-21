@@ -18,6 +18,7 @@
 	<link rel="stylesheet" href="styles/components.css">
 	<link rel="stylesheet" href="styles/dock.css">
 	<link rel="stylesheet" href="styles/pages.css">
+	<link rel="stylesheet" href="styles/games.css">
 	<link rel="stylesheet" href="styles/motion.css">
 
 	<!-- 国际化配置: 必须在 i18n.js 之前定义 -->
@@ -40,6 +41,7 @@
 	<script src="scripts/router.js" defer></script>
 	<script src="scripts/header-nav.js" defer></script>
 	<script src="scripts/terminal.js" defer></script>
+	<script src="scripts/games.js" defer></script>
 	<script src="scripts/dock.js" defer></script>
 	<script src="scripts/app.js" defer></script>
 </head>
@@ -104,8 +106,17 @@
 					<span class="nav-item__key" aria-hidden="true">↵</span>
 				</a>
 
-				<a class="nav-item" href="#/links" data-route="links">
+				<a class="nav-item" href="#/games" data-route="games">
 					<span class="nav-item__idx">05</span>
+					<span class="nav-item__body">
+						<span class="nav-item__label" i18n-key="nav.item.games.label">Games</span>
+						<span class="nav-item__desc" i18n-key="nav.item.games.desc">Small games in the page</span>
+					</span>
+					<span class="nav-item__key" aria-hidden="true">↵</span>
+				</a>
+
+				<a class="nav-item" href="#/links" data-route="links">
+					<span class="nav-item__idx">06</span>
 					<span class="nav-item__body">
 						<span class="nav-item__label" i18n-key="nav.item.links.label">Friendly Links</span>
 						<span class="nav-item__desc" i18n-key="nav.item.links.desc">Sites I actually visit</span>

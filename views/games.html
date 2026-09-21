@@ -1,0 +1,147 @@
+<!-- views/games.html -->
+<header class="page-head">
+	<h1 class="page-head__title" data-smear="drop" data-fx-split><span data-fx-text i18n-key="games.heading">Games</span></h1>
+	<p class="page-head__sub" data-smear i18n-key="games.subtitle">
+		Small games that run right in the page. No download, no plugin — and the terminal can start them too.
+	</p>
+</header>
+
+<section class="section" style="margin-top:0">
+	<div class="game-grid">
+		<article class="game-card is-active" data-smear>
+			<div class="game-card__preview" aria-hidden="true">
+				<svg viewBox="0 0 200 80" preserveAspectRatio="xMidYMid meet">
+					<rect x="70" y="4" width="60" height="72" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>
+					<g fill="#3ce07b">
+						<rect x="72" y="60" width="14" height="14"/>
+						<rect x="86" y="60" width="14" height="14"/>
+						<rect x="100" y="60" width="14" height="14"/>
+						<rect x="114" y="60" width="14" height="14"/>
+					</g>
+					<g fill="#4d9dff">
+						<rect x="100" y="46" width="14" height="14"/>
+						<rect x="114" y="46" width="14" height="14"/>
+					</g>
+					<g fill="#ffd24d">
+						<rect x="72" y="46" width="14" height="14"/>
+						<rect x="72" y="32" width="14" height="14"/>
+					</g>
+					<g fill="#b06bff">
+						<rect x="86" y="18" width="14" height="14"/>
+						<rect x="72" y="32" width="14" height="14" opacity=".35"/>
+					</g>
+					<g fill="#ff4d5a">
+						<rect x="100" y="18" width="14" height="14"/>
+						<rect x="114" y="18" width="14" height="14"/>
+						<rect x="100" y="4" width="14" height="14" opacity=".35"/>
+					</g>
+					<g fill="none" stroke="currentColor" stroke-opacity=".28" stroke-width="1.2">
+						<rect x="72.5" y="26.5" width="13" height="19"/>
+						<rect x="72.5" y="40.5" width="55" height="19"/>
+					</g>
+				</svg>
+			</div>
+			<span class="game-card__idx">01 / PUZZLE</span>
+			<h3 class="game-card__title" i18n-key="games.tetris.title">Tetris</h3>
+			<p class="game-card__body" i18n-key="games.tetris.desc">
+				Seven shapes, ten columns, and a level curve that speeds up every ten lines. Ghost piece and hold included.
+			</p>
+			<div class="game-card__foot">
+				<button type="button" class="btn btn--sm" data-game-launch="tetris">
+					<span i18n-key="games.play">Play</span>
+					<span class="btn__arrow" aria-hidden="true">↓</span>
+				</button>
+				<span class="badge badge--green" i18n-key="games.tetris.badge">v1.0</span>
+			</div>
+		</article>
+
+		<article class="game-card game-card--soon" data-smear>
+			<div class="game-card__preview game-card__preview--empty" aria-hidden="true">
+				<pre class="game-card__art">   .-------------.
+   |  +---+---+  |
+   |  |   |   |  |
+   |  +---+---+  |
+   |     ...     |
+   '-------------'</pre>
+			</div>
+			<span class="game-card__idx">02 / ???</span>
+			<h3 class="game-card__title" i18n-key="games.soon.title">Empty cabinet</h3>
+			<p class="game-card__body" i18n-key="games.soon.body">
+				The shelf is built to hold more than one game — the next one just is not written yet.
+			</p>
+			<div class="game-card__foot">
+				<span class="badge" i18n-key="games.soon.badge">soon</span>
+			</div>
+		</article>
+	</div>
+</section>
+
+<section class="section" id="game-bay">
+	<header class="section__head">
+		<h2 class="section__title" data-smear="slide" i18n-key="games.bay.title">Cabinet</h2>
+		<p class="section__sub" i18n-key="games.bay.sub">
+			Arrow keys, or the buttons under the screen. Leaving the page or the tab pauses the run.
+		</p>
+	</header>
+
+	<div class="cabinet" data-game="tetris" data-smear>
+		<div class="cabinet__bar">
+			<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="cabinet__name">tetris.sh</span>
+			<span class="cabinet__state" data-game-state i18n-key="games.state.ready">ready</span>
+		</div>
+
+		<div class="cabinet__screen">
+			<div class="cabinet__well">
+				<canvas class="cabinet__canvas" data-tetris-canvas width="240" height="480"
+					role="img" aria-label="tetris board" i18n-attr="aria-label" i18n-key="games.board.aria"></canvas>
+				<div class="cabinet__overlay is-shown" data-tetris-overlay role="button" tabindex="0">
+					<strong class="cabinet__overlay-title" data-tetris-ov-title i18n-key="games.overlay.readyTitle">TETRIS</strong>
+					<span class="cabinet__overlay-hint" data-tetris-ov-hint i18n-key="games.overlay.readyHint">Press Start, or Space</span>
+				</div>
+			</div>
+
+			<aside class="cabinet__hud">
+				<div class="hud-block">
+					<span class="hud-block__key" i18n-key="games.hud.next">Next</span>
+					<canvas class="hud-block__mini" data-tetris-next width="56" height="56" aria-hidden="true"></canvas>
+				</div>
+				<div class="hud-block">
+					<span class="hud-block__key" i18n-key="games.hud.hold">Hold</span>
+					<canvas class="hud-block__mini" data-tetris-hold width="56" height="56" aria-hidden="true"></canvas>
+				</div>
+
+				<dl class="hud-stats">
+					<dt i18n-key="games.hud.score">Score</dt><dd data-tetris-score>0</dd>
+					<dt i18n-key="games.hud.level">Level</dt><dd data-tetris-level>1</dd>
+					<dt i18n-key="games.hud.lines">Lines</dt><dd data-tetris-lines>0</dd>
+					<dt i18n-key="games.hud.best">Best</dt><dd data-tetris-best>0</dd>
+				</dl>
+
+				<div class="cabinet__actions">
+					<button type="button" class="btn btn--sm btn--block" data-tetris-action="start" i18n-key="games.btn.start">Start</button>
+					<button type="button" class="btn btn--sm btn--ghost btn--block" data-tetris-action="pause" disabled>Pause</button>
+					<button type="button" class="btn btn--sm btn--ghost btn--block" data-tetris-action="restart" i18n-key="games.btn.restart">Restart</button>
+				</div>
+			</aside>
+		</div>
+
+		<div class="cabinet__pad" role="group" aria-label="touch controls" i18n-attr="aria-label" i18n-key="games.pad.aria">
+			<button type="button" class="cabinet__pad-btn" data-pad="left" aria-label="left" i18n-attr="aria-label" i18n-key="games.pad.left">←</button>
+			<button type="button" class="cabinet__pad-btn" data-pad="rotate" aria-label="rotate" i18n-attr="aria-label" i18n-key="games.pad.rotate">⟳</button>
+			<button type="button" class="cabinet__pad-btn" data-pad="right" aria-label="right" i18n-attr="aria-label" i18n-key="games.pad.right">→</button>
+			<button type="button" class="cabinet__pad-btn" data-pad="down" aria-label="soft drop" i18n-attr="aria-label" i18n-key="games.pad.down">↓</button>
+			<button type="button" class="cabinet__pad-btn" data-pad="drop" aria-label="hard drop" i18n-attr="aria-label" i18n-key="games.pad.drop">⤓</button>
+			<button type="button" class="cabinet__pad-btn" data-pad="hold" aria-label="hold" i18n-attr="aria-label" i18n-key="games.pad.hold">H</button>
+		</div>
+
+		<div class="cabinet__keys">
+			<span class="cabinet__key"><kbd>←</kbd><kbd>→</kbd><em i18n-key="games.keys.move">move</em></span>
+			<span class="cabinet__key"><kbd>↑</kbd><kbd>X</kbd><kbd>Z</kbd><em i18n-key="games.keys.rotate">rotate</em></span>
+			<span class="cabinet__key"><kbd>↓</kbd><em i18n-key="games.keys.soft">soft drop</em></span>
+			<span class="cabinet__key"><kbd>Space</kbd><em i18n-key="games.keys.hard">hard drop</em></span>
+			<span class="cabinet__key"><kbd>C</kbd><em i18n-key="games.keys.hold">hold</em></span>
+			<span class="cabinet__key"><kbd>P</kbd><kbd>Esc</kbd><em i18n-key="games.keys.pause">pause</em></span>
+		</div>
+	</div>
+</section>

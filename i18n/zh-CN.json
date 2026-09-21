@@ -9,6 +9,7 @@
 			"tip": "Hayneko"
 		},
 		"contact": "联系",
+		"games": "小游戏",
 		"home": "首页",
 		"lab": "物理实验室",
 		"language": "语言",
@@ -43,6 +44,73 @@
 		"text": {
 			"0": "© Hayneko. 创建于 2026 年 1 月 10 日。",
 			"1": "本站已重构 5 次。"
+		}
+	},
+	"games": {
+		"bay": {
+			"sub": "方向键, 或者屏幕下面的按钮。离开页面或切走标签页会自动暂停。",
+			"title": "机台"
+		},
+		"board": {
+			"aria": "俄罗斯方块棋盘"
+		},
+		"btn": {
+			"pause": "暂停",
+			"restart": "重开",
+			"resume": "继续",
+			"start": "开始"
+		},
+		"heading": "小游戏",
+		"hud": {
+			"best": "最高分",
+			"hold": "暂存",
+			"level": "等级",
+			"lines": "消行",
+			"next": "下一个",
+			"score": "得分"
+		},
+		"keys": {
+			"hard": "硬降",
+			"hold": "暂存",
+			"move": "移动",
+			"pause": "暂停",
+			"rotate": "旋转",
+			"soft": "软降"
+		},
+		"overlay": {
+			"overHint": "得分 {score} · 最高 {best}",
+			"overTitle": "游戏结束",
+			"pausedHint": "P 或 Esc 继续",
+			"pausedTitle": "已暂停",
+			"readyHint": "按开始, 或空格",
+			"readyTitle": "俄罗斯方块"
+		},
+		"pad": {
+			"aria": "触屏操作",
+			"down": "软降",
+			"drop": "硬降",
+			"hold": "暂存",
+			"left": "左移",
+			"right": "右移",
+			"rotate": "旋转"
+		},
+		"play": "开始玩",
+		"soon": {
+			"badge": "待定",
+			"body": "架子是按多款游戏设计的 —— 只是下一款还没写。",
+			"title": "空机台"
+		},
+		"state": {
+			"over": "结束",
+			"paused": "已暂停",
+			"ready": "就绪",
+			"running": "进行中"
+		},
+		"subtitle": "直接在页面里跑的小游戏。不用下载、不用插件 —— 终端里也能开局。",
+		"tetris": {
+			"badge": "v1.0",
+			"desc": "七种方块、十列场地, 每消十行快一档。带幽灵落点和暂存。",
+			"title": "俄罗斯方块"
 		}
 	},
 	"header": {
@@ -134,6 +202,10 @@
 	"nav": {
 		"aria": "主导航",
 		"item": {
+			"games": {
+				"desc": "页面里就能玩的小游戏",
+				"label": "小游戏"
+			},
 			"home": {
 				"desc": "我是谁, 这个站点在做什么",
 				"label": "首页"
@@ -195,6 +267,7 @@
 	},
 	"title": {
 		"default": "Hayneko",
+		"games": "小游戏 · Hayneko",
 		"home": "首页 · Hayneko",
 		"lab": "物理实验室 · Hayneko",
 		"links": "友情链接 · Hayneko",

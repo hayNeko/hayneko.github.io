@@ -9,6 +9,7 @@
 			"tip": "Hayneko"
 		},
 		"contact": "連絡先",
+		"games": "ゲーム",
 		"home": "ホーム",
 		"lab": "物理ラボ",
 		"language": "言語",
@@ -43,6 +44,73 @@
 		"text": {
 			"0": "© Hayneko. 2026年1月10日作成。",
 			"1": "このサイトは 5 回作り直されました。"
+		}
+	},
+	"games": {
+		"bay": {
+			"sub": "矢印キー、または画面下のボタンで操作します。ページやタブを離れると自動で一時停止します。",
+			"title": "ゲーム台"
+		},
+		"board": {
+			"aria": "テトリスのフィールド"
+		},
+		"btn": {
+			"pause": "一時停止",
+			"restart": "リスタート",
+			"resume": "再開",
+			"start": "スタート"
+		},
+		"heading": "ゲーム",
+		"hud": {
+			"best": "ベスト",
+			"hold": "ホールド",
+			"level": "レベル",
+			"lines": "ライン",
+			"next": "次のピース",
+			"score": "スコア"
+		},
+		"keys": {
+			"hard": "ハードドロップ",
+			"hold": "ホールド",
+			"move": "移動",
+			"pause": "一時停止",
+			"rotate": "回転",
+			"soft": "ソフトドロップ"
+		},
+		"overlay": {
+			"overHint": "スコア {score} · ベスト {best}",
+			"overTitle": "ゲームオーバー",
+			"pausedHint": "P か Esc で再開",
+			"pausedTitle": "一時停止",
+			"readyHint": "スタート、またはスペース",
+			"readyTitle": "テトリス"
+		},
+		"pad": {
+			"aria": "タッチ操作",
+			"down": "ソフトドロップ",
+			"drop": "ハードドロップ",
+			"hold": "ホールド",
+			"left": "左へ",
+			"right": "右へ",
+			"rotate": "回転"
+		},
+		"play": "プレイ",
+		"soon": {
+			"badge": "近日",
+			"body": "この棚は複数のゲームを入れる作りです —— 次の一本がまだ書かれていないだけです。",
+			"title": "空のゲーム台"
+		},
+		"state": {
+			"over": "ゲームオーバー",
+			"paused": "一時停止",
+			"ready": "準備完了",
+			"running": "実行中"
+		},
+		"subtitle": "ページの中でそのまま動く小さなゲーム。ダウンロードもプラグインも不要 —— ターミナルからも起動できます。",
+		"tetris": {
+			"badge": "v1.0",
+			"desc": "7 種類のピース、10 列のフィールド、10 ラインごとに上がるレベル。ゴースト表示とホールド付き。",
+			"title": "テトリス"
 		}
 	},
 	"header": {
@@ -134,6 +202,10 @@
 	"nav": {
 		"aria": "メインナビゲーション",
 		"item": {
+			"games": {
+				"desc": "ページ内で遊べる小さなゲーム",
+				"label": "ゲーム"
+			},
 			"home": {
 				"desc": "私について、このサイトについて",
 				"label": "ホーム"
@@ -195,6 +267,7 @@
 	},
 	"title": {
 		"default": "Hayneko",
+		"games": "ゲーム · Hayneko",
 		"home": "ホーム · Hayneko",
 		"lab": "物理ラボ · Hayneko",
 		"links": "友情リンク · Hayneko",

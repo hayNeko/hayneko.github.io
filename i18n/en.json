@@ -9,6 +9,7 @@
 			"tip": "Hayneko"
 		},
 		"contact": "Contact",
+		"games": "Games",
 		"home": "Home",
 		"lab": "Physics lab",
 		"language": "Language",
@@ -43,6 +44,73 @@
 		"text": {
 			"0": "© Hayneko. Created on Jan 10, 2026.",
 			"1": "This site has been refactored 5 times."
+		}
+	},
+	"games": {
+		"bay": {
+			"sub": "Arrow keys, or the buttons under the screen. Leaving the page or the tab pauses the run.",
+			"title": "Cabinet"
+		},
+		"board": {
+			"aria": "Tetris board"
+		},
+		"btn": {
+			"pause": "Pause",
+			"restart": "Restart",
+			"resume": "Resume",
+			"start": "Start"
+		},
+		"heading": "Games",
+		"hud": {
+			"best": "Best",
+			"hold": "Hold",
+			"level": "Level",
+			"lines": "Lines",
+			"next": "Next",
+			"score": "Score"
+		},
+		"keys": {
+			"hard": "hard drop",
+			"hold": "hold",
+			"move": "move",
+			"pause": "pause",
+			"rotate": "rotate",
+			"soft": "soft drop"
+		},
+		"overlay": {
+			"overHint": "score {score} · best {best}",
+			"overTitle": "GAME OVER",
+			"pausedHint": "P or Esc to resume",
+			"pausedTitle": "PAUSED",
+			"readyHint": "Press Start, or Space",
+			"readyTitle": "TETRIS"
+		},
+		"pad": {
+			"aria": "touch controls",
+			"down": "soft drop",
+			"drop": "hard drop",
+			"hold": "hold",
+			"left": "left",
+			"right": "right",
+			"rotate": "rotate"
+		},
+		"play": "Play",
+		"soon": {
+			"badge": "soon",
+			"body": "The shelf is built to hold more than one game — the next one just is not written yet.",
+			"title": "Empty cabinet"
+		},
+		"state": {
+			"over": "game over",
+			"paused": "paused",
+			"ready": "ready",
+			"running": "running"
+		},
+		"subtitle": "Small games that run right in the page. No download, no plugin — and the terminal can start them too.",
+		"tetris": {
+			"badge": "v1.0",
+			"desc": "Seven shapes, ten columns, and a level curve that speeds up every ten lines. Ghost piece and hold included.",
+			"title": "Tetris"
 		}
 	},
 	"header": {
@@ -134,6 +202,10 @@
 	"nav": {
 		"aria": "Main navigation",
 		"item": {
+			"games": {
+				"desc": "Small games in the page",
+				"label": "Games"
+			},
 			"home": {
 				"desc": "Who I am, and what this site is",
 				"label": "Home"
@@ -195,6 +267,7 @@
 	},
 	"title": {
 		"default": "Hayneko",
+		"games": "Games · Hayneko",
 		"home": "Home · Hayneko",
 		"lab": "Physics Lab · Hayneko",
 		"links": "Friendly Links · Hayneko",

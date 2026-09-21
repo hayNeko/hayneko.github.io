@@ -16,6 +16,7 @@
 		terminal: { id: 'terminal', path: '~/terminal', partial: 'views/terminal.html', titleKey: 'title.terminal', accent: 'blue' },
 		storage: { id: 'storage', path: '~/storage', partial: 'views/storage.html', titleKey: 'title.storage', accent: 'blue' },
 		lab:     { id: 'lab',     path: '~/lab',     partial: 'views/lab.html',     titleKey: 'title.lab',     accent: 'red' },
+		games:   { id: 'games',   path: '~/games',   partial: 'views/games.html',   titleKey: 'title.games',   accent: 'green' },
 		links:   { id: 'links',   path: '~/links',   partial: 'views/links.html',   titleKey: 'title.links',   accent: 'white' }
 	};
 	var FALLBACK = 'home';
@@ -176,6 +177,8 @@
 		runEntrance(page);
 
 		if (global.Terminal && global.Terminal.mountAll) global.Terminal.mountAll(page);
+		/* 小游戏机台也挂在页面片段上, 机制与终端相同 */
+		if (global.Games && global.Games.mountAll) global.Games.mountAll(page);
 		if (global.GeometryBG && global.GeometryBG.pulse) global.GeometryBG.pulse(route.accent === 'white' ? 'blue' : route.accent);
 
 		var scroller = doc.scrollingElement || doc.documentElement;
