@@ -636,24 +636,24 @@
 				if (ch === ' ' || ch === '\t') { i++; continue; }
 				if (/[0-9]/.test(ch) || (ch === '.' && /[0-9]/.test(src.charAt(i + 1)))) {
 					var num = /^(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/.exec(src.slice(i));
-					tokens.push({ t: 'num', v: calcNumber(num[0]), raw: num[0] });
+					tokens.push({ t: 'num', v: calcNumber(num[0]), raw: num[0], start: i, end: i + num[0].length });
 					i += num[0].length;
 					continue;
 				}
 				if (/[a-zA-Z_]/.test(ch)) {
 					var id = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(src.slice(i))[0];
-					tokens.push({ t: 'id', v: id.toLowerCase(), raw: id });
+					tokens.push({ t: 'id', v: id.toLowerCase(), raw: id, start: i, end: i + id.length });
 					i += id.length;
 					continue;
 				}
 				var pair = src.substr(i, 2);
 				if (pair === '>=' || pair === '<=' || pair === '<>' || pair === '~=' || pair === '!=' || pair === '==') {
-					tokens.push({ t: 'op', v: pair, raw: pair });
+					tokens.push({ t: 'op', v: pair, raw: pair, start: i, end: i + 2 });
 					i += 2;
 					continue;
 				}
 				if ('+-*/%^()=<>,'.indexOf(ch) !== -1) {
-					tokens.push({ t: 'op', v: ch, raw: ch });
+					tokens.push({ t: 'op', v: ch, raw: ch, start: i, end: i + 1 });
 					i++;
 					continue;
 				}
@@ -672,6 +672,58 @@
 			return CALC_FN1[name](toNumber(args[0]));
 		}
 
+		/* 中缀的位运算符(not 是前缀, 不算) */
+		var CALC_INFIX = { and: 1, nand: 1, or: 1, nor: 1, xor: 1, xnor: 1 };
+
+		/**
+		 * 括号没闭合时把 ")" 补在哪儿, 很影响读出来的意思。
+		 *
+		 *   calc 1+2*3-sin(1 and 1
+		 *     ✗ 补在最末尾 → sin(1 and 1)   —— 位运算被包进了函数里
+		 *     ✓ 补在 and 前面 → sin(1) and 1 —— 位运算留在括号外
+		 *
+		 * 所以规则是: 括号里如果出现**同层的位运算 / 比较运算**, 就把 ")" 补在那个运算符前面;
+		 * 一层里没有这类运算符, 才补在最末尾(原来的行为)。
+		 * 返回补好之后的表达式与补了几个, 显示时用的就是补好之后的样子。
+		 */
+		function calcAutoClose(text) {
+			var tokens = calcTokenize(text);
+			var depthBefore = [];
+			var stack = [];
+			var d = 0;
+			for (var i = 0; i < tokens.length; i++) {
+				depthBefore.push(d);
+				var tk = tokens[i];
+				if (tk.t === 'op' && tk.v === '(') { stack.push(i); d++; }
+				else if (tk.t === 'op' && tk.v === ')') { if (stack.length) { stack.pop(); d--; } }
+			}
+			if (!stack.length) return { src: text, closed: 0 };
+
+			var inserts = [];
+			stack.forEach(function (p) {
+				var inner = depthBefore[p] + 1;
+				for (var j = p + 1; j < tokens.length; j++) {
+					if (depthBefore[j] < inner) break;
+					var t = tokens[j];
+					if ((t.t === 'op' && CALC_CMP[t.v]) || (t.t === 'id' && CALC_INFIX[t.v])) {
+						inserts.push(tokens[j].start);
+						return;
+					}
+				}
+				inserts.push(text.length);
+			});
+
+			/* 从后往前插, 免得前面的位置被后面的插入顶偏 */
+			inserts.sort(function (a, b) { return b - a; });
+			var out = text;
+			inserts.forEach(function (pos) {
+				var at = pos;
+				while (at > 0 && (out.charAt(at - 1) === ' ' || out.charAt(at - 1) === '\t')) at--;
+				out = out.slice(0, at) + ')' + out.slice(at);
+			});
+			return { src: out, closed: inserts.length };
+		}
+
 		function calcEval(src) {
 			var tokens = calcTokenize(src);
 			if (!tokens.length) throw new Error('empty expression');
@@ -679,8 +731,10 @@
 			var depth = 0;
 			var tiers = {};
 
-			var powerRhsDepth = -1;   /* 正处在某个 "^" 的右操作数里(同层) */
-			var powerTicks = 0;
+			var powerTicks = {};      /* 每层括号里用过几次 "^"(要分清 (-3)^2 与 -(3^2)) */
+			var lastPower = null;     /* 最近解析的那个乘方(底数/指数的文字与数值) */
+
+			function powerTickAt() { return powerTicks[depth] || 0; }
 
 			function tierAt() { return tiers[depth] || (tiers[depth] = {}); }
 			function markTier(name) { tierAt()[name] = true; }
@@ -766,31 +820,71 @@
 
 			function parseUnary() {
 				if (isOp('-')) {
+					var minusAt = pos;
 					take();
 					markTier('arith');
-					var before = powerTicks;
+					var before = powerTickAt();
 					var neg = -toNumber(parseUnary());
-					/* -3^2: 负号在前、乘方在后, 到底是 -(3^2) 还是 (-3)^2 */
-					if (powerTicks > before) tierAt().minusPower = true;
+					/* -3^2: 负号在前、乘方在后, 到底是 -(3^2) 还是 (-3)^2 —— 两种写法都算出来给他看 */
+					if (powerTickAt() > before) {
+						if (lastPower) {
+							var alt = Math.pow(-lastPower.baseValue, lastPower.expValue);
+							tierAt().minusPower = {
+								text: src.slice(tokens[minusAt].start, tokens[pos - 1].end).trim(),
+								baseText: lastPower.baseText,
+								expText: lastPower.expText,
+								plain: -Math.pow(lastPower.baseValue, lastPower.expValue),
+								alt: alt
+							};
+						} else {
+							tierAt().minusPower = true;
+						}
+					}
 					return neg;
 				}
 				if (isOp('+')) { take(); markTier('arith'); return toNumber(parseUnary()); }
 				return parsePower();
 			}
 
+			function tokenText(a, b) {
+				if (b <= a) return '';
+				return src.slice(tokens[a].start, tokens[b - 1].end).trim();
+			}
+
 			function parsePower() {
+				var baseStart = pos;
 				var base = parseAtom();
 				if (isOp('^')) {
+					var caret = pos;
 					take();
 					markTier('power');
-					/* 右操作数里又碰到同层的 ^ → a^b^c(右结合);
-					   写成 2^(3^4) 时里层 depth 已经变了, 不会误报 */
-					if (powerRhsDepth === depth) tierAt().powerChain = true;
-					var saved = powerRhsDepth;
-					powerRhsDepth = depth;
-					powerTicks++;
+					var here = powerTickAt();
+					powerTicks[depth] = here + 1;
+					var expStart = pos;
 					var exp = parseUnary();
-					powerRhsDepth = saved;
+					var expEnd = pos;
+
+					var baseText = tokenText(baseStart, caret);
+					var expText = tokenText(expStart, expEnd);
+					var inner = lastPower;   /* 指数本身若又是个乘方, 这里就是它的信息 */
+					lastPower = {
+						baseText: baseText,
+						expText: expText,
+						baseValue: toNumber(base),
+						expValue: toNumber(exp)
+					};
+
+					/* a^b^c: 由**外层**这一回来报 —— 只有它同时知道整条链和两种取值。
+					   同层又用了一次 ^ 才算链; 2^(3^4) 里层 depth 变了, 不算。 */
+					if (inner && powerTickAt() > here + 1) {
+						tierAt().powerChain = {
+							text: baseText + '^' + inner.baseText + '^' + inner.expText,
+							rightText: baseText + '^(' + inner.baseText + '^' + inner.expText + ')',
+							leftText: '(' + baseText + '^' + inner.baseText + ')^' + inner.expText,
+							right: Math.pow(toNumber(base), toNumber(exp)),
+							left: Math.pow(Math.pow(toNumber(base), inner.baseValue), inner.expValue)
+						};
+					}
 					return Math.pow(toNumber(base), toNumber(exp));
 				}
 				return base;
@@ -866,14 +960,30 @@
 			Object.keys(tiers).forEach(function (d) {
 				var t = tiers[d];
 				if (t.bitwise && t.arith) flags.mix = true;
-				if (t.powerChain) flags.powerChain = true;
-				if (t.minusPower) flags.minusPower = true;
+				if (t.powerChain) flags.powerChain = t.powerChain;
+				if (t.minusPower) flags.minusPower = t.minusPower;   /* 对象里带着两种写法的文字与取值 */
 				if (t.compareChain) flags.compareChain = true;
 			});
 			var out = [];
 			if (flags.mix) out.push('warn: bitwise mixed with arithmetic — parenthesize; standard order: ' + CALC_ORDER);
-			if (flags.powerChain) out.push('warn: "a^b^c" is right-associative here (2^3^4 = 2^(3^4)) — write the parentheses you mean');
-			if (flags.minusPower) out.push('warn: "-3^2" is read as -(3^2), not (-3)^2 — write (-3)^2 or -(3^2)');
+			if (flags.powerChain) {
+				var pc = flags.powerChain;
+				if (pc === true) {
+					out.push('warn: chained "^" is right-associative here — add parentheses');
+				} else {
+					out.push('warn: "' + pc.text + '" is right-associative — write ' + pc.rightText + ' = ' +
+						round12(pc.right) + ' or ' + pc.leftText + ' = ' + round12(pc.left));
+				}
+			}
+			if (flags.minusPower) {
+				var mp = flags.minusPower;
+				if (mp === true) {
+					out.push('warn: unary minus with "^" is ambiguous — add parentheses');
+				} else {
+					out.push('warn: ambiguous "' + mp.text + '" — write -(' + mp.baseText + '^' + mp.expText + ') = ' +
+						round12(mp.plain) + ' or (-' + mp.baseText + ')^' + mp.expText + ' = ' + round12(mp.alt));
+				}
+			}
 			if (flags.compareChain) out.push('warn: chained comparison is left-associative here ((a < b) < c) — add parentheses');
 			return out;
 		}
@@ -890,12 +1000,11 @@
 			}
 			var src = args.join(' ');
 			var note = '';
-			/* 末尾括号没闭合: 自动补齐, 并说明补了几个 */
-			var opens = (src.match(/\(/g) || []).length;
-			var closes = (src.match(/\)/g) || []).length;
-			if (opens > closes) {
-				note = 'note: auto-closed ' + (opens - closes) + ' unclosed "("';
-				src += new Array(opens - closes + 1).join(')');
+			/* 括号没闭合: 自动补上(补在哪儿见 calcAutoClose), 并说明补了几个 */
+			var fixed = calcAutoClose(src);
+			if (fixed.closed) {
+				note = 'note: auto-closed ' + fixed.closed + ' unclosed "("';
+				src = fixed.src;
 			}
 			try {
 				var out = calcEval(src);
