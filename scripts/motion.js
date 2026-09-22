@@ -160,12 +160,28 @@
 			total = delay + 500;
 		}
 
-		/* 入场跑完立刻释放动画。
-		   Smear 用的是 fill:'both', 不释放的话它会一直占着 transform,
-		   之后 :hover 放大 / :active 缩小 根本盖不过它 —— 卡片点了没反应就是这个原因。 */
-		setTimeout(function () {
+		/* 入场跑完**立刻**释放动画, 而且要和动画自己的结束时刻对齐。
+		 *
+		 * 两件事都靠这一下:
+		 *   1. Smear 用的是 fill:'both', 不释放它会一直占着 transform ——
+		 *      之后 :hover 放大 / :active 缩小 根本盖不过它(卡片点了没反应就是这个原因);
+		 *   2. 更隐蔽的一条: 只要动画还挂着, filter 就一直是"有值"的 ——
+		 *      哪怕已经插值到 blur(0), 元素依然被当成**带滤镜的合成层**在渲染,
+		 *      真实显卡上会先栅格化成纹理再缩放, 看着就是"动画结束后还糊一小会"。
+		 *      原来写的是 setTimeout(total + 90), 那 90ms 就是这个糊尾巴。
+		 *
+		 * 所以改等动画自己的 finished.promise。 */
+		var released = false;
+		var release = function () {
+			if (released) return;
+			released = true;
 			if (handle && handle.dispose) { try { handle.dispose(); } catch (err) { /* 忽略 */ } }
-		}, total + 90);
+		};
+		if (handle && handle.main && handle.main.finished && handle.main.finished.then) {
+			handle.main.finished.then(release).catch(function () { /* 被打断就算了 */ });
+		}
+		/* 兜底: finished 万一不来, 也不能让动画一直挂着 */
+		setTimeout(release, total + 120);
 	}
 
 	function entrance(page) {
@@ -227,22 +243,107 @@
 	var MOVE_SELECTOR = '.btn, .badge, .card, .sim-card, .dock__item, .dock-menu__item, ' +
 		'.file-row, .term-suggest button';
 	var MOVE_PROPS = { transform: 1, 'padding-left': 1, 'padding-right': 1, top: 1, left: 1 };
-	var moveTimers = new WeakMap();
+	/* el -> { props: { 属性: 在跑的过渡数 }, fallback: 兜底计时器 } */
+	var moveState = new WeakMap();
 
-	function markMoving(el) {
-		el.classList.add('is-moving');
-		clearTimeout(moveTimers.get(el));
-		/* 兜底: 过渡被打断时 transitionend 不一定来 */
-		moveTimers.set(el, setTimeout(function () {
-			el.classList.remove('is-moving');
-			moveTimers.delete(el);
-		}, 760));
+	function parseMs(value) {
+		value = String(value || '').trim();
+		if (value.slice(-2) === 'ms') return parseFloat(value) || 0;
+		if (value.slice(-1) === 's') return (parseFloat(value) || 0) * 1000;
+		return 0;
 	}
 
-	function clearMoving(el) {
-		clearTimeout(moveTimers.get(el));
-		moveTimers.delete(el);
+	/** 这个元素在这个属性上的过渡一共要跑多久(时长 + 延迟); 读不到就按 300ms 算 */
+	function transitionMs(el, prop) {
+		var cs = global.getComputedStyle(el);
+		var props = String(cs.transitionProperty || '').split(',');
+		var durs = String(cs.transitionDuration || '').split(',');
+		var delays = String(cs.transitionDelay || '').split(',');
+		var longest = 0;
+		for (var i = 0; i < props.length; i++) {
+			var name = props[i].trim();
+			if (name !== prop && name !== 'all') continue;
+			var ms = parseMs(durs[i % durs.length]) + parseMs(delays[i % delays.length]);
+			if (ms > longest) longest = ms;
+		}
+		return longest || 300;
+	}
+
+	/* 模糊量跟着**速度**走, 不再是个定值:
+	   悬停放大只有 2%(卡片) 到 14%(坞图标), 一律糊 0.9px 的话,
+	   小位移元素的文字就先糊了 —— 明明几乎没动。改成按实际位移速度给模糊。 */
+	var MOVE_BLUR_PER_SPEED = 3.2;   /* 模糊(px) = 速度(px/ms) × 这个系数 */
+	var MOVE_BLUR_MIN_SPEED = 0.02;  /* 慢于这个当没动, 直接清晰, 免得挂着一层噪声级模糊 */
+
+	function moveBlurCap(el) {
+		var raw = global.getComputedStyle(el).getPropertyValue('--fx-move-max');
+		var cap = parseFloat(raw);
+		return isFinite(cap) && cap > 0 ? cap : 0.7;
+	}
+
+	/** 每帧量一下元素真的移动了多少, 换算成模糊 —— 停下来自然就回到 0 */
+	function trackMoving(el) {
+		var st = moveState.get(el);
+		if (!st || st.raf) return;
+		var cap = moveBlurCap(el);
+		var prev = el.getBoundingClientRect();
+		var prevAt = global.performance ? global.performance.now() : Date.now();
+		var frame = function (now) {
+			var live = moveState.get(el);
+			if (!live || !el.isConnected) return;
+			var rect = el.getBoundingClientRect();
+			var dt = Math.max(8, now - prevAt);
+			var moved = Math.max(
+				Math.abs(rect.left - prev.left),
+				Math.abs(rect.top - prev.top),
+				Math.abs(rect.width - prev.width),
+				Math.abs(rect.height - prev.height)
+			);
+			var speed = moved / dt;
+			var blur = speed < MOVE_BLUR_MIN_SPEED ? 0 : Math.min(cap, speed * MOVE_BLUR_PER_SPEED);
+			el.style.setProperty('--fx-move-blur', blur.toFixed(2) + 'px');
+			prev = rect;
+			prevAt = now;
+			live.raf = global.requestAnimationFrame(frame);
+		};
+		st.raf = global.requestAnimationFrame(frame);
+	}
+
+	function markMoving(el, prop, runningMs) {
+		var st = moveState.get(el);
+		if (!st) { st = { props: {}, fallback: 0, raf: 0 }; moveState.set(el, st); }
+		st.props[prop] = (st.props[prop] || 0) + 1;
+		el.classList.add('is-moving');
+		trackMoving(el);
+		clearTimeout(st.fallback);
+		/* 兜底: 过渡被打断时 transitionend 不一定来。给到"这段过渡跑完"就够了, 不再瞎等 760ms */
+		st.fallback = setTimeout(function () { dropMoving(el); }, runningMs + 150);
+	}
+
+	/**
+	 * 一个属性的过渡结束了。**全部**动着的属性都结束了才摘模糊 ——
+	 * 以前是"谁先结束就摘", 于是 .file-row 这种"缩放 240ms + 左移 420ms"的元素
+	 * 会在左移还没完的时候就变清晰(实测 397ms 就摘了, 位移一直到 591ms 才停)。
+	 */
+	function releaseMoving(el, prop) {
+		var st = moveState.get(el);
+		if (!st || !st.props[prop]) return;
+		st.props[prop]--;
+		if (st.props[prop] > 0) return;
+		delete st.props[prop];
+		for (var key in st.props) { if (st.props[key] > 0) return; }
+		dropMoving(el);
+	}
+
+	function dropMoving(el) {
+		var st = moveState.get(el);
+		if (st) {
+			clearTimeout(st.fallback);
+			if (st.raf) global.cancelAnimationFrame(st.raf);
+		}
+		moveState.delete(el);
 		el.classList.remove('is-moving');
+		el.style.setProperty('--fx-move-blur', '0px');
 	}
 
 	/**
@@ -255,21 +356,22 @@
 
 		doc.addEventListener('transitionrun', function (e) {
 			if (!MOVE_PROPS[e.propertyName]) return;
+			/* 伪元素自己的过渡(按钮扫光 ::after、卡片高光 ::before)不算"元素在动",
+			   否则模糊会被这些装饰性的扫光拖长 */
+			if (e.pseudoElement) return;
 			var el = e.target;
 			if (!el || !el.classList || !el.matches || !el.matches(MOVE_SELECTOR)) return;
-			markMoving(el);
+			markMoving(el, e.propertyName, transitionMs(el, e.propertyName));
 		}, true);
 
 		doc.addEventListener('transitionend', function (e) {
-			if (!MOVE_PROPS[e.propertyName]) return;
-			var el = e.target;
-			if (!el || !el.classList || !el.classList.contains('is-moving')) return;
-			clearMoving(el);
+			if (!MOVE_PROPS[e.propertyName] || e.pseudoElement) return;
+			releaseMoving(e.target, e.propertyName);
 		}, true);
 
 		doc.addEventListener('transitioncancel', function (e) {
-			var el = e.target;
-			if (el && el.classList && el.classList.contains('is-moving')) clearMoving(el);
+			if (!MOVE_PROPS[e.propertyName] || e.pseudoElement) return;
+			releaseMoving(e.target, e.propertyName);
 		}, true);
 	}
 

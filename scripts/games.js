@@ -59,6 +59,10 @@
 	var SCORE_TABLE = [0, 100, 300, 500, 800];
 	var BEST_KEY = 'hayneko.game.tetris.best';
 
+	var EASY_GRAVITY_MS = 800;  /* --easy-mode: 不加速, 永远按第一档下落 */
+	var HOLD_RESTART_MS = 700;  /* "重新游玩"要长按这么久才生效, 免得误触 */
+	var HISTORY_MAX = 30;       /* --with-roll-back: 最多能退多少步 */
+
 	function rotateCW(m) {
 		var n = m.length;
 		var out = [];
@@ -114,9 +118,23 @@
 		return text || fallback;
 	}
 
+	function esc(text) {
+		return String(text).replace(/[&<>"']/g, function (c) {
+			return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+		});
+	}
+
 	/* ------------------------------------------------------------ 引擎 */
 
-	function createTetris(cab) {
+	/**
+	 * opt 由终端命令行传进来(见 scripts/terminal.js 的 play 命令):
+	 *   easy     --easy-mode       不加速: 等级固定 1, 下落间隔恒定 800ms
+	 *   rollback --with-roll-back  多一个"撤回"按钮, 可以退回上一步落子
+	 * 不带标志位时两个都是 false —— 机台就是默认形态, 而且只在这一次挂载生效,
+	 * 离开 #/games 后标志位与撤回记录一并丢掉(下次进来还是默认机台)。
+	 */
+	function createTetris(cab, opt) {
+		opt = opt || {};
 		var canvas = cab.querySelector('[data-tetris-canvas]');
 		if (!canvas || !canvas.getContext) return null;
 
@@ -133,6 +151,14 @@
 		var elState = cab.querySelector('[data-game-state]');
 		var btnStart = cab.querySelector('[data-tetris-action="start"]');
 		var btnPause = cab.querySelector('[data-tetris-action="pause"]');
+		var btnRestart = cab.querySelector('[data-tetris-action="restart"]');
+		var btnUndo = cab.querySelector('[data-tetris-action="undo"]');
+		var flagsBox = cab.querySelector('[data-game-flags]');
+		var padUndo = cab.querySelector('[data-pad="undo"]');
+		var undoKeyHint = cab.querySelector('[data-undo-key]');
+		/* 标志位面板在机台"下面", 是机台的兄弟节点 —— 从同一节里找 */
+		var flagPanel = cab.parentNode ? cab.parentNode.querySelector('[data-game-flags-panel]') : null;
+		var flagChips = flagPanel ? flagPanel.querySelectorAll('[data-flag]') : [];
 
 		var game = {
 			board: emptyBoard(),
@@ -151,7 +177,8 @@
 			lockResets: 0,
 			grounded: false,
 			clearRows: [],
-			clearTimer: 0
+			clearTimer: 0,
+			dropScore: 0        /* 当前这一块靠软降/硬降拿到的分, 撤回时要一起还回去 */
 		};
 
 		var held = { left: false, right: false, down: false };
@@ -160,6 +187,10 @@
 		var last = 0;
 		var observer = null;
 		var destroyed = false;
+		var history = [];        /* --with-roll-back 的撤回栈 */
+		var holdTimer = null;    /* "重新游玩"的长按计时器 */
+		var holdBtn = null;      /* 正在被按住的那个按钮(键盘按 R 时也是它) */
+		var restartKeyDown = false;
 
 		/* ---- 队列 / 出生 ---- */
 
@@ -202,6 +233,7 @@
 			game.lockTimer = 0;
 			game.lockResets = 0;
 			game.dropTimer = 0;
+			game.dropScore = 0;
 			if (!fits(game.cur, 0, 0)) gameOver();
 			drawMini(nextCv, game.queue[0]);
 		}
@@ -254,6 +286,7 @@
 		function softDrop() {
 			if (tryMove(0, 1)) {
 				game.score += 1;
+				game.dropScore += 1;
 				game.dropTimer = 0;
 				updateHud();
 			} else {
@@ -266,6 +299,7 @@
 			var cells = 0;
 			while (tryMove(0, 1)) cells++;
 			game.score += cells * 2;
+			game.dropScore += cells * 2;
 			lockPiece();
 		}
 
@@ -286,9 +320,73 @@
 			if (!fits(game.cur, 0, 0)) gameOver();
 		}
 
+		/* ---- 撤回(--with-roll-back) ---- */
+
+		/* 在落子"之前"拍一张: 板面 / 队列 / 分数 / 暂存 / 正在下的那一块 */
+		function snapshot() {
+			history.push({
+				board: game.board.map(function (row) { return row.slice(); }),
+				queue: game.queue.slice(),
+				bag: game.bag.slice(),
+				curType: game.cur ? game.cur.type : null,
+				hold: game.hold,
+				canHold: game.canHold,
+				score: game.score,
+				dropScore: game.dropScore,
+				lines: game.lines,
+				level: game.level
+			});
+			if (history.length > HISTORY_MAX) history.shift();
+			updateUndoBtn();
+		}
+
+		function canUndo() { return !!opt.rollback && history.length > 0; }
+
+		/* 撤回按钮的可用状态跟着栈走 —— 只在 sync() 里刷会晚一步:
+		   第一块落地时栈已经有东西了, 按钮却还是灰的, 得按 U 才"亮"起来。 */
+		function updateUndoBtn() {
+			if (btnUndo) btnUndo.disabled = !canUndo();
+		}
+
+		/* 退回"上一块落下之前": 那一块重新回到手上, 连消行与分数一起还回来 */
+		function undo() {
+			if (!canUndo()) return false;
+			var snap = history.pop();
+			game.board = snap.board;
+			game.queue = snap.queue;
+			game.bag = snap.bag;
+			game.hold = snap.hold;
+			game.canHold = snap.canHold;
+			/* 这一块的软降/硬降加分也一并退掉, 否则撤回再放一次会白赚分 */
+			game.score = Math.max(0, snap.score - (snap.dropScore || 0));
+			game.dropScore = 0;
+			game.lines = snap.lines;
+			game.level = snap.level;
+			game.clearRows = [];
+			game.clearTimer = 0;
+			game.grounded = false;
+			game.lockTimer = 0;
+			game.lockResets = 0;
+			game.dropTimer = 0;
+			game.cur = snap.curType ? make(snap.curType) : null;
+			if (!game.cur) spawn();
+			/* 撤到"游戏结束"之前也照样能接着玩 */
+			if (game.state !== 'running') {
+				game.state = 'running';
+				ensureLoop();
+			}
+			drawMini(nextCv, game.queue[0]);
+			drawMini(holdCv, game.hold);
+			updateHud();
+			draw();
+			sync();
+			return true;
+		}
+
 		/* ---- 锁定 / 消行 ---- */
 
 		function lockPiece() {
+			if (opt.rollback) snapshot();
 			var m = game.cur.m;
 			for (var y = 0; y < m.length; y++) {
 				for (var x = 0; x < m.length; x++) {
@@ -334,7 +432,7 @@
 			game.clearTimer = 0;
 			game.lines += count;
 			game.score += SCORE_TABLE[count] * game.level;
-			game.level = Math.floor(game.lines / 10) + 1;
+			game.level = opt.easy ? 1 : Math.floor(game.lines / 10) + 1;
 			if (game.score > game.best) { game.best = game.score; writeBest(game.best); }
 			spawn();
 			updateHud();
@@ -344,6 +442,8 @@
 		/* ---- 状态 ---- */
 
 		function reset() {
+			history.length = 0;
+			updateUndoBtn();
 			game.board = emptyBoard();
 			game.queue = [];
 			game.bag = [];
@@ -445,6 +545,7 @@
 				if (overlay) overlay.classList.add('is-shown');
 			}
 			if (elState) elState.textContent = stateLabel();
+			renderFlags();
 			if (btnPause) {
 				btnPause.textContent = game.state === 'paused'
 					? t('games.btn.resume', 'Resume')
@@ -452,6 +553,74 @@
 				btnPause.disabled = (game.state !== 'running' && game.state !== 'paused');
 			}
 			if (btnStart) btnStart.disabled = game.state === 'running';
+			updateUndoBtn();
+		}
+
+		/* 面板上的两个开关与当前状态同步 */
+		function updateFlagChips() {
+			Array.prototype.forEach.call(flagChips, function (chip) {
+				var on = chip.getAttribute('data-flag') === 'easy' ? !!opt.easy : !!opt.rollback;
+				chip.classList.toggle('is-on', on);
+				chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+			});
+		}
+
+		/**
+		 * 把 opt 落到界面上。撤回相关的三样东西(按钮 / 触屏键 / 键位图例)
+		 * 只有开着 --with-roll-back 时才存在 —— 注意 [hidden] 会被 .btn 的
+		 * display: inline-flex 盖掉, 所以 CSS 里另外写了一条 !important 兜底。
+		 */
+		function applyFlags() {
+			if (btnUndo) btnUndo.hidden = !opt.rollback;
+			if (padUndo) padUndo.hidden = !opt.rollback;
+			if (undoKeyHint) undoKeyHint.hidden = !opt.rollback;
+			if (!opt.rollback) history.length = 0;
+			/* 不加速: 等级立刻回到 1; 关掉时按消行数重算 */
+			game.level = opt.easy ? 1 : Math.floor(game.lines / 10) + 1;
+			updateUndoBtn();
+			updateFlagChips();
+			renderFlags();
+			updateHud();
+			draw();
+			sync();
+		}
+
+		function setFlags(next) {
+			if (!next) return;
+			if (typeof next.easy === 'boolean') opt.easy = next.easy;
+			if (typeof next.rollback === 'boolean') opt.rollback = next.rollback;
+			applyFlags();
+		}
+
+		function toggleFlag(name) {
+			if (name !== 'easy' && name !== 'rollback') return;
+			var next = { easy: opt.easy, rollback: opt.rollback };
+			next[name] = !next[name];
+			setFlags(next);
+		}
+
+		function onFlagClick(e) {
+			var chip = e.target.closest ? e.target.closest('[data-flag]') : null;
+			if (!chip) return;
+			e.preventDefault();
+			toggleFlag(chip.getAttribute('data-flag'));
+		}
+
+		/* 机台标题栏上的标志位小牌子(终端用 --easy-mode / --with-roll-back 开局时才有) */
+		function renderFlags() {
+			if (!flagsBox) return;
+			var chips = [];
+			if (opt.easy) {
+				chips.push('<span class="cabinet__flag cabinet__flag--easy" title="' +
+					esc(t('games.flag.easyTip', '--easy-mode: no speed-up')) + '">' +
+					esc(t('games.flag.easy', 'EASY')) + '</span>');
+			}
+			if (opt.rollback) {
+				chips.push('<span class="cabinet__flag cabinet__flag--undo" title="' +
+					esc(t('games.flag.rollbackTip', '--with-roll-back: undo is available')) + '">' +
+					esc(t('games.flag.rollback', 'UNDO')) + '</span>');
+			}
+			flagsBox.innerHTML = chips.join('');
 		}
 
 		/* ---- 渲染 ---- */
@@ -637,7 +806,7 @@
 			}
 
 			game.dropTimer += dt;
-			if (game.dropTimer >= gravityMs(game.level)) {
+			if (game.dropTimer >= (opt.easy ? EASY_GRAVITY_MS : gravityMs(game.level))) {
 				game.dropTimer = 0;
 				if (!tryMove(0, 1)) ground();
 			}
@@ -681,7 +850,9 @@
 			z: 'rotateCCW', Z: 'rotateCCW',
 			' ': 'drop', Spacebar: 'drop',
 			c: 'hold', C: 'hold', Shift: 'hold',
-			p: 'pause', P: 'pause', Escape: 'pause'
+			p: 'pause', P: 'pause', Escape: 'pause',
+			u: 'undo', U: 'undo',
+			r: 'restart', R: 'restart'
 		};
 
 		function press(action) {
@@ -706,6 +877,7 @@
 			else if (action === 'rotateCCW') tryRotate(true);
 			else if (action === 'drop') hardDrop();
 			else if (action === 'hold') holdPiece();
+			else if (action === 'undo') { undo(); return; }
 			else if (action === 'pause') { pause(); return; }
 			updateHud();
 			draw();
@@ -731,22 +903,37 @@
 			if (e.ctrlKey || e.metaKey || e.altKey) return;
 			var action = ACTIONS[e.key];
 			if (!action) return;
+			if (action === 'undo' && !opt.rollback) return;   /* 没开撤回时 u 不归游戏 */
 
 			/* 只有真正会被游戏用掉的按键才 preventDefault ——
 			   没在跑的时候方向键还要留给页面滚动 */
 			var playing = game.state === 'running';
 			var starting = (game.state === 'ready' || game.state === 'over') && action === 'drop';
 			var resuming = game.state === 'paused' && (action === 'pause' || action === 'drop');
-			if (!playing && !starting && !resuming) return;
+			var restarting = action === 'restart';
+			if (!playing && !starting && !resuming && !restarting) return;
 
 			e.preventDefault();
+			/* R 和"重新游玩"按钮一样要长按: 按下去开始填, 松手就取消 */
+			if (action === 'restart') {
+				if (restartKeyDown) return;
+				restartKeyDown = true;
+				beginHold(btnRestart);
+				return;
+			}
 			if (action !== 'pause' && playing && held[action]) return;   /* 长按由 tick 接管 */
 			press(action);
 		}
 
 		function onKeyUp(e) {
 			var action = ACTIONS[e.key];
-			if (action) release(action);
+			if (!action) return;
+			if (action === 'restart') {
+				restartKeyDown = false;
+				endHold();
+				return;
+			}
+			release(action);
 		}
 
 		function padTarget(e) {
@@ -770,14 +957,74 @@
 			releaseAll();
 		}
 
+		function doRestart() {
+			reset();
+			start();
+		}
+
+		/* ---- "重新游玩"要长按才生效 ---- */
+
+		function beginHold(btn) {
+			if (destroyed || holdTimer) return;
+			holdBtn = btn || btnRestart;
+			if (holdBtn) holdBtn.classList.add('is-holding');
+			holdTimer = global.setTimeout(function () {
+				holdTimer = null;
+				var el = holdBtn;
+				holdBtn = null;
+				if (el) {
+					el.classList.remove('is-holding');
+					el.classList.add('is-done');
+					global.setTimeout(function () { el.classList.remove('is-done'); }, 420);
+				}
+				doRestart();
+			}, HOLD_RESTART_MS);
+		}
+
+		function endHold() {
+			if (holdTimer) {
+				global.clearTimeout(holdTimer);
+				holdTimer = null;
+			}
+			if (holdBtn) {
+				holdBtn.classList.remove('is-holding');
+				holdBtn = null;
+			}
+		}
+
+		function actionTarget(e) {
+			return e.target && e.target.closest ? e.target.closest('[data-tetris-action]') : null;
+		}
+
+		function onPointerDown(e) {
+			if (destroyed) return;
+			var pad = padTarget(e);
+			if (pad) { onPadDown(e); return; }
+			var btn = actionTarget(e);
+			if (btn && btn.getAttribute('data-tetris-action') === 'restart') {
+				/* 长按在触屏上会选中文字 / 弹右键菜单, 这里一起按掉 */
+				e.preventDefault();
+				beginHold(btn);
+			}
+		}
+
+		function onPointerUp() {
+			releaseAll();
+			endHold();
+		}
+
 		function onClick(e) {
 			if (destroyed) return;
-			var el = e.target.closest ? e.target.closest('[data-tetris-action]') : null;
+			var el = actionTarget(e);
 			if (!el) return;
 			var act = el.getAttribute('data-tetris-action');
 			if (act === 'start') start();
 			else if (act === 'pause') togglePause();
-			else if (act === 'restart') { reset(); start(); }
+			else if (act === 'undo') undo();
+			else if (act === 'restart') {
+				/* 指针那条路走 pointerdown/up; 这里只接键盘 —— 键盘触发的 click 里 detail 为 0 */
+				if (e.detail === 0) doRestart();
+			}
 		}
 
 		function overlayClick() {
@@ -797,9 +1044,15 @@
 		/* ---- 挂载 / 卸载 ---- */
 
 		cab.addEventListener('click', onClick);
-		cab.addEventListener('pointerdown', onPadDown);
-		cab.addEventListener('pointerleave', onPadUp);
-		doc.addEventListener('pointerup', onPadUp);
+		cab.addEventListener('pointerdown', onPointerDown);
+		cab.addEventListener('pointerup', onPointerUp);
+		cab.addEventListener('pointercancel', onPointerUp);
+		cab.addEventListener('pointerleave', onPointerUp);
+		cab.addEventListener('contextmenu', function (e) {
+			/* 长按"重新游玩"时不要弹右键菜单 */
+			if (e.target.closest && e.target.closest('[data-tetris-action="restart"]')) e.preventDefault();
+		});
+		doc.addEventListener('pointerup', onPointerUp);
 		if (overlay) overlay.addEventListener('click', overlayClick);
 		doc.addEventListener('keydown', onKeyDown);
 		doc.addEventListener('keyup', onKeyUp);
@@ -819,7 +1072,9 @@
 			stopLoop();
 			if (observer) observer.disconnect();
 			else global.removeEventListener('resize', resize);
-			doc.removeEventListener('pointerup', onPadUp);
+			endHold();
+			if (flagPanel) flagPanel.removeEventListener('click', onFlagClick);
+			doc.removeEventListener('pointerup', onPointerUp);
 			doc.removeEventListener('keydown', onKeyDown);
 			doc.removeEventListener('keyup', onKeyUp);
 			doc.removeEventListener('visibilitychange', onVisibility);
@@ -828,19 +1083,23 @@
 			delete cab.dataset.gameReady;
 		}
 
+		if (flagPanel) flagPanel.addEventListener('click', onFlagClick);
+
 		cab.dataset.gameReady = 'true';
 		updateHud();
 		reset();
+		applyFlags();     /* 撤回按钮 / 牌子 / 面板开关都按 opt 落一遍 */
 		resize();
 		setTimeout(resize, 60);
-		sync();
 
 		return {
 			start: start,
 			pause: pause,
 			reset: reset,
+			setFlags: setFlags,
 			resize: resize,
 			state: function () { return game.state; },
+			undo: undo,
 			/* 只读快照: 排查手感 / 自动化验证时看看当前方块在哪 */
 			debug: function () {
 				return {
@@ -850,7 +1109,13 @@
 					y: game.cur ? game.cur.y : null,
 					score: game.score,
 					lines: game.lines,
-					level: game.level
+					level: game.level,
+					easy: !!opt.easy,
+					rollback: !!opt.rollback,
+					undoHidden: btnUndo ? btnUndo.hidden : null,
+					undoDisabled: btnUndo ? btnUndo.disabled : null,
+					history: history.length,
+					canUndo: canUndo()
 				};
 			},
 			scrollTo: function () {
@@ -866,7 +1131,13 @@
 
 	var controller = null;
 	var pendingId = null;
+	var pendingOpts = null;
 	var routeHooked = false;
+
+	function normalizeOpts(raw) {
+		var o = raw || {};
+		return { easy: !!o.easy, rollback: !!o.rollback };
+	}
 
 	function destroyCurrent() {
 		if (controller) {
@@ -880,7 +1151,8 @@
 		var cab = host.querySelector('[data-game="tetris"]');
 		if (!cab) return controller;
 		destroyCurrent();
-		controller = createTetris(cab);
+		controller = createTetris(cab, normalizeOpts(pendingOpts));
+		pendingOpts = null;   /* 只对这一次挂载生效 */
 		return controller;
 	}
 
@@ -891,7 +1163,13 @@
 		/* 页面已经换掉了 → 停掉旧机台的回调与 rAF */
 		doc.addEventListener('route:changed', function (e) {
 			var route = e.detail && e.detail.route;
-			if (route !== 'games') { destroyCurrent(); return; }
+			if (route !== 'games') {
+				/* 离开页面: 机台、标志位、撤回记录全部丢掉 */
+				destroyCurrent();
+				pendingId = null;
+				pendingOpts = null;
+				return;
+			}
 			/* 从终端 / 别处点了"开局", 路由切过来之后才真正开始 */
 			if (pendingId) {
 				pendingId = null;
@@ -920,18 +1198,20 @@
 	 * 不在 games 页就先记下来, 等路由切换完成后再启动。
 	 * 若要从终端跳到机台并自动滚过去, 这里再补一次 scrollTo。
 	 */
-	function launch(id) {
+	function launch(id, opts) {
 		var found = null;
 		for (var i = 0; i < GAMES.length; i++) if (GAMES[i].id === id) found = GAMES[i];
 		if (!found) return false;
 		var router = global.Router;
+		pendingOpts = normalizeOpts(opts);
 		if (router && router.current !== 'games') {
 			pendingId = found.id;
 			router.navigate('games');
 			return true;
 		}
-		if (!controller) mountAll(doc);
+		/* 已经在小游戏页: 重挂一台, 好把标志位应用上(没有标志位时等于重开) */
 		pendingId = null;
+		mountAll(doc);
 		if (controller) {
 			controller.start();
 			controller.scrollTo();

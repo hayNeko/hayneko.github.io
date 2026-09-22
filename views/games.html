@@ -88,6 +88,7 @@
 		<div class="cabinet__bar">
 			<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
 			<span class="cabinet__name">tetris.sh</span>
+			<span class="cabinet__flags" data-game-flags></span>
 			<span class="cabinet__state" data-game-state i18n-key="games.state.ready">ready</span>
 		</div>
 
@@ -121,7 +122,15 @@
 				<div class="cabinet__actions">
 					<button type="button" class="btn btn--sm btn--block" data-tetris-action="start" i18n-key="games.btn.start">Start</button>
 					<button type="button" class="btn btn--sm btn--ghost btn--block" data-tetris-action="pause" disabled>Pause</button>
-					<button type="button" class="btn btn--sm btn--ghost btn--block" data-tetris-action="restart" i18n-key="games.btn.restart">Restart</button>
+					<button type="button" class="btn btn--sm btn--ghost btn--block" data-tetris-action="undo" hidden>
+						<span i18n-key="games.btn.undo">Undo</span>
+						<span class="btn__arrow" aria-hidden="true">↶</span>
+					</button>
+					<button type="button" class="btn btn--sm btn--ghost btn--block cabinet__hold" data-tetris-action="restart">
+						<span class="cabinet__hold-fill" aria-hidden="true"></span>
+						<span class="btn__label" i18n-key="games.btn.restart">Restart</span>
+					</button>
+					<span class="cabinet__hint" i18n-key="games.hint.restart">Hold Restart to start over</span>
 				</div>
 			</aside>
 		</div>
@@ -133,6 +142,7 @@
 			<button type="button" class="cabinet__pad-btn" data-pad="down" aria-label="soft drop" i18n-attr="aria-label" i18n-key="games.pad.down">↓</button>
 			<button type="button" class="cabinet__pad-btn" data-pad="drop" aria-label="hard drop" i18n-attr="aria-label" i18n-key="games.pad.drop">⤓</button>
 			<button type="button" class="cabinet__pad-btn" data-pad="hold" aria-label="hold" i18n-attr="aria-label" i18n-key="games.pad.hold">H</button>
+			<button type="button" class="cabinet__pad-btn" data-pad="undo" aria-label="undo" i18n-attr="aria-label" i18n-key="games.pad.undo" hidden>↶</button>
 		</div>
 
 		<div class="cabinet__keys">
@@ -142,6 +152,25 @@
 			<span class="cabinet__key"><kbd>Space</kbd><em i18n-key="games.keys.hard">hard drop</em></span>
 			<span class="cabinet__key"><kbd>C</kbd><em i18n-key="games.keys.hold">hold</em></span>
 			<span class="cabinet__key"><kbd>P</kbd><kbd>Esc</kbd><em i18n-key="games.keys.pause">pause</em></span>
+			<span class="cabinet__key cabinet__key--undo" data-undo-key hidden><kbd>U</kbd><em i18n-key="games.keys.undo">undo</em></span>
+			<span class="cabinet__key"><kbd>R</kbd><em i18n-key="games.keys.restart">hold to restart</em></span>
+		</div>
+	</div>
+
+	<!-- 机台下方: 两个命令行标志位, 点一下就切换(等于 play tetris 后面加参数) -->
+	<div class="flag-panel" data-game-flags-panel data-smear>
+		<p class="flag-panel__title" i18n-key="games.flags.title">
+			Command-line flags — click to switch them here, or pass them to play tetris.
+		</p>
+		<div class="flag-panel__row">
+			<button type="button" class="flag-chip" data-flag="easy" aria-pressed="false">
+				<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--easy-mode</code></span>
+				<span class="flag-chip__desc" i18n-key="games.flags.easy">No speed-up: the level stays at 1 and the fall interval is a constant 800ms.</span>
+			</button>
+			<button type="button" class="flag-chip" data-flag="rollback" aria-pressed="false">
+				<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--with-roll-back</code></span>
+				<span class="flag-chip__desc" i18n-key="games.flags.rollback">Adds the Undo button (key U, pad ↶) that takes back the last piece.</span>
+			</button>
 		</div>
 	</div>
 </section>

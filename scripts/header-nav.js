@@ -133,6 +133,27 @@
 		return !!(global.matchMedia && global.matchMedia('(hover: none)').matches);
 	}
 
+	/**
+	 * 这次焦点是键盘给的吗?
+	 *
+	 * 手机上点顶栏: mousedown 先让 topbar 拿到焦点 → focus 处理器抢先把面板展开,
+	 * 紧接着同一个手势的 click 又 toggle 了一次 → 面板"弹一下马上收回"。
+	 * (第二次点就正常了, 因为焦点已经在顶栏上, 不会再触发 focus。)
+	 *
+	 * :focus-visible 正好区分两者 —— 触摸/鼠标点出来的焦点是 false, 键盘 Tab 是 true。
+	 * 桌面不受影响: 那边本来就是 hover 展开, 焦点处理只是补充。
+	 */
+	function focusOpens() {
+		if (!isTouch()) return true;
+		var el = doc.activeElement;
+		if (!el || !el.matches) return false;
+		try {
+			return el.matches(':focus-visible');
+		} catch (err) {
+			return false;   /* 老浏览器没有 :focus-visible: 触摸时不靠焦点展开 */
+		}
+	}
+
 	function cancelClose() { clearTimeout(closeTimer); }
 
 	function scheduleClose() {
@@ -150,7 +171,7 @@
 			cancelClose();
 			if (ready) open();
 		});
-		bar.addEventListener('focus', function () { if (ready) open(); });
+		bar.addEventListener('focus', function () { if (ready && focusOpens()) open(); });
 		bar.addEventListener('click', function (e) {
 			e.preventDefault();
 			toggle();
@@ -171,7 +192,7 @@
 		closeTimer = setTimeout(function () { if (ready) open(); }, OPEN_HOVER_DELAY);
 	});
 	header.addEventListener('pointerleave', scheduleClose);
-	header.addEventListener('focusin', function () { cancelClose(); if (ready) open(); });
+	header.addEventListener('focusin', function () { cancelClose(); if (ready && focusOpens()) open(); });
 	header.addEventListener('focusout', function () {
 		cancelClose();
 		closeTimer = setTimeout(function () {

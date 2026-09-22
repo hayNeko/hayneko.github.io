@@ -26,12 +26,24 @@
 			},
 			"search": {
 				"empty": "No matching entry.",
-				"placeholder": "grep -i …",
+				"placeholder": "Search the whole site…",
 				"title": "Search"
 			}
 		},
 		"projects": "Projects",
 		"search": "Search",
+		"searchMenu": {
+			"count": "{count} results",
+			"group": {
+				"commands": "Terminal commands",
+				"files": "Downloads",
+				"games": "Mini games",
+				"links": "Links & contact",
+				"pages": "Pages",
+				"sims": "Physics simulations"
+			},
+			"hint": "Everything on this site — type to filter."
+		},
 		"storage": "Storage",
 		"terminal": "Terminal",
 		"theme": "Switch theme",
@@ -58,9 +70,24 @@
 			"pause": "Pause",
 			"restart": "Restart",
 			"resume": "Resume",
-			"start": "Start"
+			"start": "Start",
+			"undo": "Undo"
+		},
+		"flag": {
+			"easy": "EASY",
+			"easyTip": "--easy-mode: no speed-up",
+			"rollback": "UNDO",
+			"rollbackTip": "--with-roll-back: undo enabled"
+		},
+		"flags": {
+			"easy": "No speed-up: the level stays at 1 and the fall interval is a constant 800ms.",
+			"rollback": "Adds the Undo button (key U, pad ↶) that takes back the last piece.",
+			"title": "Command-line flags — click a switch below, same as adding it to play tetris."
 		},
 		"heading": "Games",
+		"hint": {
+			"restart": "Hold Restart to start over"
+		},
 		"hud": {
 			"best": "Best",
 			"hold": "Hold",
@@ -74,8 +101,10 @@
 			"hold": "hold",
 			"move": "move",
 			"pause": "pause",
+			"restart": "hold to restart",
 			"rotate": "rotate",
-			"soft": "soft drop"
+			"soft": "soft drop",
+			"undo": "undo"
 		},
 		"overlay": {
 			"overHint": "score {score} · best {best}",
@@ -92,7 +121,8 @@
 			"hold": "hold",
 			"left": "left",
 			"right": "right",
-			"rotate": "rotate"
+			"rotate": "rotate",
+			"undo": "undo"
 		},
 		"play": "Play",
 		"soon": {

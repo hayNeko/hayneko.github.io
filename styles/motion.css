@@ -209,14 +209,29 @@ html.fx-ready [data-smear]:not(.is-revealed) { opacity: 0; }
 
 .fx-char {
 	display: inline-block;
-	will-change: transform, opacity, filter;
-	animation: fx-char-in 480ms var(--ease-smear) both;
+	/* backwards（而不是 both）: 只保留"延迟期间先别显示"这一段，
+	   动画跑完就把元素交还给 CSS 本身的状态（opacity 1 / 无 transform / 无 filter）。
+	   用 both 的话末尾关键帧会一直挂着，而 filter 只要不是 none 就还是个滤镜层 ——
+	   标题里每一个字都长这样，等于整页大标题都带着一层合成层在渲染。 */
+	animation: fx-char-in 480ms var(--ease-smear) backwards;
 	animation-delay: calc(var(--ci, 0) * 34ms);
 }
+/*
+ * 这里原来写着 will-change: transform, opacity, filter，两个问题：
+ *   1. 常驻的 will-change 会把**每一个标题字**永久提升成一个合成层 ——
+ *      层里的纹理按固定比例栅格化，标题反而比正文更容易发糊；
+ *   2. filter 的模糊动画本来就没法交给合成器（blur 改变必须重新栅格化），
+ *      will-change: filter 只是白白多建一层，什么也换不来。
+ * 所以整条删掉，交给 Chrome 自己按动画期间的表现决定。
+ *
+ * 最后一帧还从 blur(0) 改成 none：animation 用了 both，保留 blur(0) 的话
+ * 动画结束后每个字身上仍然挂着一个"非 none 的 filter"，等于永久带着滤镜层。
+ * （插值上 none 就是恒等，视觉与 blur(0) 完全一致。）
+ */
 @keyframes fx-char-in {
 	0%   { opacity: 0; transform: translateY(-0.3em) scale(1.14); filter: blur(4px); }
 	55%  { opacity: 1; filter: blur(0); }
-	100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+	100% { opacity: 1; transform: translateY(0) scale(1); filter: none; }
 }
 
 /* ------------------------------------------------------------- 标题下划线 */
@@ -355,16 +370,25 @@ html.reduce-motion .btn::after { display: none; }
    motion.js 就给元素加上 .is-moving, 过渡结束再摘掉。
    ========================================================================== */
 
+/*
+ * 模糊量由 motion.js 每帧按**真实位移速度**算出来（写进 --fx-move-blur），
+ * --fx-move-max 是这个元素的上限。位移停下来时 JS 会把它写回 0 ——
+ * 所以“只是被放大了 2%”这种几乎没动的情况，文字基本不会被糊到。
+ *
+ * 以前这里是三个定值（0.45 / 0.7 / 0.9px），只要一悬停就糊满整段过渡，
+ * 卡片那种大段文字看着就像“字变虚了”。
+ */
 .is-moving {
-	filter: blur(0.7px);
+	filter: blur(var(--fx-move-blur, 0px));
+	--fx-move-max: 0.7px;
 }
-/* 卡片这种大块的给强一点, 小图标给弱一点 */
+/* 卡片这种大块的给宽一点, 小图标给紧一点 */
 .dock__item.is-moving,
 .badge.is-moving,
-.term-suggest button.is-moving { filter: blur(0.45px); }
+.term-suggest button.is-moving { --fx-move-max: 0.45px; }
 .card.is-moving,
 .sim-card.is-moving,
-.file-row.is-moving { filter: blur(0.9px); }
+.file-row.is-moving { --fx-move-max: 0.8px; }
 
 /* ============================================================================
    Dock 底部光点: 移动时拉出拖尾

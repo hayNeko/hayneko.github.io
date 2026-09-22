@@ -99,6 +99,28 @@
 	color: var(--accent);
 }
 
+/* 终端标志位的小牌子: play tetris --easy-mode / --with-roll-back */
+.cabinet__flags { display: inline-flex; align-items: center; gap: 6px; }
+.cabinet__flag {
+	padding: 1px 7px;
+	font-size: 10px;
+	letter-spacing: 0.14em;
+	border: 1px solid var(--line);
+	border-radius: 99px;
+	color: var(--fg-faint);
+	white-space: nowrap;
+}
+.cabinet__flag--easy {
+	color: var(--blue);
+	border-color: rgba(var(--blue-rgb), 0.4);
+	background: var(--blue-soft);
+}
+.cabinet__flag--undo {
+	color: var(--green);
+	border-color: rgba(var(--green-rgb), 0.4);
+	background: var(--green-soft);
+}
+
 /* ------------------------------------------------------------- 屏幕 */
 
 .cabinet__screen {
@@ -211,6 +233,113 @@
 
 .cabinet__actions { display: flex; flex-direction: column; gap: 8px; }
 
+/*
+ * "重新游玩"要按住才生效(见 games.js 的 HOLD_RESTART_MS = 700ms):
+ * 按住时一条填充从左扫到右, 松开就缩回去, 满了才真的重开。
+ * 选择器写成 .cabinet__hold .cabinet__hold-fill 而不是单个类 ——
+ * components.css 的 .btn > * 把直接子元素设成了 position: relative; z-index: 1,
+ * 同特异性下靠后加载的 motion.css 还可能再压一次, 提高一级最稳。
+ */
+.cabinet__hold { position: relative; }
+.cabinet__hold .cabinet__hold-fill {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	background: rgba(var(--red-rgb), 0.22);
+	transform: scaleX(0);
+	transform-origin: left center;
+	transition: transform 700ms linear;
+	pointer-events: none;
+}
+.cabinet__hold.is-holding .cabinet__hold-fill { transform: scaleX(1); }
+.cabinet__hold.is-holding { border-color: rgba(var(--red-rgb), 0.55); }
+.cabinet__hold.is-done { border-color: var(--green); color: var(--green); }
+.cabinet__hold .btn__label { position: relative; z-index: 1; }
+.cabinet__hint {
+	font-size: 10.5px;
+	line-height: 1.6;
+	text-align: center;
+	color: var(--fg-ghost);
+}
+
+/*
+ * [hidden] 千万别以为一定管用: components.css 的 .btn { display: inline-flex }
+ * 与这里的 .cabinet__key { display: inline-flex } 都是作者样式, 优先级高过浏览器
+ * 默认的 [hidden] { display: none }, 于是"隐藏"的撤回按钮照样画在屏幕上。
+ * 撤回相关的一切都靠这条兜底。
+ */
+.cabinet [hidden],
+.flag-panel [hidden] { display: none !important; }
+
+/* ------------------------------------------------------------- 标志位面板 */
+
+.flag-panel {
+	margin-top: 14px;
+	padding: 16px 18px 18px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: rgba(6, 10, 15, 0.42);
+}
+[data-theme="light"] .flag-panel { background: rgba(255, 255, 255, 0.7); }
+
+.flag-panel__title {
+	margin-bottom: 12px;
+	font-size: 12.5px;
+	line-height: 1.8;
+	color: var(--fg-faint);
+}
+.flag-panel__title code { color: var(--fg-dim); }
+
+.flag-panel__row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.flag-chip {
+	display: flex;
+	flex: 1 1 250px;
+	flex-direction: column;
+	gap: 7px;
+	padding: 12px 14px;
+	text-align: left;
+	color: var(--fg-faint);
+	background: rgba(230, 237, 243, 0.03);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	touch-action: manipulation;
+	transition: color var(--dur-2) ease, border-color var(--dur-2) ease,
+		background var(--dur-2) ease, transform 200ms var(--ease-pop);
+}
+[data-theme="light"] .flag-chip { background: rgba(12, 18, 26, 0.03); }
+.flag-chip:hover { color: var(--fg); border-color: var(--line-strong); transform: translateY(-2px); }
+.flag-chip:active { transform: scale(0.985); }
+
+.flag-chip__top {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12.5px;
+	color: var(--fg-dim);
+}
+.flag-chip__top code { font-size: 12.5px; }
+.flag-chip__desc { font-size: 11.5px; line-height: 1.7; color: var(--fg-faint); }
+
+/* 圆点当指示灯: 关是灰的, 开是绿的 */
+.flag-chip__dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--fg-ghost);
+	transition: background var(--dur-2) ease, box-shadow var(--dur-2) ease;
+}
+.flag-chip.is-on {
+	border-color: rgba(var(--green-rgb), 0.45);
+	background: var(--green-soft);
+}
+.flag-chip.is-on .flag-chip__top { color: var(--fg); }
+.flag-chip.is-on .flag-chip__top code { color: var(--green); }
+.flag-chip.is-on .flag-chip__dot {
+	background: var(--green);
+	box-shadow: 0 0 8px rgba(var(--green-rgb), 0.75);
+}
+
 /* ------------------------------------------------------------- 触屏按钮 */
 
 .cabinet__pad {
@@ -219,6 +348,10 @@
 	justify-content: center;
 	gap: 8px;
 	padding: 0 clamp(14px, 2.6vw, 22px) 14px;
+}
+.cabinet__pad {
+	/* 按住方向键时手指滑动不要带着页面一起滚 */
+	touch-action: none;
 }
 .cabinet__pad-btn {
 	width: 48px;
@@ -265,20 +398,109 @@
 
 /* ------------------------------------------------------------- 响应式 */
 
+/* 触屏: 不要长按选中文字 / 弹出系统菜单 —— "重新游玩"正是长按触发的 */
+.cabinet button,
+.cabinet__well {
+	-webkit-tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+.cabinet__canvas { touch-action: none; }
+
+/*
+ * 手机上是横向布局: 井在左, Next/Hold + 数据 + 按钮在右,
+ * 井压矮（省下来的高度全给下面的手指区）, 下面一排是十字键 + 右手两个大键。
+ * 竖着堆的版本要滑很久才够得着按钮, 手指还得在两个屏幕高度之间来回跑。
+ */
 @media (max-width: 720px) {
+	.cabinet__bar { padding: 8px 10px; gap: 8px; font-size: 11px; }
+
+	/* 井按高度定宽(1:2), 侧栏最多 260px; space-between 把井贴左、侧栏贴右 */
 	.cabinet__screen {
-		grid-template-columns: minmax(0, 1fr);
-		justify-items: center;
+		grid-template-columns: auto minmax(0, 260px);
+		justify-content: space-between;
+		align-items: start;
+		gap: 10px;
+		padding: 12px 10px 10px;
 	}
-	.cabinet__well { height: clamp(280px, 48vh, 420px); }
+
+	/* 井: 高度跟着屏宽走(缩矮了约 90px), 宽度按 1:2 反推, 画布不会被拉变形 */
+	.cabinet__well {
+		height: clamp(240px, 86vw, 330px);
+		width: auto;
+		aspect-ratio: 1 / 2;
+	}
+
 	.cabinet__hud {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		width: 100%;
+		min-width: 0;
+	}
+	.hud-block { padding: 6px; gap: 4px; }
+	.hud-block__key { font-size: 9.5px; letter-spacing: 0.12em; }
+	.hud-block__mini { width: 42px; height: 42px; }
+	.hud-stats { grid-column: 1 / -1; gap: 4px 8px; padding: 8px 10px; }
+	.hud-stats dt { font-size: 9.5px; letter-spacing: 0.1em; }
+	.hud-stats dd { font-size: 12.5px; }
+
+	/* 这几个按钮带 .btn--block(width: 100%), 横向排布里会各自占满一行 ——
+	   手机上排成 2×2, 省纵向空间, 也留住 40px 以上的触控高度 */
+	.cabinet__actions {
+		grid-column: 1 / -1;
 		flex-direction: row;
 		flex-wrap: wrap;
-		justify-content: center;
-		width: 100%;
+		gap: 6px;
 	}
-	.hud-block { flex: 0 0 auto; }
-	.hud-stats { flex: 1 1 200px; }
-	.cabinet__actions { flex: 1 1 100%; flex-direction: row; }
-	.cabinet__actions .btn { flex: 1 1 auto; }
+	.cabinet__actions .btn {
+		flex: 1 1 calc(50% - 3px);
+		width: auto;
+		min-height: 42px;
+		padding: 8px 10px;
+		font-size: 12.5px;
+	}
+	.cabinet__hint { flex: 1 1 100%; font-size: 10px; }
+
+	/* 手指区: 左边十字键(上=旋转), 右边两个大键(硬降 / 暂存), 撤回在右下 */
+	.cabinet__pad {
+		--pad: clamp(44px, 13.5vw, 58px);
+		display: grid;
+		grid-template-columns: repeat(3, var(--pad)) minmax(8px, 1fr) repeat(2, var(--pad));
+		grid-template-rows: repeat(3, var(--pad));
+		grid-template-areas:
+			".    up    .     .  drop hold"
+			"left .     right .  drop hold"
+			".    down  .     .  undo undo";
+		gap: 6px;
+		justify-content: center;
+		padding: 0 10px 12px;
+	}
+	.cabinet__pad [data-pad="rotate"] { grid-area: up; }
+	.cabinet__pad [data-pad="left"] { grid-area: left; }
+	.cabinet__pad [data-pad="right"] { grid-area: right; }
+	.cabinet__pad [data-pad="down"] { grid-area: down; }
+	.cabinet__pad [data-pad="drop"] { grid-area: drop; }
+	.cabinet__pad [data-pad="hold"] { grid-area: hold; }
+	.cabinet__pad [data-pad="undo"] { grid-area: undo; }
+	.cabinet__pad-btn {
+		width: 100%;
+		height: 100%;
+		min-height: var(--pad);
+		font-size: 20px;
+	}
+	.cabinet__pad-btn[data-pad="drop"],
+	.cabinet__pad-btn[data-pad="hold"] { font-size: 23px; }
+
+	.cabinet__keys { padding: 10px; font-size: 11px; }
+	.flag-panel { margin-top: 10px; padding: 14px 12px; }
+	.flag-chip { flex: 1 1 100%; min-height: 56px; }
+}
+
+/* 触屏设备: 键位说明没有意义, hover 效果也只会"粘"在按钮上 */
+@media (hover: none) and (pointer: coarse) {
+	.cabinet__keys { display: none; }
+	.cabinet__pad-btn:hover,
+	.cabinet__hold:hover,
+	.cabinet__actions .btn:hover { transform: none; }
 }

@@ -314,7 +314,7 @@
 	border-radius: var(--radius-sm);
 }
 
-/* 搜索 */
+/* 全局搜索: 结果按分组列出, 组标题后面跟命中数 */
 .dock-menu__search { display: flex; gap: 8px; margin-bottom: 10px; }
 .dock-menu__search .input { flex: 1 1 auto; }
 .dock-menu__empty {
@@ -323,6 +323,15 @@
 	font-size: 12.5px;
 	color: var(--fg-ghost);
 }
+/* 搜索菜单比别的菜单宽一点: 结果里有 "命令 + 用法" 两段文字 */
+#dock-menu-search { width: min(620px, 92vw); }
+.dock-menu__count {
+	padding: 0 12px 8px;
+	font-size: 11.5px;
+	color: var(--fg-ghost);
+}
+.dock-menu__group b { margin-left: 4px; font-weight: 600; color: var(--fg-ghost); }
+.dock-menu__list + .dock-menu__group { margin-top: 14px; }
 
 /* ------------------------------------------------------------- 响应式 */
 
@@ -339,32 +348,42 @@
 	}
 	.dock { bottom: 12px; padding: 0 8px; gap: 2px; }
 	.dock__icon { width: 18px; height: 18px; }
-	.dock-menu { padding: 12px 12px 14px; }
+	.dock-menu {
+		padding: 12px 12px 14px;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior: contain;
+	}
+	/* iOS 上输入框小于 16px 时一聚焦就放大整页 */
+	.dock-menu__search .input { font-size: 16px; }
 }
 
-/* ≤430px: 坞里排不下十来个按钮 —— 先减项, 再收窄图标与间距。
-   不收的话整条坞会比屏幕还宽, 左右两边各被裁掉一截
-   (实测 420px 下坞宽 495px, 两边各溢出 37px)。
-   窄屏基本没有 hover, tooltip 也一并关掉, 免得被 overflow 切一半。 */
-/* 宽度不够时: 先减两项(links / album, 顶栏导航里都还在), 再整体收窄。
-   坞的满量宽度约 575px(12 个图标 * 38), 所以 600px 以下就必须开始收,
-   否则 600 到 575 之间的窗口里坞会被屏幕两边裁掉。
-   实测: 10 个图标 * 32 + 头像 32 + 3 条分隔线(含外边距)9 + 内边距 12 = 373px。 */
+/*
+ * 手机: 图标放大 + 藏掉头像。
+ *
+ * 坞的满量宽度约 575px(12 个图标 * 38px), 所以 600px 以下必须开始减:
+ *   1) links / album / projects 三个先藏(顶栏导航、联系菜单、页脚里都还有入口)
+ *   2) 头像也藏掉 —— 手机上它只是个装饰, 却占掉一个图标的宽度
+ *   3) 剩下的 9 个图标按屏幕宽度均分, 单键 40px 上下(以前只有 27~32px)
+ *
+ * 宽度交给 --dock-item 算: 9 个键 + 1 条分隔线(3px) + 左右内边距(12px) + 余量,
+ * 这样从 320 到 600px 都不会溢出, 也不会白白留一条黑边。
+ */
 @media (max-width: 600px) {
-	:root { --dock-item: 32px; }
+	:root {
+		--dock-item: min(46px, calc((100vw - 22px) / 9));
+		--dock-gap: 0px;
+		--dock-h: 58px;
+	}
 	.dock { gap: 0; padding: 0 6px; }
+	.dock__avatar,
+	.dock__sep--avatar { display: none; }
 	.dock__sep { margin: 0 1px; }
-	.dock__avatar { width: 32px; height: 32px; }
-	.dock__icon { width: 16px; height: 16px; }
-	.dock__item::before { display: none; }
+	.dock__icon { width: 20px; height: 20px; }
+	.dock__item::before { display: none; }   /* 窄屏没有 hover, tooltip 只会被切一半 */
 	.dock__item[data-compact-hide] { display: none; }
 }
 
-/* 再窄一档(360 / 320): 10 * 27 + 28 + 3 + 10 = 311px */
+/* 小屏(360 / 320): 公式跟着缩, 但别小于 33px */
 @media (max-width: 380px) {
-	:root { --dock-item: 27px; }
-	.dock { padding: 0 5px; }
-	.dock__sep { margin: 0; }
-	.dock__avatar { width: 28px; height: 28px; }
-	.dock__icon { width: 14px; height: 14px; }
+	.dock__icon { width: 18px; height: 18px; }
 }

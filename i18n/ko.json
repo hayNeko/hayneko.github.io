@@ -26,12 +26,24 @@
 			},
 			"search": {
 				"empty": "일치하는 항목이 없습니다.",
-				"placeholder": "grep -i …",
+				"placeholder": "사이트 전체 검색…",
 				"title": "검색"
 			}
 		},
 		"projects": "프로젝트",
 		"search": "검색",
+		"searchMenu": {
+			"count": "결과 {count}개",
+			"group": {
+				"commands": "터미널 명령",
+				"files": "다운로드",
+				"games": "미니 게임",
+				"links": "링크 및 연락처",
+				"pages": "페이지",
+				"sims": "물리 시뮬레이션"
+			},
+			"hint": "사이트의 모든 것 — 입력하면 걸러집니다."
+		},
 		"storage": "저장소",
 		"terminal": "터미널",
 		"theme": "테마 전환",
@@ -58,9 +70,24 @@
 			"pause": "일시정지",
 			"restart": "다시 시작",
 			"resume": "계속",
-			"start": "시작"
+			"start": "시작",
+			"undo": "되돌리기"
+		},
+		"flag": {
+			"easy": "무가속",
+			"easyTip": "--easy-mode: 가속 없음",
+			"rollback": "되돌리기",
+			"rollbackTip": "--with-roll-back: 한 수 되돌리기"
+		},
+		"flags": {
+			"easy": "가속 없음: 레벨은 1로 고정, 낙하 간격은 800ms 로 일정.",
+			"rollback": "되돌리기 버튼(U 키 / ↶)이 생겨 마지막 블록을 되돌릴 수 있습니다.",
+			"title": "명령줄 플래그 — 아래 스위치를 누르면 play tetris 에 넘긴 것과 같습니다."
 		},
 		"heading": "게임",
+		"hint": {
+			"restart": "「다시 시작」을 길게 누르면 처음부터"
+		},
 		"hud": {
 			"best": "최고 점수",
 			"hold": "홀드",
@@ -74,8 +101,10 @@
 			"hold": "홀드",
 			"move": "이동",
 			"pause": "일시정지",
+			"restart": "길게 눌러 재시작",
 			"rotate": "회전",
-			"soft": "소프트 드롭"
+			"soft": "소프트 드롭",
+			"undo": "되돌리기"
 		},
 		"overlay": {
 			"overHint": "점수 {score} · 최고 {best}",
@@ -92,7 +121,8 @@
 			"hold": "홀드",
 			"left": "왼쪽",
 			"right": "오른쪽",
-			"rotate": "회전"
+			"rotate": "회전",
+			"undo": "되돌리기"
 		},
 		"play": "플레이",
 		"soon": {

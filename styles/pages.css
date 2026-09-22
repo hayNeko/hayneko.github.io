@@ -279,7 +279,8 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	height: clamp(340px, 52vh, 480px);
+	/* 终端是这一页的主角, 给足高度; 手机上用 dvh, 免得地址栏一收一放就跳 */
+	height: clamp(430px, 68vh, 780px);
 	background: rgba(3, 5, 8, 0.92);
 	border: 1px solid var(--line-strong);
 	border-radius: var(--radius);
@@ -343,6 +344,14 @@
 .term__out .t-dim { color: var(--fg-ghost); }
 .term__out .t-key { color: var(--fg); font-weight: 600; }
 
+/*
+ * 聚焦时浏览器会把输入框滚进视口, 但它不认识底部那条 fixed 坞 ——
+ * 给它留出坞的高度, 输入行就不会正好停在坞下面。
+ * (terminal.js 的 keepPromptClear() 还会在聚焦后自己兜一次底。)
+ */
+.term__input,
+.term__prompt-line { scroll-margin-bottom: calc(var(--dock-h) + 34px); }
+
 .term__prompt-line {
 	position: relative;
 	z-index: 1;
@@ -366,6 +375,24 @@
 	caret-color: var(--accent);
 }
 .term__input::placeholder { color: var(--fg-ghost); }
+
+/* ------------------------------------------------------------- 终端 · 移动端 */
+
+@media (max-width: 720px) {
+	.term { height: clamp(360px, 62vh, 620px); }
+	@supports (height: 1dvh) {
+		.term { height: clamp(360px, 62dvh, 620px); }
+	}
+	.term__body { padding: 12px 12px; font-size: 12.5px; }
+	.term__prompt-line { padding: 0 12px 12px; }
+	/*
+	 * iOS 上输入框字号小于 16px 时, 聚焦会自动放大整个页面 ——
+	 * 而终端正好是"点一下就聚焦"的东西, 所以这里必须给到 16px。
+	 */
+	.term__input { font-size: 16px; }
+	.term-suggest { gap: 6px; margin-top: 12px; }
+	.term-suggest button { padding: 7px 12px; font-size: 12px; }
+}
 
 .term-suggest { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .term-suggest button {

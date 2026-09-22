@@ -82,15 +82,18 @@
 		{ id: 'contact', icon: 'chat', key: 'dock.contact', act: 'menu:contact' },
 		{ id: 'language', icon: 'globe', key: 'dock.language', act: 'menu:language' },
 		{ id: 'theme', icon: 'moon', key: 'dock.theme', act: 'theme', dual: true },
-		{ sep: true },
-		{ id: 'projects', icon: 'github', key: 'dock.projects', act: 'link:' + GITHUB },
+		{ sep: true, compact: true },
+		{ id: 'projects', icon: 'github', key: 'dock.projects', act: 'link:' + GITHUB, compact: true },
 		{ id: 'album', icon: 'image', key: 'dock.album', act: 'soon', compact: true }
 	];
 
 	/* ------------------------------------------------------------ 构建 */
 
 	function itemHTML(item) {
-		if (item.sep) return '<span class="dock__sep" aria-hidden="true"></span>';
+		if (item.sep) {
+			return '<span class="dock__sep' + (item.avatar ? ' dock__sep--avatar' : '') + '"' +
+				(item.compact ? ' data-compact-hide' : '') + ' aria-hidden="true"></span>';
+		}
 		/* 主题按钮放两个图标, 用 CSS 交叉淡入淡出 —— 切换主题时不会"啪"地换一个图形 */
 		var inner = item.dual
 			? '<span class="dock__icon dock__icon--dual">' + svg('moon', 'icon-moon') + svg('sun', 'icon-sun') + '</span>'
@@ -160,7 +163,7 @@
 				return { locale: l.code, icon: 'globe', label: l.label, arrow: '' };
 			}));
 
-		var searchMenu = menuHTML('search', 'dock.menu.search.title', 'grep', [],
+		var searchMenu = menuHTML('search', 'dock.menu.search.title', 'global', [],
 			{
 				tail: '<div class="dock-menu__search">' +
 					'<input class="input" id="dock-search-input" type="search" autocomplete="off" spellcheck="false" ' +
@@ -172,7 +175,7 @@
 			'<button type="button" class="dock__avatar" id="dock-avatar" data-tip="" i18n-attr="data-tip" i18n-key="dock.avatar.tip">' +
 			'<img src="medias/picures/avatarMikuHatsune1.jpg" alt="Hayno" draggable="false" class="protected-media">' +
 			'</button>' +
-			'<span class="dock__sep" aria-hidden="true"></span>' +
+			'<span class="dock__sep dock__sep--avatar" aria-hidden="true"></span>' +
 			items +
 			'<span class="dock__spacer"></span>' +
 			'<span class="dock__status" id="dock-status"><b>online</b> <span data-dock-locale>en</span></span>' +
@@ -294,25 +297,132 @@
 		burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
 	}
 
-	/* ---- 搜索 ---- */
+	/* ---- 全局搜索 ----
+	 *
+	 * 索引用的是"活"的清单: 页面 / 小游戏 / 物理模拟 / 终端命令 / 资源下载 / 外链,
+	 * 小游戏与终端命令分别问 Games 与 Terminal 要, 不在这里抄一份。
+	 * 命中按"词条相关度 > 组内顺序"排, 再按分组展示 —— 空查询时列出全部,
+	 * 也就是"所有可能的结果"。
+	 */
 
-	var SEARCH_INDEX = [
-		{ label: 'Home', key: 'dock.home', route: 'home', icon: 'home' },
-		{ label: 'Terminal', key: 'dock.terminal', route: 'terminal', icon: 'term' },
-		{ label: 'Storage', key: 'dock.storage', route: 'storage', icon: 'box' },
-		{ label: 'Lab', key: 'dock.lab', route: 'lab', icon: 'flask' },
-		{ label: 'Games', key: 'dock.games', route: 'games', icon: 'gamepad' },
-		{ label: 'Links', key: 'dock.links', route: 'links', icon: 'link' }
-	].concat(SIMS.map(function (s) {
-		return { label: s.key, key: 'lab.' + s.key + '.title', href: s.href, icon: s.icon };
-	}));
+	var PAGES = [
+		{ label: 'Home', key: 'dock.home', route: 'home', icon: 'home', hint: '~/home' },
+		{ label: 'Terminal', key: 'dock.terminal', route: 'terminal', icon: 'term', hint: '~/terminal' },
+		{ label: 'Storage', key: 'dock.storage', route: 'storage', icon: 'box', hint: '~/storage' },
+		{ label: 'Lab', key: 'dock.lab', route: 'lab', icon: 'flask', hint: '~/lab' },
+		{ label: 'Games', key: 'dock.games', route: 'games', icon: 'gamepad', hint: '~/games' },
+		{ label: 'Links', key: 'dock.links', route: 'links', icon: 'link', hint: '~/links' }
+	];
+
+	/* 资源下载: 与 views/storage.html 保持一致(改那边记得顺手改这里) */
+	var FILES = [
+		{ label: "Intel 80386 Programmer's Reference Manual (1986)", key: 'lab.docs.i386.title', href: 'medias/files/docs/i386.pdf', icon: 'doc', hint: 'pdf · 1.0 MB' },
+		{ label: 'nlohmann/json.hpp v3.12.0 — JSON for Modern C++', href: 'medias/files/programming/nlohmann_json.hpp', icon: 'box', hint: 'hpp · 956 KB' },
+		{ label: 'Minecraft 1.21.1 PvP Map (datapack inside)', href: 'medias/files/games/PVP.zip', icon: 'box', hint: 'zip · no longer available' },
+		{ label: 'Minecraft 1.21.1 PvP Map — full map', href: 'medias/files/games/1.21.1_command.zip', icon: 'box', hint: 'zip · no longer available' }
+	];
+
+	var LINKS = [
+		{ label: 'GitHub', href: GITHUB, icon: 'github', hint: 'github.com/hayNeko' },
+		{ label: 'Instagram', href: INSTAGRAM, icon: 'instagram', hint: '@hayneko_dword' },
+		{ label: 'Email', href: 'mailto:' + EMAIL, icon: 'mail', hint: EMAIL }
+	];
+
+	/* 分组顺序 = 展示顺序; 组标题走 i18n */
+	var SEARCH_GROUPS = [
+		{ id: 'games', key: 'dock.searchMenu.group.games' },
+		{ id: 'pages', key: 'dock.searchMenu.group.pages' },
+		{ id: 'commands', key: 'dock.searchMenu.group.commands' },
+		{ id: 'sims', key: 'dock.searchMenu.group.sims' },
+		{ id: 'files', key: 'dock.searchMenu.group.files' },
+		{ id: 'links', key: 'dock.searchMenu.group.links' }
+	];
+
+	function esc(text) {
+		return String(text).replace(/[&<>"']/g, function (c) {
+			return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+		});
+	}
+
+	/** 每次搜索现取: Games / Terminal 可能还没加载完, 懒着来最省心 */
+	function globalIndex() {
+		var rows = [];
+
+		PAGES.forEach(function (p) {
+			rows.push({ group: 'pages', label: p.label, key: p.key, hint: p.hint, icon: p.icon, route: p.route });
+		});
+
+		if (global.Games && global.Games.list) {
+			global.Games.list().forEach(function (g) {
+				rows.push({
+					group: 'games', label: g.title, key: 'games.' + g.id + '.title',
+					hint: 'play ' + g.id, icon: 'gamepad', game: g.id
+				});
+			});
+		}
+
+		SIMS.forEach(function (s) {
+			rows.push({
+				group: 'sims', label: s.key, key: 'lab.' + s.key + '.title',
+				hint: s.href, icon: s.icon, href: s.href, external: true
+			});
+		});
+
+		if (global.Terminal && global.Terminal.commands) {
+			global.Terminal.commands().forEach(function (c) {
+				rows.push({
+					group: 'commands', label: c.name, hint: c.usage, icon: 'term',
+					command: c.name
+				});
+			});
+		}
+
+		FILES.forEach(function (f) {
+			rows.push({ group: 'files', label: f.label, key: f.key, hint: f.hint, icon: f.icon, href: f.href, external: true });
+		});
+
+		LINKS.forEach(function (l) {
+			rows.push({ group: 'links', label: l.label, hint: l.hint, icon: l.icon, href: l.href });
+		});
+
+		return rows;
+	}
 
 	/** 语言包就绪前不要调用 i18n.t —— 否则会刷一屏"缺少翻译"告警 */
-	function tKey(key, fallback) {
+	function tKey(key, fallback, params) {
 		if (!i18nReady) return fallback;
 		var i18n = global.i18n;
 		if (!i18n || !i18n.t) return fallback;
-		return i18n.t(key) || fallback;
+		return i18n.t(key, params) || fallback;
+	}
+
+	function labelOf(row) {
+		return row.key ? String(tKey(row.key, row.label)) : String(row.label);
+	}
+
+	/* 精确 > 前缀 > 包含 > 说明/路径里出现 */
+	function scoreOf(row, label, q) {
+		if (!q) return 1;
+		var text = label.toLowerCase();
+		if (text === q) return 4;
+		if (text.indexOf(q) === 0) return 3;
+		if (text.indexOf(q) !== -1) return 2;
+		if (row.hint && String(row.hint).toLowerCase().indexOf(q) !== -1) return 1.5;
+		if (row.key && String(row.key).toLowerCase().indexOf(q) !== -1) return 1.2;
+		return 0;
+	}
+
+	function hitHTML(hit, index) {
+		var row = hit.row;
+		var attrs = ' class="dock-menu__item" style="--i:' + Math.min(index, 14) + '"';
+		if (row.route) attrs += ' data-search-route="' + esc(row.route) + '"';
+		else if (row.game) attrs += ' data-search-game="' + esc(row.game) + '"';
+		else if (row.command) attrs += ' data-search-cmd="' + esc(row.command) + '"';
+		else if (row.href) attrs += ' data-search-href="' + esc(row.href) + '"';
+		var body = icon(row.icon || 'doc') + '<span class="dock-menu__text"><b>' + esc(hit.label) + '</b>';
+		if (row.hint) body += '<small>' + esc(row.hint) + '</small>';
+		body += '</span><span class="dock-menu__arrow" aria-hidden="true">' + (row.external ? '↗' : '›') + '</span>';
+		return '<button type="button"' + attrs + '>' + body + '</button>';
 	}
 
 	function renderSearch(query) {
@@ -320,26 +430,42 @@
 		if (!box) return;
 		var q = (query || '').trim().toLowerCase();
 
-		var hits = SEARCH_INDEX.filter(function (row) {
-			var label = tKey(row.key, row.label);
-			return !q || String(label).toLowerCase().indexOf(q) !== -1 || row.key.toLowerCase().indexOf(q) !== -1;
+		var hits = [];
+		globalIndex().forEach(function (row, i) {
+			var label = labelOf(row);
+			var score = scoreOf(row, label, q);
+			if (score > 0) hits.push({ row: row, label: label, score: score, i: i });
 		});
 
-		var emptyText = tKey('dock.menu.search.empty', 'No matching entry.');
-
 		if (!hits.length) {
-			box.innerHTML = '<div class="dock-menu__empty">' + emptyText + '</div>';
-		} else {
-			box.innerHTML = '<div class="dock-menu__list">' + hits.map(function (row, i) {
-				var label = tKey(row.key, row.label);
-				var attrs = ' class="dock-menu__item" style="--i:' + i + '"';
-				if (row.route) attrs += ' data-search-route="' + row.route + '"';
-				else attrs += ' data-search-href="' + row.href + '"';
-				return '<button type="button"' + attrs + '>' + icon(row.icon) +
-					'<span class="dock-menu__text"><b>' + label + '</b></span>' +
-					'<span class="dock-menu__arrow" aria-hidden="true">›</span></button>';
-			}).join('') + '</div>';
+			box.innerHTML = '<div class="dock-menu__empty">' +
+				esc(tKey('dock.menu.search.empty', 'No matching entry.')) + '</div>';
+			return;
 		}
+
+		var byGroup = {};
+		hits.forEach(function (hit) {
+			if (!byGroup[hit.row.group]) byGroup[hit.row.group] = [];
+			byGroup[hit.row.group].push(hit);
+		});
+
+		var html = '<div class="dock-menu__count">' + esc(q
+			? tKey('dock.searchMenu.count', '{count} results', { count: hits.length })
+			: tKey('dock.searchMenu.hint', 'Everything on this site — type to filter.')) + '</div>';
+
+		var index = 0;
+		SEARCH_GROUPS.forEach(function (group) {
+			var list = byGroup[group.id];
+			if (!list || !list.length) return;
+			list.sort(function (a, b) { return b.score - a.score || a.i - b.i; });
+			html += '<div class="dock-menu__group">' + esc(tKey(group.key, group.id)) +
+				' <b>' + list.length + '</b></div>';
+			html += '<div class="dock-menu__list">' + list.map(function (hit) {
+				return hitHTML(hit, index++);
+			}).join('') + '</div>';
+		});
+
+		box.innerHTML = html;
 	}
 
 	/* ---- 状态栏 ---- */
@@ -383,12 +509,17 @@
 			return;
 		}
 
-		var searchHit = e.target.closest && e.target.closest('[data-search-route],[data-search-href]');
+		var searchHit = e.target.closest && e.target.closest(
+			'[data-search-route],[data-search-href],[data-search-game],[data-search-cmd]');
 		if (searchHit) {
 			var route = searchHit.getAttribute('data-search-route');
 			var href = searchHit.getAttribute('data-search-href');
+			var game = searchHit.getAttribute('data-search-game');
+			var cmd = searchHit.getAttribute('data-search-cmd');
 			closeMenus();
 			if (route && global.Router) global.Router.navigate(route);
+			else if (game && global.Games) global.Games.launch(game);
+			else if (cmd && global.Terminal && global.Terminal.run) global.Terminal.run(cmd);
 			else if (href) global.open(href, '_blank', 'noopener');
 			return;
 		}

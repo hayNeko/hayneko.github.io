@@ -26,12 +26,24 @@
 			},
 			"search": {
 				"empty": "一致する項目がありません。",
-				"placeholder": "grep -i …",
+				"placeholder": "サイト全体を検索…",
 				"title": "検索"
 			}
 		},
 		"projects": "プロジェクト",
 		"search": "検索",
+		"searchMenu": {
+			"count": "{count} 件",
+			"group": {
+				"commands": "ターミナルコマンド",
+				"files": "ダウンロード",
+				"games": "ミニゲーム",
+				"links": "リンクと連絡先",
+				"pages": "ページ",
+				"sims": "物理シミュレーション"
+			},
+			"hint": "サイト内のすべて —— 入力で絞り込み。"
+		},
 		"storage": "ストレージ",
 		"terminal": "ターミナル",
 		"theme": "テーマ切替",
@@ -58,9 +70,24 @@
 			"pause": "一時停止",
 			"restart": "リスタート",
 			"resume": "再開",
-			"start": "スタート"
+			"start": "スタート",
+			"undo": "元に戻す"
+		},
+		"flag": {
+			"easy": "加速なし",
+			"easyTip": "--easy-mode: 加速しない",
+			"rollback": "戻しあり",
+			"rollbackTip": "--with-roll-back: 一手戻せる"
+		},
+		"flags": {
+			"easy": "加速なし: レベルは 1 のまま、落下間隔は 800ms で一定。",
+			"rollback": "「元に戻す」ボタン(U キー / ↶)が増え、直前のピースを戻せます。",
+			"title": "コマンドラインフラグ —— 下のスイッチをクリックすれば play tetris に渡すのと同じです。"
 		},
 		"heading": "ゲーム",
+		"hint": {
+			"restart": "「リスタート」を長押しでやり直し"
+		},
 		"hud": {
 			"best": "ベスト",
 			"hold": "ホールド",
@@ -74,8 +101,10 @@
 			"hold": "ホールド",
 			"move": "移動",
 			"pause": "一時停止",
+			"restart": "長押しでリスタート",
 			"rotate": "回転",
-			"soft": "ソフトドロップ"
+			"soft": "ソフトドロップ",
+			"undo": "戻す"
 		},
 		"overlay": {
 			"overHint": "スコア {score} · ベスト {best}",
@@ -92,7 +121,8 @@
 			"hold": "ホールド",
 			"left": "左へ",
 			"right": "右へ",
-			"rotate": "回転"
+			"rotate": "回転",
+			"undo": "戻す"
 		},
 		"play": "プレイ",
 		"soon": {

@@ -26,12 +26,24 @@
 			},
 			"search": {
 				"empty": "沒有符合的條目。",
-				"placeholder": "grep -i …",
+				"placeholder": "搜尋整個站點…",
 				"title": "搜尋"
 			}
 		},
 		"projects": "專案",
 		"search": "搜索",
+		"searchMenu": {
+			"count": "{count} 個結果",
+			"group": {
+				"commands": "終端機指令",
+				"files": "資源下載",
+				"games": "小遊戲",
+				"links": "連結與聯絡",
+				"pages": "頁面",
+				"sims": "物理模擬"
+			},
+			"hint": "站內全部內容 —— 輸入即可過濾。"
+		},
 		"storage": "資源下載",
 		"terminal": "終端機",
 		"theme": "切換主題",
@@ -58,9 +70,24 @@
 			"pause": "暫停",
 			"restart": "重開",
 			"resume": "繼續",
-			"start": "開始"
+			"start": "開始",
+			"undo": "撤回"
+		},
+		"flag": {
+			"easy": "不加速",
+			"easyTip": "--easy-mode: 不加速模式",
+			"rollback": "可撤回",
+			"rollbackTip": "--with-roll-back: 可以撤回上一步"
+		},
+		"flags": {
+			"easy": "不加速: 等級固定在 1, 下落間隔恆為 800ms。",
+			"rollback": "多一個撤回按鈕(鍵盤 U / 觸控 ↶), 可以退回上一塊落子之前。",
+			"title": "命令列旗標 —— 直接點下面的開關即可, 效果與 play tetris 後面加參數一樣。"
 		},
 		"heading": "小遊戲",
+		"hint": {
+			"restart": "長按「重新遊玩」重開"
+		},
 		"hud": {
 			"best": "最高分",
 			"hold": "暫存",
@@ -74,8 +101,10 @@
 			"hold": "暫存",
 			"move": "移動",
 			"pause": "暫停",
+			"restart": "長按重開",
 			"rotate": "旋轉",
-			"soft": "軟降"
+			"soft": "軟降",
+			"undo": "撤回"
 		},
 		"overlay": {
 			"overHint": "得分 {score} · 最高 {best}",
@@ -92,7 +121,8 @@
 			"hold": "暫存",
 			"left": "左移",
 			"right": "右移",
-			"rotate": "旋轉"
+			"rotate": "旋轉",
+			"undo": "撤回"
 		},
 		"play": "開始玩",
 		"soon": {

@@ -36,7 +36,9 @@
 		'games.txt': [
 			'1  tetris        classic falling-block puzzle',
 			'',
-			'Run "play tetris" to open one.'
+			'Run "play tetris" to open one.',
+			'Flags:  --easy-mode       no speed-up',
+			'        --with-roll-back  adds an Undo button'
 		],
 		'.help': [
 			'Try: help, ls, cat about.md, sim 2, play tetris, theme light, neofetch.'
@@ -58,6 +60,72 @@
 	function gameList() {
 		if (global.Games && global.Games.list) return global.Games.list();
 		return GAMES_FALLBACK;
+	}
+
+	/* 帮助表是唯一的事实来源: help / man / 全局搜索都从这里读 */
+	var HELP_GROUPS = [
+		{ title: 'files & navigation', rows: [
+			['help', 'show this list'],
+			['man <cmd>', 'usage of a single command'],
+			['ls', 'list virtual files'],
+			['tree', 'virtual files as a tree'],
+			['cat <file>', 'print a virtual file'],
+			['open <page>', 'navigate: home | terminal | storage | lab | games | links'],
+			['sim [n]', 'list / open a physics simulation'],
+			['clear', 'clear the screen']
+		] },
+		{ title: 'games', rows: [
+			['games', 'list the mini games on this site'],
+			['play <game> [flags]', 'open a mini game and start it (tetris)'],
+			['  --easy-mode', 'never speeds up: level stays 1, fall speed is constant'],
+			['  --with-roll-back', 'adds an Undo button (U) that takes back the last piece']
+		] },
+		{ title: 'encode & hash', rows: [
+			['b64 <text>', 'base64 encode'],
+			['b64d <text>', 'base64 decode'],
+			['hex <text>', 'text -> hex bytes'],
+			['unhex <hex>', 'hex bytes -> text'],
+			['url <text>', 'URL encode'],
+			['urldecode <text>', 'URL decode'],
+			['hash [algo] <text>', 'sha1 / sha256 / sha384 / sha512'],
+			['json <text>', 'pretty-print JSON']
+		] },
+		{ title: 'numbers & time', rows: [
+			['calc <expr>', 'math + 7 bitwise ops (NOT AND NAND OR NOR XOR XNOR, 32-bit) + tests (= <> > < >= <= ~=)'],
+			['base <value>', 'convert 0x.. / 0b.. / 0o.. / decimal'],
+			['ts [value]', 'unix timestamp <-> date'],
+			['uuid [n]', 'generate n uuid v4'],
+			['pass [len] [-s]', 'random password, -s adds symbols'],
+			['color <value>', '#hex | rgb(r,g,b) | hsl(h,s%,l%) + swatch']
+		] },
+		{ title: 'text', rows: [
+			['text <op> <t>', 'upper | lower | title | rev | trim | slug'],
+			['count <text>', 'characters / words / lines / utf-8 bytes'],
+			['lorem [n]', 'placeholder sentences'],
+			['cron <expr>', 'explain a cron expression + next runs']
+		] },
+		{ title: 'system & fun', rows: [
+			['whoami / date', 'user and time'],
+			['history', 'command history'],
+			['env', 'locale / theme / accent / viewport'],
+			['theme <t>', 'dark | light'],
+			['accent <c>', 'red | green | blue'],
+			['neofetch', 'system info'],
+			['matrix', '...']
+		] }
+	];
+
+	/* 给全局搜索用的扁平清单: 只列文档里有的命令(别名不进搜索, 免得一堆重复项) */
+	function commandList() {
+		var out = [];
+		HELP_GROUPS.forEach(function (group) {
+			group.rows.forEach(function (row) {
+				var name = String(row[0]).split(' ')[0];
+				if (!name || name.charAt(0) === '-') return;   /* 标志位那两行不是命令 */
+				out.push({ name: name, usage: row[0], desc: row[1], group: group.title });
+			});
+		});
+		return out;
 	}
 
 	var instances = [];
@@ -89,6 +157,21 @@
 			return line;
 		}
 
+		/**
+		 * 输入行别被底部那条固定坞压住。
+		 * 浏览器把聚焦的元素滚进视口时并不认识这条 fixed 坞, 所以聚焦之后自己再看一眼:
+		 * 只要输入行的底边落进坞里, 就把页面往上滚一点。
+		 */
+		function keepPromptClear() {
+			var dock = doc.getElementById('dock');
+			var line = root.querySelector('.term__prompt-line');
+			if (!dock || !line || !line.getBoundingClientRect || !global.scrollBy) return;
+			var overlap = line.getBoundingClientRect().bottom + 12 - dock.getBoundingClientRect().top;
+			if (overlap <= 0) return;
+			var smooth = !(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
+			global.scrollBy({ top: overlap, behavior: smooth ? 'smooth' : 'auto' });
+		}
+
 		function scrollToEnd() {
 			body.scrollTop = body.scrollHeight;
 		}
@@ -108,57 +191,6 @@
 		}
 
 		/* -------------------------------------------------- 命令实现 */
-
-		/* 帮助表是唯一的事实来源, help / man 都从这里读 */
-		var HELP_GROUPS = [
-			{ title: 'files & navigation', rows: [
-				['help', 'show this list'],
-				['man <cmd>', 'usage of a single command'],
-				['ls', 'list virtual files'],
-				['tree', 'virtual files as a tree'],
-				['cat <file>', 'print a virtual file'],
-				['open <page>', 'navigate: home | terminal | storage | lab | games | links'],
-				['sim [n]', 'list / open a physics simulation'],
-				['clear', 'clear the screen']
-			] },
-			{ title: 'games', rows: [
-				['games', 'list the mini games on this site'],
-				['play <game>', 'open a mini game and start it (tetris)']
-			] },
-			{ title: 'encode & hash', rows: [
-				['b64 <text>', 'base64 encode'],
-				['b64d <text>', 'base64 decode'],
-				['hex <text>', 'text -> hex bytes'],
-				['unhex <hex>', 'hex bytes -> text'],
-				['url <text>', 'URL encode'],
-				['urldecode <text>', 'URL decode'],
-				['hash [algo] <text>', 'sha1 / sha256 / sha384 / sha512'],
-				['json <text>', 'pretty-print JSON']
-			] },
-			{ title: 'numbers & time', rows: [
-				['calc <expr>', 'arithmetic: + - * / % ^ ( ) sqrt() pow() min() max()'],
-				['base <value>', 'convert 0x.. / 0b.. / 0o.. / decimal'],
-				['ts [value]', 'unix timestamp <-> date'],
-				['uuid [n]', 'generate n uuid v4'],
-				['pass [len] [-s]', 'random password, -s adds symbols'],
-				['color <value>', '#hex | rgb(r,g,b) | hsl(h,s%,l%) + swatch']
-			] },
-			{ title: 'text', rows: [
-				['text <op> <t>', 'upper | lower | title | rev | trim | slug'],
-				['count <text>', 'characters / words / lines / utf-8 bytes'],
-				['lorem [n]', 'placeholder sentences'],
-				['cron <expr>', 'explain a cron expression + next runs']
-			] },
-			{ title: 'system & fun', rows: [
-				['whoami / date', 'user and time'],
-				['history', 'command history'],
-				['env', 'locale / theme / accent / viewport'],
-				['theme <t>', 'dark | light'],
-				['accent <c>', 'red | green | blue'],
-				['neofetch', 'system info'],
-				['matrix', '...']
-			] }
-		];
 
 		function cmdHelp() {
 			print('Available commands', 't-info');
@@ -316,17 +348,46 @@
 				print('  ' + (i + 1) + '  ' + g.id.padEnd(12, ' ') + (g.desc || ''));
 			});
 			print('');
-			print('usage: play <game>', 't-dim');
+			print('  --easy-mode        no speed-up: level stays 1', 't-dim');
+			print('  --with-roll-back   adds an Undo button (U)', 't-dim');
+			print('');
+			print('usage: play <game> [flags]', 't-dim');
 		}
 
+		/* play 支持的命令行标志位 -> Games.launch() 里的开关 */
+		var PLAY_FLAGS = {
+			'--easy-mode': 'easy',
+			'--easy': 'easy',
+			'--with-roll-back': 'rollback',
+			'--with-rollback': 'rollback',
+			'--rollback': 'rollback'
+		};
+
 		function cmdPlay(args) {
-			var name = (args[0] || '').toLowerCase();
+			var flags = { easy: false, rollback: false };
+			var rest = [];
+			var unknown = null;
+			args.forEach(function (arg) {
+				var lower = String(arg).toLowerCase();
+				if (lower.charAt(0) === '-') {
+					if (PLAY_FLAGS[lower]) flags[PLAY_FLAGS[lower]] = true;
+					else if (!unknown) unknown = arg;
+				} else {
+					rest.push(arg);
+				}
+			});
+			if (unknown) {
+				print('play: unknown flag "' + unknown + '"', 't-err');
+				print('  available: --easy-mode   --with-roll-back', 't-dim');
+				return;
+			}
+			var name = (rest[0] || '').toLowerCase();
 			if (!name) { cmdGames(); return; }
 			var list = gameList();
 			var found = null;
 			list.forEach(function (g) { if (g.id === name) found = g; });
 			if (!found) {
-				print('play: no game named "' + args[0] + '"', 't-err');
+				print('play: no game named "' + rest[0] + '"', 't-err');
 				print('  try: ' + list.map(function (g) { return g.id; }).join(' | '), 't-dim');
 				return;
 			}
@@ -334,9 +395,10 @@
 				print('play: the games page is not loaded on this build', 't-err');
 				return;
 			}
-			print('starting ' + found.id + ' ...', 't-ok');
+			var label = found.id + (flags.easy ? ' --easy-mode' : '') + (flags.rollback ? ' --with-roll-back' : '');
+			print('starting ' + label + ' ...', 't-ok');
 			scrollToEnd();
-			global.Games.launch(found.id);
+			global.Games.launch(found.id, flags);
 		}
 
 		function cmdTheme(args) {
@@ -511,108 +573,313 @@
 
 		function round12(v) { return String(Math.round(v * 1e12) / 1e12); }
 
+		/* -------------------------------------------------- calc 表达式求值
+		 *
+		 * 手写词法分析 + 递归下降, 不用 eval。
+		 * 优先级(低 → 高):
+		 *   OR/NOR < XOR/XNOR < AND/NAND < NOT < 比较 < + - < * / % < 一元± < ^
+		 *
+		 * 两类运算符的输出完全不同, 别混:
+		 *   - 比较(= <> > < >= <= ~=) 判断条件是否成立 → TRUE / FALSE;
+		 *   - NOT / AND / OR / XOR / NAND / NOR / XNOR 是**位运算**,
+		 *     按 32 位有符号整数算, 打印十进制结果(calc 3 xnor 4 → -8)。
+		 */
+
+		var CALC_FN1 = {
+			sqrt: Math.sqrt, abs: Math.abs, round: Math.round, floor: Math.floor, ceil: Math.ceil,
+			sin: Math.sin, cos: Math.cos, tan: Math.tan, log: Math.log, log10: Math.log10, exp: Math.exp,
+			sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,
+			asin: Math.asin, acos: Math.acos, atan: Math.atan,
+			asinh: Math.asinh, acosh: Math.acosh, atanh: Math.atanh,
+			cbrt: Math.cbrt
+		};
+
+		var CALC_FN_N = { pow: Math.pow, min: Math.min, max: Math.max };
+
+		var CALC_CONST = { pi: Math.PI, e: Math.E, true: true, false: false };
+
+		var CALC_CMP = { '=': 1, '==': 1, '<>': 1, '!=': 1, '~=': 1, '>': 1, '<': 1, '>=': 1, '<=': 1 };
+
+		/* 七种逻辑运算: NOT / AND / NAND / OR / NOR / XOR / XNOR */
+		var CALC_LOGIC = { not: 1, and: 1, nand: 1, or: 1, nor: 1, xor: 1, xnor: 1 };
+		var CALC_ORDER = '^ > * / % > + - > compare > NOT > AND/NAND > XOR/XNOR > OR/NOR';
+
+		/* 比较的结果是布尔, 进了算术/位运算就当 1 / 0 用 */
+		function toNumber(v) { return typeof v === 'boolean' ? (v ? 1 : 0) : v; }
+
+		/* 显示是按 12 位小数四舍五入的, 比较也放宽到同一档 ——
+		   否则 calc 0.1+0.2 = 0.3 会显示 0.3 却判成 FALSE */
+		function calcNear(a, b) {
+			if (a === b) return true;
+			var scale = Math.max(Math.abs(a), Math.abs(b), 1);
+			return Math.abs(a - b) <= 1e-12 * scale;
+		}
+
+		function calcCompare(a, b, op) {
+			if (op === '=' || op === '==') return calcNear(a, b);
+			if (op === '<>' || op === '!=' || op === '~=') return !calcNear(a, b);
+			if (op === '>') return a > b;
+			if (op === '<') return a < b;
+			if (op === '>=') return a >= b;
+			return a <= b;
+		}
+
+		function calcNumber(raw) {
+			return /^0[xX]/.test(raw) ? parseInt(raw.slice(2), 16) : Number(raw);
+		}
+
+		function calcTokenize(src) {
+			var tokens = [];
+			var i = 0;
+			while (i < src.length) {
+				var ch = src.charAt(i);
+				if (ch === ' ' || ch === '\t') { i++; continue; }
+				if (/[0-9]/.test(ch) || (ch === '.' && /[0-9]/.test(src.charAt(i + 1)))) {
+					var num = /^(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/.exec(src.slice(i));
+					tokens.push({ t: 'num', v: calcNumber(num[0]), raw: num[0] });
+					i += num[0].length;
+					continue;
+				}
+				if (/[a-zA-Z_]/.test(ch)) {
+					var id = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(src.slice(i))[0];
+					tokens.push({ t: 'id', v: id.toLowerCase(), raw: id });
+					i += id.length;
+					continue;
+				}
+				var pair = src.substr(i, 2);
+				if (pair === '>=' || pair === '<=' || pair === '<>' || pair === '~=' || pair === '!=' || pair === '==') {
+					tokens.push({ t: 'op', v: pair, raw: pair });
+					i += 2;
+					continue;
+				}
+				if ('+-*/%^()=<>,'.indexOf(ch) !== -1) {
+					tokens.push({ t: 'op', v: ch, raw: ch });
+					i++;
+					continue;
+				}
+				throw new Error('unexpected "' + ch + '"');
+			}
+			return tokens;
+		}
+
+		function calcCall(name, args, raw) {
+			if (CALC_FN_N[name]) {
+				if (name === 'pow' && args.length !== 2) throw new Error('pow() takes 2 arguments');
+				return CALC_FN_N[name].apply(null, args.map(toNumber));
+			}
+			if (!CALC_FN1[name]) throw new Error('unknown function "' + raw + '"');
+			if (args.length !== 1) throw new Error(name + '() takes 1 argument');
+			return CALC_FN1[name](toNumber(args[0]));
+		}
+
+		function calcEval(src) {
+			var tokens = calcTokenize(src);
+			if (!tokens.length) throw new Error('empty expression');
+			var pos = 0;
+			var depth = 0;
+			var tiers = {};
+
+			function markTier(name) {
+				var t = tiers[depth] || (tiers[depth] = {});
+				t[name] = true;
+			}
+
+			function peek() { return tokens[pos]; }
+			function take() { return tokens[pos++]; }
+			function isOp(v) { var t = peek(); return !!t && t.t === 'op' && t.v === v; }
+			function isWord(v) { var t = peek(); return !!t && t.t === 'id' && t.v === v; }
+
+			function parseExpr() { return parseOr(); }
+
+			/* 注意: 右边一定要先解析出来再算, 不能写成 left || parseXor() ——
+			   JS 的短路求值会让右边那句根本不执行, 右边的操作数就没被吃掉,
+			   于是 1 OR 0 会报 "unexpected 0"。 */
+			/* 位运算统一按 32 位有符号整数算 —— JS 的 & | ^ ~ 本身就是 ToInt32,
+			   所以 3 XNOR 4 = ~(3 ^ 4) = ~7 = -8(十进制有符号)。 */
+			function parseOr() {
+				var left = parseXor();
+				for (;;) {
+					if (isWord('or')) { take(); markTier('logic'); left = toNumber(left) | toNumber(parseXor()); }
+					else if (isWord('nor')) { take(); markTier('logic'); left = ~(toNumber(left) | toNumber(parseXor())); }
+					else return left;
+				}
+			}
+
+			function parseXor() {
+				var left = parseAnd();
+				for (;;) {
+					if (isWord('xor')) { take(); markTier('logic'); left = toNumber(left) ^ toNumber(parseAnd()); }
+					else if (isWord('xnor')) { take(); markTier('logic'); left = ~(toNumber(left) ^ toNumber(parseAnd())); }
+					else return left;
+				}
+			}
+
+			function parseAnd() {
+				var left = parseNot();
+				for (;;) {
+					if (isWord('and')) { take(); markTier('logic'); left = toNumber(left) & toNumber(parseNot()); }
+					else if (isWord('nand')) { take(); markTier('logic'); left = ~(toNumber(left) & toNumber(parseNot())); }
+					else return left;
+				}
+			}
+
+			function parseNot() {
+				if (isWord('not')) { take(); markTier('logic'); return ~toNumber(parseNot()); }
+				return parseCompare();
+			}
+
+			function parseCompare() {
+				var left = parseAdd();
+				for (;;) {
+					var t = peek();
+					var op = t && t.t === 'op' && CALC_CMP[t.v] ? t.v : null;
+					if (!op) return left;
+					take();
+					markTier('compare');
+					left = calcCompare(toNumber(left), toNumber(parseAdd()), op);
+				}
+			}
+
+			function parseAdd() {
+				var v = parseMul();
+				for (;;) {
+					if (isOp('+')) { take(); markTier('add'); v = toNumber(v) + toNumber(parseMul()); }
+					else if (isOp('-')) { take(); markTier('add'); v = toNumber(v) - toNumber(parseMul()); }
+					else return v;
+				}
+			}
+
+			function parseMul() {
+				var v = parseUnary();
+				for (;;) {
+					if (isOp('*')) { take(); markTier('mul'); v = toNumber(v) * toNumber(parseUnary()); }
+					else if (isOp('/')) { take(); markTier('mul'); v = toNumber(v) / toNumber(parseUnary()); }
+					else if (isOp('%')) { take(); markTier('mul'); v = toNumber(v) % toNumber(parseUnary()); }
+					else return v;
+				}
+			}
+
+			function parseUnary() {
+				if (isOp('-')) { take(); markTier('add'); return -toNumber(parseUnary()); }
+				if (isOp('+')) { take(); return toNumber(parseUnary()); }
+				return parsePower();
+			}
+
+			function parsePower() {
+				var base = parseAtom();
+				if (isOp('^')) { take(); return Math.pow(toNumber(base), toNumber(parseUnary())); }
+				return base;
+			}
+
+			/* 2x / 2(3) 这类省略乘号不支持 —— 报错时说清楚该怎么写 */
+			function rejectImplicit(numTok) {
+				var t = peek();
+				if (!t) return;
+				if (t.t === 'id' && CALC_LOGIC[t.v]) return;   /* AND / OR / XOR... 是运算符, 不是省略乘号 */
+				if (t.t === 'num' || t.t === 'id') {
+					throw new Error('implicit multiplication is not supported — write "' + numTok.raw + ' * ' + t.raw + '"');
+				}
+				if (t.t === 'op' && t.v === '(') {
+					throw new Error('implicit multiplication is not supported — write "' + numTok.raw + ' * (...)"');
+				}
+			}
+
+			function parseAtom() {
+				var tok = take();
+				if (!tok) throw new Error('unexpected end of expression');
+				if (tok.t === 'num') { rejectImplicit(tok); return tok.v; }
+				if (tok.t === 'op' && tok.v === '(') {
+					depth++;
+					var inner = parseExpr();
+					depth--;
+					if (isOp(')')) take();
+					else throw new Error('missing ")"');
+					return inner;
+				}
+				if (tok.t === 'id') {
+					if (Object.prototype.hasOwnProperty.call(CALC_CONST, tok.v)) return CALC_CONST[tok.v];
+					if (isOp('(')) {
+						take();
+						depth++;
+						var list = [];
+						if (!isOp(')')) {
+							list.push(parseExpr());
+							while (isOp(',')) { take(); list.push(parseExpr()); }
+						}
+						depth--;
+						if (!isOp(')')) throw new Error('missing ")"');
+						take();
+						return calcCall(tok.v, list, tok.raw);
+					}
+					throw new Error('unknown name "' + tok.raw + '"');
+				}
+				throw new Error('unexpected "' + (tok.raw || tok.v) + '"');
+			}
+
+			var value = parseExpr();
+			if (pos < tokens.length) {
+				var rest = tokens[pos];
+				if (rest.t === 'op' && rest.v === ')') throw new Error('unmatched ")"');
+				throw new Error('unexpected "' + (rest.raw || rest.v) + '"');
+			}
+			return { value: value, tiers: tiers };
+		}
+
+		/**
+		 * 运算顺序不清晰时提示一句(结果照样给, 按 CALC_ORDER 的次序算)。
+		 * 判据是"**同一层括号里**混用了不同优先级的运算":
+		 *   - (1+2)*3     → 加减在里层、乘法在外层, 不混, 不提示;
+		 *   - 1+2*3       → 同一层里 + 和 * 混用, 提示;
+		 *   - 1+2 AND 3   → 算术与逻辑混用, 提示;
+		 *   - 1 < 2 AND 3 > 2 → 比较运算不算"混用"(它们本来就在逻辑之下), 不提示。
+		 */
+		function calcOrderWarning(tiers) {
+			var worst = null;
+			Object.keys(tiers).forEach(function (d) {
+				var t = tiers[d];
+				var groups = [];
+				if (t.add) groups.push('+ -');
+				if (t.mul) groups.push('* / %');
+				if (t.logic) groups.push('bitwise');
+				if (groups.length >= 2 && (!worst || groups.length > worst.length)) worst = groups;
+			});
+			if (!worst) return '';
+			return 'warn: ' + worst.join(' + ') + ' mixed without parentheses — evaluated in the standard order: ' + CALC_ORDER;
+		}
+
 		function cmdCalc(args) {
 			if (!args.length) {
 				print('usage: calc <expression>', 't-err');
-				print('  e.g.  calc (1+2)*3^2   calc sqrt(2)   calc pow(2,10)   calc 0xff + 1', 't-dim');
+				print('  e.g.  calc (1+2)*3^2   calc cbrt(27)   calc sinh(1)   calc 2 < 3   calc 1 AND NOT 0', 't-dim');
+				print('  funcs: sqrt abs round floor ceil sin cos tan log log10 exp pow min max', 't-dim');
+				print('         sinh cosh tanh asin acos atan asinh acosh atanh cbrt', 't-dim');
+				print('  bitwise (32-bit signed): NOT x    x AND/NAND/OR/NOR/XOR/XNOR y', 't-dim');
+				print('  tests: = <> > < >= <= ~=   -> TRUE / FALSE', 't-dim');
 				return;
 			}
 			var src = args.join(' ');
+			var note = '';
+			/* 末尾括号没闭合: 自动补齐, 并说明补了几个 */
+			var opens = (src.match(/\(/g) || []).length;
+			var closes = (src.match(/\)/g) || []).length;
+			if (opens > closes) {
+				note = 'note: auto-closed ' + (opens - closes) + ' unclosed "("';
+				src += new Array(opens - closes + 1).join(')');
+			}
 			try {
-				var v = evalExpr(src);
-				if (!isFinite(v)) { print('calc: result is not finite', 't-err'); return; }
-				print(src + '  =  ' + round12(v), 't-ok');
+				var out = calcEval(src);
+				if (note) print(note, 't-dim');
+				var warn = calcOrderWarning(out.tiers);
+				if (warn) print(warn, 't-dim');
+				if (typeof out.value === 'boolean') {
+					print(src + '  =  ' + (out.value ? 'TRUE' : 'FALSE'), 't-ok');
+					return;
+				}
+				if (!isFinite(out.value)) { print('calc: result is not finite (domain error?)', 't-err'); return; }
+				print(src + '  =  ' + round12(out.value), 't-ok');
 			} catch (err) {
 				print('calc: ' + err.message, 't-err');
 			}
-		}
-
-		/* 递归下降求值 —— 不用 eval, 只认下面这些运算与函数 */
-		function evalExpr(src) {
-			var i = 0;
-			var FN1 = {
-				sqrt: Math.sqrt, abs: Math.abs, round: Math.round, floor: Math.floor, ceil: Math.ceil,
-				sin: Math.sin, cos: Math.cos, tan: Math.tan, log: Math.log, log10: Math.log10, exp: Math.exp
-			};
-			function ws() { while (src[i] === ' ') i++; }
-			function expr() { return addsub(); }
-			function addsub() {
-				var v = muldiv();
-				for (;;) {
-					ws();
-					if (src[i] === '+') { i++; v += muldiv(); }
-					else if (src[i] === '-') { i++; v -= muldiv(); }
-					else return v;
-				}
-			}
-			function muldiv() {
-				var v = unary();
-				for (;;) {
-					ws();
-					if (src[i] === '*') { i++; v *= unary(); }
-					else if (src[i] === '/') { i++; v /= unary(); }
-					else if (src[i] === '%') { i++; v %= unary(); }
-					else return v;
-				}
-			}
-			function unary() {
-				ws();
-				if (src[i] === '-') { i++; return -unary(); }
-				if (src[i] === '+') { i++; return unary(); }
-				return power();
-			}
-			function power() {
-				var base = atom();
-				ws();
-				if (src[i] === '^') { i++; return Math.pow(base, unary()); }
-				return base;
-			}
-			function atom() {
-				ws();
-				if (src[i] === '(') {
-					i++;
-					var inner = expr();
-					ws();
-					if (src[i] !== ')') throw new Error('missing ")"');
-					i++;
-					return inner;
-				}
-				var rest = src.slice(i);
-				var hexLit = /^0[xX][0-9a-fA-F]+/.exec(rest);
-				if (hexLit) { i += hexLit[0].length; return parseInt(hexLit[0], 16); }
-				var id = /^[a-zA-Z_][a-zA-Z0-9_]*/.exec(rest);
-				if (id) {
-					var name = id[0];
-					var lower = name.toLowerCase();
-					i += name.length;
-					ws();
-					if (src[i] === '(') {
-						i++;
-						var list = [expr()];
-						ws();
-						while (src[i] === ',') { i++; list.push(expr()); ws(); }
-						if (src[i] !== ')') throw new Error('missing ")"');
-						i++;
-						if (lower === 'pow') return Math.pow(list[0], list[1]);
-						if (lower === 'min') return Math.min.apply(null, list);
-						if (lower === 'max') return Math.max.apply(null, list);
-						if (!FN1[lower]) throw new Error('unknown function "' + name + '"');
-						if (list.length !== 1) throw new Error(name + '() takes 1 argument');
-						return FN1[lower](list[0]);
-					}
-					if (lower === 'pi') return Math.PI;
-					if (lower === 'e') return Math.E;
-					throw new Error('unknown name "' + name + '"');
-				}
-				var num = /^(\d*\.?\d+(?:[eE][+-]?\d+)?|\d+\.?)/.exec(rest);
-				if (!num) throw new Error('unexpected "' + (src[i] === undefined ? 'end of input' : src[i]) + '"');
-				i += num[0].length;
-				return Number(num[0]);
-			}
-			var out = expr();
-			ws();
-			if (i < src.length) throw new Error('unexpected "' + src[i] + '"');
-			return out;
 		}
 
 		/* ================================================== 时间 / 哈希 */
@@ -905,8 +1172,45 @@
 
 		/* ================================================== 彩蛋 */
 
-		function cmdSudo() {
+		function cmdSudo(args) {
+			/* 彩蛋: sudo rm -rf /* —— 参数里同时出现 r、f 与 "/" 或 "/*" 才触发 */
+			var flags = { r: false, f: false };
+			var wipe = false;
+			(args || []).forEach(function (arg) {
+				if (/^-[a-z]+$/i.test(arg)) {
+					var letters = arg.slice(1).toLowerCase();
+					if (letters.indexOf('r') !== -1) flags.r = true;
+					if (letters.indexOf('f') !== -1 && letters.indexOf('i') === -1) flags.f = true;
+				} else if (/^\/\*?$/.test(arg)) {
+					wipe = true;
+				}
+			});
+			if (flags.r && flags.f && wipe) { wipeEgg(); return; }
 			print('hayneko is not in the sudoers file.  This incident has been reported.', 't-err');
+		}
+
+		/* sudo rm -rf /* 的完整演出 */
+		function wipeEgg() {
+			var script = [
+				['[sudo] password for guest: ********', 't-dim', 0],
+				['rm: descending into / ...', null, 320],
+				['rm: removed /home/hayneko .......... 1.2 GiB', null, 540],
+				['rm: removed /etc ................... 4.1 MiB', null, 720],
+				['rm: removed /usr ................... 1.8 GiB', null, 900],
+				['rm: removed /var/log ............... 220 MiB', null, 1080],
+				['rm: removed /boot/vmlinuz .......... 11 MiB', null, 1260],
+				['rm: removed / ...................... done', 't-err', 1440],
+				['KERNEL PANIC - not syncing: Attempted to kill init!', 't-err', 1700],
+				['...', 't-dim', 1980],
+				['just kidding — this site is static, there is no server left to delete :)', 't-ok', 2200],
+				['(run "clear" for a clean screen)', 't-dim', 2420]
+			];
+			script.forEach(function (row) {
+				global.setTimeout(function () {
+					print(row[0], row[1] || undefined);
+					scrollToEnd();
+				}, row[2]);
+			});
 		}
 
 		function cmdVim() {
@@ -1066,6 +1370,11 @@
 
 		/* -------------------------------------------------- 事件 */
 
+		input.addEventListener('focus', function () {
+			/* 先让浏览器自己的"滚进视口"落地, 再补一刀避开坞 */
+			global.setTimeout(keepPromptClear, 60);
+		});
+
 		input.addEventListener('keydown', function (e) {
 			if (e.key === 'Enter') {
 				var value = input.value;
@@ -1124,7 +1433,13 @@
 		print("type 'help' to list commands, 'Tab' to complete.", 't-dim');
 		print('');
 
-		return { run: run, print: print, focus: function () { input.focus(); } };
+		return {
+			run: run,
+			print: print,
+			focus: function () { input.focus(); },
+			/* 页面片段会被路由整个换掉, 旧实例其实已经不在文档里了 */
+			connected: function () { return root.isConnected; }
+		};
 	}
 
 	function mountAll(scope) {
@@ -1139,12 +1454,47 @@
 			if (inst) {
 				instances.push(inst);
 				if (root.dataset.autofocus === 'true') setTimeout(function () { inst.focus(); }, 400);
+				/* 从全局搜索点了一条命令: 等终端挂好再补跑 */
+				if (pendingCmd) {
+					(function (cmd) {
+						pendingCmd = null;
+						setTimeout(function () { inst.run(cmd); inst.focus(); }, 240);
+					})(pendingCmd);
+				}
 			}
 		});
 		return instances;
 	}
 
-	global.Terminal = { mountAll: mountAll, instances: instances };
+	/* 全局搜索点一条命令时用: 终端不在当前页就先跳过去, 挂载完自动补跑 */
+	var pendingCmd = null;
+
+	function liveInstance() {
+		for (var i = 0; i < instances.length; i++) {
+			if (instances[i].connected()) return instances[i];
+		}
+		return null;
+	}
+
+	function runCommand(cmd) {
+		if (!cmd) return false;
+		var inst = liveInstance();
+		if (inst) {
+			inst.run(cmd);
+			inst.focus();
+			return true;
+		}
+		pendingCmd = cmd;
+		if (global.Router && global.Router.current !== 'terminal') global.Router.navigate('terminal');
+		return true;
+	}
+
+	global.Terminal = {
+		mountAll: mountAll,
+		instances: instances,
+		run: runCommand,
+		commands: commandList
+	};
 
 	if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', function () { mountAll(doc); }, { once: true });
 	else mountAll(doc);
