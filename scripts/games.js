@@ -6,7 +6,7 @@
  *   2. 终端命令 play / games(scripts/terminal.js 调 Games.launch)
  *   3. dock 的小游戏按钮(走路由, 与 1 是同一个)
  *
- * 引擎要点: 7-bag 随机、矩阵旋转 + 踢墙、幽灵方块、暂存(hold)、
+ * 引擎要点: 纯随机方块(同一块最多连出 3 次)、矩阵旋转 + 踢墙、幽灵方块、暂存(hold)、
  * 锁定延迟、消行闪光、等级加速; 最高分记在 localStorage。
  * 渲染是纯 Canvas —— 配色跟着主题走, 离开页面或切走标签页会自动暂停。
  */
@@ -46,9 +46,9 @@
 	/* 旋转踢墙: 先原地, 再左右各试两格, 最后试上抬一格(贴地时也转得动) */
 	var KICKS = [[0, 0], [-1, 0], [1, 0], [-2, 0], [2, 0], [0, -1], [-1, -1], [1, -1]];
 
-	var LOCK_MS = 430;          /* 落地后的锁定宽限 */
+	var LOCK_MS = 400;          /* 落地后的锁定宽限 */
 	var MAX_LOCK_RESETS = 12;   /* 宽限最多重置多少次, 防止原地无限转 */
-	var CLEAR_MS = 150;         /* 消行闪光时长 */
+	var CLEAR_MS = 250;         /* 消行闪光时长 */
 
 	/* 长按连续移动: DAS = 按住多久才开始连发, ARR = 连发的间隔。
 	   这两个值越短越容易"滑过头" —— 只想横移一两格, 手一抖就多跑三四格。 */
@@ -87,16 +87,19 @@
 		return rows;
 	}
 
-	/* 7-bag: 每七个方块里七个形状各出现一次, 不会连续来五个 S */
-	function shuffleBag() {
-		var bag = PIECES.slice();
-		for (var i = bag.length - 1; i > 0; i--) {
-			var j = Math.floor(Math.random() * (i + 1));
-			var tmp = bag[i];
-			bag[i] = bag[j];
-			bag[j] = tmp;
+	var MAX_SAME = 3;   /* 同一种方块最多连着出这么多次 */
+
+	/* 随机形状，7个方块中一个方块可能连续出好几次，但是不会多于3次 */
+	function randomType(state) {
+		var pool = PIECES;
+		/* 已经连出 3 次了, 这一块必须换: 从"不含上一块"的池子里等概率抽 */
+		if (state.streak >= MAX_SAME) {
+			pool = PIECES.filter(function (type) { return type !== state.lastType; });
 		}
-		return bag;
+		var type = pool[Math.floor(Math.random() * pool.length)];
+		if (type === state.lastType) state.streak++;
+		else { state.lastType = type; state.streak = 1; }
+		return type;
 	}
 
 	/* 等级越高落得越快; 70ms 是上限, 再快就没法玩了 */
@@ -163,7 +166,8 @@
 		var game = {
 			board: emptyBoard(),
 			queue: [],
-			bag: [],
+			lastType: null,     /* 上一次抽到的方块类型 */
+			streak: 0,          /* 这一类型已经连着出了几次 */
 			cur: null,
 			hold: null,
 			canHold: true,
@@ -195,8 +199,7 @@
 		/* ---- 队列 / 出生 ---- */
 
 		function nextType() {
-			if (!game.bag.length) game.bag = shuffleBag();
-			return game.bag.pop();
+			return randomType(game);
 		}
 
 		function refillQueue() {
@@ -327,7 +330,8 @@
 			history.push({
 				board: game.board.map(function (row) { return row.slice(); }),
 				queue: game.queue.slice(),
-				bag: game.bag.slice(),
+				lastType: game.lastType,
+				streak: game.streak,
 				curType: game.cur ? game.cur.type : null,
 				hold: game.hold,
 				canHold: game.canHold,
@@ -354,7 +358,8 @@
 			var snap = history.pop();
 			game.board = snap.board;
 			game.queue = snap.queue;
-			game.bag = snap.bag;
+			game.lastType = snap.lastType;
+			game.streak = snap.streak;
 			game.hold = snap.hold;
 			game.canHold = snap.canHold;
 			/* 这一块的软降/硬降加分也一并退掉, 否则撤回再放一次会白赚分 */
@@ -446,7 +451,8 @@
 			updateUndoBtn();
 			game.board = emptyBoard();
 			game.queue = [];
-			game.bag = [];
+			game.lastType = null;
+			game.streak = 0;
 			game.hold = null;
 			game.canHold = true;
 			game.score = 0;
