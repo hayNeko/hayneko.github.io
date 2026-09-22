@@ -33,6 +33,10 @@
 	--red: #ff4d5a;
 	--green: #3ce07b;
 	--blue: #4d9dff;
+	/* 黄: 只用在"警告"级别(终端里的 warn), 不参与强调色 */
+	--yellow: #ffd24d;
+	--yellow-rgb: 255, 210, 77;
+	--yellow-soft: rgba(255, 210, 77, 0.14);
 	--red-rgb: 255, 77, 90;
 	--green-rgb: 60, 224, 123;
 	--blue-rgb: 77, 157, 255;
@@ -304,6 +308,9 @@ html.reduce-motion [data-smear]:not(.is-revealed) { opacity: 1; }
 	--red: #d5202f;
 	--green: #0f8f4d;
 	--blue: #1461cc;
+	/* 浅色底上黄色要压深, 不然糊成一片看不清 */
+	--yellow: #8a5a00;
+	--yellow-rgb: 138, 90, 0;
 	--red-rgb: 213, 32, 47;
 	--green-rgb: 15, 143, 77;
 	--blue-rgb: 20, 97, 204;

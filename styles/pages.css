@@ -337,12 +337,23 @@
 	from { opacity: 0; transform: translateX(-6px); }
 	to   { opacity: 1; transform: none; }
 }
-.term__out .t-cmd { color: var(--fg); }
-.term__out .t-ok { color: var(--green); }
-.term__out .t-err { color: var(--red); }
-.term__out .t-info { color: var(--blue); }
-.term__out .t-dim { color: var(--fg-ghost); }
-.term__out .t-key { color: var(--fg); font-weight: 600; }
+/*
+ * 终端输出按等级配色: note/log 灰 · warn 黄 · error/fatal 红。
+ *
+ * ⚠️ 选择器必须写成两种形式并存:
+ *   - print(text, cls)      → <div class="term__out t-err">   同级, 要 .term__out.t-err
+ *   - printHTML(...)        → <div class="term__out"><span class="t-ok">  子级, 要 .term__out .t-ok
+ * 之前只写了后代形式, 于是 print() 出来的行(占绝大多数)其实一直是白的 ——
+ * 等级颜色等于没生效。
+ */
+.term__out .t-cmd, .term__out.t-cmd { color: var(--fg); }
+.term__out .t-ok, .term__out.t-ok { color: var(--green); }
+.term__out .t-err, .term__out.t-err { color: var(--red); }
+.term__out .t-warn, .term__out.t-warn { color: var(--yellow); }
+.term__out .t-info, .term__out.t-info { color: var(--blue); }
+/* 灰: 用 --fg-faint 而不是 --fg-ghost —— 后者在近黑的终端底上只有 1.9:1, 基本看不清 */
+.term__out .t-dim, .term__out.t-dim { color: var(--fg-faint); }
+.term__out .t-key, .term__out.t-key { color: var(--fg); font-weight: 600; }
 
 /*
  * 聚焦时浏览器会把输入框滚进视口, 但它不认识底部那条 fixed 坞 ——

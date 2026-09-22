@@ -550,7 +550,7 @@
 			else if (/^0[oO][0-7]+$/.test(raw)) n = parseInt(raw.slice(2), 8);
 			else if (/^-?[0-9]+$/.test(raw)) n = Number(raw);
 			if (!isFinite(n)) { print('base: not an integer: ' + args[0], 't-err'); return; }
-			if (Math.abs(n) > Number.MAX_SAFE_INTEGER) { print('base: beyond 2^53, may be inexact', 't-dim'); }
+			if (Math.abs(n) > Number.MAX_SAFE_INTEGER) { print('base: beyond 2^53, may be inexact', 't-warn'); }
 
 			var neg = n < 0;
 			var abs = Math.abs(n);
@@ -679,10 +679,11 @@
 			var depth = 0;
 			var tiers = {};
 
-			function markTier(name) {
-				var t = tiers[depth] || (tiers[depth] = {});
-				t[name] = true;
-			}
+			var powerRhsDepth = -1;   /* 正处在某个 "^" 的右操作数里(同层) */
+			var powerTicks = 0;
+
+			function tierAt() { return tiers[depth] || (tiers[depth] = {}); }
+			function markTier(name) { tierAt()[name] = true; }
 
 			function peek() { return tokens[pos]; }
 			function take() { return tokens[pos++]; }
@@ -699,8 +700,8 @@
 			function parseOr() {
 				var left = parseXor();
 				for (;;) {
-					if (isWord('or')) { take(); markTier('logic'); left = toNumber(left) | toNumber(parseXor()); }
-					else if (isWord('nor')) { take(); markTier('logic'); left = ~(toNumber(left) | toNumber(parseXor())); }
+					if (isWord('or')) { take(); markTier('bitwise'); left = toNumber(left) | toNumber(parseXor()); }
+					else if (isWord('nor')) { take(); markTier('bitwise'); left = ~(toNumber(left) | toNumber(parseXor())); }
 					else return left;
 				}
 			}
@@ -708,8 +709,8 @@
 			function parseXor() {
 				var left = parseAnd();
 				for (;;) {
-					if (isWord('xor')) { take(); markTier('logic'); left = toNumber(left) ^ toNumber(parseAnd()); }
-					else if (isWord('xnor')) { take(); markTier('logic'); left = ~(toNumber(left) ^ toNumber(parseAnd())); }
+					if (isWord('xor')) { take(); markTier('bitwise'); left = toNumber(left) ^ toNumber(parseAnd()); }
+					else if (isWord('xnor')) { take(); markTier('bitwise'); left = ~(toNumber(left) ^ toNumber(parseAnd())); }
 					else return left;
 				}
 			}
@@ -717,25 +718,29 @@
 			function parseAnd() {
 				var left = parseNot();
 				for (;;) {
-					if (isWord('and')) { take(); markTier('logic'); left = toNumber(left) & toNumber(parseNot()); }
-					else if (isWord('nand')) { take(); markTier('logic'); left = ~(toNumber(left) & toNumber(parseNot())); }
+					if (isWord('and')) { take(); markTier('bitwise'); left = toNumber(left) & toNumber(parseNot()); }
+					else if (isWord('nand')) { take(); markTier('bitwise'); left = ~(toNumber(left) & toNumber(parseNot())); }
 					else return left;
 				}
 			}
 
 			function parseNot() {
-				if (isWord('not')) { take(); markTier('logic'); return ~toNumber(parseNot()); }
+				if (isWord('not')) { take(); markTier('bitwise'); return ~toNumber(parseNot()); }
 				return parseCompare();
 			}
 
 			function parseCompare() {
 				var left = parseAdd();
+				var links = 0;
 				for (;;) {
 					var t = peek();
 					var op = t && t.t === 'op' && CALC_CMP[t.v] ? t.v : null;
 					if (!op) return left;
 					take();
+					links++;
 					markTier('compare');
+					/* 连着写 1 < 2 < 3 才有歧义; 5 >= 5 AND 1 <> 2 是两个独立比较, 不算 */
+					if (links > 1) tierAt().compareChain = true;
 					left = calcCompare(toNumber(left), toNumber(parseAdd()), op);
 				}
 			}
@@ -743,8 +748,8 @@
 			function parseAdd() {
 				var v = parseMul();
 				for (;;) {
-					if (isOp('+')) { take(); markTier('add'); v = toNumber(v) + toNumber(parseMul()); }
-					else if (isOp('-')) { take(); markTier('add'); v = toNumber(v) - toNumber(parseMul()); }
+					if (isOp('+')) { take(); markTier('arith'); v = toNumber(v) + toNumber(parseMul()); }
+					else if (isOp('-')) { take(); markTier('arith'); v = toNumber(v) - toNumber(parseMul()); }
 					else return v;
 				}
 			}
@@ -752,22 +757,42 @@
 			function parseMul() {
 				var v = parseUnary();
 				for (;;) {
-					if (isOp('*')) { take(); markTier('mul'); v = toNumber(v) * toNumber(parseUnary()); }
-					else if (isOp('/')) { take(); markTier('mul'); v = toNumber(v) / toNumber(parseUnary()); }
-					else if (isOp('%')) { take(); markTier('mul'); v = toNumber(v) % toNumber(parseUnary()); }
+					if (isOp('*')) { take(); markTier('arith'); v = toNumber(v) * toNumber(parseUnary()); }
+					else if (isOp('/')) { take(); markTier('arith'); v = toNumber(v) / toNumber(parseUnary()); }
+					else if (isOp('%')) { take(); markTier('arith'); v = toNumber(v) % toNumber(parseUnary()); }
 					else return v;
 				}
 			}
 
 			function parseUnary() {
-				if (isOp('-')) { take(); markTier('add'); return -toNumber(parseUnary()); }
-				if (isOp('+')) { take(); return toNumber(parseUnary()); }
+				if (isOp('-')) {
+					take();
+					markTier('arith');
+					var before = powerTicks;
+					var neg = -toNumber(parseUnary());
+					/* -3^2: 负号在前、乘方在后, 到底是 -(3^2) 还是 (-3)^2 */
+					if (powerTicks > before) tierAt().minusPower = true;
+					return neg;
+				}
+				if (isOp('+')) { take(); markTier('arith'); return toNumber(parseUnary()); }
 				return parsePower();
 			}
 
 			function parsePower() {
 				var base = parseAtom();
-				if (isOp('^')) { take(); return Math.pow(toNumber(base), toNumber(parseUnary())); }
+				if (isOp('^')) {
+					take();
+					markTier('power');
+					/* 右操作数里又碰到同层的 ^ → a^b^c(右结合);
+					   写成 2^(3^4) 时里层 depth 已经变了, 不会误报 */
+					if (powerRhsDepth === depth) tierAt().powerChain = true;
+					var saved = powerRhsDepth;
+					powerRhsDepth = depth;
+					powerTicks++;
+					var exp = parseUnary();
+					powerRhsDepth = saved;
+					return Math.pow(toNumber(base), toNumber(exp));
+				}
 				return base;
 			}
 
@@ -826,25 +851,31 @@
 		}
 
 		/**
-		 * 运算顺序不清晰时提示一句(结果照样给, 按 CALC_ORDER 的次序算)。
-		 * 判据是"**同一层括号里**混用了不同优先级的运算":
-		 *   - (1+2)*3     → 加减在里层、乘法在外层, 不混, 不提示;
-		 *   - 1+2*3       → 同一层里 + 和 * 混用, 提示;
-		 *   - 1+2 AND 3   → 算术与逻辑混用, 提示;
-		 *   - 1 < 2 AND 3 > 2 → 比较运算不算"混用"(它们本来就在逻辑之下), 不提示。
+		 * 只在**真的容易读错**的时候提示, 提示一律走 warn 色(黄)。
+		 *
+		 * 3+2*3-4 这种不提示 —— 先乘除后加减是常识, 每次都念一遍等于没念。
+		 * 真正提示的是这几类:
+		 *   1. 位运算与算术混写    —— 1 xor 2 + 3 and 4
+		 *   2. a^b^c 的右结合     —— 2^3^4
+		 *   3. 一元负号遇上乘方    —— -3^2 是 -(3^2) 还是 (-3)^2
+		 *   4. 连着写比较         —— 1 < 2 < 3(而 5 >= 5 AND 1 <> 2 是两个独立比较, 不算)
+		 * 括号没闭合另有一条灰色 note; 若其内容又混了运算符, 上面第 1 条会一并报出来。
 		 */
-		function calcOrderWarning(tiers) {
-			var worst = null;
+		function calcWarnings(tiers) {
+			var flags = {};
 			Object.keys(tiers).forEach(function (d) {
 				var t = tiers[d];
-				var groups = [];
-				if (t.add) groups.push('+ -');
-				if (t.mul) groups.push('* / %');
-				if (t.logic) groups.push('bitwise');
-				if (groups.length >= 2 && (!worst || groups.length > worst.length)) worst = groups;
+				if (t.bitwise && t.arith) flags.mix = true;
+				if (t.powerChain) flags.powerChain = true;
+				if (t.minusPower) flags.minusPower = true;
+				if (t.compareChain) flags.compareChain = true;
 			});
-			if (!worst) return '';
-			return 'warn: ' + worst.join(' + ') + ' mixed without parentheses — evaluated in the standard order: ' + CALC_ORDER;
+			var out = [];
+			if (flags.mix) out.push('warn: bitwise mixed with arithmetic — parenthesize; standard order: ' + CALC_ORDER);
+			if (flags.powerChain) out.push('warn: "a^b^c" is right-associative here (2^3^4 = 2^(3^4)) — write the parentheses you mean');
+			if (flags.minusPower) out.push('warn: "-3^2" is read as -(3^2), not (-3)^2 — write (-3)^2 or -(3^2)');
+			if (flags.compareChain) out.push('warn: chained comparison is left-associative here ((a < b) < c) — add parentheses');
+			return out;
 		}
 
 		function cmdCalc(args) {
@@ -869,8 +900,7 @@
 			try {
 				var out = calcEval(src);
 				if (note) print(note, 't-dim');
-				var warn = calcOrderWarning(out.tiers);
-				if (warn) print(warn, 't-dim');
+				calcWarnings(out.tiers).forEach(function (w) { print(w, 't-warn'); });
 				if (typeof out.value === 'boolean') {
 					print(src + '  =  ' + (out.value ? 'TRUE' : 'FALSE'), 't-ok');
 					return;
