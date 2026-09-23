@@ -60,11 +60,49 @@
 	},
 	"games": {
 		"bay": {
-			"sub": "方向键, 或者屏幕下面的按钮。离开页面或切走标签页会自动暂停。",
+			"sub": "拖动 / 点击、方向键, 或者屏幕下面的按钮。离开页面或切走标签页会自动暂停。",
 			"title": "机台"
 		},
-		"board": {
-			"aria": "俄罗斯方块棋盘"
+		"blockblast": {
+			"badge": "v1.0",
+			"boardAria": "Block Blast 棋盘",
+			"desc": "8x8 的棋盘, 一次三块: 把方块拖进去, 填满整行或整列就消掉。没有倒计时 —— 三块都放不下时才结束。",
+			"flag": {
+				"easy": "温和",
+				"easyTip": "--easy-mode: 长条与大方块更多",
+				"rollback": "可撤回",
+				"rollbackTip": "--with-roll-back: 可以撤回上一步"
+			},
+			"flagEasy": "温和出牌: 只出直线与方块(没有拐角), 而且长条与大方的权重高得多 —— 更容易凑满整行整列, 连击也更好拿。",
+			"flagRollback": "多一个撤回按钮(键盘 U / 触屏 ↶), 可以退回上一次放置之前, 分数一起还回来。",
+			"flagsTitle": "命令行标志位 —— 直接点下面的开关就行, 效果与 play blockblast 后面加参数一样。",
+			"hud": {
+				"best": "最高分",
+				"combo": "连击",
+				"lines": "消线",
+				"score": "得分"
+			},
+			"keys": {
+				"drag": "从手牌条把方块拖到棋盘上",
+				"move": "移动",
+				"pause": "暂停",
+				"pick": "选块",
+				"place": "放下",
+				"restart": "长按重开",
+				"undo": "撤回"
+			},
+			"pad": {
+				"aria": "触屏操作",
+				"down": "下移",
+				"left": "左移",
+				"next": "换一块",
+				"place": "放下",
+				"right": "右移",
+				"undo": "撤回",
+				"up": "上移"
+			},
+			"readyTitle": "Block Blast",
+			"title": "Block Blast"
 		},
 		"btn": {
 			"pause": "暂停",
@@ -73,63 +111,18 @@
 			"start": "开始",
 			"undo": "撤回"
 		},
-		"flag": {
-			"easy": "不加速",
-			"easyTip": "--easy-mode: 不加速模式",
-			"rollback": "可撤回",
-			"rollbackTip": "--with-roll-back: 可以撤回上一步"
-		},
-		"flags": {
-			"easy": "不加速: 等级固定在 1, 下落间隔恒为 800ms。",
-			"rollback": "多一个撤回按钮(键盘 U / 触屏 ↶), 可以退回上一块落子之前。",
-			"title": "命令行标志位 —— 直接点下面的开关就行, 效果与 play tetris 后面加参数一样。"
-		},
 		"heading": "小游戏",
 		"hint": {
-			"restart": "长按「重新游玩」重开"
-		},
-		"hud": {
-			"best": "最高分",
-			"hold": "暂存",
-			"level": "等级",
-			"lines": "消行",
-			"next": "下一个",
-			"score": "得分"
-		},
-		"keys": {
-			"hard": "硬降",
-			"hold": "暂存",
-			"move": "移动",
-			"pause": "暂停",
-			"restart": "长按重开",
-			"rotate": "旋转",
-			"soft": "软降",
-			"undo": "撤回"
+			"restart": "长按「重开」重新开始"
 		},
 		"overlay": {
 			"overHint": "得分 {score} · 最高 {best}",
 			"overTitle": "游戏结束",
 			"pausedHint": "P 或 Esc 继续",
 			"pausedTitle": "已暂停",
-			"readyHint": "按开始, 或空格",
-			"readyTitle": "俄罗斯方块"
-		},
-		"pad": {
-			"aria": "触屏操作",
-			"down": "软降",
-			"drop": "硬降",
-			"hold": "暂存",
-			"left": "左移",
-			"right": "右移",
-			"rotate": "旋转",
-			"undo": "撤回"
+			"readyHint": "按开始, 或空格"
 		},
 		"play": "开始玩",
-		"soon": {
-			"badge": "待定",
-			"body": "架子是按多款游戏设计的 —— 只是下一款还没写。",
-			"title": "空机台"
-		},
 		"state": {
 			"over": "结束",
 			"paused": "已暂停",
@@ -139,7 +132,46 @@
 		"subtitle": "直接在页面里跑的小游戏。不用下载、不用插件 —— 终端里也能开局。",
 		"tetris": {
 			"badge": "v1.0",
+			"boardAria": "俄罗斯方块棋盘",
 			"desc": "七种方块、十列场地, 每消十行快一档。带幽灵落点和暂存。",
+			"flag": {
+				"easy": "不加速",
+				"easyTip": "--easy-mode: 不加速模式",
+				"rollback": "可撤回",
+				"rollbackTip": "--with-roll-back: 可以撤回上一步"
+			},
+			"flagEasy": "不加速: 等级固定在 1, 下落间隔恒为 800ms。",
+			"flagRollback": "多一个撤回按钮(键盘 U / 触屏 ↶), 可以退回上一块落子之前。",
+			"flagsTitle": "命令行标志位 —— 直接点下面的开关就行, 效果与 play tetris 后面加参数一样。",
+			"hud": {
+				"best": "最高分",
+				"hold": "暂存",
+				"level": "等级",
+				"lines": "消行",
+				"next": "下一个",
+				"score": "得分"
+			},
+			"keys": {
+				"hard": "硬降",
+				"hold": "暂存",
+				"move": "移动",
+				"pause": "暂停",
+				"restart": "长按重开",
+				"rotate": "旋转",
+				"soft": "软降",
+				"undo": "撤回"
+			},
+			"pad": {
+				"aria": "触屏操作",
+				"down": "软降",
+				"drop": "硬降",
+				"hold": "暂存",
+				"left": "左移",
+				"right": "右移",
+				"rotate": "旋转",
+				"undo": "撤回"
+			},
+			"readyTitle": "俄罗斯方块",
 			"title": "俄罗斯方块"
 		}
 	},

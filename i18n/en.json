@@ -60,11 +60,49 @@
 	},
 	"games": {
 		"bay": {
-			"sub": "Arrow keys, or the buttons under the screen. Leaving the page or the tab pauses the run.",
+			"sub": "Drag, tap, arrow keys, or the buttons under the screen. Leaving the page or the tab pauses the run.",
 			"title": "Cabinet"
 		},
-		"board": {
-			"aria": "Tetris board"
+		"blockblast": {
+			"badge": "v1.0",
+			"boardAria": "Block Blast board",
+			"desc": "An 8x8 board and three pieces at a time: drag them in, fill a row or a column to clear it. No timer - you lose only when nothing fits.",
+			"flag": {
+				"easy": "GENTLE",
+				"easyTip": "--easy-mode: more long bars and big squares",
+				"rollback": "UNDO",
+				"rollbackTip": "--with-roll-back: undo enabled"
+			},
+			"flagEasy": "Gentle pieces: only straight lines and squares (no corners) - and the long bars and big squares show up far more often, so filling a line and chaining combos is much easier.",
+			"flagRollback": "Adds the Undo button (key U, pad undo) that takes back the last placement, score included.",
+			"flagsTitle": "Command-line flags - click a switch below, same as adding it to play blockblast.",
+			"hud": {
+				"best": "Best",
+				"combo": "Combo",
+				"lines": "Lines",
+				"score": "Score"
+			},
+			"keys": {
+				"drag": "drag a piece from the tray",
+				"move": "move",
+				"pause": "pause",
+				"pick": "pick a piece",
+				"place": "place",
+				"restart": "hold to restart",
+				"undo": "undo"
+			},
+			"pad": {
+				"aria": "touch controls",
+				"down": "down",
+				"left": "left",
+				"next": "next piece",
+				"place": "place",
+				"right": "right",
+				"undo": "undo",
+				"up": "up"
+			},
+			"readyTitle": "BLOCK BLAST",
+			"title": "Block Blast"
 		},
 		"btn": {
 			"pause": "Pause",
@@ -73,73 +111,67 @@
 			"start": "Start",
 			"undo": "Undo"
 		},
-		"flag": {
-			"easy": "EASY",
-			"easyTip": "--easy-mode: no speed-up",
-			"rollback": "UNDO",
-			"rollbackTip": "--with-roll-back: undo enabled"
-		},
-		"flags": {
-			"easy": "No speed-up: the level stays at 1 and the fall interval is a constant 800ms.",
-			"rollback": "Adds the Undo button (key U, pad ↶) that takes back the last piece.",
-			"title": "Command-line flags — click a switch below, same as adding it to play tetris."
-		},
 		"heading": "Games",
 		"hint": {
 			"restart": "Hold Restart to start over"
 		},
-		"hud": {
-			"best": "Best",
-			"hold": "Hold",
-			"level": "Level",
-			"lines": "Lines",
-			"next": "Next",
-			"score": "Score"
-		},
-		"keys": {
-			"hard": "hard drop",
-			"hold": "hold",
-			"move": "move",
-			"pause": "pause",
-			"restart": "hold to restart",
-			"rotate": "rotate",
-			"soft": "soft drop",
-			"undo": "undo"
-		},
 		"overlay": {
-			"overHint": "score {score} · best {best}",
+			"overHint": "score {score} . best {best}",
 			"overTitle": "GAME OVER",
 			"pausedHint": "P or Esc to resume",
 			"pausedTitle": "PAUSED",
-			"readyHint": "Press Start, or Space",
-			"readyTitle": "TETRIS"
-		},
-		"pad": {
-			"aria": "touch controls",
-			"down": "soft drop",
-			"drop": "hard drop",
-			"hold": "hold",
-			"left": "left",
-			"right": "right",
-			"rotate": "rotate",
-			"undo": "undo"
+			"readyHint": "Press Start, or Space"
 		},
 		"play": "Play",
-		"soon": {
-			"badge": "soon",
-			"body": "The shelf is built to hold more than one game — the next one just is not written yet.",
-			"title": "Empty cabinet"
-		},
 		"state": {
 			"over": "game over",
 			"paused": "paused",
 			"ready": "ready",
 			"running": "running"
 		},
-		"subtitle": "Small games that run right in the page. No download, no plugin — and the terminal can start them too.",
+		"subtitle": "Small games that run right in the page. No download, no plugin - and the terminal can start them too.",
 		"tetris": {
 			"badge": "v1.0",
+			"boardAria": "Tetris board",
 			"desc": "Seven shapes, ten columns, and a level curve that speeds up every ten lines. Ghost piece and hold included.",
+			"flag": {
+				"easy": "EASY",
+				"easyTip": "--easy-mode: no speed-up",
+				"rollback": "UNDO",
+				"rollbackTip": "--with-roll-back: undo enabled"
+			},
+			"flagEasy": "No speed-up: the level stays at 1 and the fall interval is a constant 800ms.",
+			"flagRollback": "Adds the Undo button (key U, pad undo) that takes back the last piece.",
+			"flagsTitle": "Command-line flags - click a switch below, same as adding it to play tetris.",
+			"hud": {
+				"best": "Best",
+				"hold": "Hold",
+				"level": "Level",
+				"lines": "Lines",
+				"next": "Next",
+				"score": "Score"
+			},
+			"keys": {
+				"hard": "hard drop",
+				"hold": "hold",
+				"move": "move",
+				"pause": "pause",
+				"restart": "hold to restart",
+				"rotate": "rotate",
+				"soft": "soft drop",
+				"undo": "undo"
+			},
+			"pad": {
+				"aria": "touch controls",
+				"down": "soft drop",
+				"drop": "hard drop",
+				"hold": "hold",
+				"left": "left",
+				"right": "right",
+				"rotate": "rotate",
+				"undo": "undo"
+			},
+			"readyTitle": "TETRIS",
 			"title": "Tetris"
 		}
 	},

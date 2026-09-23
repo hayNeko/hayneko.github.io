@@ -356,6 +356,9 @@
 			global.Games.list().forEach(function (g) {
 				rows.push({
 					group: 'games', label: g.title, key: 'games.' + g.id + '.title',
+					/* 说明也进索引: 游戏名是专有名词(Block Blast 各语言都写英文),
+					   只匹配名字的话中文用户搜"棋盘 / 方块 / 三块"就找不到它 */
+					extraKey: 'games.' + g.id + '.desc',
 					hint: 'play ' + g.id, icon: 'gamepad', game: g.id
 				});
 			});
@@ -409,6 +412,8 @@
 		if (text.indexOf(q) !== -1) return 2;
 		if (row.hint && String(row.hint).toLowerCase().indexOf(q) !== -1) return 1.5;
 		if (row.key && String(row.key).toLowerCase().indexOf(q) !== -1) return 1.2;
+		/* 本地化的说明文字(小游戏用): 排在名字与命令之后 */
+		if (row.extraKey && String(tKey(row.extraKey, '')).toLowerCase().indexOf(q) !== -1) return 1.1;
 		return 0;
 	}
 

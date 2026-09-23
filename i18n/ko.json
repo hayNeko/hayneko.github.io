@@ -60,11 +60,49 @@
 	},
 	"games": {
 		"bay": {
-			"sub": "방향키 또는 화면 아래 버튼으로 조작합니다. 페이지나 탭을 벗어나면 자동으로 일시정지됩니다.",
+			"sub": "드래그 / 탭, 방향키 또는 화면 아래 버튼으로 조작합니다. 페이지나 탭을 벗어나면 자동으로 일시정지됩니다.",
 			"title": "게임기"
 		},
-		"board": {
-			"aria": "테트리스 보드"
+		"blockblast": {
+			"badge": "v1.0",
+			"boardAria": "Block Blast 보드",
+			"desc": "8x8 보드에 블록을 세 개씩: 끌어다 놓고 행이나 열을 채우면 사라집니다. 제한 시간은 없고, 셋 다 놓을 수 없을 때 끝납니다.",
+			"flag": {
+				"easy": "순한맛",
+				"easyTip": "--easy-mode: 긴 막대와 큰 사각형이 더 자주",
+				"rollback": "되돌리기",
+				"rollbackTip": "--with-roll-back: 한 수 되돌리기"
+			},
+			"flagEasy": "순한맛 블록: 직선과 사각형만(꺾인 모양 없음), 게다가 긴 막대와 큰 사각형이 훨씬 자주 나와 줄과 콤보를 맞추기 쉽습니다.",
+			"flagRollback": "되돌리기 버튼(U 키 / ↶)이 생겨 마지막 배치와 점수를 되돌릴 수 있습니다.",
+			"flagsTitle": "명령줄 플래그 — 아래 스위치를 누르면 play blockblast 에 넘긴 것과 같습니다.",
+			"hud": {
+				"best": "최고 점수",
+				"combo": "콤보",
+				"lines": "라인",
+				"score": "점수"
+			},
+			"keys": {
+				"drag": "트레이의 블록을 드래그",
+				"move": "이동",
+				"pause": "일시정지",
+				"pick": "블록 선택",
+				"place": "놓기",
+				"restart": "길게 눌러 재시작",
+				"undo": "되돌리기"
+			},
+			"pad": {
+				"aria": "터치 조작",
+				"down": "아래로",
+				"left": "왼쪽",
+				"next": "다음 블록",
+				"place": "놓기",
+				"right": "오른쪽",
+				"undo": "되돌리기",
+				"up": "위로"
+			},
+			"readyTitle": "Block Blast",
+			"title": "Block Blast"
 		},
 		"btn": {
 			"pause": "일시정지",
@@ -73,63 +111,18 @@
 			"start": "시작",
 			"undo": "되돌리기"
 		},
-		"flag": {
-			"easy": "무가속",
-			"easyTip": "--easy-mode: 가속 없음",
-			"rollback": "되돌리기",
-			"rollbackTip": "--with-roll-back: 한 수 되돌리기"
-		},
-		"flags": {
-			"easy": "가속 없음: 레벨은 1로 고정, 낙하 간격은 800ms 로 일정.",
-			"rollback": "되돌리기 버튼(U 키 / ↶)이 생겨 마지막 블록을 되돌릴 수 있습니다.",
-			"title": "명령줄 플래그 — 아래 스위치를 누르면 play tetris 에 넘긴 것과 같습니다."
-		},
 		"heading": "게임",
 		"hint": {
 			"restart": "「다시 시작」을 길게 누르면 처음부터"
-		},
-		"hud": {
-			"best": "최고 점수",
-			"hold": "홀드",
-			"level": "레벨",
-			"lines": "라인",
-			"next": "다음",
-			"score": "점수"
-		},
-		"keys": {
-			"hard": "하드 드롭",
-			"hold": "홀드",
-			"move": "이동",
-			"pause": "일시정지",
-			"restart": "길게 눌러 재시작",
-			"rotate": "회전",
-			"soft": "소프트 드롭",
-			"undo": "되돌리기"
 		},
 		"overlay": {
 			"overHint": "점수 {score} · 최고 {best}",
 			"overTitle": "게임 오버",
 			"pausedHint": "P 또는 Esc 로 재개",
 			"pausedTitle": "일시정지",
-			"readyHint": "시작 또는 스페이스",
-			"readyTitle": "테트리스"
-		},
-		"pad": {
-			"aria": "터치 조작",
-			"down": "소프트 드롭",
-			"drop": "하드 드롭",
-			"hold": "홀드",
-			"left": "왼쪽",
-			"right": "오른쪽",
-			"rotate": "회전",
-			"undo": "되돌리기"
+			"readyHint": "시작 또는 스페이스"
 		},
 		"play": "플레이",
-		"soon": {
-			"badge": "예정",
-			"body": "이 선반은 여러 게임을 담도록 만들었습니다 —— 다음 게임이 아직 없을 뿐입니다.",
-			"title": "빈 게임기"
-		},
 		"state": {
 			"over": "게임 오버",
 			"paused": "일시정지",
@@ -139,7 +132,46 @@
 		"subtitle": "페이지 안에서 바로 돌아가는 작은 게임. 다운로드도 플러그인도 필요 없고, 터미널에서도 실행할 수 있습니다.",
 		"tetris": {
 			"badge": "v1.0",
+			"boardAria": "테트리스 보드",
 			"desc": "일곱 가지 블록, 열 칸 필드, 10 줄마다 빨라지는 레벨. 고스트와 홀드 포함.",
+			"flag": {
+				"easy": "무가속",
+				"easyTip": "--easy-mode: 가속 없음",
+				"rollback": "되돌리기",
+				"rollbackTip": "--with-roll-back: 한 수 되돌리기"
+			},
+			"flagEasy": "가속 없음: 레벨은 1로 고정, 낙하 간격은 800ms 로 일정.",
+			"flagRollback": "되돌리기 버튼(U 키 / ↶)이 생겨 마지막 블록을 되돌릴 수 있습니다.",
+			"flagsTitle": "명령줄 플래그 — 아래 스위치를 누르면 play tetris 에 넘긴 것과 같습니다.",
+			"hud": {
+				"best": "최고 점수",
+				"hold": "홀드",
+				"level": "레벨",
+				"lines": "라인",
+				"next": "다음",
+				"score": "점수"
+			},
+			"keys": {
+				"hard": "하드 드롭",
+				"hold": "홀드",
+				"move": "이동",
+				"pause": "일시정지",
+				"restart": "길게 눌러 재시작",
+				"rotate": "회전",
+				"soft": "소프트 드롭",
+				"undo": "되돌리기"
+			},
+			"pad": {
+				"aria": "터치 조작",
+				"down": "소프트 드롭",
+				"drop": "하드 드롭",
+				"hold": "홀드",
+				"left": "왼쪽",
+				"right": "오른쪽",
+				"rotate": "회전",
+				"undo": "되돌리기"
+			},
+			"readyTitle": "테트리스",
 			"title": "테트리스"
 		}
 	},

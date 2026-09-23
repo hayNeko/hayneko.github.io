@@ -35,10 +35,12 @@
 		],
 		'games.txt': [
 			'1  tetris        classic falling-block puzzle',
+			'2  blockblast    8x8 board, three pieces at a time',
 			'',
-			'Run "play tetris" to open one.',
-			'Flags:  --easy-mode       no speed-up',
-			'        --with-roll-back  adds an Undo button'
+			'Run "play tetris" or "play blockblast" to open one.',
+			'Flags (same names for both, the meaning differs):',
+			'  --easy-mode       tetris: no speed-up / blockblast: more long bars & squares',
+			'  --with-roll-back  adds an Undo button'
 		],
 		'.help': [
 			'Try: help, ls, cat about.md, sim 2, play tetris, theme light, neofetch.'
@@ -54,8 +56,14 @@
 		{ name: 'phy-lens', href: 'pages/physics-sim/phy-lens/' }
 	];
 
-	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准 */
-	var GAMES_FALLBACK = [{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle' }];
+	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准(alias 也要跟着来) */
+	var GAMES_FALLBACK = [
+		{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle' },
+		{
+			id: 'blockblast', title: 'Block Blast', desc: '8x8 board, three pieces at a time',
+			alias: ['block-blast', 'block_blast', 'blast', 'bb']
+		}
+	];
 
 	function gameList() {
 		if (global.Games && global.Games.list) return global.Games.list();
@@ -76,9 +84,9 @@
 		] },
 		{ title: 'games', rows: [
 			['games', 'list the mini games on this site'],
-			['play <game> [flags]', 'open a mini game and start it (tetris)'],
-			['  --easy-mode', 'never speeds up: level stays 1, fall speed is constant'],
-			['  --with-roll-back', 'adds an Undo button (U) that takes back the last piece']
+			['play <game> [flags]', 'open a mini game and start it (tetris | blockblast)'],
+			['  --easy-mode', 'tetris: never speeds up · blockblast: more long bars and squares'],
+			['  --with-roll-back', 'adds an Undo button (U) that takes back the last move']
 		] },
 		{ title: 'encode & hash', rows: [
 			['b64 <text>', 'base64 encode'],
@@ -348,7 +356,7 @@
 				print('  ' + (i + 1) + '  ' + g.id.padEnd(12, ' ') + (g.desc || ''));
 			});
 			print('');
-			print('  --easy-mode        no speed-up: level stays 1', 't-dim');
+			print('  --easy-mode        tetris: no speed-up / blockblast: more long bars & squares', 't-dim');
 			print('  --with-roll-back   adds an Undo button (U)', 't-dim');
 			print('');
 			print('usage: play <game> [flags]', 't-dim');
@@ -362,6 +370,16 @@
 			'--with-rollback': 'rollback',
 			'--rollback': 'rollback'
 		};
+
+		/* play 认 id, 也认 GAMES 里写的 alias(block-blast / blast / bb), id 优先 */
+		function findGame(list, name) {
+			var found = null;
+			list.forEach(function (g) {
+				if (g.id === name) found = g;
+				else if (!found && g.alias && g.alias.indexOf(name) !== -1) found = g;
+			});
+			return found;
+		}
 
 		function cmdPlay(args) {
 			var flags = { easy: false, rollback: false };
@@ -384,8 +402,7 @@
 			var name = (rest[0] || '').toLowerCase();
 			if (!name) { cmdGames(); return; }
 			var list = gameList();
-			var found = null;
-			list.forEach(function (g) { if (g.id === name) found = g; });
+			var found = findGame(list, name);
 			if (!found) {
 				print('play: no game named "' + rest[0] + '"', 't-err');
 				print('  try: ' + list.map(function (g) { return g.id; }).join(' | '), 't-dim');

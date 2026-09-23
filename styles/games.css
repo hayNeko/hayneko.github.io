@@ -1,6 +1,9 @@
 /* ============================================================================
-   games.css — 小游戏页(#/games): 卡片架 + 俄罗斯方块机台
+   games.css — 小游戏页(#/games): 卡片架 + 机台
    机台是"终端窗口"的变体: 同一套边框 / 标题栏 / 等宽字体, 只多了屏幕与控制区。
+   两款游戏各是一台(.cabinet-group[data-game-group]), 页面里都在, 只显示当前这台;
+   Block Blast 那台多加一个 .cabinet--bb —— 棋盘是 8x8 的近方形, 井的比例与
+   Russia 那台(1:2)不同, 手机上的排布也不一样。
    ========================================================================== */
 
 /* ------------------------------------------------------------- 卡片架 */
@@ -67,6 +70,17 @@
 .game-card__title { font-size: 16px; letter-spacing: 0.01em; }
 .game-card__body { flex: 1 1 auto; font-size: 13px; line-height: 1.75; color: var(--fg-faint); }
 .game-card__foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ------------------------------------------------------------- 机台分组 */
+
+/*
+ * 一款游戏一个分组: 里面是机台 + 它自己的标志位面板。
+ * 挂载时只给当前这款摘掉 hidden(见 games.js 的 showGame) —— 分组是 .cabinet 的
+ * 父节点, 于是 createTetris / createBlockBlast 用 cab.parentNode.querySelector
+ * 找标志位面板时, 永远只会找到自己那一份。
+ */
+.cabinet-group + .cabinet-group { margin-top: 18px; }
+.cabinet-group[hidden] { display: none !important; }
 
 /* ------------------------------------------------------------- 机台外壳 */
 
@@ -230,6 +244,14 @@
 	font-variant-numeric: tabular-nums;
 	text-align: right;
 }
+
+/*
+ * 连击在冷却 / 差一次就断(Block Blast 的空放缓冲, 见 games.js 的 BB_COMBO_GRACE):
+ * 空放不再立刻断连击, 所以得让玩家看见它正在被消耗 —— 不然只会觉得"连击莫名其妙没了"。
+ * 两个类可能同时存在, .is-last 写在后面赢。
+ */
+.hud-stats dd.is-fading { color: var(--fg-faint); }
+.hud-stats dd.is-last { color: var(--yellow); }
 
 .cabinet__actions { display: flex; flex-direction: column; gap: 8px; }
 
@@ -396,6 +418,21 @@
 }
 [data-theme="light"] .cabinet__key kbd { background: rgba(12, 18, 26, 0.06); }
 
+/* ------------------------------------------------------- Block Blast 机台 */
+
+/*
+ * 棋盘 8 格宽、8 格高, 下面还有一条 2.6 格高的手牌条 —— 所以井不是 1:2 的窄条,
+ * 而是 8 : 10.6 的近方形(画布里的比例和 CSS 的 aspect-ratio 必须一致,
+ * 否则 Canvas 里会留出空白边)。手机上的宽度也由 games.css 末尾那段媒体查询接管。
+ */
+.cabinet--bb .cabinet__well {
+	height: clamp(280px, 46vh, 430px);
+	aspect-ratio: 8 / 10.6;
+}
+
+/* 键位说明里那句"拖动"要独占一行 */
+.cabinet__key--wide { flex: 1 1 100%; }
+
 /* ------------------------------------------------------------- 响应式 */
 
 /* 触屏: 不要长按选中文字 / 弹出系统菜单 —— "重新游玩"正是长按触发的 */
@@ -495,6 +532,42 @@
 	.cabinet__keys { padding: 10px; font-size: 11px; }
 	.flag-panel { margin-top: 10px; padding: 14px 12px; }
 	.flag-chip { flex: 1 1 100%; min-height: 56px; }
+
+	/*
+	 * Block Blast 手机上仍然是"左棋盘 + 右一列", 但井是近方形的, 所以按宽度定尺寸,
+	 * 右侧那一列只放数据与按钮(格子窄, 按钮改成一列全宽)。
+	 * 省下来的高度全给下面的十字键与两个大键 —— 那才是拇指够得到的地方,
+	 * 整台机台加上 54px 的 dock 也得能塞进一屏。
+	 */
+	.cabinet--bb .cabinet__screen {
+		grid-template-columns: auto minmax(0, 124px);
+		justify-content: space-between;
+		align-items: start;
+		gap: 8px;
+		padding: 10px;
+	}
+	.cabinet--bb .cabinet__well {
+		height: auto;
+		width: min(60vw, 280px);
+		aspect-ratio: 8 / 10.6;
+	}
+	.cabinet--bb .cabinet__hud {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.cabinet--bb .hud-stats { gap: 4px 6px; padding: 8px 9px; }
+	.cabinet--bb .hud-stats dt { font-size: 9px; letter-spacing: 0.08em; }
+	.cabinet--bb .hud-stats dd { font-size: 12px; }
+	.cabinet--bb .cabinet__actions .btn {
+		flex: 1 1 100%;
+		width: 100%;
+		min-height: 40px;
+	}
+	.cabinet--bb .cabinet__hint { font-size: 9.5px; }
+
+	/* 十字键上键: Russia 那台用的是 rotate, 这台叫 up */
+	.cabinet--bb .cabinet__pad [data-pad="up"] { grid-area: up; }
 }
 
 /* 触屏设备: 键位说明没有意义, hover 效果也只会"粘"在按钮上 */
