@@ -231,7 +231,7 @@
 					<dl class="hud-stats">
 						<dt i18n-key="games.blockblast.hud.score">Score</dt><dd data-bb-score>0</dd>
 						<dt i18n-key="games.blockblast.hud.best">Best</dt><dd data-bb-best>0</dd>
-						<dt i18n-key="games.blockblast.hud.combo">Combo</dt><dd data-bb-combo>×1</dd>
+						<dt i18n-key="games.blockblast.hud.combo">Combo</dt><dd data-bb-combo class="is-off">×0</dd>
 						<dt i18n-key="games.blockblast.hud.lines">Lines</dt><dd data-bb-lines>0</dd>
 					</dl>
 
@@ -287,6 +287,21 @@
 					<span class="flag-chip__desc" i18n-key="games.blockblast.flagRollback">Adds the Undo button (key U, pad ↶) that takes back the last placement, score included.</span>
 				</button>
 			</div>
+		</div>
+
+		<!-- 连击颜色说明: 色点与 HUD 那格共用同一套类名(见 games.css) -->
+		<div class="combo-legend" data-smear>
+			<p class="combo-legend__title" i18n-key="games.blockblast.comboLegend.title">Combo colour</p>
+			<p class="combo-legend__note" i18n-key="games.blockblast.comboLegend.note">
+				The number in the HUD shows the combo. It breaks after 4 placements in a row without a clear — each miss drains the colour one step:
+			</p>
+			<ul class="combo-legend__row">
+				<li class="combo-legend__item"><span class="combo-legend__dot is-off" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.off">No combo, or the streak was broken</span></li>
+				<li class="combo-legend__item"><span class="combo-legend__dot is-live" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.live">Combo just triggered</span></li>
+				<li class="combo-legend__item"><span class="combo-legend__dot is-miss1" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.miss1">1st miss</span></li>
+				<li class="combo-legend__item"><span class="combo-legend__dot is-miss2" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.miss2">2nd miss</span></li>
+				<li class="combo-legend__item"><span class="combo-legend__dot is-miss3" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.miss3">3rd miss — one more and the combo is gone</span></li>
+			</ul>
 		</div>
 	</div>
 </section>

@@ -66,6 +66,15 @@
 		"blockblast": {
 			"badge": "v1.0",
 			"boardAria": "Block Blast board",
+			"comboLegend": {
+				"title": "Combo colour",
+				"note": "The number in the HUD is the combo. It is wiped after 4 placements in a row with no clear, and every miss drains the colour one step:",
+				"off": "No combo, or the streak was broken",
+				"live": "Combo just triggered",
+				"miss1": "1st miss",
+				"miss2": "2nd miss",
+				"miss3": "3rd miss - one more and the combo is gone"
+			},
 			"desc": "An 8x8 board and three pieces at a time: drag them in, fill a row or a column to clear it. No timer - you lose only when nothing fits.",
 			"flag": {
 				"easy": "GENTLE",

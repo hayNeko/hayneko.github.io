@@ -1205,7 +1205,7 @@
 	var BB_CLEAR_MS = 240;       /* 消线闪光时长 */
 	var BB_DRAG_SLOP = 9;        /* 指针移动超过这么多像素才算"拖", 之内当成点选 */
 	var BB_POINT_PER_CELL = 2;   /* 放下一格得几分 */
-	var BB_COMBO_GRACE = 3;      /* 连着这么多次没消除, 连击才断(中间的空放不算断) */
+	var BB_COMBO_GRACE = 4;      /* 消除之后连着这么多次没消除, 连击才断(中间的空放不算断) */
 	var BB_BEST_KEY = 'hayneko.game.blockblast.best';
 
 	var BB_SHAPES = [
@@ -1359,7 +1359,7 @@
 			cur: { x: 0, y: 0 },  /* 选中块的落点: 方块左上角在棋盘上的格坐标 */
 			score: 0,
 			lines: 0,
-			combo: 0,             /* 连着几次放置都有消线; 0 = 没连上 */
+			combo: 0,             /* 这一轮连击累计消掉的线数: 消 1 条 +1, 一次消 3 条就 +3; 0 = 没连击 */
 			misses: 0,            /* 这一轮连击里已经空放了几次 —— 到 BB_COMBO_GRACE 才断 */
 			best: readBest(BB_BEST_KEY),
 			state: 'ready',       /* ready | running | paused | over */
@@ -1482,8 +1482,10 @@
 				/* 一次消 n 条(行 + 列一起数): 10*n*(n+1)/2 再乘连击倍率
 				—— 1 条 10 分, 2 条 30 分, 3 条 60 分; 连着消就是 x2 x3 ... */
 				var n = rows.length + cols.length;
-				game.combo += 1;
-				game.misses = 0;      /* 消掉了, 缓冲重新开始 */
+				/* 连击数 = 这一轮累计消掉多少条线: 一次消 2 行就是 +2(不是 +1),
+				   一次吃多行的收益因此是叠加的 */
+				game.combo += n;
+				game.misses = 0;      /* 消掉了, 宽限重新开始 */
 				game.score += Math.round(10 * n * (n + 1) / 2) * game.combo;
 				game.lines += n;
 				game.clearRows = rows;
@@ -1491,8 +1493,8 @@
 				game.clearTimer = BB_CLEAR_MS;
 				if (game.score > game.best) { game.best = game.score; writeBest(BB_BEST_KEY, game.best); }
 			} else {
-				/* 连击不是一空放就断: 连着 BB_COMBO_GRACE 次没消除才断, 中间留着缓冲
-				   (差一次就断的那次, HUD 上的连击会变成黄色提醒) */
+				/* 连击不是一空放就断: 消完还能白放 BB_COMBO_GRACE-1(=3) 次,
+				   第 4 次再没消掉才清空连击(中间这些空放, HUD 上的连击会依次变黄、变红) */
 				game.misses += 1;
 				if (game.misses >= BB_COMBO_GRACE) game.combo = 0;
 				afterPlace();
@@ -1654,11 +1656,16 @@
 			if (elScore) elScore.textContent = String(game.score);
 			if (elBest) elBest.textContent = String(game.best);
 			if (elCombo) {
-				elCombo.textContent = '×' + Math.max(1, game.combo);
-				/* 连击在冷却 / 只剩最后一次机会 —— 不然玩家不知道它为什么突然断了 */
+				/* 没有连击就是 ×0。颜色表示这一轮连击的健康度 ——
+				   灰(没连击) / 白(刚触发) / 绿(空放 1 次) / 黄(2 次) / 红(3 次, 再空放就断)。
+				   页面下方 .combo-legend 用的是同一套类名, 颜色永远一致(见 games.css)。 */
+				elCombo.textContent = '×' + game.combo;
 				var live = game.combo > 0;
-				elCombo.classList.toggle('is-fading', live && game.misses > 0);
-				elCombo.classList.toggle('is-last', live && game.misses >= BB_COMBO_GRACE - 1);
+				elCombo.classList.toggle('is-off', !live);
+				elCombo.classList.toggle('is-live', live && game.misses === 0);
+				elCombo.classList.toggle('is-miss1', live && game.misses === 1);
+				elCombo.classList.toggle('is-miss2', live && game.misses === 2);
+				elCombo.classList.toggle('is-miss3', live && game.misses >= 3);
 			}
 			if (elLines) elLines.textContent = String(game.lines);
 		}

@@ -246,12 +246,25 @@
 }
 
 /*
- * 连击在冷却 / 差一次就断(Block Blast 的空放缓冲, 见 games.js 的 BB_COMBO_GRACE):
- * 空放不再立刻断连击, 所以得让玩家看见它正在被消耗 —— 不然只会觉得"连击莫名其妙没了"。
- * 两个类可能同时存在, .is-last 写在后面赢。
+ * Block Blast 连击的五档颜色(状态由 games.js 的 updateHud 打类):
+ *   没连击 / 连击中断  灰
+ *   刚触发连击         白
+ *   空放 1 次          绿
+ *   空放 2 次          黄
+ *   空放 3 次          红   —— 再空放就断了(宽限 BB_COMBO_GRACE = 4)
+ * 空放不会立刻断连击, 所以得让玩家看见它正在被消耗, 不然只会觉得"连击莫名其妙没了"。
+ * HUD 那一格和页面下方 .combo-legend 的色点共用这套类名 —— 图例永远不会和实际配色跑偏。
  */
-.hud-stats dd.is-fading { color: var(--fg-faint); }
-.hud-stats dd.is-last { color: var(--yellow); }
+.hud-stats dd.is-off,
+.combo-legend__dot.is-off { color: var(--fg-ghost); }
+.hud-stats dd.is-live,
+.combo-legend__dot.is-live { color: var(--fg); }
+.hud-stats dd.is-miss1,
+.combo-legend__dot.is-miss1 { color: var(--green); }
+.hud-stats dd.is-miss2,
+.combo-legend__dot.is-miss2 { color: var(--yellow); }
+.hud-stats dd.is-miss3,
+.combo-legend__dot.is-miss3 { color: var(--red); }
 
 .cabinet__actions { display: flex; flex-direction: column; gap: 8px; }
 
@@ -576,4 +589,61 @@
 	.cabinet__pad-btn:hover,
 	.cabinet__hold:hover,
 	.cabinet__actions .btn:hover { transform: none; }
+}
+
+/* ------------------------------------------------- 连击颜色说明(页面下方) */
+
+/*
+ * 放在 Block Blast 分组的最后: 说明 HUD 上"连击"那一格的五种颜色。
+ * 色点用 currentColor 上色, 类名与 HUD 那格完全相同(is-off / is-live / is-miss1..3),
+ * 配色只有一份定义 —— 图例不会和实际颜色各写各的、慢慢跑偏。
+ * 这台之外看不到它(整块在 .cabinet-group[data-game-group="blockblast"] 里)。
+ */
+.combo-legend {
+	margin-top: 14px;
+	padding: 14px 18px 16px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: rgba(6, 10, 15, 0.42);
+}
+[data-theme="light"] .combo-legend { background: rgba(255, 255, 255, 0.7); }
+
+.combo-legend__title {
+	font-size: 12.5px;
+	letter-spacing: 0.06em;
+	color: var(--fg-dim);
+}
+.combo-legend__note {
+	margin-top: 6px;
+	font-size: 11.5px;
+	line-height: 1.7;
+	color: var(--fg-faint);
+}
+.combo-legend__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+}
+.combo-legend__item {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 11.5px;
+	line-height: 1.6;
+	color: var(--fg-faint);
+}
+.combo-legend__dot {
+	flex: 0 0 auto;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+@media (max-width: 720px) {
+	.combo-legend { margin-top: 10px; padding: 12px; }
+	.combo-legend__row { gap: 5px 14px; }
 }
