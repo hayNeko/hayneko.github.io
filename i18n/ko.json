@@ -11,7 +11,7 @@
 		"contact": "연락처",
 		"games": "게임",
 		"home": "홈",
-		"lab": "물리 랩",
+		"lab": "랩",
 		"language": "언어",
 		"links": "친구 링크",
 		"menu": {
@@ -19,7 +19,7 @@
 				"title": "연락처"
 			},
 			"lab": {
-				"title": "물리 랩"
+				"title": "랩"
 			},
 			"language": {
 				"title": "언어"
@@ -190,8 +190,8 @@
 	"home": {
 		"card": {
 			"lab": {
-				"desc": "공부하면서 만든 세 개의 시뮬레이션:힘과 운동, 뉴턴의 제2법칙, 렌즈.",
-				"title": "물리 랩"
+				"desc": "공부하면서 만든 세 개의 시뮬레이션:힘과 운동, 뉴턴의 제2법칙, 렌즈. Arch32S 가상 머신도 여기에 있습니다.",
+				"title": "랩"
 			},
 			"links": {
 				"desc": "아직 비어 있습니다. 읽을 만한 사이트가 있다면 알려 주세요, 여기에 추가하겠습니다.",
@@ -203,7 +203,7 @@
 			}
 		},
 		"cta": {
-			"lab": "물리 랩",
+			"lab": "랩",
 			"storage": "저장소 열기"
 		},
 		"eyebrow": "시스템 정상 · 모든 서비스 가동 중",
@@ -234,7 +234,7 @@
 			"sub": "자꾸 다시 찾게 되는 것들.",
 			"title": "참고 문서"
 		},
-		"heading": "물리 랩",
+		"heading": "랩",
 		"open": "열기",
 		"sim": {
 			"default": {
@@ -250,7 +250,60 @@
 				"title": "뉴턴의 제2법칙"
 			}
 		},
-		"subtitle": "물리 공부를 하며 작성한 인터랙티브 시뮬레이션."
+		"subtitle": "물리 공부하면서 만든 인터랙티브 시뮬레이션 —— 그리고 Hayneko_Arch32S 가상 머신. 페이지 안에서 바로 돌아갑니다.",
+		"vm": {
+			"heading": "Arch32S 가상 머신",
+			"subtitle": "HaynekoArch32VM_python의 시뮬레이터를 페이지로 옮겼습니다. 터미널에서 VM을 만들고 ROM / 디스크 / 어셈블리 파일을 올리면 레지스터, 메모리, 현재 명령이 실시간으로 갱신됩니다.",
+			"vm": {
+				"label": "VM"
+			},
+			"new": "새 VM",
+			"upload": "파일 업로드",
+			"saveRom": "ROM 저장",
+			"saveDisk": "디스크 저장",
+			"demo": "예제",
+			"load": "불러오기",
+			"run": "실행",
+			"pause": "일시정지",
+			"step": "단계 실행",
+			"over": "호출 건너뛰기",
+			"out": "빠져나가기",
+			"restart": "재시작",
+			"clearBp": "중단점 지우기",
+			"panel": {
+				"disasm": "디스어셈블",
+				"disasmHint": "행을 클릭해 중단점 전환",
+				"regs": "레지스터 / 플래그",
+				"regsHint": "값을 클릭해 편집",
+				"fpr": "부동소수점",
+				"stack": "스택 (SP)",
+				"mem": "메모리 덤프",
+				"out": "출력",
+				"outHint": "포트 0x00 / 0x01 출력이 여기에 표시됩니다"
+			},
+			"memBase": "기준",
+			"memFollow": "추적",
+			"files": {
+				"title": "업로드한 파일",
+				"hint": "ROM 1024 B · 디스크 256 KB · .asm 소스 — 패널에 끌어다 놓아도 됩니다"
+			},
+			"term": {
+				"tag": "arch32 vm"
+			},
+			"hints": {
+				"title": "터미널 명령",
+				"sub": "버튼 동작에는 모두 명령이 있고, 명령에는 버튼이 있습니다. 전역 터미널에서도 같은 vm 셸입니다."
+			},
+			"card": {
+				"title": "Arch32S 가상 머신",
+				"desc": "공부하면서 만든 세 개의 시뮬레이션:힘과 운동, 뉴턴의 제2법칙, 렌즈. Arch32S 가상 머신도 여기에 있습니다.",
+				"open": "디버거 열기"
+			},
+			"menu": {
+				"title": "Arch32S VM",
+				"desc": "레지스터 · 메모리 · 단계 실행"
+			}
+		}
 	},
 	"links": {
 		"empty": {
@@ -265,7 +318,7 @@
 			"instagram": "사진, 그리고 가끔 그림.",
 			"lab": {
 				"desc": "외부 링크는 아니지만, 제가 가장 자주 보내는 것입니다.",
-				"title": "물리 랩"
+				"title": "랩"
 			}
 		},
 		"subtitle": "시간을 쓸 만한 곳. 이 목록은 일부러 짧습니다."
@@ -282,8 +335,8 @@
 				"label": "홈"
 			},
 			"lab": {
-				"desc": "직접 만져 볼 수 있는 물리 시뮬레이션",
-				"label": "물리 랩"
+				"desc": "시뮬레이션과 Arch32S 가상 머신",
+				"label": "랩"
 			},
 			"links": {
 				"desc": "제가 실제로 찾아가는 사이트",
@@ -340,9 +393,10 @@
 		"default": "Hayneko",
 		"games": "게임 · Hayneko",
 		"home": "홈 · Hayneko",
-		"lab": "물리 랩 · Hayneko",
+		"lab": "랩 · Hayneko",
 		"links": "친구 링크 · Hayneko",
 		"storage": "다운로드 · Hayneko",
-		"terminal": "터미널 · Hayneko"
+		"terminal": "터미널 · Hayneko",
+		"vm": "Arch32S VM · Hayneko"
 	}
 }

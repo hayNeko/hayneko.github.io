@@ -63,20 +63,22 @@ scripts/
   header-nav.js           顶栏展开/收起编排
   terminal.js             交互终端
   games.js                小游戏引擎(俄罗斯方块 + Block Blast) + 机台挂载
+  hayneko-arch32.js       Hayneko_Arch32S 虚拟机(ISA/VM/汇编器, vm.py + as.py 的移植)
+  labs-vm.js              ~/labs/vm 调试器界面 + vm 系列终端命令
   dock.js                 Dock: 图标、菜单、粒子、主题、搜索
   app.js                  引导
   check-i18n.mjs          语言包校验(含 JS 引用扫描与运行时解析校验)
 views/                  NEW  路由片段
-  home.html  terminal.html  storage.html  lab.html  games.html  links.html
+  home.html  terminal.html  storage.html  labs.html  labs-vm.html  games.html  links.html
 i18n/                   NEW  en / zh-CN / zh-TW / ja / ko (key 集合完全一致)
 
-pages/physics-sim/      未改动 —— 三个物理学学习页面, 样式保持原样
+pages/labs/             三个物理学学习页面(原 pages/physics-sim), 样式保持原样
 pages/selfpag/          未改动
 medias/                 未改动 —— 图片 / 字体 / 文件 / 旧 CSS 与脚本
 ```
 
 > `medias/css/root.css`、`index.css`、`dock.css`、`main-page.css` 等旧样式文件
-> **刻意保留未动**：`pages/physics-sim/phy-default` 与 `phy-lens` 仍在引用它们。
+> **刻意保留未动**：`pages/labs/phy-default` 与 `phy-lens` 仍在引用它们。
 > 新站使用 `styles/` 下的新样式层，二者互不影响。
 
 ---
@@ -88,7 +90,8 @@ medias/                 未改动 —— 图片 / 字体 / 文件 / 旧 CSS 与�
 | `#/home` | 头像、邮箱、兴趣、游戏、项目 |
 | `#/terminal` | 交互终端（见下） |
 | `#/storage` | 资源下载（含失效条目标注） |
-| `#/lab` | 三个物理模拟的入口 + 参考文档 |
+| `#/labs` | 三个物理模拟的入口 + 参考文档 + Arch32S 虚拟机卡片 |
+| `#/labs-vm` | Hayneko_Arch32S 虚拟机调试器（见下） |
 | `#/games` | 小游戏（俄罗斯方块 / Block Blast, 见下） |
 | `#/links` | 友情链接（目前为空） |
 
@@ -381,6 +384,46 @@ var SOFT_ARR_MS = 50;  // 软降连发（往下滑过头不心疼）
 >
 > 手机上右侧栏只有 87px 宽（390 - 31×2 - 234 - 8），所以数据用 `.hud-stats` 的两列网格
 > （`dt` 9px / `dd` 12px），开始 / 暂停 / 重开竖着排 —— 主操作区仍然是底下那两块。
+
+---
+
+## Arch32S 虚拟机（`#/labs-vm`）
+
+把 `HaynekoArch32VM_python/` 里的模拟器搬进了网页：`scripts/hayneko-arch32.js` 是
+`vm.py` + `as.py` 的逐条移植（ISA 仍从 `hayneko_arch32S-v1.json` 读，不抄一份指令表），
+`scripts/labs-vm.js` 是仿 `dbg.py` 的调试界面，`styles/labs-vm.css` 负责排版。
+
+布局与 dbg.py 一致：顶部工具栏（F7 单步 / F8 跳过调用 / Ctrl+F8 跳出 / F9 运行），
+左边反汇编窗口（当前指令高亮，单击一行切断点），右边寄存器 + 栈 + 内存转储，
+底部输出（端口 `0x00` / `0x01` 的写入）；下面还有终端和命令速查。
+
+排版上几个刻意的决定：
+
+- **当前运行指令独占 VM 栏的第一行**：指令靠左、机器状态贴右（放工具栏里长指令会把
+  按钮挤到换行；挤在状态旁边又会被省略号截掉）。独占一行后 40 多个字符也放得下。
+- **反汇编窗口高度由 JS 按窗口算**（`fitHeight()`）：可用高度减去顶上控件和底部固定坞，
+  再取 `行高 19px × 整数行`，所以它尽量铺满窗口、又不被坞压住。
+- **字节列必须写死宽度**（`45ch` = 15 字节 = 最长指令）：每行是各自的 grid，
+  用 `max-content` 会让"十六进制 | 指令"逐行错位、贴在一起；列间留 16px。
+- 配合 `scroll-snap-type: y mandatory`：滚动位置永远落在行边界上，
+  底部不会露出被切掉一半的指令。
+- **本页不做移动端适配**：容器放宽到 1880px（`[data-route-current="labs-vm"] .page.wrap`），
+  窄窗口直接横向滚动，保证每一列的宽度；移动端布局交给别的页面。
+- 内存转储每行 16 字节（256B/屏），栈窗口 26 行。
+
+- **上传**：`.asm/.s/.txt` 当汇编源码（可一键汇编进 ROM），1024 B 当 ROM，256 KB 当磁盘，
+  全零/无法判断的按原样收下；也可以把文件直接拖到工作台上。ROM / 磁盘都能导出下载。
+- **终端命令**：`vm new vm1 --demo=fib`、`vm vm1 inst nop`（汇编并执行一条指令）、
+  `vm vm1 step|run [n]`、`vm vm1 regs|mem|dis|info`、`vm vm1 bp <addr>|clear`、
+  `vm vm1 demo <hello|fib|fib3|intr|mem>`、`vm vm1 rom|disk|save …`。
+  命令注册在 `terminal.js` 的 `Terminal.register()` 上，所以在**别的页面**敲 `vm`
+  也能建机器（只是看不到面板）；页面按钮与命令走的是同一份实现，不会出现两边行为不一致。
+- **多台虚拟机**：`vm` 列表里的机器同时存在，VM 下拉框切换；`bp`、`ip`、输出缓冲各自独立。
+- **与 vm.py 的差异**：文件系统换成内存里的 `Uint8Array`（磁盘默认 256 KB 全零），
+  控制台输出走回调，`RANDOM` 用 `Math.random()`。另外 `PUSHIMMW` 在 python 版里会因为
+  `FORMAT` 里的 `IM16` 没登记而 KeyError，这里按 format 推导补上了（长度因此是 4 字节）。
+- **验证**：拿 5 个内置示例 + 200 个随机 ROM（每条指令的 ip/字节/反汇编/全部寄存器/标志/
+  内存哈希/输出）与 python 版逐条对拍，结果完全一致（只有 `RANDOM` 需要固定随机数序列）。
 
 ---
 
@@ -765,7 +808,7 @@ pass 20 -s              用 crypto 取无偏随机
 
 站内所有资源都写成**相对路径**（`styles/…`、`views/…`、`pages/…`、`medias/…`），
 所以整个目录挂到任何位置（域名根目录、子目录）都能用。
-只有 `pages/physics-sim/` 与 `pages/selfpag/` 里的旧页面仍是绝对路径，
+只有 `pages/labs/` 与 `pages/selfpag/` 里的旧页面仍是绝对路径，
 它们是**刻意不改动**的，必须从站点根目录提供服务。
 
 - 面板底（`scaleY`）与导航项（`opacity` + `translateY`）时长、曲线完全一致；

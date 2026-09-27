@@ -20,6 +20,7 @@
 	<link rel="stylesheet" href="styles/pages.css">
 	<link rel="stylesheet" href="styles/games.css">
 	<link rel="stylesheet" href="styles/motion.css">
+	<link rel="stylesheet" href="styles/labs-vm.css">
 
 	<!-- 国际化配置: 必须在 i18n.js 之前定义 -->
 	<script>
@@ -42,6 +43,9 @@
 	<script src="scripts/header-nav.js" defer></script>
 	<script src="scripts/terminal.js" defer></script>
 	<script src="scripts/games.js" defer></script>
+	<!-- Hayneko_Arch32S 引擎(vm.py/as.py 的移植) + ~~/labs/vm 调试器界面 -->
+	<script src="scripts/hayneko-arch32.js" defer></script>
+	<script src="scripts/labs-vm.js" defer></script>
 	<script src="scripts/dock.js" defer></script>
 	<script src="scripts/app.js" defer></script>
 </head>
@@ -97,10 +101,10 @@
 					<span class="nav-item__key" aria-hidden="true">↵</span>
 				</a>
 
-				<a class="nav-item" href="#/lab" data-route="lab">
+				<a class="nav-item" href="#/labs" data-route="labs">
 					<span class="nav-item__idx">04</span>
 					<span class="nav-item__body">
-						<span class="nav-item__label" i18n-key="nav.item.lab.label">Physics Lab</span>
+						<span class="nav-item__label" i18n-key="nav.item.lab.label">Labs</span>
 						<span class="nav-item__desc" i18n-key="nav.item.lab.desc">Interactive physics simulations</span>
 					</span>
 					<span class="nav-item__key" aria-hidden="true">↵</span>

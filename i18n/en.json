@@ -11,7 +11,7 @@
 		"contact": "Contact",
 		"games": "Games",
 		"home": "Home",
-		"lab": "Physics lab",
+		"lab": "Labs",
 		"language": "Language",
 		"links": "Friendly links",
 		"menu": {
@@ -19,7 +19,7 @@
 				"title": "Contact"
 			},
 			"lab": {
-				"title": "Physics lab"
+				"title": "Labs"
 			},
 			"language": {
 				"title": "Language"
@@ -190,8 +190,8 @@
 	"home": {
 		"card": {
 			"lab": {
-				"desc": "Three interactive simulations built while studying: force & motion, Newton's second law, and lenses.",
-				"title": "Physics lab"
+				"desc": "Three interactive simulations built while studying: force & motion, Newton's second law, and lenses. The Arch32S virtual machine lives here now too.",
+				"title": "Labs"
 			},
 			"links": {
 				"desc": "Still empty. If you have a site worth reading, say hello and I will add it here.",
@@ -203,7 +203,7 @@
 			}
 		},
 		"cta": {
-			"lab": "Physics lab",
+			"lab": "Labs",
 			"storage": "Open storage"
 		},
 		"eyebrow": "System online · all services nominal",
@@ -234,7 +234,7 @@
 			"sub": "Things I keep coming back to.",
 			"title": "Reference documents"
 		},
-		"heading": "Physics Lab",
+		"heading": "Labs",
 		"open": "Open",
 		"sim": {
 			"default": {
@@ -250,7 +250,60 @@
 				"title": "Newton's second law"
 			}
 		},
-		"subtitle": "Interactive simulations I wrote while studying physics."
+		"subtitle": "Interactive simulations I wrote while studying physics — plus the Hayneko_Arch32S virtual machine, running right here in the page.",
+		"vm": {
+			"heading": "Arch32S virtual machine",
+			"subtitle": "The Hayneko_Arch32S simulator from HaynekoArch32VM_python, ported to the page: create a VM from the terminal, upload ROM / disk / assembly files, and watch registers, memory and the current instruction update live.",
+			"vm": {
+				"label": "vm"
+			},
+			"new": "New VM",
+			"upload": "Upload file",
+			"saveRom": "Save ROM",
+			"saveDisk": "Save disk",
+			"demo": "sample",
+			"load": "Load",
+			"run": "Run",
+			"pause": "Pause",
+			"step": "Step",
+			"over": "Step over",
+			"out": "Step out",
+			"restart": "Restart",
+			"clearBp": "Clear breakpoints",
+			"panel": {
+				"disasm": "Disassembly",
+				"disasmHint": "click a row to toggle a breakpoint",
+				"regs": "Registers / flags",
+				"regsHint": "click a value to edit",
+				"fpr": "Floating point",
+				"stack": "Stack (SP)",
+				"mem": "Memory dump",
+				"out": "Output",
+				"outHint": "port 0x00 / 0x01 writes land here"
+			},
+			"memBase": "base",
+			"memFollow": "follow",
+			"files": {
+				"title": "Uploaded files",
+				"hint": "ROM 1024 B · disk 256 KB · .asm source — or drop them on this panel"
+			},
+			"term": {
+				"tag": "arch32 vm"
+			},
+			"hints": {
+				"title": "Terminal commands",
+				"sub": "Everything the buttons do also has a command — and every command has a button. The global terminal uses the same vm shell."
+			},
+			"card": {
+				"title": "Arch32S virtual machine",
+				"desc": "Three interactive simulations built while studying: force & motion, Newton's second law, and lenses. The Arch32S virtual machine lives here now too.",
+				"open": "Open the debugger"
+			},
+			"menu": {
+				"title": "Arch32S vm",
+				"desc": "registers · memory · single step"
+			}
+		}
 	},
 	"links": {
 		"empty": {
@@ -265,7 +318,7 @@
 			"instagram": "Photos and the occasional drawing.",
 			"lab": {
 				"desc": "Not a link out, but the thing I am most likely to send you.",
-				"title": "Physics lab"
+				"title": "Labs"
 			}
 		},
 		"subtitle": "Places worth your time. This list is short on purpose."
@@ -282,8 +335,8 @@
 				"label": "Home"
 			},
 			"lab": {
-				"desc": "Interactive physics simulations",
-				"label": "Physics Lab"
+				"desc": "Simulations and the Arch32S virtual machine",
+				"label": "Labs"
 			},
 			"links": {
 				"desc": "Sites I actually visit",
@@ -340,9 +393,10 @@
 		"default": "Hayneko",
 		"games": "Games · Hayneko",
 		"home": "Home · Hayneko",
-		"lab": "Physics Lab · Hayneko",
+		"lab": "Labs · Hayneko",
 		"links": "Friendly Links · Hayneko",
 		"storage": "Storage · Hayneko",
-		"terminal": "Terminal · Hayneko"
+		"terminal": "Terminal · Hayneko",
+		"vm": "Arch32S VM · Hayneko"
 	}
 }

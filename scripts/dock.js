@@ -56,9 +56,9 @@
 	var EMAIL = 'haydenwong825@gmail.com';
 
 	var SIMS = [
-		{ href: 'pages/physics-sim/phy-default/', key: 'sim.default', icon: 'flask' },
-		{ href: 'pages/physics-sim/phy-ntlaw2/', key: 'sim.ntlaw2', icon: 'grid' },
-		{ href: 'pages/physics-sim/phy-lens/', key: 'sim.lens', icon: 'search' }
+		{ href: 'pages/labs/phy-default/', key: 'sim.default', icon: 'flask' },
+		{ href: 'pages/labs/phy-ntlaw2/', key: 'sim.ntlaw2', icon: 'grid' },
+		{ href: 'pages/labs/phy-lens/', key: 'sim.lens', icon: 'search' }
 	];
 
 	var LANGS = [
@@ -74,7 +74,7 @@
 		{ id: 'home', icon: 'home', key: 'dock.home', act: 'route:home' },
 		{ id: 'terminal', icon: 'term', key: 'dock.terminal', act: 'route:terminal' },
 		{ id: 'storage', icon: 'box', key: 'dock.storage', act: 'route:storage' },
-		{ id: 'lab', icon: 'flask', key: 'dock.lab', act: 'menu:lab' },
+		{ id: 'labs', icon: 'flask', key: 'dock.lab', act: 'menu:labs' },
 		{ id: 'games', icon: 'gamepad', key: 'dock.games', act: 'route:games' },
 		{ id: 'links', icon: 'link', key: 'dock.links', act: 'route:links', compact: true },
 		{ sep: true },
@@ -145,10 +145,14 @@
 	function buildHTML() {
 		var items = ITEMS.map(itemHTML).join('');
 
-		var labMenu = menuHTML('lab', 'dock.menu.lab.title', '~/lab',
-			SIMS.map(function (s) {
+		var labMenu = menuHTML('labs', 'dock.menu.lab.title', '~/labs',
+			[{
+				/* 站内页面: 走路由, 不新开标签页 */
+				href: '#/labs-vm', act: 'route:labs-vm', icon: 'term',
+				key: 'lab.vm.menu.title', subKey: 'lab.vm.menu.desc', sub: '', arrow: '›'
+			}].concat(SIMS.map(function (s) {
 				return { href: s.href, external: true, icon: s.icon, key: 'lab.' + s.key + '.title', subKey: 'lab.' + s.key + '.desc', sub: '', arrow: '↗' };
-			}).concat([
+			})).concat([
 				{ href: 'medias/files/docs/i386.pdf', external: true, icon: 'doc', key: 'lab.docs.i386.title', subKey: 'lab.docs.i386.desc', sub: '', arrow: '↗' }
 			]), { as: 'a' });
 
@@ -309,7 +313,8 @@
 		{ label: 'Home', key: 'dock.home', route: 'home', icon: 'home', hint: '~/home' },
 		{ label: 'Terminal', key: 'dock.terminal', route: 'terminal', icon: 'term', hint: '~/terminal' },
 		{ label: 'Storage', key: 'dock.storage', route: 'storage', icon: 'box', hint: '~/storage' },
-		{ label: 'Lab', key: 'dock.lab', route: 'lab', icon: 'flask', hint: '~/lab' },
+		{ label: 'Labs', key: 'dock.lab', route: 'labs', icon: 'flask', hint: '~/labs' },
+		{ label: 'Arch32S VM', key: 'lab.vm.heading', route: 'labs-vm', icon: 'term', hint: '~/labs/vm' },
 		{ label: 'Games', key: 'dock.games', route: 'games', icon: 'gamepad', hint: '~/games' },
 		{ label: 'Links', key: 'dock.links', route: 'links', icon: 'link', hint: '~/links' }
 	];
@@ -529,13 +534,25 @@
 			return;
 		}
 
+		/* 菜单项上的动作(例如 lab 菜单里的 ~/labs/vm): 以前只有坞按钮会派发,
+		   带 data-menu-act 的条目点了没反应 —— 这里补上。 */
+		var menuAct = e.target.closest && e.target.closest('[data-menu-act]');
+		if (menuAct) {
+			e.preventDefault();
+			runAction(menuAct.getAttribute('data-menu-act'));
+			return;
+		}
+
 		var btn = e.target.closest && e.target.closest('#dock [data-dock]');
 		if (!btn) return;
 		var act = btn.getAttribute('data-dock');
 		var def = ITEMS.filter(function (i) { return i.id === act; })[0];
 		if (!def) return;
 
-		var action = def.act;
+		runAction(def.act);
+	}
+
+	function runAction(action) {
 		if (action.indexOf('route:') === 0) {
 			closeMenus();
 			/* 这里以前会调 Motion.pop() 做个"弹跳"(fx-pop: 上移 9px + 放大到 1.2)。

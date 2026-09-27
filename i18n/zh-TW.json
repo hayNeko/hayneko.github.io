@@ -11,7 +11,7 @@
 		"contact": "聯絡",
 		"games": "小遊戲",
 		"home": "首页",
-		"lab": "物理實驗室",
+		"lab": "實驗室",
 		"language": "語言",
 		"links": "友情連結",
 		"menu": {
@@ -19,7 +19,7 @@
 				"title": "聯絡"
 			},
 			"lab": {
-				"title": "物理實驗室"
+				"title": "實驗室"
 			},
 			"language": {
 				"title": "語言"
@@ -190,8 +190,8 @@
 	"home": {
 		"card": {
 			"lab": {
-				"desc": "學習時寫的三個互動模擬:力與運動、牛頓第二定律、透鏡成像。",
-				"title": "物理實驗室"
+				"desc": "學習時寫的三個模擬：力與運動、牛頓第二定律、透鏡。Arch32S 虛擬機器也放在這裡。",
+				"title": "實驗室"
 			},
 			"links": {
 				"desc": "還是空的。如果你有值得一看的站點, 來找我, 我把它加在這裡。",
@@ -203,7 +203,7 @@
 			}
 		},
 		"cta": {
-			"lab": "物理實驗室",
+			"lab": "實驗室",
 			"storage": "打開資源下載"
 		},
 		"eyebrow": "系統在線 · 全部服務正常",
@@ -234,7 +234,7 @@
 			"sub": "我經常回頭翻的東西。",
 			"title": "參考文件"
 		},
-		"heading": "物理實驗室",
+		"heading": "實驗室",
 		"open": "開啟",
 		"sim": {
 			"default": {
@@ -250,7 +250,60 @@
 				"title": "牛頓第二定律"
 			}
 		},
-		"subtitle": "學習物理時寫的互動模擬。"
+		"subtitle": "學習物理時寫的互動模擬 —— 以及 Hayneko_Arch32S 虛擬機器，直接在頁面裡跑。",
+		"vm": {
+			"heading": "Arch32S 虛擬機器",
+			"subtitle": "把 HaynekoArch32VM_python 裡的模擬器搬進網頁：在終端機建立虛擬機器、上傳 ROM / 磁碟 / 組譯檔，暫存器、記憶體與目前指令即時更新。",
+			"vm": {
+				"label": "虛擬機器"
+			},
+			"new": "新增虛擬機器",
+			"upload": "上傳檔案",
+			"saveRom": "匯出 ROM",
+			"saveDisk": "匯出磁碟",
+			"demo": "範例",
+			"load": "載入",
+			"run": "執行",
+			"pause": "暫停",
+			"step": "單步",
+			"over": "跳過呼叫",
+			"out": "跳出",
+			"restart": "重新啟動",
+			"clearBp": "清除中斷點",
+			"panel": {
+				"disasm": "反組譯",
+				"disasmHint": "點一列即可設中斷點",
+				"regs": "暫存器 / 旗標",
+				"regsHint": "點數值可直接修改",
+				"fpr": "浮點暫存器",
+				"stack": "堆疊 (SP)",
+				"mem": "記憶體傾印",
+				"out": "輸出",
+				"outHint": "埠 0x00 / 0x01 的輸出顯示在這裡"
+			},
+			"memBase": "基底",
+			"memFollow": "跟隨",
+			"files": {
+				"title": "已上傳的檔案",
+				"hint": "ROM 1024 B · 磁碟 256 KB · .asm 原始碼 —— 也可以直接把檔案拖到這塊面板上"
+			},
+			"term": {
+				"tag": "arch32 虛擬機器"
+			},
+			"hints": {
+				"title": "終端機命令",
+				"sub": "按鈕能做的，終端機裡都有對應命令；命令也都有按鈕。全域終端機裡是同一套 vm 命令。"
+			},
+			"card": {
+				"title": "Arch32S 虛擬機器",
+				"desc": "學習時寫的三個模擬：力與運動、牛頓第二定律、透鏡。Arch32S 虛擬機器也放在這裡。",
+				"open": "開啟偵錯器"
+			},
+			"menu": {
+				"title": "Arch32S 虛擬機器",
+				"desc": "暫存器 · 記憶體 · 單步"
+			}
+		}
 	},
 	"links": {
 		"empty": {
@@ -265,7 +318,7 @@
 			"instagram": "照片, 偶爾有畫。",
 			"lab": {
 				"desc": "不是外部連結, 但這是我最可能傳給你的東西。",
-				"title": "物理實驗室"
+				"title": "實驗室"
 			}
 		},
 		"subtitle": "值得花時間的地方。這個列表故意很短。"
@@ -282,8 +335,8 @@
 				"label": "首頁"
 			},
 			"lab": {
-				"desc": "可以動手操作的物理模擬",
-				"label": "物理實驗室"
+				"desc": "模擬實驗，以及 Arch32S 虛擬機器",
+				"label": "實驗室"
 			},
 			"links": {
 				"desc": "我真正會去看的網站",
@@ -340,9 +393,10 @@
 		"default": "Hayneko",
 		"games": "小遊戲 · Hayneko",
 		"home": "首頁 · Hayneko",
-		"lab": "物理實驗室 · Hayneko",
+		"lab": "實驗室 · Hayneko",
 		"links": "友情連結 · Hayneko",
 		"storage": "資源下載 · Hayneko",
-		"terminal": "終端機 · Hayneko"
+		"terminal": "終端機 · Hayneko",
+		"vm": "Arch32S 虛擬機器 · Hayneko"
 	}
 }

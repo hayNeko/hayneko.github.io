@@ -15,7 +15,8 @@
 		home:     { id: 'home',     path: '~/home',     partial: 'views/home.html',     titleKey: 'title.home',     accent: 'green' },
 		terminal: { id: 'terminal', path: '~/terminal', partial: 'views/terminal.html', titleKey: 'title.terminal', accent: 'blue' },
 		storage: { id: 'storage', path: '~/storage', partial: 'views/storage.html', titleKey: 'title.storage', accent: 'blue' },
-		lab:     { id: 'lab',     path: '~/lab',     partial: 'views/lab.html',     titleKey: 'title.lab',     accent: 'red' },
+		labs:    { id: 'labs',    path: '~/labs',    partial: 'views/labs.html',    titleKey: 'title.lab',    accent: 'red' },
+		'labs-vm': { id: 'labs-vm', path: '~/labs/vm', partial: 'views/labs-vm.html', titleKey: 'title.vm', accent: 'blue' },
 		games:   { id: 'games',   path: '~/games',   partial: 'views/games.html',   titleKey: 'title.games',   accent: 'green' },
 		links:   { id: 'links',   path: '~/links',   partial: 'views/links.html',   titleKey: 'title.links',   accent: 'white' }
 	};
@@ -179,6 +180,8 @@
 		if (global.Terminal && global.Terminal.mountAll) global.Terminal.mountAll(page);
 		/* 小游戏机台也挂在页面片段上, 机制与终端相同 */
 		if (global.Games && global.Games.mountAll) global.Games.mountAll(page);
+		/* Arch32S 调试器页面 (~/labs/vm) 的挂载时机与机台相同 */
+		if (global.LabsVM && global.LabsVM.mountAll) global.LabsVM.mountAll(page);
 		if (global.GeometryBG && global.GeometryBG.pulse) global.GeometryBG.pulse(route.accent === 'white' ? 'blue' : route.accent);
 
 		var scroller = doc.scrollingElement || doc.documentElement;

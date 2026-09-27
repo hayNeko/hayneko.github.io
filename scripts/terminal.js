@@ -51,9 +51,9 @@
 
 	/* 物理模拟入口(sim 命令用) */
 	var SIMS = [
-		{ name: 'phy-default', href: 'pages/physics-sim/phy-default/' },
-		{ name: 'phy-ntlaw2', href: 'pages/physics-sim/phy-ntlaw2/' },
-		{ name: 'phy-lens', href: 'pages/physics-sim/phy-lens/' }
+		{ name: 'phy-default', href: 'pages/labs/phy-default/' },
+		{ name: 'phy-ntlaw2', href: 'pages/labs/phy-ntlaw2/' },
+		{ name: 'phy-lens', href: 'pages/labs/phy-lens/' }
 	];
 
 	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准(alias 也要跟着来) */
@@ -78,7 +78,7 @@
 			['ls', 'list virtual files'],
 			['tree', 'virtual files as a tree'],
 			['cat <file>', 'print a virtual file'],
-			['open <page>', 'navigate: home | terminal | storage | lab | games | links'],
+			['open <page>', 'navigate: home | terminal | storage | labs | labs-vm | games | links'],
 			['sim [n]', 'list / open a physics simulation'],
 			['clear', 'clear the screen']
 		] },
@@ -137,6 +137,11 @@
 	}
 
 	var instances = [];
+
+	/* 外部脚本注册进来的命令 (name -> fn(args, api))。
+	   scripts/labs-vm.js 用 Terminal.register() 把 vm 系列命令挂进来, 这样
+	   终端命令表和页面按钮走的是同一份实现。 */
+	var EXTENSIONS = {};
 
 	function create(root, chips) {
 		var body = root.querySelector('.term__body');
@@ -210,7 +215,7 @@
 				});
 			});
 			print('');
-			print(COMMAND_NAMES.length + ' commands  ·  Tab completes, up/down recalls', 't-dim');
+			print(allNames().length + ' commands  ·  Tab completes, up/down recalls', 't-dim');
 		}
 
 		function cmdMan(args) {
@@ -1461,6 +1466,9 @@
 
 		var COMMAND_NAMES = Object.keys(COMMANDS);
 
+		/* Tab 补全 / 计数都要算上扩展命令 */
+		function allNames() { return COMMAND_NAMES.concat(Object.keys(EXTENSIONS)); }
+
 		/* -------------------------------------------------- 执行 */
 
 		/**
@@ -1499,6 +1507,13 @@
 				var name = (parts[0] || '').toLowerCase();
 				var args = parts.slice(1);
 				if (COMMANDS[name]) COMMANDS[name](args);
+				else if (EXTENSIONS[name]) EXTENSIONS[name](args, {
+					print: print,
+					printHTML: printHTML,
+					run: run,
+					root: root,
+					scrollToEnd: scrollToEnd
+				});
 				else cmdNotFound(parts[0]);
 			}
 			scrollToEnd();
@@ -1509,7 +1524,7 @@
 			var head = m && m[1] ? m[1] : '';
 			var word = m && m[2] ? m[2] : '';
 			if (!word) return null;
-			var matches = COMMAND_NAMES.filter(function (n) { return n.indexOf(word) === 0; });
+			var matches = allNames().filter(function (n) { return n.indexOf(word) === 0; });
 			if (!matches.length) return null;
 			if (matches.length === 1) return head + matches[0] + ' ';
 			print(matches.join('   '), 't-dim');
@@ -1645,11 +1660,27 @@
 		return true;
 	}
 
+	/*
+	 * 给别的脚本挂命令用:
+	 *   Terminal.register({ vm: function (args, api) { api.print('hi'); } },
+	 *                     { title: 'arch32 vm', rows: [['vm', 'list machines']] });
+	 * help / Tab 补全 / 全局搜索都会自动带上。
+	 */
+	function register(map, helpGroup) {
+		Object.keys(map || {}).forEach(function (name) {
+			EXTENSIONS[String(name).toLowerCase()] = map[name];
+		});
+		if (helpGroup) HELP_GROUPS.push(helpGroup);
+		return Object.keys(EXTENSIONS);
+	}
+
 	global.Terminal = {
 		mountAll: mountAll,
 		instances: instances,
 		run: runCommand,
-		commands: commandList
+		commands: commandList,
+		register: register,
+		extensions: EXTENSIONS
 	};
 
 	if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', function () { mountAll(doc); }, { once: true });

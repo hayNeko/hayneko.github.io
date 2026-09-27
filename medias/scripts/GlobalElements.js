@@ -53,9 +53,9 @@
 						<div class="dock_tools_section">
 							<h3 class="dock_tools_title" data-i18n="simulation">Simulation</h3>
 							<ul class="dock_tools_list">
-								<li><a href="/pages/physics-sim/phy-default/" target="_blank" class="not-link" data-i18n="physics-simulation">Physics Simulation</a></li>
-								<li><a href="/pages/physics-sim/phy-ntlaw2/" target="_blank" class="not-link" data-i18n="physics-simulation-newton-second-law">Physics Simulation (Newton Second Law)</a></li>
-								<li><a href="/pages/physics-sim/phy-lens/" target="_blank" class="not-link" data-i18n="physics-simulation-lens">Physics Simulation (Lens)</a></li>
+								<li><a href="/pages/labs/phy-default/" target="_blank" class="not-link" data-i18n="physics-simulation">Physics Simulation</a></li>
+								<li><a href="/pages/labs/phy-ntlaw2/" target="_blank" class="not-link" data-i18n="physics-simulation-newton-second-law">Physics Simulation (Newton Second Law)</a></li>
+								<li><a href="/pages/labs/phy-lens/" target="_blank" class="not-link" data-i18n="physics-simulation-lens">Physics Simulation (Lens)</a></li>
 							</ul>
 							<h3 class="dock_tools_title" data-i18n="docs">Useful Docs</h3>
 							<ul class="dock_tools_list">

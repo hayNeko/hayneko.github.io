@@ -160,7 +160,7 @@
 				return;
 			}
 			if (!pending) return;
-			var map = { h: 'home', s: 'storage', l: 'lab', k: 'links', g: 'games', t: 'terminal' };
+			var map = { h: 'home', s: 'storage', l: 'labs', k: 'links', g: 'games', t: 'terminal' };
 			var target = map[e.key.toLowerCase()];
 			if (target && global.Router) {
 				e.preventDefault();

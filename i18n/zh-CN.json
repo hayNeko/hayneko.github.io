@@ -11,7 +11,7 @@
 		"contact": "联系",
 		"games": "小游戏",
 		"home": "首页",
-		"lab": "物理实验室",
+		"lab": "实验室",
 		"language": "语言",
 		"links": "友情链接",
 		"menu": {
@@ -19,7 +19,7 @@
 				"title": "联系"
 			},
 			"lab": {
-				"title": "物理实验室"
+				"title": "实验室"
 			},
 			"language": {
 				"title": "语言"
@@ -190,8 +190,8 @@
 	"home": {
 		"card": {
 			"lab": {
-				"desc": "学习时写的三个交互模拟:力与运动、牛顿第二定律、透镜成像。",
-				"title": "物理实验室"
+				"desc": "学习时写的三个模拟：力与运动、牛顿第二定律、透镜。Arch32S 虚拟机也放在这里。",
+				"title": "实验室"
 			},
 			"links": {
 				"desc": "还是空的。如果你有值得一看的站点, 来找我, 我把它加在这里。",
@@ -203,7 +203,7 @@
 			}
 		},
 		"cta": {
-			"lab": "物理实验室",
+			"lab": "实验室",
 			"storage": "打开资源下载"
 		},
 		"eyebrow": "系统在线 · 全部服务正常",
@@ -234,7 +234,7 @@
 			"sub": "我经常回头翻的东西。",
 			"title": "参考文档"
 		},
-		"heading": "物理实验室",
+		"heading": "实验室",
 		"open": "打开",
 		"sim": {
 			"default": {
@@ -250,7 +250,60 @@
 				"title": "牛顿第二定律"
 			}
 		},
-		"subtitle": "学习物理时写的交互模拟。"
+		"subtitle": "学习物理时写的交互模拟 —— 以及 Hayneko_Arch32S 虚拟机，直接在页面里跑。",
+		"vm": {
+			"heading": "Arch32S 虚拟机",
+			"subtitle": "把 HaynekoArch32VM_python 里的模拟器搬进网页：在终端里创建虚拟机、上传 ROM / 磁盘 / 汇编文件，寄存器、内存和当前运行指令实时刷新。",
+			"vm": {
+				"label": "虚拟机"
+			},
+			"new": "新建虚拟机",
+			"upload": "上传文件",
+			"saveRom": "导出 ROM",
+			"saveDisk": "导出磁盘",
+			"demo": "示例",
+			"load": "载入",
+			"run": "运行",
+			"pause": "暂停",
+			"step": "单步",
+			"over": "跳过调用",
+			"out": "跳出",
+			"restart": "重启",
+			"clearBp": "清除断点",
+			"panel": {
+				"disasm": "反汇编",
+				"disasmHint": "点一行即可切断点",
+				"regs": "寄存器 / 标志",
+				"regsHint": "点数值可直接修改",
+				"fpr": "浮点寄存器",
+				"stack": "栈 (SP)",
+				"mem": "内存转储",
+				"out": "输出",
+				"outHint": "端口 0x00 / 0x01 的输出显示在这里"
+			},
+			"memBase": "基址",
+			"memFollow": "跟随",
+			"files": {
+				"title": "已上传的文件",
+				"hint": "ROM 1024 B · 磁盘 256 KB · .asm 源码 —— 也可以直接把文件拖到这块面板上"
+			},
+			"term": {
+				"tag": "arch32 虚拟机"
+			},
+			"hints": {
+				"title": "终端命令",
+				"sub": "按钮能做的，终端里都有对应命令；命令也都有按钮。全局终端里是同一套 vm 命令。"
+			},
+			"card": {
+				"title": "Arch32S 虚拟机",
+				"desc": "学习时写的三个模拟：力与运动、牛顿第二定律、透镜。Arch32S 虚拟机也放在这里。",
+				"open": "打开调试器"
+			},
+			"menu": {
+				"title": "Arch32S 虚拟机",
+				"desc": "寄存器 · 内存 · 单步"
+			}
+		}
 	},
 	"links": {
 		"empty": {
@@ -265,7 +318,7 @@
 			"instagram": "照片, 偶尔有画。",
 			"lab": {
 				"desc": "不是外链, 但这是我最可能发给你的东西。",
-				"title": "物理实验室"
+				"title": "实验室"
 			}
 		},
 		"subtitle": "值得花时间的地方。这个列表故意很短。"
@@ -282,8 +335,8 @@
 				"label": "首页"
 			},
 			"lab": {
-				"desc": "可以动手操作的物理模拟",
-				"label": "物理实验室"
+				"desc": "模拟实验，以及 Arch32S 虚拟机",
+				"label": "实验室"
 			},
 			"links": {
 				"desc": "我真正会去看的网站",
@@ -340,9 +393,10 @@
 		"default": "Hayneko",
 		"games": "小游戏 · Hayneko",
 		"home": "首页 · Hayneko",
-		"lab": "物理实验室 · Hayneko",
+		"lab": "实验室 · Hayneko",
 		"links": "友情链接 · Hayneko",
 		"storage": "资源下载 · Hayneko",
-		"terminal": "终端 · Hayneko"
+		"terminal": "终端 · Hayneko",
+		"vm": "Arch32S 虚拟机 · Hayneko"
 	}
 }

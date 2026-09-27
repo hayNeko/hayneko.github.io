@@ -1,0 +1,142 @@
+<!-- views/labs-vm.html — Hayneko_Arch32S 虚拟机调试器（仿 dbg.py 的 x86dbg 布局） -->
+<header class="page-head">
+	<h1 class="page-head__title" data-smear="drop" data-fx-split><span data-fx-text i18n-key="lab.vm.heading">Arch32S virtual machine</span></h1>
+	<p class="page-head__sub" data-smear i18n-key="lab.vm.subtitle">
+		The Hayneko_Arch32S simulator from HaynekoArch32VM_python, ported to the page: create a VM from the terminal, upload ROM / disk / assembly files, and watch registers, memory and the current instruction update live.
+	</p>
+</header>
+
+<section class="section vm-workbench section--flush" data-smear data-vm-root>
+	<!-- ===================== VM 选择 / 上传 ===================== -->
+	<div class="vm-bar">
+		<span class="vm-bar__tail">
+			<span class="vm-cur" data-vm-cur>0x00000000</span>
+			<span class="vm-status" data-vm-status>vm: —</span>
+		</span>
+		<span class="vm-bar__group">
+			<span class="vm-bar__label" i18n-key="lab.vm.vm.label">vms</span>
+			<select class="vm-select" data-vm-select aria-label="virtual machine" i18n-attr="aria-label" i18n-key="lab.vm.vm.label"></select>
+		</span>
+		<span class="vm-bar__group">
+			<button type="button" class="vm-btn vm-btn--accent" data-vm-act="new" i18n-key="lab.vm.new">New VM</button>
+			<button type="button" class="vm-btn" data-vm-act="upload" i18n-key="lab.vm.upload">Upload file</button>
+			<button type="button" class="vm-btn" data-vm-act="save-rom" i18n-key="lab.vm.saveRom">Save ROM</button>
+			<button type="button" class="vm-btn" data-vm-act="save-disk" i18n-key="lab.vm.saveDisk">Save disk</button>
+			<input type="file" multiple hidden data-vm-file>
+		</span>
+		<span class="vm-bar__group vm-bar__group--grow">
+			<label class="vm-bar__label" for="vm-demo" i18n-key="lab.vm.demo">sample</label>
+			<select class="vm-select" id="vm-demo" data-vm-demo></select>
+			<button type="button" class="vm-btn" data-vm-act="load-demo" i18n-key="lab.vm.load">Load</button>
+		</span>
+	</div>
+
+	<!-- ===================== 调试工具栏 ===================== -->
+	<div class="vm-toolbar" role="toolbar" aria-label="debug controls">
+		<button type="button" class="vm-btn vm-btn--run" data-vm-act="run" data-key="F9">▶ <span i18n-key="lab.vm.run">Run</span></button>
+		<button type="button" class="vm-btn" data-vm-act="pause" disabled>⏸ <span i18n-key="lab.vm.pause">Pause</span></button>
+		<button type="button" class="vm-btn" data-vm-act="step" data-key="F7">⤵ <span i18n-key="lab.vm.step">Step</span></button>
+		<button type="button" class="vm-btn" data-vm-act="over" data-key="F8">⤴ <span i18n-key="lab.vm.over">Step over</span></button>
+		<button type="button" class="vm-btn" data-vm-act="out" data-key="Ctrl+F8">↩ <span i18n-key="lab.vm.out">Step out</span></button>
+		<button type="button" class="vm-btn" data-vm-act="restart">⟲ <span i18n-key="lab.vm.restart">Restart</span></button>
+		<span class="vm-toolbar__spacer"></span>
+		<button type="button" class="vm-btn vm-btn--ghost" data-vm-act="clear-bp" i18n-key="lab.vm.clearBp">Clear breakpoints</button>
+	</div>
+
+	<!-- ===================== 面板 ===================== -->
+	<div class="vm-grid">
+		<section class="vm-panel vm-panel--dis">
+			<header class="vm-panel__head">
+				<span i18n-key="lab.vm.panel.disasm">Disassembly</span>
+				<span class="vm-panel__hint" i18n-key="lab.vm.panel.disasmHint">click a row to toggle a breakpoint</span>
+			</header>
+			<ol class="vm-dis" data-vm-dis></ol>
+		</section>
+
+		<section class="vm-panel vm-panel--regs">
+			<header class="vm-panel__head"><span i18n-key="lab.vm.panel.regs">Registers / flags</span>
+				<span class="vm-panel__hint" i18n-key="lab.vm.panel.regsHint">click a value to edit</span></header>
+			<div class="vm-regs" data-vm-regs></div>
+			<div class="vm-flags" data-vm-flags></div>
+			<div class="vm-kernel" data-vm-kernel></div>
+			<details class="vm-fpr-details">
+				<summary i18n-key="lab.vm.panel.fpr">Floating point</summary>
+				<div class="vm-fprs" data-vm-fprs></div>
+			</details>
+		</section>
+
+		<section class="vm-panel vm-panel--stack">
+			<header class="vm-panel__head"><span i18n-key="lab.vm.panel.stack">Stack (SP)</span></header>
+			<ol class="vm-stack" data-vm-stack></ol>
+		</section>
+
+		<section class="vm-panel vm-panel--mem">
+			<header class="vm-panel__head">
+				<span i18n-key="lab.vm.panel.mem">Memory dump</span>
+				<span class="vm-mem-ctl">
+					<label for="vm-mem-base" i18n-key="lab.vm.memBase">base</label>
+					<input class="vm-input" id="vm-mem-base" data-vm-mem-base value="0x00000000" spellcheck="false">
+					<label for="vm-mem-follow" i18n-key="lab.vm.memFollow">follow</label>
+					<select class="vm-select vm-select--sm" id="vm-mem-follow" data-vm-mem-follow></select>
+				</span>
+			</header>
+			<ol class="vm-mem" data-vm-mem></ol>
+		</section>
+
+		<section class="vm-panel vm-panel--out">
+			<header class="vm-panel__head">
+				<span i18n-key="lab.vm.panel.out">Output</span>
+				<span class="vm-panel__hint" i18n-key="lab.vm.panel.outHint">port 0x00 / 0x01 writes land here</span>
+			</header>
+			<pre class="vm-out" data-vm-out></pre>
+		</section>
+	</div>
+
+	<!-- ===================== 上传的文件 ===================== -->
+	<section class="vm-files">
+		<header class="vm-panel__head"><span i18n-key="lab.vm.files.title">Uploaded files</span>
+			<span class="vm-panel__hint" i18n-key="lab.vm.files.hint">ROM 1024 B · disk 256 KB · .asm source — or drop them on this panel</span></header>
+		<ul class="vm-filelist" data-vm-files></ul>
+	</section>
+</section>
+
+<!-- ===================== 终端 ===================== -->
+<section class="section">
+	<div class="term" data-terminal data-smear>
+		<div class="term__bar">
+			<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="term__title">hayneko@blog: ~/labs/vm</span>
+			<span class="term-window__tag" i18n-key="lab.vm.term.tag">arch32 vm</span>
+		</div>
+		<div class="term__body" tabindex="-1"></div>
+		<div class="term__prompt-line">
+			<span class="term__ps1">hayneko@blog:~/labs/vm$</span>
+			<input class="term__input" type="text" spellcheck="false" autocomplete="off"
+				aria-label="terminal input" i18n-attr="aria-label" i18n-key="terminal.term.input">
+		</div>
+	</div>
+
+	<div class="term-suggest" data-smear>
+		<button type="button" data-cmd="vm">vm</button>
+		<button type="button" data-cmd="vm new vm1 --demo=fib">vm new vm1 --demo=fib</button>
+		<button type="button" data-cmd="vm vm1 inst nop">vm vm1 inst nop</button>
+		<button type="button" data-cmd="vm vm1 inst 'IMM ra, 40'">vm vm1 inst 'IMM ra, 40'</button>
+		<button type="button" data-cmd="vm vm1 step">vm vm1 step</button>
+		<button type="button" data-cmd="vm vm1 run 100">vm vm1 run 100</button>
+		<button type="button" data-cmd="vm vm1 regs">vm vm1 regs</button>
+		<button type="button" data-cmd="vm vm1 mem 0 64">vm vm1 mem 0 64</button>
+		<button type="button" data-cmd="vm vm1 dis">vm vm1 dis</button>
+		<button type="button" data-cmd="vm vm1 bp 0x0C">vm vm1 bp 0x0C</button>
+		<button type="button" data-cmd="vm vm1 demo fib">vm vm1 demo fib</button>
+		<button type="button" data-cmd="vm ls">vm ls</button>
+	</div>
+</section>
+
+<!-- ===================== 命令速查（终端里有的，这里也看得到） ===================== -->
+<section class="section">
+	<header class="section__head">
+		<h2 class="section__title" data-smear="slide" i18n-key="lab.vm.hints.title">Terminal commands</h2>
+		<p class="section__sub" i18n-key="lab.vm.hints.sub">Everything the buttons do also has a command — and every command has a button. The global terminal uses the same vm shell.</p>
+	</header>
+	<div class="vm-cheat" data-vm-cheat data-smear></div>
+</section>
