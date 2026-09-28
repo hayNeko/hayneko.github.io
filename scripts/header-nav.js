@@ -10,10 +10,11 @@
  *     拖影在收起时被立即 dispose, 不会残留。
  *
  * 交互:
- *   - 鼠标移入顶栏 → 展开; 移出 → 收起
- *   - 点击顶栏切换; Esc 收起; Ctrl/Cmd+K 切换
- *   - ← ↓ ↑ → 在链接间移动, Enter 跳转
- *   - 触摸设备: 点击顶栏切换
+ *   - **点击顶栏展开 / 再点收起**(不做 hover 展开: 鼠标划过不该把导航摊开)
+ *   - 收起还有: 点顶栏外 / Esc / 点完导航项(路由变化) / 焦点离开顶栏
+ *   - 键盘: 焦点在顶栏上 Enter / 空格切换, ↓ 展开并跳到第一项,
+ *     Ctrl/Cmd+K 全局切换, ← ↑ ↓ → 在链接间移动, Esc 回顶栏
+ *   - 触摸设备同样是一次点击切换
  */
 (function (global) {
 	'use strict';
@@ -50,8 +51,7 @@
 	var ghosts = [];
 	var ready = false;
 
-	var OPEN_HOVER_DELAY = 0;
-	var CLOSE_DELAY = 100;
+	var CLOSE_DELAY = 100;      /* 焦点离开顶栏后, 等这么久再收(给 Tab 留出过渡) */
 
 	/* ------------------------------------------------------------ 初始化 */
 
@@ -129,49 +129,15 @@
 
 	/* ------------------------------------------------------------ 事件 */
 
-	function isTouch() {
-		return !!(global.matchMedia && global.matchMedia('(hover: none)').matches);
-	}
-
-	/**
-	 * 这次焦点是键盘给的吗?
-	 *
-	 * 手机上点顶栏: mousedown 先让 topbar 拿到焦点 → focus 处理器抢先把面板展开,
-	 * 紧接着同一个手势的 click 又 toggle 了一次 → 面板"弹一下马上收回"。
-	 * (第二次点就正常了, 因为焦点已经在顶栏上, 不会再触发 focus。)
-	 *
-	 * :focus-visible 正好区分两者 —— 触摸/鼠标点出来的焦点是 false, 键盘 Tab 是 true。
-	 * 桌面不受影响: 那边本来就是 hover 展开, 焦点处理只是补充。
-	 */
-	function focusOpens() {
-		if (!isTouch()) return true;
-		var el = doc.activeElement;
-		if (!el || !el.matches) return false;
-		try {
-			return el.matches(':focus-visible');
-		} catch (err) {
-			return false;   /* 老浏览器没有 :focus-visible: 触摸时不靠焦点展开 */
-		}
-	}
-
 	function cancelClose() { clearTimeout(closeTimer); }
 
-	function scheduleClose() {
-		cancelClose();
-		closeTimer = setTimeout(function () {
-			/* 焦点还在顶栏里就不收 */
-			if (header.contains(doc.activeElement) && doc.activeElement !== bar) return;
-			close();
-		}, CLOSE_DELAY);
-	}
-
+	/*
+	 * 顶栏只认"点击"(以及等价的键盘操作)。这里刻意**没有** hover 展开,
+	 * 也没有"聚焦就展开" —— 以前有, 结果手机上点一下会
+	 * mousedown→focus 先展开、同一个手势的 click 又 toggle 收起("弹一下马上收回")。
+	 * 现在展开只有一条路: 用户明确点/按一下; 收起靠 再点 / 点外面 / Esc / 路由变化 / 焦点离开。
+	 */
 	if (bar) {
-		bar.addEventListener('pointerenter', function () {
-			if (isTouch()) return;
-			cancelClose();
-			if (ready) open();
-		});
-		bar.addEventListener('focus', function () { if (ready && focusOpens()) open(); });
 		bar.addEventListener('click', function (e) {
 			e.preventDefault();
 			toggle();
@@ -186,18 +152,12 @@
 		});
 	}
 
-	header.addEventListener('pointerenter', function () {
-		if (isTouch()) return;
-		cancelClose();
-		closeTimer = setTimeout(function () { if (ready) open(); }, OPEN_HOVER_DELAY);
-	});
-	header.addEventListener('pointerleave', scheduleClose);
-	header.addEventListener('focusin', function () { cancelClose(); if (ready && focusOpens()) open(); });
+	header.addEventListener('focusin', cancelClose);
 	header.addEventListener('focusout', function () {
 		cancelClose();
 		closeTimer = setTimeout(function () {
 			if (!header.contains(doc.activeElement)) close();
-		}, 120);
+		}, CLOSE_DELAY);
 	});
 
 	function focusItem(index) {
@@ -226,6 +186,9 @@
 
 	doc.addEventListener('route:changed', function (e) {
 		var route = e.detail && e.detail.route;
+		/* 点完导航项就收起来 —— 没有 hover 收起之后, 这一步得自己做,
+		   否则面板会一直摊在新页面上 */
+		if (isOpen) close();
 		items.forEach(function (item) {
 			item.classList.toggle('is-active', item.getAttribute('data-route') === route);
 		});

@@ -185,7 +185,7 @@
 		}
 	},
 	"header": {
-		"hint": "Hover / click to expand"
+		"hint": "Click to expand"
 	},
 	"home": {
 		"card": {
@@ -263,7 +263,6 @@
 			"saveDisk": "Save disk",
 			"demo": "sample",
 			"load": "Load",
-			"run": "Run",
 			"pause": "Pause",
 			"step": "Step",
 			"over": "Step over",
@@ -279,7 +278,8 @@
 				"stack": "Stack (SP)",
 				"mem": "Memory dump",
 				"out": "Output",
-				"outHint": "port 0x00 / 0x01 writes land here"
+				"outHint": "port 0x00 / 0x01 writes land here",
+				"mon": "Mini display 256×256"
 			},
 			"memBase": "base",
 			"memFollow": "follow",
@@ -302,6 +302,18 @@
 			"menu": {
 				"title": "Arch32S vm",
 				"desc": "registers · memory · single step"
+			},
+			"quick": "quick",
+			"quickAria": "quick vm command input",
+			"autorun": "Auto-run",
+			"rateAria": "auto-run speed: instructions per second",
+			"ips": "ips",
+			"mon": {
+				"source": "display source",
+				"screen": "screen",
+				"buffer": "buffer",
+				"clear": "Clear",
+				"aria": "256 by 256 mini display"
 			}
 		}
 	},

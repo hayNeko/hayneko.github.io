@@ -21,6 +21,10 @@ py -3.13 as.py --demo fib -o rom.hvd            # 打印斐波那契数列
 py -3.13 as.py --demo fib3 -o rom.hvd           # 递归 fib(10)
 py -3.13 as.py --demo intr -o rom.hvd           # 中断 / IRET
 py -3.13 as.py --demo mem -o rom.hvd            # 内存与栈
+py -3.13 as.py --demo screen -o rom.hvd         # 256x256 显示屏：渐变点阵
+py -3.13 as.py --demo helloworld -o rom.hvd     # 5x7 方块字：第一行 HELLO、第二行 WORLD
+py -3.13 as.py --demo syscall-font -o rom.hvd   # SYSCALL 调用字体绘制库（初稿 723B）
+py -3.13 as.py --demo syscall-font-opt -o rom.hvd  # 最短编码优化版（650B，屏幕一致）
 
 # 2) 命令行运行模拟器
 py -3.13 vm.py --rom rom.hvd --mem 1024 --stats
@@ -62,8 +66,24 @@ python vm.py [--isa hayneko_arch32S-v1.json] [--rom rom.hvd] [--disk disk.hvd]
 | `0x01` | OUT | 以十进制输出 `ri` |
 | `0x02` | IN  | 从标准输入读取一个字节到 `ri` |
 | `0x10` | OUT | 以 `ri` 作为退出码停止虚拟机 |
+| `0x04` | OUT | 显示屏光标：`ri` 依次送出 4 个字节，大端拼字 = `[x, y, 空, 空]` |
+| `0x05` | OUT | 显示屏像素：`ri` 依次送出 4 个字节，大端拼字 = `[R, G, B, refresh]`，见下 |
 | `0x20` | OUT | 磁盘读扇区：`ri`=内存地址, `rd`=LBA(512B) |
 | `0x21` | OUT | 磁盘写扇区：`ri`=内存地址, `rd`=LBA(512B) |
+
+### 256x256 小型显示屏（`0x04`/`0x05`）
+
+`OUT` 每次只送 1 个字节，所以这两个端口各自维护一个**大端**移位寄存器，
+每收满 4 个字节拼成一个 32 位字：
+
+- `0x04 MNTRCONTROL`：第 1 字节 = x（0-255），第 0 字节 = y（0-255），高 2 字节空 —— 设置光标。
+- `0x05 MNTRCOLOR`：第 3 字节 = R，第 2 字节 = G，第 1 字节 = B，第 0 字节 = refresh。
+  refresh 为 `0x00` 时像素只存进缓冲区（不上屏），为 `0xFF` 时写进缓冲区**并立即刷新屏幕**
+  （算一帧），其余取值整帧丢弃。
+
+模拟器里状态在 `vm.monitor`：`buffer` / `screen`（都是 256×256×4 的 RGBA）、`x` / `y` / `frames`。
+`as.py --demo screen` 是现成的例子（画 32×32 渐变点阵，最后刷新一次）；
+`dbg.py` 右侧有对应的显示屏窗口。
 
 ---
 
@@ -71,14 +91,23 @@ python vm.py [--isa hayneko_arch32S-v1.json] [--rom rom.hvd] [--disk disk.hvd]
 
 ```
 python as.py 源码.asm -o rom.hvd [--list] [--no-pad]
-python as.py --demo hello|fib|fib3|intr|mem -o rom.hvd
+python as.py --demo hello|fib|fib3|intr|mem|screen|helloworld|syscall-font|syscall-font-opt -o rom.hvd
 ```
+
+**示例源码不在这个目录里**：全部放在仓库根的 `asmdemo/`（网页版读的是同一批文件），
+`as.py --demo <名字>` 就是去 `../asmdemo/<名字>.asm` 取源码；文件不在会直接报出路径。
+字体、显示屏总线、系统调用约定都写在 `asmdemo/README.md` 里。
 
 支持的语法：
 - 注释 `;` 或 `#`；标签 `名字:`；
 - 伪指令：`.org 地址`、`.equ 名字, 值`、`.db/.dw/.dd 值,...`、`.ascii "..."`；
 - 操作数：寄存器（`x0..x31/ra/rb/.../t7`）、立即数（十进制 / `0x` / `0b` / `'A'`）、
-  标签引用（相对分支/偏移自动按本指令地址计算）。
+  标签引用（相对分支/偏移自动按本指令地址计算）；
+- **NOP 系列（`NOP2`..`NOP15`）是填充指令**，操作数字段只是占位：
+  汇编时可以整体省略（`NOP15` → `80 0F 00…`，缺的字段按 0 编码），
+  也可以照常写全（`NOP15 ra, ra, ra, 0, 0, 0` → `80 1F 11 00…`）；
+  反汇编时只显示助记符（`80 1F 11 00…` → `NOP15`），调试器里这类行会淡化显示。
+  其他指令仍然要求操作数个数一致（`ADD ra, rb` 会报错）。
 
 ---
 
@@ -131,12 +160,25 @@ py -3.13 dbg.py --rom rom.hvd --mem 1024 [--entry 0] [--sp ...]
    起始地址为基准（分支目标 = 本指令地址 + 有符号偏移）。
 6. **ST 编码** `[OPC, SR1, DRG, OF8]`：SR1 字段是被存储的源寄存器（高半字节），
    DRG 字段是基址寄存器（低半字节），即 `mem32[GPR[DRG]+OF8] = GPR[SR1]`。
-7. **中断约定**：响应中断时压栈 `flags`、`ip`（ip 在栈顶）；处理程序地址 =
+7. **中断约定**：响应中断时压栈 `flags`、返回地址（返回地址在栈顶）；处理程序地址 =
    `mem32[idt_reg + vector*4]`；`IRET` 依次弹出 `ip`、`flags`。
+   返回地址分两种取值（本次修正：旧版两者都压当前的 `ip`）：
+   * 软件中断 `INT` / `BRK` / `SYSCALL`：**下一条指令**的地址
+     （`start_ip + len(raw)`，用 raw 长度是为了把前缀算进去）。旧版压的是 `INT` 自己，
+     `IRET` 之后又回到那条 `INT` —— 处理程序永远退不出来，`as.py --demo intr` 会死循环；
+     现在正常打印 2468 并 `HALT`。
+   * 异常（除零 / 越界 / 未定义指令）：**出错那条指令**的地址，处理程序可以修正后重试
+     （与 x86 的 fault 语义一致；只 `IRET` 不修就会再次触发，这是预期行为）。
 8. **SYSCALL** 等价于 `INT(SYSCALL_VECTOR)`，默认向量 `0x40`（可用 `--syscall-vector` 覆盖）。
 9. **HALT** 置位 halted 标志并停止执行（不自动触发 #HLT 中断）。
 10. **LD / ST 均为 32 位 (dword) 访存**。
 11. **相对分支偏移**使用 16 位有符号，目标 = 本指令地址 + 偏移（与第 5 条一致）。
+12. **高位寄存器与 REX**（本次修正）：`r16..r23` 与 `t0..t7`（即 24..31）的 4 位寄存器字段
+    放不下，汇编器会给这类指令自动加上 REX 前缀（`DRG/SR1/SR2/SR3` 的高位分别对应
+    `0x8/0x4/0x2/0x1`）；以前是直接 `& 0x0F`，`r20` 会被静默改成 `r4`。相应地
+    **PC 前进用含前缀的原始长度**（`len(dec.raw)`），`CALL/CALLR` 压的返回地址、
+    反汇编的前后扫描也一样 —— 否则带前缀的指令执行完会落进指令中间。
+    浮点字段（`DFR/SF*`）没有 REX 映射，写 `d0..d15` 会直接报错而不是静默回绕。
 
 ---
 

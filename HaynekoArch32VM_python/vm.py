@@ -65,7 +65,7 @@ FIELD_SIZES = {
     "DRG": 4, "SR1": 4, "SR2": 4, "SR3": 4,
     "DRC": 4, "SRC": 4,
     "DFR": 4, "SF1": 4, "SF2": 4, "SF3": 4,
-    "IM8": 8, "I16": 16, "I32": 32,
+    "IM8": 8, "IM16": 16, "I16": 16, "I32": 32,   # IM16: PUSHIMMW 用到, 以前漏登记
     "OF8": 8, "OF16": 16, "O16": 16, "O32": 32,
     "AD8": 8, "A16": 16, "A32": 32,
     "SCL": 4, "PRT": 8, "CR": 4,
@@ -124,6 +124,11 @@ PORT_CONSOLE_IN = 0x02     # IN : 从标准输入读一个字节到 ri
 PORT_QUIT = 0x10           # OUT: 以 ri 作为退出码停止虚拟机
 PORT_DISK_READ = 0x20      # OUT: ri=内存地址, rd=LBA, 读 512 字节扇区到内存
 PORT_DISK_WRITE = 0x21     # OUT: ri=内存地址, rd=LBA, 写 512 字节扇区到磁盘
+
+# 256x256 小型显示屏：每个端口按大端收 4 个字节拼成一个 32 位字
+PORT_MONITOR_CTRL = 0x04   # MNTRCONTROL: [x(第1字节), y(第0字节), 高2字节空]
+PORT_MONITOR_COLOR = 0x05  # MNTRCOLOR  : [R(第3), G(第2), B(第1), refresh(第0)]
+MONITOR_SIZE = 256         # 显示屏边长
 
 # 前缀编码
 PREFIX_REX = 0xE0          # 0xE0..0xEF
@@ -281,6 +286,12 @@ class Decoded:
         self.raw = raw
 
 
+def _is_padding_instruction(name):
+    """NOP2..NOP15（填充指令）：汇编时可以省略操作数，反汇编时也不显示它们。"""
+    name = str(name)
+    return name.startswith("NOP") and name[3:].isdigit()
+
+
 def _signed(value, bits):
     """对 bits 位宽的无符号值做符号扩展。"""
     sign = 1 << (bits - 1)
@@ -318,6 +329,7 @@ class VM:
         self.kernel = {"mode": 0, "status": 0, "ip": 0, "idt": 0}
         self.mode = 0                     # 当前特权级 L0..L7
         self.ip = self.entry
+        self._next_ip = self.entry       # 中断/异常入栈用的返回地址（step 里每步更新）
         self.flags = 0
         self.halted = False
         self.quit_code = 0
@@ -337,6 +349,8 @@ class VM:
         self._trace = False
         self._trace_limit = 0
         self._output_cb = None       # 控制台输出回调（GUI 调试器使用）
+        self._frame_cb = None        # 显示屏刷新回调（GUI 调试器使用）
+        self.monitor = self._new_monitor()
 
     # ------------------------------------------------------------------ 设备
     def _open_devices(self):
@@ -374,6 +388,8 @@ class VM:
         self.quit_code = 0
         self.instruction_count = 0
         self.ip = self.entry if entry is None else (entry & MASK32)
+        self._next_ip = self.ip
+        self.monitor = self._new_monitor()
         self.memory = bytearray(self.mem_size_bytes)
         self._load_rom()
         self.gpr[GPR_ID["sp"]] = self.sp_init
@@ -574,19 +590,94 @@ class VM:
             lba = self.gpr[GPR_ID["rd"]]
             chunk = bytes(self.memory[base:base + 512])
             self.write_disk(lba * 512, chunk)
+        elif port in (PORT_MONITOR_CTRL, PORT_MONITOR_COLOR):
+            self.monitor_byte(port, value)
         else:
             # 未定义端口：忽略
             pass
 
+    # -------------------------------------------------------- 小型显示屏总线
+    def _new_monitor(self):
+        """256x256 显示屏状态：buffer=写入的像素, screen=已经刷新上屏的像素。"""
+        return {
+            "size": MONITOR_SIZE,
+            "buffer": bytearray([0, 0, 0, 255] * (MONITOR_SIZE * MONITOR_SIZE)),
+            "screen": bytearray([0, 0, 0, 255] * (MONITOR_SIZE * MONITOR_SIZE)),
+            "x": 0, "y": 0, "frames": 0, "refresh_at": 0,
+            "shift": [0, 0],       # 两个端口各自的大端移位寄存器
+            "pending": [0, 0],     # 已收到的字节数
+            "word_ctrl": 0, "word_color": 0,
+        }
+
+    def monitor_byte(self, port, byte):
+        """OUT 每次送 1 个字节；同一端口每收满 4 个字节按大端拼成一个字。
+
+        MNTRCONTROL: [x(第1字节), y(第0字节), 高 2 字节空] -> 设置光标
+        MNTRCOLOR  : [R(第3), G(第2), B(第1), refresh(第0)]
+                     refresh 0x00 -> 只写缓冲区；0xFF -> 写缓冲区并立即刷新；其余丢弃
+        """
+        mon = self.monitor
+        index = 0 if port == PORT_MONITOR_CTRL else 1
+        mon["shift"][index] = ((mon["shift"][index] << 8) | (byte & MASK8)) & MASK32
+        mon["pending"][index] += 1
+        if mon["pending"][index] < 4:
+            return
+        mon["pending"][index] = 0
+        word = mon["shift"][index]
+        if port == PORT_MONITOR_CTRL:
+            mon["word_ctrl"] = word
+            mon["x"] = (word >> 8) & MASK8      # 第1字节 = x
+            mon["y"] = word & MASK8             # 第0字节 = y
+            return
+        mon["word_color"] = word
+        refresh = word & MASK8
+        if refresh not in (0x00, 0xFF):
+            return                              # 未定义 -> 丢弃
+        r = (word >> 24) & MASK8
+        g = (word >> 16) & MASK8
+        b = (word >> 8) & MASK8
+        off = ((mon["y"] * MONITOR_SIZE) + mon["x"]) * 4
+        mon["buffer"][off] = r
+        mon["buffer"][off + 1] = g
+        mon["buffer"][off + 2] = b
+        mon["buffer"][off + 3] = 255
+        if refresh == 0xFF:
+            self.monitor_flush()
+
+    def monitor_flush(self):
+        """把缓冲区贴到屏幕上（一次刷新算一帧）。"""
+        mon = self.monitor
+        mon["screen"][:] = mon["buffer"]
+        mon["frames"] += 1
+        mon["refresh_at"] = self.instruction_count
+        if self._frame_cb is not None:
+            self._frame_cb(mon)
+
+    def monitor_clear(self):
+        """清屏（缓冲与屏幕都清成黑色），调试器用。"""
+        mon = self.monitor
+        mon["buffer"] = bytearray([0, 0, 0, 255] * (MONITOR_SIZE * MONITOR_SIZE))
+        mon["screen"] = bytearray([0, 0, 0, 255] * (MONITOR_SIZE * MONITOR_SIZE))
+        mon["x"] = mon["y"] = 0
+        mon["pending"] = [0, 0]
+        mon["shift"] = [0, 0]
+
     # ------------------------------------------------------------------ 中断
     def _interrupt(self, vector, from_exception=False):
-        """响应中断/异常：压栈 flags、ip，跳转到 IDT 处理程序。"""
+        """响应中断/异常：压栈 flags、返回地址，跳转到 IDT 处理程序。
+
+        返回地址（栈顶）的取值：
+          * 软件中断 INT / BRK / SYSCALL：**下一条指令**的地址。以前压的是 INT
+            自己的地址，IRET 之后又回到 INT，处理程序永远退不出来（无限循环）。
+          * 异常（除零 / 越界 / 未定义指令，from_exception=True）：出错的那条
+            指令的地址，处理程序可以自行修正后重试（x86 的 fault 语义）。
+        """
         idt = self.kernel["idt"]
         if idt == 0 or idt >= self.mem_size_bytes:
             raise RuntimeError(f"IDT 未配置 (idt=0x{idt:X})，无法响应中断向量 {vector}")
         handler = self.read_mem32(idt + vector * 4)
         self.push32(self.flags)
-        self.push32(self.ip)
+        self.push32(self.ip if from_exception else self._next_ip)
         self.ip = handler & MASK32
         self._jumped = True
 
@@ -708,7 +799,7 @@ class VM:
                 dec = self.disasm(a)
             except VMError:
                 continue
-            if a + dec.length == addr:
+            if a + len(dec.raw) == addr:
                 return a
         return None
 
@@ -730,7 +821,7 @@ class VM:
             try:
                 dec = self.disasm(addr)
                 lines.append((addr, dec))
-                addr += dec.length
+                addr += len(dec.raw)
             except VMError:
                 lines.append((addr, None))
                 addr += 1
@@ -809,6 +900,8 @@ class VM:
             return False
         self._jumped = False
         dec = self.fetch_decode()
+        # 中断入栈用的"下一条指令"地址（raw 含前缀，所以用它而不是 dec.length）
+        self._next_ip = (dec.start_ip + len(dec.raw)) & MASK32
 
         if self._trace and (self._trace_limit == 0 or self.instruction_count < self._trace_limit):
             self._print_trace(dec)
@@ -829,7 +922,8 @@ class VM:
             self._fault(INT_UDI, str(e))
 
         if not self._jumped:
-            self.ip += dec.length
+            # 用 raw 长度（含 REX 等前缀）；dec.length 只是指令本体长度
+            self.ip += len(dec.raw)
         self.instruction_count += 1
         return not self.halted
 
@@ -857,6 +951,9 @@ class VM:
         print(line)
 
     def _format_operands(self, inst, fields):
+        # NOP2..NOP15 是"填充"指令：操作数字段只是占位，反汇编只显示助记符
+        if _is_padding_instruction(inst.name):
+            return f"{inst.name:12} "
         parts = []
         for token in inst.format:
             if token == "OPC":
@@ -938,11 +1035,11 @@ class InstructionHandlers(VM):
         self._jump(dec.fields["A32"])
 
     def _i_CALL(self, dec):
-        self.push32(dec.start_ip + dec.length)
+        self.push32(dec.start_ip + len(dec.raw))
         self._jump(dec.fields["A16"])
 
     def _i_CALLR(self, dec):
-        self.push32(dec.start_ip + dec.length)
+        self.push32(dec.start_ip + len(dec.raw))
         self._jump(self.read_gpr(dec.fields["DRG"]))
 
     def _i_RET(self, dec):

@@ -34,7 +34,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 
 from vm import (ISA, HaynekoVM, GPR_NAMES, CR_NAMES, GPR_ID, VMError,
-                HaltSignal, _default_rom)
+                HaltSignal, _default_rom, _is_padding_instruction)
 
 # 反汇编/寄存器面板中展示的标志位顺序
 FLAG_DISPLAY = ["zf", "cf", "of", "nf", "df", "if", "be", "ac"]
@@ -43,6 +43,7 @@ FLAG_DISPLAY = ["zf", "cf", "of", "nf", "df", "if", "be", "ac"]
 C_BG = "#1e1e1e"
 C_PANEL = "#252526"
 C_TEXT = "#dcdcdc"
+C_PAD = "#6f7c8a"           # NOP 系列（填充指令）的淡化色
 C_DIM = "#9c9c9c"
 C_REGNAME = "#4fc1ff"
 C_REGVAL = "#ffffff"
@@ -253,7 +254,10 @@ class DisasmWidget(QtWidgets.QWidget):
                 bytes_item.setForeground(QtGui.QBrush(QtGui.QColor("#7f9f7f")))
                 insn_item = QtWidgets.QTableWidgetItem(
                     vm._format_operands(dec.inst, dec.fields))
-            insn_item.setForeground(QtGui.QBrush(QtGui.QColor(C_TEXT)))
+            # NOP 系列（填充指令）淡化显示，和网页版的 .is-pad 一致
+            insn_color = (C_PAD if dec is not None and _is_padding_instruction(dec.inst.name)
+                          else C_TEXT)
+            insn_item.setForeground(QtGui.QBrush(QtGui.QColor(insn_color)))
             self.table.setItem(r, 0, bp_item)
             self.table.setItem(r, 1, addr_item)
             self.table.setItem(r, 2, bytes_item)
@@ -524,6 +528,47 @@ class DumpWidget(QtWidgets.QWidget):
 
 
 # ---------------------------------------------------------------------------
+# 256x256 小型显示屏（port 0x04 / 0x05）
+# ---------------------------------------------------------------------------
+
+class MonitorWidget(QtWidgets.QWidget):
+    """把 vm.monitor["screen"]（已刷新的帧）画出来。"""
+
+    SIZE = 256
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        gb = QtWidgets.QGroupBox("显示屏 256x256 (port 0x04 / 0x05)")
+        self.view = QtWidgets.QLabel()
+        self.view.setFixedSize(self.SIZE, self.SIZE)
+        self.view.setStyleSheet("background:#000;border:1px solid #3a3a3a;")
+        self.info = QtWidgets.QLabel("0, 0   #0")
+        self.info.setFont(QtGui.QFont(MONO, 10))
+        self.info.setStyleSheet(f"color:{C_DIM};")
+
+        row = QtWidgets.QVBoxLayout()
+        row.setContentsMargins(6, 6, 6, 6)
+        row.setSpacing(4)
+        row.addWidget(self.view)
+        row.addWidget(self.info)
+        row.addStretch(1)
+        lay = QtWidgets.QVBoxLayout(gb)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.addLayout(row)
+        outer = QtWidgets.QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(gb)
+
+    def refresh(self, vm):
+        mon = vm.monitor
+        data = bytes(mon["screen"])          # RGBA, 256*256*4
+        image = QtGui.QImage(data, self.SIZE, self.SIZE, self.SIZE * 4,
+                             QtGui.QImage.Format_RGBA8888)
+        self.view.setPixmap(QtGui.QPixmap.fromImage(image))
+        self.info.setText(f"{mon['x']}, {mon['y']}   #{mon['frames']} frames")
+
+
+# ---------------------------------------------------------------------------
 # 输出 / 日志
 # ---------------------------------------------------------------------------
 
@@ -572,6 +617,7 @@ class DebuggerWindow(QtWidgets.QMainWindow):
     def _build_ui(self):
         self.cpu = DisasmWidget(lambda: self.vm, self.breakpoints)
         self.cpu.bp_toggled.connect(self._toggle_bp)
+        self.monitor = MonitorWidget()
         self.regs = RegistersWidget()
         self.stack = StackWidget()
         self.dump = DumpWidget()
@@ -581,11 +627,12 @@ class DebuggerWindow(QtWidgets.QMainWindow):
 
         # 右侧面板（寄存器/栈/转储）：限宽 ~580px，避免挤占反汇编窗口
         right = ClampedSplitter(580)
+        right.addWidget(self.monitor)
         right.addWidget(self.regs)
         right.addWidget(self.stack)
         right.addWidget(self.dump)
         hsplit.addWidget(right)
-        right.setSizes([200, 400, 200])
+        right.setSizes([290, 200, 300, 200])
         hsplit.setStretchFactor(0, 6)
         hsplit.setStretchFactor(1, 1)
         hsplit.setSizes([820, 580])
@@ -647,6 +694,7 @@ class DebuggerWindow(QtWidgets.QMainWindow):
         self.regs.refresh(self.vm)
         self.stack.refresh(self.vm)
         self.dump.refresh(self.vm)
+        self.monitor.refresh(self.vm)
         self._flush_output()
         self.statusBar().showMessage(
             f"ip=0x{self.vm.ip:08X}  halted={self.vm.halted}  "
@@ -690,7 +738,7 @@ class DebuggerWindow(QtWidgets.QMainWindow):
             return
         dec = self.vm.disasm(self.vm.ip)
         if dec.inst.name in ("CALL", "CALLR"):
-            target = self.vm.ip + dec.length
+            target = self.vm.ip + len(dec.raw)   # raw 含 REX 等前缀
             self._start_runner(
                 lambda: self.vm.ip == target, "跳过调用完成")
         else:

@@ -33,7 +33,12 @@
 
 	<!-- ===================== 调试工具栏 ===================== -->
 	<div class="vm-toolbar" role="toolbar" aria-label="debug controls">
-		<button type="button" class="vm-btn vm-btn--run" data-vm-act="run" data-key="F9">▶ <span i18n-key="lab.vm.run">Run</span></button>
+		<button type="button" class="vm-btn vm-btn--run" data-vm-act="run" data-key="F9">▶ <span i18n-key="lab.vm.autorun">Auto-run</span></button>
+		<label class="vm-rate">
+			<input class="vm-input vm-input--rate" data-vm-rate type="number" min="1" max="100000" step="1" value="1000"
+				aria-label="instructions per second" i18n-attr="aria-label" i18n-key="lab.vm.rateAria">
+			<span class="vm-rate__unit" i18n-key="lab.vm.ips">ips</span>
+		</label>
 		<button type="button" class="vm-btn" data-vm-act="pause" disabled>⏸ <span i18n-key="lab.vm.pause">Pause</span></button>
 		<button type="button" class="vm-btn" data-vm-act="step" data-key="F7">⤵ <span i18n-key="lab.vm.step">Step</span></button>
 		<button type="button" class="vm-btn" data-vm-act="over" data-key="F8">⤴ <span i18n-key="lab.vm.over">Step over</span></button>
@@ -44,13 +49,59 @@
 	</div>
 
 	<!-- ===================== 面板 ===================== -->
+	<!-- 左列 = 快捷输入 + 反汇编 + 输出（输出的底边与右列内存转储的底边对齐）
+	     右列 = 寄存器 / 栈 / 内存转储 -->
 	<div class="vm-grid">
-		<section class="vm-panel vm-panel--dis">
+		<div class="vm-col vm-col--main">
+			<!-- 快捷输入：不用滚到底部终端就能敲命令 -->
+			<form class="vm-quick" data-vm-quick>
+				<span class="vm-quick__tag" i18n-key="lab.vm.quick">quick</span>
+				<span class="vm-quick__ps1" aria-hidden="true">vm$</span>
+				<input class="vm-quick__input" data-vm-quick-input type="text" spellcheck="false"
+					autocomplete="off" placeholder="vm vm1 inst nop · vm vm1 step · vm vm1 demo fib"
+					aria-label="quick command" i18n-attr="aria-label" i18n-key="lab.vm.quickAria">
+				<span class="vm-quick__out" data-vm-quick-out></span>
+			</form>
+
+			<section class="vm-panel vm-panel--dis">
+				<header class="vm-panel__head">
+					<span i18n-key="lab.vm.panel.disasm">Disassembly</span>
+					<span class="vm-panel__hint" i18n-key="lab.vm.panel.disasmHint">click a row to toggle a breakpoint</span>
+				</header>
+				<ol class="vm-dis" data-vm-dis></ol>
+			</section>
+
+			<section class="vm-panel vm-panel--out">
+				<header class="vm-panel__head">
+					<span i18n-key="lab.vm.panel.out">Output</span>
+					<span class="vm-panel__hint" i18n-key="lab.vm.panel.outHint">port 0x00 / 0x01 writes land here</span>
+				</header>
+				<pre class="vm-out" data-vm-out></pre>
+			</section>
+		</div>
+
+		<div class="vm-col vm-col--side">
+		<!-- 256x256 小型显示屏：port 0x04 / 0x05 -->
+		<section class="vm-panel vm-panel--mon">
 			<header class="vm-panel__head">
-				<span i18n-key="lab.vm.panel.disasm">Disassembly</span>
-				<span class="vm-panel__hint" i18n-key="lab.vm.panel.disasmHint">click a row to toggle a breakpoint</span>
+				<span i18n-key="lab.vm.panel.mon">Mini display 256×256</span>
+				<span class="vm-mon-ctl">
+					<select class="vm-select vm-select--sm" data-vm-mon-mode
+						aria-label="display source" i18n-attr="aria-label" i18n-key="lab.vm.mon.source">
+						<option value="screen" i18n-key="lab.vm.mon.screen">screen</option>
+						<option value="buffer" i18n-key="lab.vm.mon.buffer">buffer</option>
+					</select>
+					<button type="button" class="vm-btn" data-vm-act="mon-clear" i18n-key="lab.vm.mon.clear">Clear</button>
+				</span>
 			</header>
-			<ol class="vm-dis" data-vm-dis></ol>
+			<div class="vm-mon">
+				<canvas class="vm-mon__canvas" data-vm-mon width="256" height="256"
+					aria-label="256 by 256 mini display" i18n-attr="aria-label" i18n-key="lab.vm.mon.aria"></canvas>
+				<div class="vm-mon__meta">
+					<span data-vm-mon-cursor>x, y</span>
+					<span data-vm-mon-frames>#0</span>
+				</div>
+			</div>
 		</section>
 
 		<section class="vm-panel vm-panel--regs">
@@ -82,14 +133,7 @@
 			</header>
 			<ol class="vm-mem" data-vm-mem></ol>
 		</section>
-
-		<section class="vm-panel vm-panel--out">
-			<header class="vm-panel__head">
-				<span i18n-key="lab.vm.panel.out">Output</span>
-				<span class="vm-panel__hint" i18n-key="lab.vm.panel.outHint">port 0x00 / 0x01 writes land here</span>
-			</header>
-			<pre class="vm-out" data-vm-out></pre>
-		</section>
+		</div>
 	</div>
 
 	<!-- ===================== 上传的文件 ===================== -->

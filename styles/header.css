@@ -1,5 +1,5 @@
 /* ============================================================================
-   header.css — 顶部栏 + 悬停展开导航 + smear 动效
+   header.css — 顶部栏 + 点击展开导航 + smear 动效
    ========================================================================== */
 
 .site-header {
@@ -21,6 +21,8 @@
 	padding: 0 var(--gutter);
 	font-size: 13px;
 	color: var(--fg-dim);
+	/* 整条顶栏是"点击展开"的开关(见 header-nav.js), 给个手型光标 */
+	cursor: pointer;
 	background: linear-gradient(180deg, rgba(6, 10, 15, 0.94), rgba(6, 10, 15, 0.72));
 	border-bottom: 1px solid var(--line);
 	backdrop-filter: blur(12px) saturate(130%);

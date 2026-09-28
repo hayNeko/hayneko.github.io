@@ -35,9 +35,12 @@ import sys
 # 复用 vm.py 的字段定义与寄存器表
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from vm import FIELD_SIZES, FOUR_BIT_FIELDS, NIBBLE_LITERALS, GPR_ID, \
-    FPR_ID, CR_ID, ISA
+    FPR_ID, CR_ID, ISA, _is_padding_instruction
 
 ROM_SIZE = 1024
+
+# REX 前缀能扩展的寄存器字段（与 vm.VM._apply_rex 的映射一致）
+REX_BITS = {"DRG": 0x8, "SR1": 0x4, "SR2": 0x2, "SR3": 0x1}
 
 
 class AsmError(Exception):
@@ -149,7 +152,9 @@ class Assembler:
             inst, exact = self._find_inst(mnemonic, rest)
             if inst is None:
                 raise AsmError(f"未知指令 {mnemonic} (行 {lineno})")
-            pc += inst.format_length
+            # 用了 r16..r23 / t0..t7 会多一个 REX 前缀字节，算标签地址时必须算上
+            operands = [] if exact else split_operands(rest)
+            pc += inst.format_length + (1 if self._needs_rex(inst, operands) else 0)
 
     def _resolve(self, tok, pc):
         tok = tok.strip()
@@ -167,6 +172,22 @@ class Assembler:
             return int(tok, 10)
         except ValueError:
             raise AsmError(f"无法解析值: {tok}")
+
+    @staticmethod
+    def _needs_rex(inst, operands):
+        """这条指令的寄存器操作数里有没有 >= 16 的（有就得加 REX 前缀）。"""
+        order = []
+        for token in inst.format:
+            if token == "OPC" or token == "SOP" or token in NIBBLE_LITERALS:
+                continue
+            order.append(token)
+        for token, tok in zip(order, operands):
+            if token not in REX_BITS:
+                continue
+            index = GPR_ID.get(str(tok).lower())
+            if index is not None and index >= 16:
+                return True
+        return False
 
     # ---------------- 第二遍：编码
     def _pass2(self):
@@ -228,14 +249,17 @@ class Assembler:
                 continue
             field_order.append(token)
 
-        if len(field_order) != len(operands):
+        # NOP 系列（填充指令）允许少写操作数：缺的字段一律按数值 0 编码 —— 直接写 NOP15 就够了
+        padding = _is_padding_instruction(inst.name) and len(operands) < len(field_order)
+        if not padding and len(field_order) != len(operands):
             raise AsmError(
                 f"{inst.name} 需要 {len(field_order)} 个操作数，"
                 f"实际 {len(operands)} 个 (行 {lineno})")
 
         fields = {"SOP": inst.sub_opcode}
-        for token, tok in zip(field_order, operands):
-            fields[token] = self._resolve_field(token, tok, pc, lineno)
+        for i, token in enumerate(field_order):
+            fields[token] = (0 if i >= len(operands)
+                             else self._resolve_field(token, operands[i], pc, lineno))
 
         return self._emit(inst, fields)
 
@@ -254,6 +278,9 @@ class Assembler:
             num, kind = self._parse_reg(tok, FPR_ID)
             if kind != "reg":
                 raise AsmError(f"{token} 需要浮点寄存器 (行 {lineno})")
+            if num >= 16:
+                raise AsmError(
+                    f"{token} 暂不支持 d0..d15（REX 只扩展 DRG/SR1/SR2/SR3）(行 {lineno})")
             return num
         if token == "SCL":
             return self._resolve(tok, pc) & 0xF
@@ -285,7 +312,17 @@ class Assembler:
         return 0, "none"
 
     def _emit(self, inst, fields):
-        out = bytearray([inst.opcode])
+        # 寄存器号 >= 16 时自动加 REX 前缀（DRG/SR1/SR2/SR3 的高位放在 0x8/0x4/0x2/0x1）。
+        # 以前这里直接把寄存器号 & 0x0F，r20 会被静默改成 r4 —— 高位寄存器根本没法用。
+        rex = 0
+        for name, bit in REX_BITS.items():
+            index = fields.get(name)
+            if index is None:
+                continue
+            if index >= 16:
+                rex |= bit
+                fields[name] = index & 0x0F
+        out = bytearray([0xE0 | rex, inst.opcode]) if rex else bytearray([inst.opcode])
         pending = None
         for token in inst.format:
             if token == "OPC":
@@ -322,112 +359,26 @@ class Assembler:
 # 内置示例
 # ---------------------------------------------------------------------------
 
-DEMO_PROGRAMS = {
-    "hello": """
-; 使用端口输出字符 'H' 'i' '!'，然后 HALT
-        .org 0x0000
-start:
-        IMMB    ri, 'H'      ; ri = 'H'
-        OUT     0x00         ; 输出字符
-        IMMB    ri, 'i'
-        OUT     0x00
-        IMMB    ri, '!'
-        OUT     0x00
-        IMMB    ri, 10       ; 换行
-        OUT     0x00
-        HALT
-""",
-    "fib": """
-; 计算并打印前 12 个斐波那契数（每行一个）
-        .org 0x0000
-start:
-        IMM     ra, 0        ; a = 0
-        IMM     rb, 1        ; b = 1
-        IMM     rc, 12       ; 计数
-loop:
-        MOV     ri, ra       ; ri = a
-        OUT     0x01         ; 打印整数
-        IMMB    ri, 10
-        OUT     0x00         ; 换行
-        ADD     r8, ra, rb   ; r8 = a + b
-        MOV     ra, rb
-        MOV     rb, r8
-        SUBIB   rc, rc, 1    ; rc = rc - 1
-        JNZ     loop
-        HALT
-""",
-    "fib3": """
-; 用 CALL/RET + 栈 实现递归斐波那契 fib(10)，并打印
-; 递归 fib: n 在 rb，结果在 ra
-        .org 0x0000
-main:
-        IMMB    rb, 10       ; n = 10
-        CALL    fib
-        MOV     ri, ra       ; 结果 -> ri
-        OUT     0x01         ; 打印
-        IMMB    ri, 10
-        OUT     0x00
-        HALT
+DEMO_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "asmdemo"))
 
-fib:                        ; 保存被调用者使用的寄存器
-        PUSH    rb
-        PUSH    rc
-        IMMB    r8, 2
-        CMP     rb, r8       ; 比较 n 与 2
-        JC      base         ; n < 2 -> base
-        MOV     rc, rb       ; 保存 n
-        SUBIB   rb, rb, 1    ; fib(n-1)
-        CALL    fib
-        PUSH    ra           ; 暂存 fib(n-1)（避免被后续调用覆盖）
-        SUBIB   rb, rc, 2    ; fib(n-2)
-        CALL    fib
-        POP     r9           ; r9 = fib(n-1)
-        ADD     ra, r9, ra   ; ra = fib(n-1) + fib(n-2)
-        JMP     done
-base:
-        MOV     ra, rb       ; fib(0)=0, fib(1)=1
-done:
-        POP     rc
-        POP     rb
-        RET
-""",
-    "intr": """
-; 中断演示：设置 IDT，触发 INT，处理器进入中断处理并 IRET
-        .org 0x0000
-start:
-        SETIDT  idt          ; IDT 寄存器 = idt 表地址
-        MODIDT  0, handler   ; idt[0] = handler (向量 0 = #BRK)
-        IMM     ra, 1234
-        INT     0            ; 触发向量 0
-        MOV     ri, ra
-        OUT     0x01
-        HALT
-handler:                      ; 中断处理程序：ra *= 2
-        ADD     ra, ra, ra
-        IRET
-idt:
-""",
-    "mem": """
-; 内存与栈演示：LEA / LD / ST / PUSH / POP
-        .org 0x0000
-start:
-        IMM     rb, 0x1000    ; 缓冲区基址
-        IMM     ra, 0x11223344
-        ST      ra, rb, 0     ; [rb+0] = ra
-        LEA     r8, rb, 4     ; r8 = rb + 4
-        ST      ra, r8, 0     ; [r8] = ra
-        LD      rd, r8, 0     ; rd = [r8]
-        MOV     ri, rd
-        OUT     0x01
-        IMMB    ri, 10
-        OUT     0x00
-        PUSH    ra            ; 压栈
-        POP     r9            ; 弹栈
-        MOV     ri, r9
-        OUT     0x01
-        HALT
-""",
-}
+# 示例源码都在仓库的 asmdemo/ 目录里（网页版读的是同一批文件）
+DEMO_LIST = ["hello", "fib", "fib3", "intr", "mem", "screen", "helloworld",
+             "syscall-font", "syscall-font-opt"]
+
+
+def demo_path(name):
+    """asmdemo/<name>.asm 的绝对路径。"""
+    return os.path.join(DEMO_DIR, str(name) + ".asm")
+
+
+def load_demo(name):
+    """读取一份示例源码；文件不在就报清楚路径。"""
+    path = demo_path(name)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return fh.read()
+    except OSError as exc:
+        raise SystemExit(f"找不到示例 {name}: {path} ({exc})")
 
 
 def main(argv=None):
@@ -439,7 +390,7 @@ def main(argv=None):
     parser.add_argument("--isa", default="hayneko_arch32S-v1.json",
                         help="ISA 定义文件")
     parser.add_argument("--demo", default=None,
-                        choices=list(DEMO_PROGRAMS.keys()),
+                        choices=DEMO_LIST,
                         help="使用内置示例程序")
     parser.add_argument("--no-pad", action="store_true",
                         help="不把输出补齐到 1024 字节")
@@ -450,7 +401,7 @@ def main(argv=None):
         with open(args.source, "r", encoding="utf-8") as f:
             source = f.read()
     elif args.demo:
-        source = DEMO_PROGRAMS[args.demo]
+        source = load_demo(args.demo)
     else:
         parser.error("需要提供源文件或 --demo")
 

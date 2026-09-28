@@ -88,6 +88,10 @@
 	var PORT_QUIT = 0x10;
 	var PORT_DISK_READ = 0x20;
 	var PORT_DISK_WRITE = 0x21;
+	/* 256x256 小型显示屏（每个端口按大端收 4 个字节组成一个字） */
+	var PORT_MONITOR_CTRL = 0x04;     /* MNTRCONTROL: [x(第1字节), y(第0字节), 高2字节空] */
+	var PORT_MONITOR_COLOR = 0x05;    /* MNTRCOLOR  : [R(第3), G(第2), B(第1), refresh(第0)] */
+	var MONITOR_SIZE = 256;
 
 	var PREFIX_REX = 0xE0;
 	var PREFIX_ISL = 0xD0;
@@ -291,6 +295,7 @@
 		this.kernel = { mode: 0, status: 0, ip: 0, idt: 0 };
 		this.mode = 0;
 		this.ip = this.entry;
+		this.nextIp = this.entry;    /* 中断入栈用的返回地址（step 里每步更新） */
 		this.flags = 0;
 		this.halted = false;
 		this.quitCode = 0;
@@ -312,7 +317,33 @@
 		this.stdin = [];               /* 端口 0x02 的输入队列 */
 		this.onOutput = null;          /* 控制台输出回调 */
 		this.onTrace = null;           /* 逐条跟踪回调（调试器可选） */
+		this.onFrame = null;           /* 显示屏刷新回调 */
+		this.monitor = this._newMonitor();
 	}
+
+	VM.prototype._newMonitor = function () {
+		var pixels = MONITOR_SIZE * MONITOR_SIZE * 4;
+		var buffer = new Uint8ClampedArray(pixels);
+		var screen = new Uint8ClampedArray(pixels);
+		for (var i = 0; i < pixels; i += 4) {
+			buffer[i + 3] = 255;
+			screen[i + 3] = 255;
+		}
+		return {
+			width: MONITOR_SIZE,
+			height: MONITOR_SIZE,
+			buffer: buffer,            /* 写入的像素（未刷新也在这里） */
+			screen: screen,            /* 已经刷新上屏的像素 */
+			x: 0,
+			y: 0,
+			frames: 0,
+			refreshAt: 0,
+			shift: [0, 0],             /* 两个端口各自的大端移位寄存器 */
+			pending: [0, 0],           /* 已收到的字节数 */
+			wordCtrl: 0,
+			wordColor: 0
+		};
+	};
 
 	/* ------------------------------------------------------------ ROM/磁盘 */
 
@@ -346,10 +377,12 @@
 		this.instructionCount = 0;
 		this.lastError = null;
 		this.ip = (entry === undefined || entry === null) ? this.entry : u32(entry);
+		this.nextIp = this.ip;
 		this.memory = new Uint8Array(this.memSizeBytes);
 		this.memory.set(this.romBytes.subarray(0, Math.min(ROM_SIZE, this.memSizeBytes)));
 		this.gpr[GPR_ID.sp] = this.spInit;
 		this.jumped = false;
+		this.monitor = this._newMonitor();
 	};
 
 	/* -------------------------------------------------------------- 寄存器 */
@@ -565,13 +598,82 @@
 			var wlba = this.gpr[GPR_ID.rd];
 			var chunk = this.memory.slice(u32(wbase), u32(wbase) + 512);
 			this.writeDisk(u32(wlba * 512), chunk);
+		} else if (port === PORT_MONITOR_CTRL || port === PORT_MONITOR_COLOR) {
+			this.monitorByte(port, value);
 		}
 		/* 未定义端口：忽略 */
 	};
 
+	/* ------------------------------------------------------------ 小型显示屏 */
+
+	/**
+	 * 显示屏总线：OUT 每次送 1 个字节，同一端口每收满 4 个字节按**大端**拼成一个 32 位字。
+	 *   MNTRCONTROL (0x04): [x(第1字节), y(第0字节), 高 2 字节空] —— 设置光标
+	 *   MNTRCOLOR   (0x05): [R(第3字节), G(第2字节), B(第1字节), refresh(第0字节)]
+	 *     refresh = 0x00 -> 只写进缓冲区（不上屏）
+	 *     refresh = 0xFF -> 写进缓冲区并立即刷新屏幕
+	 *     其他值          -> 整帧数据丢弃
+	 */
+	VM.prototype.monitorByte = function (port, byte) {
+		var mon = this.monitor;
+		var index = port === PORT_MONITOR_CTRL ? 0 : 1;
+		mon.shift[index] = u32((mon.shift[index] << 8) | (byte & MASK8));
+		mon.pending[index] += 1;
+		if (mon.pending[index] < 4) return;
+		mon.pending[index] = 0;
+		var word = mon.shift[index];
+		if (port === PORT_MONITOR_CTRL) {
+			mon.wordCtrl = word;
+			mon.x = (word >>> 8) & MASK8;      /* 第1字节 = x */
+			mon.y = word & MASK8;              /* 第0字节 = y */
+			return;
+		}
+		mon.wordColor = word;
+		var refresh = word & MASK8;
+		if (refresh !== 0x00 && refresh !== 0xFF) return;   /* 未定义 -> 丢弃 */
+		var r = (word >>> 24) & MASK8;
+		var g = (word >>> 16) & MASK8;
+		var b = (word >>> 8) & MASK8;
+		var off = ((mon.y * MONITOR_SIZE) + mon.x) * 4;
+		mon.buffer[off] = r;
+		mon.buffer[off + 1] = g;
+		mon.buffer[off + 2] = b;
+		mon.buffer[off + 3] = 255;
+		if (refresh === 0xFF) this.monitorFlush();
+	};
+
+	VM.prototype.monitorFlush = function () {
+		var mon = this.monitor;
+		mon.screen.set(mon.buffer);
+		mon.frames += 1;
+		mon.refreshAt = this.instructionCount;
+		if (this.onFrame) this.onFrame(mon);
+	};
+
+	/** 清屏（缓冲与屏幕都清成黑色），调试器用 */
+	VM.prototype.monitorClear = function () {
+		var mon = this.monitor;
+		for (var i = 0; i < mon.buffer.length; i += 4) {
+			mon.buffer[i] = 0;
+			mon.buffer[i + 1] = 0;
+			mon.buffer[i + 2] = 0;
+			mon.buffer[i + 3] = 255;
+			mon.screen[i] = 0;
+			mon.screen[i + 1] = 0;
+			mon.screen[i + 2] = 0;
+			mon.screen[i + 3] = 255;
+		}
+		mon.x = 0;
+		mon.y = 0;
+		mon.pending[0] = 0;
+		mon.pending[1] = 0;
+		mon.shift[0] = 0;
+		mon.shift[1] = 0;
+	};
+
 	/* ----------------------------------------------------------------- 中断 */
 
-	VM.prototype.interrupt = function (vector) {
+	VM.prototype.interrupt = function (vector, fromException) {
 		var idt = this.kernel.idt;
 		if (idt === 0 || idt >= this.memSizeBytes) {
 			/* vm.py 在这里抛的是 RuntimeError（不参与 VMError 的异常路由），保持一致 */
@@ -582,7 +684,9 @@
 		}
 		var handler = this.readMem32(u32(idt + vector * 4));
 		this.push32(this.flags);
-		this.push32(this.ip);
+		/* 软件中断压"下一条指令"的地址（否则 IRET 回到 INT 自己 → 死循环）；
+		   异常压出错那条指令的地址，处理程序可以修正后重试（x86 fault 语义） */
+		this.push32(fromException ? this.ip : this.nextIp);
 		this.ip = u32(handler);
 		this.jumped = true;
 	};
@@ -590,7 +694,7 @@
 	VM.prototype.fault = function (vector, message) {
 		var idt = this.kernel.idt;
 		if (idt !== 0 && idt < this.memSizeBytes) {
-			this.interrupt(vector);
+			this.interrupt(vector, true);
 			return 'routed';
 		}
 		this.halted = true;
@@ -736,7 +840,7 @@
 		for (var a = addr - 1; a >= low; a--) {
 			var dec;
 			try { dec = this.disasm(a); } catch (err) { continue; }
-			if (a + dec.length === addr) return a;
+			if (a + dec.raw.length === addr) return a;
 		}
 		return null;
 	};
@@ -760,7 +864,7 @@
 			var dec = null;
 			try { dec = this.disasm(addr); } catch (err) { dec = null; }
 			lines.push({ addr: addr, dec: dec });
-			addr = dec ? addr + dec.length : addr + 1;
+			addr = dec ? addr + dec.raw.length : addr + 1;
 			count += 1;
 		}
 		return lines;
@@ -783,6 +887,8 @@
 		if (this.halted) return false;
 		this.jumped = false;
 		var dec = this.fetchDecode();
+		/* 中断入栈用的"下一条指令"地址（raw 含前缀，所以用它而不是 dec.length） */
+		this.nextIp = u32(dec.startIp + dec.raw.length);
 		if (this.onTrace) this.onTrace(dec);
 
 		try {
@@ -799,7 +905,8 @@
 			else throw err;
 		}
 
-		if (!this.jumped) this.ip = u32(this.ip + dec.length);
+		/* 用 raw 长度（含 REX 等前缀）；dec.length 只是指令本体长度 */
+		if (!this.jumped) this.ip = u32(this.ip + dec.raw.length);
 		this.instructionCount += 1;
 		return !this.halted;
 	};
@@ -824,8 +931,18 @@
 
 	/* ------------------------------------------------------------ 反汇编文本 */
 
+	/** NOP2..NOP15 是"填充"指令：操作数字段只是占位，反汇编只显示助记符 */
+	function isPaddingInstruction(name) {
+		return /^NOP\d+$/.test(String(name));
+	}
+
 	VM.prototype.formatOperands = function (inst, fields) {
 		var parts = [];
+		if (isPaddingInstruction(inst.name)) {
+			var bare = String(inst.name);
+			while (bare.length < 12) bare += ' ';
+			return bare + ' ';
+		}
 		for (var i = 0; i < inst.format.length; i++) {
 			var token = inst.format[i];
 			if (token === 'OPC') continue;
@@ -904,11 +1021,11 @@
 	P._i_JMPR = function (dec) { this.jump(this.readGpr(dec.fields.DRG)); };
 	P._i_JMPFAR = function (dec) { this.jump(dec.fields.A32); };
 	P._i_CALL = function (dec) {
-		this.push32(dec.startIp + dec.length);
+		this.push32(dec.startIp + dec.raw.length);
 		this.jump(dec.fields.A16);
 	};
 	P._i_CALLR = function (dec) {
-		this.push32(dec.startIp + dec.length);
+		this.push32(dec.startIp + dec.raw.length);
 		this.jump(this.readGpr(dec.fields.DRG));
 	};
 	P._i_RET = function () { this.jump(this.pop32()); };
@@ -1417,7 +1534,9 @@
 			}
 			var found = this._findInst(row.mnemonic, row.rest);
 			if (!found.inst) throw new AsmError('未知指令 ' + row.mnemonic + ' (行 ' + row.lineno + ')');
-			pc += found.inst.byteLength;
+			/* 用了 r16..r23 / t0..t7 的话会多一个 REX 前缀字节，算标签地址时必须算上 */
+			pc += found.inst.byteLength +
+				(this._needsRex(found.inst, found.exact ? [] : splitOperands(row.rest)) ? 1 : 0);
 		}
 	};
 
@@ -1434,6 +1553,9 @@
 		}
 		if (token === 'DFR' || token === 'SF1' || token === 'SF2' || token === 'SF3') {
 			if (FPR_ID[lower] === undefined) throw new AsmError(token + ' 需要浮点寄存器 (行 ' + lineno + ')');
+			if (FPR_ID[lower] >= 16) {
+				throw new AsmError(token + ' 暂不支持 d0..d15（REX 只扩展 DRG/SR1/SR2/SR3）(行 ' + lineno + ')');
+			}
 			return FPR_ID[lower];
 		}
 		if (token === 'SCL') return this._resolve(text, pc) & 0xF;
@@ -1464,8 +1586,23 @@
 		throw new AsmError('不支持的字段 ' + token + ' (行 ' + lineno + ')');
 	};
 
+	/* REX 前缀能扩展的寄存器字段（与 VM.applyRex 的映射一致） */
+	var REX_BITS = { DRG: 0x8, SR1: 0x4, SR2: 0x2, SR3: 0x1 };
+
 	Assembler.prototype._emit = function (inst, fields) {
 		var out = [inst.opcode & 0xFF];
+		/* 寄存器号 >= 16 时自动加 REX 前缀：DRG/SR1/SR2/SR3 的高位分别放在 0x8/0x4/0x2/0x1。
+		   以前这里直接把寄存器号 & 0x0F，r20 会被静默改成 r4 —— 高位寄存器根本没法用。 */
+		var rex = 0;
+		Object.keys(REX_BITS).forEach(function (name) {
+			var index = fields[name];
+			if (index === undefined) return;
+			if (index >= 16) {
+				rex |= REX_BITS[name];
+				fields[name] = index & 0x0F;
+			}
+		});
+		if (rex) out.unshift(0xE0 | rex);
 		var pending = null;
 		for (var i = 0; i < inst.format.length; i++) {
 			var token = inst.format[i];
@@ -1499,15 +1636,36 @@
 			if (token === 'OPC' || token === 'SOP' || NIBBLE_LITERALS[token] !== undefined) continue;
 			order.push(token);
 		}
-		if (order.length !== operands.length) {
+		/* NOP 系列（填充指令）允许少写操作数：缺的字段直接按数值 0 编码（不能填 "0" 这种
+		   数字串 —— 寄存器字段只认寄存器名）*/
+		var padding = isPaddingInstruction(inst.name) && operands.length < order.length;
+		if (!padding && order.length !== operands.length) {
 			throw new AsmError(inst.name + ' 需要 ' + order.length + ' 个操作数，实际 ' +
 				operands.length + ' 个 (行 ' + lineno + ')');
 		}
 		var fields = { SOP: inst.subOpcode === null ? 0 : inst.subOpcode };
 		for (var k = 0; k < order.length; k++) {
-			fields[order[k]] = this._resolveField(order[k], operands[k], pc, lineno);
+			fields[order[k]] = k >= operands.length
+				? 0
+				: this._resolveField(order[k], operands[k], pc, lineno);
 		}
 		return this._emit(inst, fields);
+	};
+
+	/** 这条指令的寄存器操作数里有没有 >= 16 的（有就得加 REX 前缀） */
+	Assembler.prototype._needsRex = function (inst, operands) {
+		var order = [];
+		for (var i = 0; i < inst.format.length; i++) {
+			var token = inst.format[i];
+			if (token === 'OPC' || token === 'SOP' || NIBBLE_LITERALS[token] !== undefined) continue;
+			order.push(token);
+		}
+		for (var k = 0; k < order.length && k < operands.length; k++) {
+			if (!REX_BITS[order[k]]) continue;
+			var index = GPR_ID[String(operands[k]).toLowerCase()];
+			if (index !== undefined && index >= 16) return true;
+		}
+		return false;
 	};
 
 	Assembler.prototype._pass2 = function () {
@@ -1584,23 +1742,48 @@
 		return { bytes: bytes, labels: this.labels, constants: this.constants, size: bytes.length };
 	};
 
-	/* ----------------------------------------------------------- 内置示例 */
+/* ------------------------------------------------- 示例程序（asmdemo/） */
 
-	var DEMOS = {
-		hello: "\n; 使用端口输出字符 'H' 'i' '!'，然后 HALT\n        .org 0x0000\nstart:\n        IMMB    ri, 'H'     ; ri = 'H'\n        OUT     0x00\n        IMMB    ri, 'i'\n        OUT     0x00\n        IMMB    ri, '!'\n        OUT     0x00\n        IMMB    ri, 10      ; 换行\n        OUT     0x00\n        HALT\n",
-		fib: "\n; 计算并打印前 12 个斐波那契数（每行一个）\n        .org 0x0000\nstart:\n        IMM     ra, 0\n        IMM     rb, 1\n        IMM     rc, 12\nloop:\n        MOV     ri, ra\n        OUT     0x01\n        IMMB    ri, 10\n        OUT     0x00\n        ADD     r8, ra, rb\n        MOV     ra, rb\n        MOV     rb, r8\n        SUBIB   rc, rc, 1\n        JNZ     loop\n        HALT\n",
-		fib3: "\n; 用 CALL/RET + 栈 实现递归斐波那契 fib(10)，并打印\n        .org 0x0000\nmain:\n        IMMB    rb, 10       ; n = 10\n        CALL    fib\n        MOV     ri, ra\n        OUT     0x01\n        IMMB    ri, 10\n        OUT     0x00\n        HALT\n\nfib:\n        PUSH    rb\n        PUSH    rc\n        IMMB    r8, 2\n        CMP     rb, r8\n        JC      base\n        MOV     rc, rb\n        SUBIB   rb, rb, 1\n        CALL    fib\n        PUSH    ra\n        SUBIB   rb, rc, 2\n        CALL    fib\n        POP     r9\n        ADD     ra, r9, ra\n        JMP     done\nbase:\n        MOV     ra, rb\ndone:\n        POP     rc\n        POP     rb\n        RET\n",
-		intr: "\n; 中断演示：设置 IDT，触发 INT，处理器进入中断处理并 IRET\n        .org 0x0000\nstart:\n        SETIDT  idt\n        MODIDT  0, handler\n        IMM     ra, 1234\n        INT     0\n        MOV     ri, ra\n        OUT     0x01\n        HALT\nhandler:\n        ADD     ra, ra, ra\n        IRET\nidt:\n",
-		mem: "\n; 内存与栈演示：LEA / LD / ST / PUSH / POP\n        .org 0x0000\nstart:\n        IMM     rb, 0x1000\n        IMM     ra, 0x11223344\n        ST      ra, rb, 0\n        LEA     r8, rb, 4\n        ST      ra, r8, 0\n        LD      rd, r8, 0\n        MOV     ri, rd\n        OUT     0x01\n        IMMB    ri, 10\n        OUT     0x00\n        PUSH    ra\n        POP     r9\n        MOV     ri, r9\n        OUT     0x01\n        HALT\n"
-	};
+	/* 示例源码都在仓库的 asmdemo/ 目录里，这里只放清单，用的时候再取。
+	   网页里用 fetch，Node 里可以直接读文件（见 loadDemo 的用法）。 */
+	var DEMO_DIR = 'asmdemo/';
+
+	/**
+	 * 取一份示例源码。
+	 * @param {string} id 示例名（对应 asmdemo/<id>.asm）
+	 * @param {function} [readFile] 可选：Node 环境下的读文件函数（path => string）
+	 * @returns {Promise<string>}
+	 */
+	function loadDemo(id, readFile) {
+		var name = String(id || '').toLowerCase();
+		var path = DEMO_DIR + name + '.asm';
+		if (readFile) {
+			try { return Promise.resolve(readFile(path)); }
+			catch (err) { return Promise.reject(err); }
+		}
+		if (typeof global.fetch !== 'function') {
+			return Promise.reject(new Error('no fetch — 需要本地 HTTP 服务器，或直接读 asmdemo/' + name + '.asm'));
+		}
+		return global.fetch(path, { credentials: 'same-origin' }).then(function (res) {
+			if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + path);
+			return res.text();
+		});
+	}
 
 	var DEMO_LIST = [
 		{ id: 'hello', title: 'hello — 端口输出 Hi!' },
 		{ id: 'fib', title: 'fib — 前 12 个斐波那契数' },
 		{ id: 'fib3', title: 'fib3 — 递归 fib(10)（CALL/RET + 栈）' },
 		{ id: 'intr', title: 'intr — SETIDT / INT / IRET' },
-		{ id: 'mem', title: 'mem — LEA / LD / ST / PUSH / POP' }
+		{ id: 'mem', title: 'mem — LEA / LD / ST / PUSH / POP' },
+		{ id: 'screen', title: 'screen — 显示屏：32x32 渐变点阵' },
+		{ id: 'helloworld', title: 'helloworld — 5x7 方块字 HELLO / WORLD' },
+		{ id: 'syscall-font', title: 'syscall-font — SYSCALL 调字体绘制库（初稿 723B）' },
+		{ id: 'syscall-font-opt', title: 'syscall-font-opt — 同上，最短编码优化版（650B）' }
 	];
+
+	var DEMO_IDS = DEMO_LIST.map(function (d) { return d.id; });
+
 
 	/* ------------------------------------------------------------------ 导出 */
 
@@ -1610,7 +1793,9 @@
 		VM: VM,
 		Assembler: Assembler,
 		Instruction: Instruction,
-		DEMOS: DEMOS,
+		loadDemo: loadDemo,
+		DEMO_DIR: DEMO_DIR,
+		DEMO_IDS: DEMO_IDS,
 		DEMO_LIST: DEMO_LIST,
 		GPR_NAMES: GPR_NAMES,
 		GPR_ID: GPR_ID,

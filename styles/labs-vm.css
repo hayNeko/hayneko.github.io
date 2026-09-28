@@ -139,17 +139,30 @@
 
 /* ------------------------------------------------------------ 面板网格 */
 
+/* 左右两列都是 flex 竖列：反汇编高度写死（整数行，见 fitHeight），
+   多出来的空间由左列的"输出"和右列的"栈 / 内存"吸收 —— 于是反汇编下面不会空一块，
+   两列底边（输出 vs 内存转储）永远齐平。 */
 .vm-grid {
-	display: grid;
-	grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
-	grid-template-rows: auto auto auto auto;
+	display: flex;
+	align-items: stretch;
 	gap: 10px;
 }
-.vm-panel--dis { grid-column: 1; grid-row: 1 / span 3; }
-.vm-panel--regs { grid-column: 2; grid-row: 1; }
-.vm-panel--stack { grid-column: 2; grid-row: 2; }
-.vm-panel--mem { grid-column: 2; grid-row: 3; }
-.vm-panel--out { grid-column: 1 / -1; grid-row: 4; }
+.vm-col {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-width: 0;
+}
+.vm-col--main { flex: 1.45 1 0; }
+.vm-col--side { flex: 1 1 0; }
+/* 高度由 fitHeight() 定：整个网格钉在"窗口里能放下的高度"上，
+   多余的纵向空间全部给反汇编（basis 0 所以它不会反过来撑高这一列） */
+.vm-panel--dis { flex: 1 1 0; min-height: 150px; }
+.vm-panel--out { flex: 0 0 auto; height: 116px; }
+.vm-panel--regs { flex: 0 1 auto; }
+/* 栈 / 内存转储给足高度：宁可整页滚动，也不要缩成三条 */ 
+.vm-panel--stack { flex: 1 1 0; min-height: 280px; }
+.vm-panel--mem { flex: 1 1 0; min-height: 300px; }
 
 .vm-panel {
 	display: flex;
@@ -185,7 +198,9 @@
 /* ------------------------------------------------------------ 反汇编窗口 */
 
 .vm-dis {
-	/* 高度取整数行 + 滚动吸附：任何滚动位置都停在行边界上, 底部不会露出半行 */
+	/* 高度由 JS 收缩到「行高 × 整数行」（见 fitHeight），所以这里不写死高度：
+	   任何滚动位置都停在行边界上, 底部不会露出半行 */
+	flex: 0 0 auto;
 	--vm-line: 19px;
 	margin: 0;
 	/* 不加上下 padding: 内容高度 = 行高 × 行数, 容器高度 = 行高 × 整数行,
@@ -193,7 +208,6 @@
 	padding: 0;
 	list-style: none;
 	overflow: auto;
-	height: calc(var(--vm-line) * 30);
 	scroll-snap-type: y mandatory;
 	font-size: 12px;
 	line-height: var(--vm-line);
@@ -218,6 +232,12 @@
 .vm-dis__bytes { color: rgba(140, 200, 150, 0.85); overflow: hidden; text-overflow: ellipsis; }
 .vm-dis__asm { color: var(--fg-dim); overflow: hidden; text-overflow: clip; }
 .vm-dis__asm b { color: var(--fg); font-weight: 600; }
+/* NOP2..NOP15（填充指令）：反汇编只显示助记符，整行淡化 —— 但当前指令仍然要亮 */
+.vm-dis__row.is-pad:not(.is-curr) .vm-dis__addr { color: var(--fg-ghost); }
+.vm-dis__row.is-pad:not(.is-curr) .vm-dis__bytes { color: rgba(140, 200, 150, 0.42); }
+.vm-dis__row.is-pad:not(.is-curr) .vm-dis__asm,
+.vm-dis__row.is-pad:not(.is-curr) .vm-dis__asm b { color: var(--fg-ghost); font-weight: 400; }
+
 .vm-dis__row.is-curr,
 .vm-dis__row.is-curr:hover { background: var(--yellow); }
 .vm-dis__row.is-curr .vm-dis__addr,
@@ -285,8 +305,14 @@
 	font-size: 12px;
 	line-height: 1.5;
 }
-.vm-stack { max-height: 300px; }
-.vm-mem { max-height: 300px; }
+.vm-stack,
+.vm-mem {
+	flex: 1 1 auto;
+	min-height: 0;
+	max-height: none;
+}
+.vm-stack li,
+.vm-mem li { line-height: 19px; }
 .vm-stack li { display: grid; grid-template-columns: 74px 1fr; gap: 8px; padding: 0 10px; }
 .vm-stack li.is-sp { background: var(--blue-soft); }
 .vm-stack .a { color: var(--fg-faint); }
@@ -296,12 +322,105 @@
 .vm-mem .h { color: var(--fg); }
 .vm-mem .s { color: var(--green); }
 
+/* --------------------------------------------------- 自动运行速率输入框 */
+
+.vm-rate {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	color: var(--fg-faint);
+	font-size: 11px;
+}
+.vm-input--rate {
+	width: 8ch;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+.vm-rate__unit { color: var(--fg-ghost); letter-spacing: 0.04em; }
+
+/* ------------------------------------------------------- 小型显示屏 */
+
+.vm-mon-ctl { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.vm-mon {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px;
+}
+.vm-mon__canvas {
+	width: 100%;
+	max-width: 320px;
+	aspect-ratio: 1 / 1;
+	height: auto;
+	align-self: flex-start;
+	/* 像素屏：放大后保持硬边 */
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+	background: #000;
+	border: 1px solid var(--line-strong);
+	border-radius: 2px;
+}
+.vm-mon__meta {
+	display: flex;
+	gap: 14px;
+	color: var(--fg-faint);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------- 快捷输入框 */
+
+.vm-quick {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 5px 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--panel-raised);
+	transition: border-color var(--dur-1) var(--ease-out);
+}
+.vm-quick:focus-within { border-color: var(--accent); }
+.vm-quick__tag {
+	color: var(--fg-faint);
+	font-size: 10.5px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.vm-quick__ps1 { color: var(--green); font-size: 12px; user-select: none; }
+.vm-quick__input {
+	flex: 1 1 auto;
+	min-width: 0;
+	font: inherit;
+	font-size: 12.5px;
+	color: var(--fg);
+	background: none;
+	border: 0;
+	outline: none;
+	padding: 2px 0;
+}
+.vm-quick__input::placeholder { color: var(--fg-ghost); }
+.vm-quick__out {
+	flex: 0 1 46%;
+	min-width: 0;
+	color: var(--fg-faint);
+	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-align: right;
+}
+.vm-quick.is-ok .vm-quick__out { color: var(--green); }
+.vm-quick.is-err .vm-quick__out { color: var(--red); }
+
 /* ------------------------------------------------------------ 输出 */
 
 .vm-out {
 	margin: 0;
 	padding: 8px 10px;
-	max-height: 150px;
+	flex: 1 1 auto;
+	min-height: 0;
+	height: auto;
 	overflow: auto;
 	font-size: 12px;
 	line-height: 1.5;

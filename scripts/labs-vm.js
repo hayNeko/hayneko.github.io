@@ -21,9 +21,11 @@
 	var ROM_SIZE = 1024;
 	var DISK_SIZE = 256 * 1024;
 	var MEM_DEFAULT = 4096;
-	var MAX_RUN_STEPS = 2000000;      /* 与 dbg.py 的 Runner(max_steps=2_000_000) 一致 */
-	var W_BEFORE = 40;                /* 反汇编窗口：当前指令前后各 40 条 */
-	var W_AFTER = 40;
+	var RATE_MAX = 100000;            /* 自动运行速率上限：100000 指令/秒（100 kHz） */
+	var RATE_DEFAULT = 1000;
+	var SLICE_MS = 12;                /* 单帧执行时间片（防止把主线程占满；不是指令上限） */
+	var MON_SIZE = 256;               /* 小型显示屏：256 x 256 */
+	var MAX_STEP_BATCH = 200000;      /* vm <name> step [n] 是同步跑的，给它一个上限 */
 	var STACK_ROWS = 26;
 	var MEM_ROWS = 16;                /* 每行 16 字节 = 256 字节（页面够宽，一行放得下） */
 	var MEM_BYTES = 16;
@@ -297,7 +299,7 @@
 			['vm new <name> [--mem=4096] [--entry=0x0] [--sp=0x100000] [--demo=fib] [--rom=<file>]', 'create a machine'],
 			['vm ls | vm rm <name> | vm upload', 'list / remove / choose files'],
 			['vm <name> info | reset', 'state snapshot / restart'],
-			['vm <name> demo <hello|fib|fib3|intr|mem>', 'load a built-in program'],
+			['vm <name> demo <id>', 'load asmdemo/<id>.asm（hello fib fib3 intr mem screen helloworld syscall-font）'],
 			['vm <name> asm "<source>"', 'assemble source (join lines with |)'],
 			['vm <name> inst "<assembly>" [--at=0xADDR] [--no-run]', 'patch + run one instruction'],
 			['vm <name> step [n] | run [n] | stop', 'execution control'],
@@ -391,13 +393,13 @@
 			var parts = vm.disasmParts(dec);
 			out(mark + ' ' + hex(addr, 8) + '  ' + pad(bytesToHex(dec.raw), 14) + '  ' +
 				pad(parts.mnemonic, 12) + ' ' + parts.operands);
-			addr += dec.length;
+			addr += dec.raw.length;   /* raw 含 REX 等前缀，dec.length 只是指令本体 */
 		}
 		if (opts && opts.hint) out('  ( > = ip   * = breakpoint )', 't-dim');
 	}
 
 	function cmdStep(machine, count, out) {
-		var n = isNaN(count) || count <= 0 ? 1 : Math.min(count, MAX_RUN_STEPS);
+		var n = isNaN(count) || count <= 0 ? 1 : Math.min(count, MAX_STEP_BATCH);
 		for (var i = 0; i < n; i++) {
 			if (machine.vm.halted) { out('machine is halted', 't-err'); return; }
 			if (!machine.step()) break;
@@ -406,22 +408,34 @@
 	}
 
 	function cmdRun(machine, count, out) {
-		var budget = isNaN(count) || count <= 0 ? MAX_RUN_STEPS : Math.min(count, MAX_RUN_STEPS);
-		var steps = 0;
-		while (steps < budget) {
-			if (machine.vm.halted) break;
-			if (machine.breakpoints[machine.vm.ip] && steps > 0) {
-				out('breakpoint 0x' + hex(machine.vm.ip, 8) + ' after ' + steps + ' steps', 't-warn');
-				return;
+		var asked = isNaN(count) ? 0 : Math.max(0, Math.floor(count));
+		if (asked > 0) {
+			/* 写明了条数：同步跑这么多（上限由调用者自己给） */
+			var steps = 0;
+			while (steps < asked) {
+				if (machine.vm.halted) break;
+				if (machine.breakpoints[machine.vm.ip] && steps > 0) {
+					out('breakpoint 0x' + hex(machine.vm.ip, 8) + ' after ' + steps + ' steps', 't-warn');
+					return;
+				}
+				if (!machine.step()) break;
+				steps++;
 			}
-			if (!machine.step()) break;
-			steps++;
-		}
-		if (steps >= budget && !machine.vm.halted) {
-			out('step limit ' + budget + ' reached (ip=0x' + hex(machine.vm.ip, 8) + ')', 't-warn');
+			out('stopped at ip=0x' + hex(machine.vm.ip, 8) + ' after ' + steps + ' steps', 't-ok');
 			return;
 		}
-		out('stopped at ip=0x' + hex(machine.vm.ip, 8) + ' after ' + steps + ' steps', 't-ok');
+		/* 不限条数：交给自动运行器（按速率分片跑，页面不会卡；vm <name> stop 停） */
+		if (machine.running) { out('already auto-running (vm ' + machine.name + ' stop 停止)', 't-dim'); return; }
+		if (machine.vm.halted) { out('machine is halted — restart it first', 't-err'); return; }
+		var rate = ui && ui.rate ? ui.rate() : RATE_MAX;
+		startRun(machine, {
+			rate: function () { return ui && ui.rate ? ui.rate() : RATE_MAX; },
+			onStop: function (reason, steps) {
+				out('stopped (' + reason + ') after ' + steps + ' steps', 't-ok');
+				if (ui) ui.refresh();
+			}
+		});
+		out('auto-run ' + machine.name + ' @ ' + rate + ' ips  (vm ' + machine.name + ' stop 停止)', 't-ok');
 	}
 
 	function cmdBreak(machine, rest, out) {
@@ -557,17 +571,14 @@
 				return true;
 			case 'demo': {
 				var id = (rest[0] || '').toLowerCase();
-				var source = H().DEMOS[id];
-				if (!source) {
-					out('demo: unknown program "' + (rest[0] || '') + '"', 't-err');
-					out('  available: ' + H().DEMO_LIST.map(function (d) { return d.id; }).join(' | '), 't-dim');
-					return true;
-				}
-				machine.vm.reset();
-				machine.out.length = 0;
-				dropWindow(machine);
-				assembleInto(machine, source, out);
-				machine.romLabel = 'demo:' + id;
+				loadDemoSource(id, out, function (source) {
+					machine.vm.reset();
+					machine.out.length = 0;
+					dropWindow(machine);
+					assembleInto(machine, source, out);
+					machine.romLabel = 'demo:' + id;
+					if (ui) ui.refresh();
+				});
 				return true;
 			}
 			case 'asm': {
@@ -654,12 +665,11 @@
 				var machine = createMachine(name, options, out);
 				activeName = machine.name;
 				if (flags.demo) {
-					var source = H().DEMOS[String(flags.demo).toLowerCase()];
-					if (!source) out('new: unknown demo "' + flags.demo + '"', 't-err');
-					else {
+					var demoId = String(flags.demo).toLowerCase();
+					loadDemoSource(demoId, out, function (source) {
 						assembleInto(machine, source, out);
-						machine.romLabel = 'demo:' + String(flags.demo).toLowerCase();
-					}
+						machine.romLabel = 'demo:' + demoId;
+					});
 				}
 				return;
 			}
@@ -726,6 +736,84 @@
 		reader.readAsArrayBuffer(file);
 	}
 
+	/** 取一份示例源码（asmdemo/<id>.asm），失败时把可选项和原因都说清楚 */
+	function loadDemoSource(id, out, ok) {
+		var api = H();
+		if (api.DEMO_IDS && api.DEMO_IDS.indexOf(id) < 0) {
+			out('demo: unknown program "' + id + '"', 't-err');
+			out('  available: ' + api.DEMO_IDS.join(' | '), 't-dim');
+			return;
+		}
+		api.loadDemo(id).then(ok, function (err) {
+			out('demo: 读取 ' + api.DEMO_DIR + id + '.asm 失败 — ' + (err && err.message ? err.message : err), 't-err');
+			out('  available: ' + api.DEMO_IDS.join(' | '), 't-dim');
+			out('  示例源码在仓库的 asmdemo/ 目录里，用本地 HTTP 服务器打开本站才能 fetch', 't-dim');
+		});
+	}
+
+	/* ======================================================== 自动运行调度器 */
+
+	/**
+	 * 自动运行：按"每秒 N 条指令"的速率跑，**没有单次运行上限** ——
+	 * 想停就暂停 / 再按一次 F9。每帧有一小块时间片保护，所以页面不会卡死。
+	 * 速率每帧现取（rate 回调），所以拖动数字框立刻生效。
+	 */
+	function startRun(machine, options) {
+		options = options || {};
+		if (machine.running) return false;
+		machine.running = true;
+		machine.runSteps = 0;
+		machine.runDue = 0;
+		machine.runLast = (global.performance && global.performance.now) ? global.performance.now() : Date.now();
+		machine.runRate = options.rate || null;
+		machine.runOnStop = options.onStop || null;
+		pumpRun(machine);
+		return true;
+	}
+
+	function pumpRun(machine) {
+		if (!machine.running) return;
+		var vm = machine.vm;
+		var stamp = (global.performance && global.performance.now) ? global.performance.now() : Date.now();
+		var elapsed = stamp - machine.runLast;
+		machine.runLast = stamp;
+		var rate = machine.runRate ? machine.runRate() : RATE_DEFAULT;
+		if (!(rate > 0)) rate = 1;
+		if (rate > RATE_MAX) rate = RATE_MAX;
+		machine.runDue += rate * elapsed / 1000;
+		var budget = Math.floor(machine.runDue);
+		machine.runDue -= budget;
+		if (budget > RATE_MAX) budget = RATE_MAX;      /* 一帧最多跑一秒的量 */
+
+		var steps = 0;
+		var reason = null;
+		while (steps < budget) {
+			if (vm.halted) { reason = 'HALT  ip=0x' + hex(vm.ip, 8); break; }
+			if (steps > 0 && machine.breakpoints[vm.ip]) {
+				reason = 'breakpoint 0x' + hex(vm.ip, 8);
+				break;
+			}
+			if (!machine.step()) { reason = 'stopped  ip=0x' + hex(vm.ip, 8); break; }
+			steps++;
+			machine.runSteps++;
+			if (((global.performance && global.performance.now) ? global.performance.now() : Date.now()) - stamp > SLICE_MS) break;
+		}
+
+		if (reason) { stopRun(machine, reason); return; }
+		if (!machine.running) return;
+		if (global.requestAnimationFrame) {
+			global.requestAnimationFrame(function () { pumpRun(machine); });
+		} else {
+			global.setTimeout(function () { pumpRun(machine); }, 0);
+		}
+	}
+
+	function stopRun(machine, reason) {
+		if (!machine.running) return;
+		machine.running = false;
+		if (machine.runOnStop) machine.runOnStop(reason || 'paused  ip=0x' + hex(machine.vm.ip, 8), machine.runSteps);
+	}
+
 	/* ============================================================ 页面控制器 */
 
 	function esc(text) {
@@ -743,6 +831,7 @@
 	function createUI(root, scope) {
 		var outer = scope || root;
 		var dom = {
+			grid: root.querySelector('.vm-grid'),
 			select: root.querySelector('[data-vm-select]'),
 			demo: root.querySelector('[data-vm-demo]'),
 			status: root.querySelector('[data-vm-status]'),
@@ -757,6 +846,14 @@
 			out: root.querySelector('[data-vm-out]'),
 			files: root.querySelector('[data-vm-files]'),
 			file: root.querySelector('[data-vm-file]'),
+			rate: root.querySelector('[data-vm-rate]'),
+			mon: root.querySelector('[data-vm-mon]'),
+			monMode: root.querySelector('[data-vm-mon-mode]'),
+			monCursor: root.querySelector('[data-vm-mon-cursor]'),
+			monFrames: root.querySelector('[data-vm-mon-frames]'),
+			quick: root.querySelector('[data-vm-quick]'),
+			quickInput: root.querySelector('[data-vm-quick-input]'),
+			quickOut: root.querySelector('[data-vm-quick-out]'),
 			memBase: root.querySelector('[data-vm-mem-base]'),
 			memFollow: root.querySelector('[data-vm-mem-follow]'),
 			/* 命令速查在 root 外面（独立 section），所以从更大的 scope 里找 */
@@ -850,6 +947,13 @@
 				case 'out': stepOut(); return;
 				case 'restart': if (machine) act([machine.name, 'reset']); return;
 				case 'clear-bp': if (machine) act([machine.name, 'bp', 'clear']); return;
+				case 'mon-clear':
+					if (machine) {
+						machine.vm.monitorClear();
+						machine.log('mini display cleared', 'ok');
+					}
+					refresh();
+					return;
 				default: return;
 			}
 		}
@@ -873,12 +977,12 @@
 		}
 
 		function finishRun(machine, reason) {
-			machine.running = false;
 			machine.log('■ ' + reason, 'ok');
 			setRunningVisual(false);
 			refresh();
 		}
 
+		/** 自动运行（F9 / ▶ 按钮）：不限次数，按数字框里的速率跑 */
 		function runActive() {
 			var machine = activeMachine();
 			if (!machine || machine.running) return;
@@ -887,44 +991,34 @@
 				refresh();
 				return;
 			}
-			machine.running = true;
 			setRunningVisual(true);
-			machine.log('▶ run ' + machine.name, 'log');
-			var budget = MAX_RUN_STEPS;
-			var steps = 0;
+			machine.log('▶ auto-run ' + machine.name + ' @ ' + self.rate() + ' ips', 'log');
+			startRun(machine, {
+				rate: function () { return self.rate(); },
+				onStop: function (reason) { finishRun(machine, reason); }
+			});
+			/* 跑的时候界面仍然要刷新（反汇编/寄存器/显示屏），但不用每帧都刷 */
 			var lastRender = 0;
-
-			function tick() {
-				if (!machine.running) return;
-				if (!root.isConnected) { machine.running = false; return; }
-				var t0 = now();
-				while (now() - t0 < 8) {
-					if (machine.vm.halted) { finishRun(machine, 'halted at ip=0x' + hex(machine.vm.ip, 8)); return; }
-					if (steps > 0 && machine.breakpoints[machine.vm.ip]) {
-						finishRun(machine, 'breakpoint 0x' + hex(machine.vm.ip, 8) + ' after ' + steps + ' steps');
-						return;
-					}
-					if (!machine.step()) { finishRun(machine, 'stopped at ip=0x' + hex(machine.vm.ip, 8)); return; }
-					steps++;
-					if (steps >= budget) {
-						finishRun(machine, 'step limit ' + budget + ' reached (ip=0x' + hex(machine.vm.ip, 8) + ')');
-						return;
-					}
-				}
+			function repaint() {
 				var stamp = now();
 				if (stamp - lastRender > 60) { lastRender = stamp; refresh(); }
-				global.requestAnimationFrame(tick);
+				if (machine.running && root.isConnected) global.requestAnimationFrame(repaint);
 			}
-			global.requestAnimationFrame(tick);
+			global.requestAnimationFrame(repaint);
 		}
 
 		function pauseActive() {
 			var machine = activeMachine();
-			if (machine && machine.running) {
-				machine.running = false;
-				finishRun(machine, 'paused at ip=0x' + hex(machine.vm.ip, 8));
-			}
+			if (machine && machine.running) stopRun(machine, 'paused  ip=0x' + hex(machine.vm.ip, 8));
 		}
+
+		/** 数字框里的速率（1..100000 指令/秒），页面不在时用默认值 */
+		self.rate = function () {
+			var value = dom.rate ? parseInt(dom.rate.value, 10) : NaN;
+			if (isNaN(value) || value < 1) value = 1;
+			if (value > RATE_MAX) value = RATE_MAX;
+			return value;
+		};
 
 		/** 跳过调用：当前是 CALL/CALLR 就跑过它，否则等效单步 */
 		function stepOver() {
@@ -933,7 +1027,7 @@
 			var dec = null;
 			try { dec = machine.vm.disasm(machine.vm.ip); } catch (err) { dec = null; }
 			if (!dec || (dec.inst.name !== 'CALL' && dec.inst.name !== 'CALLR')) { act([machine.name, 'step']); return; }
-			var target = (machine.vm.ip + dec.length) >>> 0;
+			var target = (machine.vm.ip + dec.raw.length) >>> 0;   /* 带前缀的指令要算上前缀 */
 			var guard = 0;
 			while (!machine.vm.halted && machine.vm.ip !== target && guard < 500000) {
 				if (!machine.step()) break;
@@ -1006,45 +1100,121 @@
 			dom.cur.textContent = text;
 		}
 
-		function windowHas(machine, ip) {
-			var win = machine._win;
-			if (!win) return false;
-			for (var i = 0; i < win.length; i++) if (win[i].addr === ip) return true;
-			return false;
+		/* ---- 反汇编窗口 ----
+		 * 不再是"跟着 ip 走的 81 行小窗口"（那样一旦指令/寄存器变动就会重新以 ip 为中心，
+		 * 0x00000000 之前的内容再也滚不回来），而是**从 0 开始的一段程序**：
+		 * 默认覆盖整块 ROM（1KB），ip 跑远了自动加长；内存内容一变（自修改代码、
+		 * 命令行写指令、换示例）就重新解码渲染，所以永远是实时的。
+		 */
+
+		var WIN_MIN_BYTES = 512;       /* 默认至少覆盖 512 字节（ip 跑远去会自动加长） */
+		var WIN_MAX_BYTES = 8192;
+		var WIN_MAX_ROWS = 1500;       /* 极端的 1 字节指令流下不至于撑爆 DOM */
+
+		function bpSignature(machine) {
+			return machine.bpSet().join(',');
+		}
+
+		/** 窗口内内存的廉价校验和：变了就重建（自修改代码 / inst / 换 ROM 都能反映） */
+		function memSignature(vm, from, to) {
+			var sum = 0;
+			for (var i = from; i < to; i++) sum = (sum * 31 + vm.memory[i]) % 2147483647;
+			return sum;
+		}
+
+		function buildWindow(machine) {
+			var vm = machine.vm;
+			var from = 0;
+			var want = Math.max(WIN_MIN_BYTES, (vm.ip - from) + 256);
+			var end = Math.min(vm.memSizeBytes, from + Math.min(WIN_MAX_BYTES, want));
+			var lines = [];
+			var index = {};
+			var addr = from;
+			while (addr < end && lines.length < WIN_MAX_ROWS) {
+				var dec = null;
+				try { dec = vm.disasm(addr); } catch (err) { dec = null; }
+				index[addr] = lines.length;
+				lines.push({ addr: addr, dec: dec });
+				addr += dec ? dec.raw.length : 1;   /* 必须用 raw.length：漏掉 REX 前缀，下一行就会落进指令中间 */
+			}
+			machine._win = {
+				from: from,
+				to: Math.min(end, addr),
+				lines: lines,
+				index: index,
+				memSig: memSignature(vm, from, Math.min(end, addr)),
+				bpSig: bpSignature(machine)
+			};
+			return machine._win;
+		}
+
+		/* NOP2..NOP15 是填充指令：操作数没意义，行也淡化显示 */
+		function isPadding(dec) {
+			return !!(dec && /^NOP\d+$/.test(String(dec.inst.name)));
+		}
+
+		function rowHTML(machine, line, vm) {
+			var bytes = '.byte 0x' + hex(vm.memory[line.addr] || 0, 2);
+			var asm = '.byte 0x' + hex(vm.memory[line.addr] || 0, 2);
+			if (line.dec) {
+				bytes = bytesToHex(line.dec.raw);
+				var parts = vm.disasmParts(line.dec);
+				asm = '<b>' + esc(parts.mnemonic) + '</b> ' + esc(parts.operands);
+			}
+			var classes = 'vm-dis__row' +
+				(machine.breakpoints[line.addr] ? ' is-bp' : '') +
+				(isPadding(line.dec) ? ' is-pad' : '');
+			return '<li class="' + classes +
+				'" data-addr="' + line.addr + '">' +
+				'<span class="vm-dis__bp">' + (machine.breakpoints[line.addr] ? '●' : '') + '</span>' +
+				'<span class="vm-dis__addr">' + hex(line.addr, 8) + '</span>' +
+				'<span class="vm-dis__bytes">' + bytes + '</span>' +
+				'<span class="vm-dis__asm">' + asm + '</span></li>';
+		}
+
+		function renderWindow(machine) {
+			var vm = machine.vm;
+			var rows = [];
+			machine._win.lines.forEach(function (line) { rows.push(rowHTML(machine, line, vm)); });
+			dom.dis.innerHTML = rows.join('');
+			machine._hlNode = null;
 		}
 
 		function renderDisasm(machine) {
 			if (!dom.dis) return;
-			if (!machine) { dom.dis.innerHTML = ''; return; }
+			if (!machine) { dom.dis.innerHTML = ''; machine = null; return; }
 			var vm = machine.vm;
+			var win = machine._win;
 			var rebuilt = false;
-			if (!windowHas(machine, vm.ip)) {
-				machine._win = vm.disasmBlock(vm.ip, W_BEFORE, W_AFTER);
+			if (!win) {
+				buildWindow(machine);
+				renderWindow(machine);
+				rebuilt = true;
+			} else if (vm.ip < win.from || vm.ip >= win.to ||
+				win.bpSig !== bpSignature(machine) ||
+				win.memSig !== memSignature(vm, win.from, win.to)) {
+				/* 内存变了 / 断点变了 / ip 跑出窗口 → 重新解码（实时更新） */
+				buildWindow(machine);
+				renderWindow(machine);
 				rebuilt = true;
 			}
-			var rows = [];
-			var currentIndex = -1;
-			machine._win.forEach(function (line, index) {
-				var isCurrent = line.addr === vm.ip;
-				if (isCurrent) currentIndex = index;
-				var classes = 'vm-dis__row';
-				if (isCurrent) classes += ' is-curr';
-				if (machine.breakpoints[line.addr]) classes += ' is-bp';
-				var bytes = '??';
-				var asm = '.byte 0x' + hex(vm.memory[line.addr] || 0, 2);
-				if (line.dec) {
-					bytes = bytesToHex(line.dec.raw);
-					var parts = vm.disasmParts(line.dec);
-					asm = '<b>' + esc(parts.mnemonic) + '</b> ' + esc(parts.operands);
-				}
-				rows.push('<li class="' + classes + '" data-addr="' + line.addr + '">' +
-					'<span class="vm-dis__bp">' + (machine.breakpoints[line.addr] ? '●' : '') + '</span>' +
-					'<span class="vm-dis__addr">' + hex(line.addr, 8) + '</span>' +
-					'<span class="vm-dis__bytes">' + bytes + '</span>' +
-					'<span class="vm-dis__asm">' + asm + '</span></li>');
-			});
-			dom.dis.innerHTML = rows.join('');
-			if (currentIndex >= 0) follow(dom.dis, currentIndex, rebuilt);
+			var index = machine._win.index[vm.ip];
+			if (index === undefined) {
+				buildWindow(machine);
+				renderWindow(machine);
+				rebuilt = true;
+				index = machine._win.index[vm.ip];
+			}
+			/* 高亮每帧都可能移动，但只改 class，不重建 HTML */
+			if (machine._hlNode && machine._hlNode.parentNode) machine._hlNode.classList.remove('is-curr');
+			var node = index === undefined ? null : dom.dis.children[index];
+			if (node) {
+				node.classList.add('is-curr');
+				machine._hlNode = node;
+			} else {
+				machine._hlNode = null;
+			}
+			if (index !== undefined) follow(dom.dis, index, rebuilt);
 		}
 
 		/** 反汇编行高（与 CSS 的 --vm-line 同源，直接从计算样式读） */
@@ -1054,13 +1224,14 @@
 		}
 
 		/**
-		 * 反汇编窗口尽量用满可视高度：高度取「行高 × 整数行」，
-		 * 于是底部永远落在行边界上（不会露出半行），同时把窗口高度都留给地址/字节/指令。
+		 * 把整个面板区钉在"窗口里放得下的高度"上，多出来的纵向空间全部给反汇编：
+		 *   1) .vm-grid 高度 = 窗口高 − 网格顶部 − 底部固定坞 − 留白
+		 *   2) .vm-dis 高度 = 该列余下的空间，再收紧到「行高 × 整数行」
+		 * 于是底部永远落在行边界上（不会露出半行），反汇编下面也不会空出一块。
 		 */
 		function fitHeight() {
-			if (!dom.dis || !root.isConnected) return;
+			if (!dom.dis || !root.isConnected || !dom.grid) return;
 			var rowH = rowHeight();
-			var top = Math.max(dom.dis.getBoundingClientRect().top, 0);
 			/* 底部那条固定坞不能压住最后几行 */
 			var dock = doc.getElementById('dock');
 			var dockH = 0;
@@ -1070,8 +1241,16 @@
 					dockH = global.innerHeight - dockBox.top + 8;
 				}
 			}
-			var avail = global.innerHeight - top - 16 - dockH;
-			var rows = Math.max(10, Math.min(60, Math.floor(avail / rowH)));
+			var top = Math.max(dom.grid.getBoundingClientRect().top, 0);
+			/* 用 min-height 而不是 height：窗口够高就铺满窗口，内容（栈 / 内存转储）
+			   需要更多高度时就让整页滚动 —— 不要把面板压扁 */
+			dom.grid.style.minHeight = Math.max(470, global.innerHeight - top - 16 - dockH) + 'px';
+			/* 反汇编面板拿到左列剩余空间后，把列表收紧到整数行（剩下的 <19px 留在面板底部），
+			   并且至少 30 行 —— 太矮就没法看了 */
+			var panel = dom.dis.parentElement;
+			var head = panel ? panel.querySelector('.vm-panel__head') : null;
+			var inner = (panel ? panel.clientHeight : 0) - (head ? head.offsetHeight : 0) - 2;
+			var rows = Math.max(30, Math.floor(inner / rowH));
 			dom.dis.style.height = (rows * rowH) + 'px';
 		}
 		self.fit = fitHeight;
@@ -1227,6 +1406,29 @@
 			dom.out.scrollTop = dom.out.scrollHeight;
 		}
 
+		/** 256x256 显示屏：把 screen / buffer 画到 canvas 上 */
+		function monitorCtx() {
+			if (!dom.mon) return null;
+			if (self._monCtx === undefined) {
+				self._monCtx = null;
+				try { self._monCtx = dom.mon.getContext('2d'); } catch (err) { self._monCtx = null; }
+				if (self._monCtx) self._monImage = self._monCtx.createImageData(MON_SIZE, MON_SIZE);
+			}
+			return self._monCtx;
+		}
+
+		function renderMonitor(machine) {
+			var ctx = monitorCtx();
+			if (!ctx || !self._monImage) return;
+			var mon = machine ? machine.vm.monitor : null;
+			if (!mon) return;
+			var wantBuffer = dom.monMode && dom.monMode.value === 'buffer';
+			self._monImage.data.set(wantBuffer ? mon.buffer : mon.screen);
+			ctx.putImageData(self._monImage, 0, 0);
+			if (dom.monCursor) dom.monCursor.textContent = mon.x + ', ' + mon.y;
+			if (dom.monFrames) dom.monFrames.textContent = '#' + mon.frames;
+		}
+
 		function renderFiles() {
 			if (!dom.files) return;
 			if (!uploads.length) {
@@ -1281,7 +1483,7 @@
 					['vm vm1 bp 0x0C', 'toggle a breakpoint'],
 					['vm vm1 bp  ·  bp clear', 'list / clear'],
 					['vm vm1 go 0x20', 'jump the ip'],
-					['vm vm1 demo fib3', 'hello | fib | fib3 | intr | mem']
+					['vm vm1 demo syscall-font', 'hello fib fib3 intr mem screen helloworld syscall-font']
 				] },
 				{ title: 'files', rows: [
 					['vm vm1 rom my.hvd', 'uploaded file -> ROM'],
@@ -1314,6 +1516,7 @@
 			renderStack(machine);
 			renderMem(machine);
 			renderOut(machine);
+			renderMonitor(machine);
 			renderFiles();
 			renderCheat();
 			Array.prototype.forEach.call(root.querySelectorAll('[data-vm-act]'), function (btn) {
@@ -1374,8 +1577,8 @@
 
 			var cheat = target.closest ? target.closest('[data-cheat]') : null;
 			if (cheat) {
-				var cmd = cheat.getAttribute('data-cheat');
-				if (global.Terminal && global.Terminal.run) global.Terminal.run(cmd);
+				/* 速查表点一下：先走页面上的快捷输入（就在反汇编上面），能省一次滚动 */
+				quickRun(cheat.getAttribute('data-cheat'));
 				return;
 			}
 
@@ -1427,6 +1630,105 @@
 			input.addEventListener('blur', function () { commit(false); });
 		}
 
+		/* ---------------------------------------------------- 快捷输入框 */
+
+		var quickHistory = [];
+		var quickIndex = -1;
+
+		/** 和终端一样的切词（支持引号，方便 vm vm1 inst "IMM ra, 40"） */
+		function quickTokenize(line) {
+			var out = [];
+			var cur = '';
+			var quoted = false;
+			var pending = false;
+			for (var i = 0; i < line.length; i++) {
+				var ch = line.charAt(i);
+				if (quoted) {
+					if (ch === quoted) quoted = false;
+					else cur += ch;
+					continue;
+				}
+				if (ch === '"' || ch === "'") { quoted = ch; pending = true; continue; }
+				if (ch === ' ' || ch === '	') {
+					if (cur.length || pending) { out.push(cur); cur = ''; pending = false; }
+					continue;
+				}
+				cur += ch;
+			}
+			if (cur.length || pending) out.push(cur);
+			return out;
+		}
+
+		function quickSetOut(text, cls) {
+			if (!dom.quickOut) return;
+			dom.quickOut.textContent = text || '';
+			if (!dom.quick) return;
+			var name = 'vm-quick' + (cls === 't-err' ? ' is-err' : (cls === 't-ok' ? ' is-ok' : ''));
+			if (dom.quick.className !== name) dom.quick.className = name;
+		}
+
+		function quickRun(raw) {
+			var text = String(raw || '').trim();
+			if (!text) return;
+			/* 只写 "vm1 step" 也认：一律补上 vm */
+			if (!/^vm([\s]|$)/i.test(text)) text = 'vm ' + text;
+			quickHistory.push(text);
+			if (quickHistory.length > 40) quickHistory.shift();
+			quickIndex = -1;
+			var last = null;
+			var sink = function (line, cls) {
+				last = { text: String(line), cls: cls };
+				var machine = activeMachine();
+				if (machine) machine.log(String(line), toLogClass(cls));
+			};
+			var parts = quickTokenize(text);
+			/* command() 的参数不含开头的 vm（终端那边也是这么传的） */
+			if (parts.length && parts[0].toLowerCase() === 'vm') parts = parts.slice(1);
+			ensureISA().then(function () {
+				command(parts, sink);
+				global.setTimeout(function () {
+					quickSetOut(last ? last.text : 'ok', last ? last.cls : 't-ok');
+					refresh();
+				}, 0);
+			}, function (err) {
+				quickSetOut('ISA 加载失败: ' + (err && err.message ? err.message : err), 't-err');
+			});
+		}
+
+		if (dom.quick) {
+			dom.quick.addEventListener('submit', function (e) {
+				e.preventDefault();
+				var value = dom.quickInput ? dom.quickInput.value : '';
+				if (dom.quickInput) dom.quickInput.value = '';
+				quickSetOut('', '');
+				quickRun(value);
+			});
+		}
+		if (dom.quickInput) {
+			dom.quickInput.addEventListener('keydown', function (e) {
+				if (e.key === 'ArrowUp') {
+					e.preventDefault();
+					if (!quickHistory.length) return;
+					if (quickIndex === -1) quickIndex = quickHistory.length - 1;
+					else if (quickIndex > 0) quickIndex--;
+					dom.quickInput.value = quickHistory[quickIndex];
+				} else if (e.key === 'ArrowDown') {
+					e.preventDefault();
+					if (quickIndex === -1) return;
+					if (quickIndex < quickHistory.length - 1) quickIndex++;
+					else { quickIndex = -1; dom.quickInput.value = ''; return; }
+					dom.quickInput.value = quickHistory[quickIndex];
+				} else if (e.key === 'Escape') {
+					dom.quickInput.value = '';
+					quickSetOut('', '');
+				}
+			});
+		}
+		self.quickRun = function (text) {
+			if (dom.quickInput) { dom.quickInput.value = ''; dom.quickInput.focus(); }
+			quickRun(text);
+		};
+
 		if (dom.select) {
 			dom.select.addEventListener('change', function () {
 				activeName = dom.select.value;
@@ -1434,6 +1736,20 @@
 				if (machine) delete machine._win;
 				refresh();
 			});
+		}
+
+		/* 速率数字框：1..100000，超出就钳回去（用户能立刻看到钳制结果） */
+		if (dom.rate) {
+			dom.rate.addEventListener('change', function () {
+				var value = parseInt(dom.rate.value, 10);
+				if (isNaN(value) || value < 1) value = 1;
+				if (value > RATE_MAX) value = RATE_MAX;
+				dom.rate.value = String(value);
+			});
+			dom.rate.addEventListener('blur', function () { dom.rate.dispatchEvent(new Event('change')); });
+		}
+		if (dom.monMode) {
+			dom.monMode.addEventListener('change', function () { renderMonitor(activeMachine()); });
 		}
 
 		if (dom.memFollow) {
@@ -1514,12 +1830,15 @@
 		ensureISA().then(function () {
 			if (!machines.length) {
 				var machine = createMachine('vm1', { memSize: MEM_DEFAULT }, null);
-				assembleInto(machine, H().DEMOS.fib, function (text, cls) {
-					machine.log(String(text), toLogClass(cls));
-				});
-				machine.romLabel = 'demo:fib';
-				machine.note('auto-created vm1 with the fib demo — 试试终端里的 vm vm1 inst nop');
+				machine.note('auto-created vm1 — 示例源码在 asmdemo/ 里，终端敲 vm vm1 demo <id> 装载');
 				if (ui && ui.dom && ui.dom.demo) ui.dom.demo.value = 'fib';
+				loadDemoSource('fib', function () {}, function (source) {
+					assembleInto(machine, source, function (text, cls) {
+						machine.log(String(text), toLogClass(cls));
+					});
+					machine.romLabel = 'demo:fib';
+					if (ui) ui.refresh();
+				});
 			}
 			ui.refresh();
 		}).catch(function (err) {
@@ -1549,7 +1868,7 @@
 		['vm <name> step|run [n]|stop|reset', 'execution control'],
 		['vm <name> regs|mem|dis|info', 'registers, memory, disassembly'],
 		['vm <name> bp <addr>|clear | go <addr>', 'breakpoints / set ip'],
-		['vm <name> demo <id>|asm "<src>"', 'built-in programs (hello fib fib3 intr mem)'],
+		['vm <name> demo <id>|asm "<src>"', 'asmdemo/ 里的示例（hello fib fib3 intr mem screen helloworld syscall-font）'],
 		['vm <name> rom|disk|save <file-type>', 'uploaded images in / out'],
 		['vm upload', 'open the ~/labs/vm file picker']
 	];
