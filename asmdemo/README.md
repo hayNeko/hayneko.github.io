@@ -26,6 +26,7 @@ py -3.13 HaynekoArch32VM_python/dbg.py --rom rom.hvd --mem 1024
 | `helloworld.asm` | 显示屏：5×7 点阵方块字，第一行 HELLO、第二行 WORLD |
 | `syscall-font.asm` | 显示屏 + 系统调用：SYSCALL 调字体绘制库（**初稿**，723B ROM） |
 | `syscall-font-opt.asm` | 同一程序的最短编码优化版（**650B ROM**，指令数 75307→65732，屏幕逐字节一致） |
+| `isa-coverage.asm` | **ISA 体检**：156 条指令一条不落（**顺序已打乱**）+ 全部 32 个通用寄存器 + 内存读写 + 显示屏/控制台 + 中断与系统调用（878B ROM，240/240 条被真正执行到，257 步到 HALT；反汇编文本再汇编 240/240 条字节一致） |
 
 ---
 

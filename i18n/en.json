@@ -267,7 +267,7 @@
 			"step": "Step",
 			"over": "Step over",
 			"out": "Step out",
-			"restart": "Restart",
+			"restart": "Restart (hold)",
 			"clearBp": "Clear breakpoints",
 			"panel": {
 				"disasm": "Disassembly",
@@ -314,7 +314,8 @@
 				"buffer": "buffer",
 				"clear": "Clear",
 				"aria": "256 by 256 mini display"
-			}
+			},
+			"stackFollow": "follow SP"
 		}
 	},
 	"links": {

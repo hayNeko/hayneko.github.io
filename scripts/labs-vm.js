@@ -27,6 +27,9 @@
 	var MON_SIZE = 256;               /* 小型显示屏：256 x 256 */
 	var MAX_STEP_BATCH = 200000;      /* vm <name> step [n] 是同步跑的，给它一个上限 */
 	var STACK_ROWS = 26;
+	var STACK_ROW_H = 19;             /* 与 .vm-stack li 的 line-height 一致 */
+	var STACK_LOOKBACK = 2;           /* SP 上方留两行（刚弹出去、还留在内存里的值） */
+	var STACK_MAX_ROWS = 1500000;     /* 虚拟滚动上限，防止内存很大时滚动高度爆掉 */
 	var MEM_ROWS = 16;                /* 每行 16 字节 = 256 字节（页面够宽，一行放得下） */
 	var MEM_BYTES = 16;
 
@@ -635,6 +638,13 @@
 			var rest = parsed.rest;
 			var head = (rest[0] || '').toLowerCase();
 
+			/* "# 指令" = 直接执行一条汇编指令：不汇编进内存 / ROM，也不推进 ip */
+			if (head.charAt(0) === '#') {
+				if (ui && ui.execDirect) ui.execDirect(rest.join(' ').slice(1).trim(), out);
+				else out('# 需要打开 ~/labs/vm 页面才能直接执行', 't-dim');
+				return;
+			}
+
 			if (!rest.length || head === 'help' || head === '-h') { helpText(null, out); return; }
 
 			if (head === 'new') {
@@ -856,6 +866,7 @@
 			quickOut: root.querySelector('[data-vm-quick-out]'),
 			memBase: root.querySelector('[data-vm-mem-base]'),
 			memFollow: root.querySelector('[data-vm-mem-follow]'),
+			stackFollow: root.querySelector('[data-vm-stack-follow]'),
 			/* 命令速查在 root 外面（独立 section），所以从更大的 scope 里找 */
 			cheat: outer.querySelector('[data-vm-cheat]')
 		};
@@ -1013,6 +1024,40 @@
 		}
 
 		/** 数字框里的速率（1..100000 指令/秒），页面不在时用默认值 */
+		/**
+		 * "# 指令" = 直接执行一条汇编指令（调试器里的 "立即执行"）：
+		 * 只把文本编码成指令对象当场执行，不写内存 / ROM，也不推进 ip。
+		 */
+		self.execDirect = function (text, out) {
+			out = out || function () {};
+			var machine = activeMachine();
+			if (!machine) { out('# 还没有虚拟机：先 vm new vm1', 't-err'); return; }
+			if (!text) {
+				out('# <一条汇编指令>  直接执行，不写内存 / ROM', 't-dim');
+				out('  例：# add ra, rb, rc   ·   # imm ra, 0x1234   ·   # mul ra, ra, rb', 't-dim');
+				return;
+			}
+			withISA(function () {
+				var api = H();
+				try {
+					var asm = new api.Assembler(machine.vm.isa);
+					var spec = asm.encodeOne(text);
+					var before = machine.vm.gpr.slice();
+					var res = machine.vm.execDirect(spec);
+					var parts = [];
+					res.regs.forEach(function (i) {
+						parts.push(api.GPR_NAMES[i] + ' 0x' + hex(before[i], 8) + ' -> 0x' + hex(machine.vm.gpr[i], 8));
+					});
+					var line = '#' + text + '   ' + (parts.length ? parts.join('   ') : '（寄存器没变）');
+					out(line, parts.length ? 't-ok' : 't-dim');
+					machine.log(line, parts.length ? 'ok' : 'log');
+					refresh();
+				} catch (err) {
+					out('# ' + (err && err.message ? err.message : err), 't-err');
+				}
+			});
+		};
+
 		self.rate = function () {
 			var value = dom.rate ? parseInt(dom.rate.value, 10) : NaN;
 			if (isNaN(value) || value < 1) value = 1;
@@ -1160,6 +1205,16 @@
 				bytes = bytesToHex(line.dec.raw);
 				var parts = vm.disasmParts(line.dec);
 				asm = '<b>' + esc(parts.mnemonic) + '</b> ' + esc(parts.operands);
+				if (line.addr === vm.ip && !vm.halted) {
+					/* 当前指令：把"将要被改动"的那个操作数标红（寄存器名，或 ST 的地址寄存器） */
+					var dstName = '';
+					try {
+						var w = vm.writeTargets(line.dec);
+						if (!w.regs.length && w.mem !== null && line.dec.fields && line.dec.fields.DRG !== undefined) w.regs = [line.dec.fields.DRG];
+						if (w.regs.length) dstName = api.GPR_NAMES[w.regs[0]];
+					} catch (err) { dstName = ''; }
+					if (dstName) asm = asm.replace(new RegExp('\\b' + dstName + '\\b'), '<i class="is-dst">' + dstName + '</i>');
+				}
 			}
 			var classes = 'vm-dis__row' +
 				(machine.breakpoints[line.addr] ? ' is-bp' : '') +
@@ -1289,10 +1344,28 @@
 			if (!machine) { dom.regs.innerHTML = ''; return; }
 			var vm = machine.vm;
 			var names = api.GPR_NAMES;
+			/* 暂停时标"将要被修改"（预测，给 → 新值）；自动运行时只标"上一条指令实际改了什么"（给 ← 旧值） */
+			var marks = {};
+			if (machine.running) {
+				var rec = vm.changes && vm.changes.regs;
+				if (rec) Object.keys(rec).forEach(function (k) { marks[k] = { was: rec[k] }; });
+			} else if (!vm.halted) {
+				try {
+					var tgt = vm.writeTargets(vm.disasm(vm.ip));
+					tgt.regs.forEach(function (i) { marks[i] = marks[i] || {}; });
+					if (tgt.preview) {
+						Object.keys(tgt.preview).forEach(function (k) { marks[k] = { next: tgt.preview[k] }; });
+					}
+				} catch (err) { marks = {}; }
+			}
 			var rows = [];
 			for (var i = 0; i < 32; i++) {
-				rows.push('<div class="vm-reg" data-reg="' + i + '"><b>' + names[i] + '</b><span>' +
-					hex(vm.gpr[i], 8) + '</span></div>');
+				var mark = marks[i];
+				var hint = '';
+				if (mark && mark.next !== undefined) hint = '<i class="vm-reg__next">→ ' + hex(mark.next, 8) + '</i>';
+				else if (mark && mark.was !== undefined) hint = '<i class="vm-reg__next">← ' + hex(mark.was, 8) + '</i>';
+				rows.push('<div class="vm-reg' + (mark ? ' is-dst' : '') + '" data-reg="' + i + '"><b>' + names[i] + '</b><span>' +
+					hex(vm.gpr[i], 8) + '</span>' + hint + '</div>');
 			}
 			dom.regs.innerHTML = rows.join('');
 		}
@@ -1305,7 +1378,10 @@
 				var on = vm.getFlag(name);
 				return name.toUpperCase() + '=<i class="' + (on ? '' : 'is-off') + '">' + on + '</i>';
 			}).join('  ');
-			dom.flags.innerHTML = '<b>FLAGS</b> 0x' + hex(vm.flags, 8) + '  ' + text;
+			var flagsChanged = machine.running && machine._lastFlags !== undefined && machine._lastFlags !== vm.flags;
+			machine._lastFlags = vm.flags;
+			dom.flags.innerHTML = '<b>FLAGS</b> <span' + (flagsChanged ? ' class="is-dst"' : '') + '>0x' +
+				hex(vm.flags, 8) + '</span>  ' + text;
 		}
 
 		function renderKernel(machine) {
@@ -1336,23 +1412,68 @@
 			return String(Math.round(value * 1e6) / 1e6);
 		}
 
+		/**
+		 * 栈面板：默认跟随 SP（让 SP 停在第三行 —— 上面两行是刚弹出去、还留在内存里的值），
+		 * 但整块栈区（0 .. 初始 SP）都能滚动查看：用上下两个占位行做虚拟滚动，
+		 * 所以多大的栈都只渲染可见的那十几行。
+		 */
+		/* 栈区顶端：至少覆盖到初始 SP，另外永远给当前 SP 上方留两行，
+		   这样"SP 停在第 3 行"在任何位置都成立（上面的行是空的/曾经推入过的值） */
+		function stackTop(machine) {
+			var sp = machine.vm.gpr[7] >>> 0;
+			var init = (machine.vm.spInit >>> 0) || (machine.vm.memSizeBytes >>> 0) || 4;
+			/* 除了 SP 上方两行，还要留够一屏的余量，否则把 SP 滚到第 3 行时会被滚动高度截断 */
+			var slack = (STACK_LOOKBACK + STACK_ROWS + 6) * 4;
+			return Math.max(init, sp + slack);
+		}
+
+		/* 行号 = 地址 / 4（第 0 行是地址 0，低地址在上、高地址在下） */
+		function stackRowOf(machine, addr) {
+			return Math.floor((addr >>> 0) / 4);
+		}
+
+		/** 跟随时要滚到哪：让 SP 停在第 3 行（上面两行是 sp-4、sp-8，即刚推入/弹出过的值） */
+		function stackWantScroll(machine) {
+			return Math.max(0, (stackRowOf(machine, machine.vm.gpr[7]) - STACK_LOOKBACK) * STACK_ROW_H);
+		}
+
 		function renderStack(machine) {
 			if (!dom.stack) return;
 			if (!machine) { dom.stack.innerHTML = ''; return; }
 			var vm = machine.vm;
-			var sp = vm.gpr[7];
-			var rows = [];
-			for (var i = 0; i < STACK_ROWS; i++) {
-				var addr = (sp + i * 4) >>> 0;
+			var sp = vm.gpr[7] >>> 0;
+			var top = stackTop(machine);
+			var rows = Math.min(Math.floor(top / 4) + 1, STACK_MAX_ROWS);
+			var visible = Math.max(6, Math.floor(dom.stack.clientHeight / STACK_ROW_H) || STACK_ROWS);
+			var following = machine._stackFollow !== false;
+			var want = stackWantScroll(machine);
+			/* 先按目标位置算窗口，渲染完再把 scrollTop 设过去：
+			   之前先设 scrollTop 后换 innerHTML，会被旧内容的滚动高度截住，跟不到 SP。 */
+			var target = following ? want : dom.stack.scrollTop;
+			var first = Math.max(0, Math.min(Math.floor(target / STACK_ROW_H), Math.max(0, rows - 1)));
+			var count = Math.min(visible + 2, rows - first);
+			var html = [];
+			if (first > 0) html.push('<li class="vm-stack__pad" style="height:' + (first * STACK_ROW_H) + 'px"></li>');
+			for (var i = 0; i < count; i++) {
+				var addr = ((first + i) * 4) >>> 0;      /* 低地址在上，逐行 +4 */
 				var value = '????????';
 				if (addr + 4 <= vm.memSizeBytes) {
 					value = hex(vm.memory[addr] | (vm.memory[addr + 1] << 8) |
 						(vm.memory[addr + 2] << 16) | (vm.memory[addr + 3] << 24), 8);
 				}
-				rows.push('<li class="' + (addr === sp ? 'is-sp' : '') + '"><span class="a">' + hex(addr, 8) +
-					'</span><span class="v">' + value + '</span></li>');
+				/* 栈是往下长的：mem[sp..初始sp) 才是"已推入、还没弹出"的活数据（正常色）；
+				   addr < sp 是没推入过、或者已经弹出去的（淡色） */
+				var cls = addr === sp ? 'is-sp' : (addr < sp ? 'is-free' : '');
+				html.push('<li class="' + cls + '" data-addr="' + addr + '"><span class="a">' + hex(addr, 8) +
+					'</span><span class="v">' + value + (addr === sp ? '   ← SP' : '') + '</span></li>');
 			}
-			dom.stack.innerHTML = rows.join('');
+			var rest = rows - first - count;
+			if (rest > 0) html.push('<li class="vm-stack__pad" style="height:' + (rest * STACK_ROW_H) + 'px"></li>');
+			dom.stack.innerHTML = html.join('');
+			if (following && Math.abs(dom.stack.scrollTop - want) > 1) {
+				dom.stack.scrollTop = want;
+				machine._stackProg = dom.stack.scrollTop;   /* 万一被截断，按实际值记，免得误判成用户滚动 */
+			}
 		}
 
 		function memBase() {
@@ -1373,6 +1494,23 @@
 			if (!machine) { dom.mem.innerHTML = ''; return; }
 			var vm = machine.vm;
 			var base = memBase();
+			/* 这条指令要写的内存地址（ST / PUSH / CALL ...）落在哪一行，就把哪一行标红 */
+			var wmem = null;
+			var touched = null;
+			if (machine.running) {
+				/* 自动运行：标上一条指令真正写过的那些行 */
+				if (vm.changes && vm.changes.mem.length) {
+					touched = {};
+					vm.changes.mem.forEach(function (w) {
+						for (var a = w.addr; a < w.addr + (w.size || 1); a++) {
+							var idx = Math.floor((a - base) / MEM_BYTES);
+							if (idx >= 0 && idx < MEM_ROWS) touched[idx] = true;
+						}
+					});
+				}
+			} else if (!vm.halted) {
+				try { wmem = vm.writeTargets(vm.disasm(vm.ip)).mem; } catch (err) { wmem = null; }
+			}
 			var rows = [];
 			for (var r = 0; r < MEM_ROWS; r++) {
 				var addr = (base + r * MEM_BYTES) >>> 0;
@@ -1385,7 +1523,8 @@
 					hexParts.push((byte + 0x100).toString(16).slice(1).toUpperCase());
 					ascii += (byte >= 32 && byte < 127) ? String.fromCharCode(byte) : '.';
 				}
-				rows.push('<li><span class="a">' + hex(addr, 8) + '</span>  <span class="h">' +
+				var isDst = touched ? !!touched[r] : (wmem !== null && wmem >= addr && wmem < addr + MEM_BYTES);
+				rows.push('<li' + (isDst ? ' class="is-dst"' : '') + '><span class="a">' + hex(addr, 8) + '</span>  <span class="h">' +
 					pad(hexParts.join(' '), MEM_BYTES * 3 - 1) + '</span>  <span class="s">|' + esc(ascii) + '|</span></li>');
 			}
 			if (!rows.length) rows.push('<li class="empty">0x' + hex(base, 8) + ' is out of memory</li>');
@@ -1465,6 +1604,7 @@
 					['vm ls  ·  vm rm vm2', 'list / remove']
 				] },
 				{ title: 'run', rows: [
+					['# add ra, rb, rc', 'execute one instruction NOW (no ROM / memory write)'],
 					['vm vm1 inst nop', 'assemble + run one instruction'],
 					['vm vm1 inst "IMM ra, 40"', 'with operands'],
 					['vm vm1 inst "IMMB ri, 42" --no-run', 'patch only'],
@@ -1519,7 +1659,38 @@
 			renderMonitor(machine);
 			renderFiles();
 			renderCheat();
-			Array.prototype.forEach.call(root.querySelectorAll('[data-vm-act]'), function (btn) {
+			/* ---- 重启要长按才生效（和小游戏那边一样，免得误触）---- */
+	var HOLD_RESTART_MS = 700;
+	var holdTimer = null;
+	var holdBtn = null;
+	function beginHold(btn) {
+		if (holdTimer) return;
+		holdBtn = btn;
+		if (btn) btn.classList.add('is-holding');
+		holdTimer = global.setTimeout(function () {
+			holdTimer = null;
+			var el = holdBtn;
+			holdBtn = null;
+			if (el) {
+				el.classList.remove('is-holding');
+				el.classList.add('is-done');
+				global.setTimeout(function () { el.classList.remove('is-done'); }, 420);
+			}
+			action('restart');
+		}, HOLD_RESTART_MS);
+	}
+	function endHold() {
+		if (holdTimer) { global.clearTimeout(holdTimer); holdTimer = null; }
+		if (holdBtn) { holdBtn.classList.remove('is-holding'); holdBtn = null; }
+	}
+	Array.prototype.forEach.call(root.querySelectorAll('[data-vm-act="restart"]'), function (btn) {
+		btn.addEventListener('pointerdown', function (e) { e.preventDefault(); beginHold(btn); });
+		btn.addEventListener('pointerup', endHold);
+		btn.addEventListener('pointerleave', endHold);
+		btn.addEventListener('pointercancel', endHold);
+	});
+
+	Array.prototype.forEach.call(root.querySelectorAll('[data-vm-act]'), function (btn) {
 				var name = btn.getAttribute('data-vm-act');
 				if (name === 'pause') btn.disabled = !(machine && machine.running);
 				else if (name === 'run') btn.disabled = !!(machine && machine.running);
@@ -1545,7 +1716,12 @@
 		root.addEventListener('click', function (e) {
 			var target = e.target;
 			var actBtn = target.closest ? target.closest('[data-vm-act]') : null;
-			if (actBtn) { e.preventDefault(); action(actBtn.getAttribute('data-vm-act')); return; }
+			if (actBtn) {
+				e.preventDefault();
+				if (actBtn.getAttribute('data-vm-act') === 'restart') return;   /* 重启走长按（pointerdown/up）*/
+				action(actBtn.getAttribute('data-vm-act'));
+				return;
+			}
 
 			var fileBtn = target.closest ? target.closest('[data-file-act]') : null;
 			if (fileBtn) {
@@ -1681,6 +1857,11 @@
 				var machine = activeMachine();
 				if (machine) machine.log(String(line), toLogClass(cls));
 			};
+			/* 快捷控制台：# 开头的直接执行（不补 vm 前缀，也不写内存 / ROM） */
+			if (text.charAt(0) === '#') {
+				if (self.execDirect) self.execDirect(text.slice(1).trim(), sink);
+				return;
+			}
 			var parts = quickTokenize(text);
 			/* command() 的参数不含开头的 vm（终端那边也是这么传的） */
 			if (parts.length && parts[0].toLowerCase() === 'vm') parts = parts.slice(1);
@@ -1750,6 +1931,34 @@
 		}
 		if (dom.monMode) {
 			dom.monMode.addEventListener('change', function () { renderMonitor(activeMachine()); });
+		}
+
+		/* 栈：默认跟随 SP，用户一滚动就停止跟随；勾回复选框继续跟随 */
+		if (dom.stack) {
+			dom.stack.addEventListener('scroll', function () {
+				var machine = activeMachine();
+				if (!machine) return;
+				/* 程序自己设的滚动位置（跟随时）不算"用户滚动" */
+				if (Math.abs(dom.stack.scrollTop - (machine._stackProg === undefined ? -1 : machine._stackProg)) <= 2) {
+					if (dom.stackFollow) dom.stackFollow.checked = machine._stackFollow !== false;
+					return;
+				}
+				var want = stackWantScroll(machine);
+				var follow = Math.abs(dom.stack.scrollTop - want) <= 2;
+				if (machine._stackFollow !== follow) {
+					machine._stackFollow = follow;
+					if (dom.stackFollow) dom.stackFollow.checked = follow;
+				}
+				if (!follow) renderStack(machine);
+			});
+		}
+		if (dom.stackFollow) {
+			dom.stackFollow.addEventListener('change', function () {
+				var machine = activeMachine();
+				if (!machine) return;
+				machine._stackFollow = dom.stackFollow.checked;
+				renderStack(machine);
+			});
 		}
 
 		if (dom.memFollow) {

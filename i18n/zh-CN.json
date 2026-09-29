@@ -267,7 +267,7 @@
 			"step": "单步",
 			"over": "跳过调用",
 			"out": "跳出",
-			"restart": "重启",
+			"restart": "重启（长按）",
 			"clearBp": "清除断点",
 			"panel": {
 				"disasm": "反汇编",
@@ -314,7 +314,8 @@
 				"buffer": "缓冲区",
 				"clear": "清屏",
 				"aria": "256×256 小型显示屏"
-			}
+			},
+			"stackFollow": "跟随 SP"
 		}
 	},
 	"links": {

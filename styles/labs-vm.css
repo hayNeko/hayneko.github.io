@@ -252,13 +252,24 @@
 .vm-fprs {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+	/* 行高统一按"能放下 → 新值提示"来定：提示占行内第二行，任何一行都不会被顶高 */
+	grid-auto-rows: 44px;
 	gap: 1px 4px;
 	padding: 8px 10px;
 	font-size: 12px;
-	max-height: 210px;
+	max-height: 300px;
 	overflow: auto;
 }
-.vm-reg { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+.vm-reg {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	align-content: flex-start;
+	gap: 1px 5px;
+	min-width: 0;
+	min-height: 42px;
+	padding: 3px 4px;
+}
 .vm-reg b { color: var(--blue); font-weight: 500; min-width: 26px; }
 .vm-reg span { color: var(--fg); cursor: text; }
 .vm-reg span:hover { color: var(--accent); }
@@ -315,6 +326,9 @@
 .vm-mem li { line-height: 19px; }
 .vm-stack li { display: grid; grid-template-columns: 74px 1fr; gap: 8px; padding: 0 10px; }
 .vm-stack li.is-sp { background: var(--blue-soft); }
+.vm-stack li.is-free .v { color: var(--fg-ghost); }    /* 低于 SP：没推入过 / 已经弹出去的 */
+.vm-stack li.is-free .a { color: var(--fg-ghost); }
+.vm-stack__pad { padding: 0 !important; list-style: none; pointer-events: none; }
 .vm-stack .a { color: var(--fg-faint); }
 .vm-stack .v { color: var(--fg); }
 .vm-mem li { padding: 0 10px; white-space: pre; color: var(--fg-dim); }
@@ -337,6 +351,40 @@
 	font-variant-numeric: tabular-nums;
 }
 .vm-rate__unit { color: var(--fg-ghost); letter-spacing: 0.04em; }
+
+/* --------------------------------------- 将要被修改的寄存器 / 内存 / 操作数 */
+
+.vm-reg.is-dst { background: rgba(255, 107, 107, 0.1); box-shadow: inset 2px 0 0 #ff6b6b; }
+.vm-reg.is-dst b { color: #ff8f8f; }
+.vm-reg__next {
+	flex: 0 0 100%;
+	margin-left: 0;
+	padding-left: 31px;      /* 和寄存器名对齐 */
+	color: #ff6b6b;
+	font-style: normal;
+	white-space: nowrap;
+}
+.vm-mem li.is-dst { background: rgba(255, 107, 107, 0.12); }
+.vm-dis__asm .is-dst { color: #ff6b6b; font-style: normal; }
+
+/* 重启按钮：长按 700ms 才生效，按住时有进度条，生效后闪一下 */
+.vm-btn.is-holding { position: relative; overflow: hidden; border-color: #ff6b6b; color: #ffb3b3; }
+.vm-btn.is-holding::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	height: 2px;
+	width: 100%;
+	background: #ff6b6b;
+	transform-origin: left center;
+	animation: vm-hold 700ms linear forwards;
+}
+.vm-btn.is-done { border-color: #7fe3a1; color: #7fe3a1; }
+@keyframes vm-hold {
+	from { transform: scaleX(0); }
+	to { transform: scaleX(1); }
+}
 
 /* ------------------------------------------------------- 小型显示屏 */
 

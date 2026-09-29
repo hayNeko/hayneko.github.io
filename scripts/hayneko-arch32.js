@@ -319,6 +319,7 @@
 		this.onTrace = null;           /* 逐条跟踪回调（调试器可选） */
 		this.onFrame = null;           /* 显示屏刷新回调 */
 		this.monitor = this._newMonitor();
+		this.changes = { regs: null, mem: [], memMore: false };   /* 上一条指令实际改了什么 */
 	}
 
 	VM.prototype._newMonitor = function () {
@@ -388,10 +389,46 @@
 	/* -------------------------------------------------------------- 寄存器 */
 
 	VM.prototype.readGpr = function (idx) { return this.gpr[idx & 31]; };
+
+	/**
+	 * 记录"这一步实际改了什么"（调试器标红用，按指令清空）：
+	 *   changes.regs[下标] = 改之前的值
+	 *   changes.mem         = 这一步写过的内存地址列表（最多留 CHANGES_MEM_MAX 个）
+	 */
+	var CHANGES_MEM_MAX = 64;
+	VM.prototype._resetChanges = function () {
+		if (!this.changes) this.changes = { regs: null, mem: [], memMore: false };
+		this.changes.regs = null;
+		this.changes.mem.length = 0;
+		this.changes.memMore = false;
+		/* 快照全部寄存器：这样 sp 这种被 PUSH/POP/CALL/RET 隐式改掉的也算数 */
+		if (!this._gprSnap) this._gprSnap = new Uint32Array(32);
+		for (var i = 0; i < 32; i++) this._gprSnap[i] = this.gpr[i];
+	};
+
+	/** 和快照比一比，把真正变了的寄存器和旧值记下来（结束一条指令时调用） */
+	VM.prototype._collectChanges = function () {
+		var snap = this._gprSnap;
+		if (!snap) return;
+		for (var i = 1; i < 32; i++) {          /* x0 恒为 0，不比 */
+			if (snap[i] !== this.gpr[i]) {
+				if (!this.changes.regs) this.changes.regs = {};
+				this.changes.regs[i] = snap[i];
+			}
+		}
+	};
+
+	VM.prototype._noteMem = function (addr, size) {
+		var c = this.changes;
+		if (!c) return;
+		if (c.mem.length >= CHANGES_MEM_MAX) { c.memMore = true; return; }
+		c.mem.push({ addr: addr, size: size });
+	};
+
 	VM.prototype.writeGpr = function (idx, value) {
-		idx &= 31;
-		if (idx === 0) return;          /* x0 恒为 0 */
-		this.gpr[idx] = u32(value);
+		var i = idx & 31;
+		if (i === 0) return;            /* x0 恒为 0 */
+		this.gpr[i] = u32(value);
 	};
 	VM.prototype.readFpr = function (idx) { return this.fpr[idx & 31]; };
 	VM.prototype.writeFpr = function (idx, value) { this.fpr[idx & 31] = Math.fround(Number(value)); };
@@ -466,6 +503,7 @@
 	};
 
 	VM.prototype.writeMem8 = function (addr, value) {
+		this._noteMem(addr, 1);
 		this.memory[this._checkAddr(addr)] = value & MASK8;
 	};
 
@@ -477,6 +515,7 @@
 	};
 
 	VM.prototype.writeMem16 = function (addr, value) {
+		this._noteMem(addr, 2);
 		addr = this._checkAddr(addr);
 		if (addr + 2 > this.memSizeBytes) throw new MemoryViolation('内存访问越界: 0x' + hex(addr, 8));
 		value &= MASK16;
@@ -500,6 +539,7 @@
 	};
 
 	VM.prototype.writeMem32 = function (addr, value) {
+		this._noteMem(addr, 4);
 		addr = this._checkAddr(addr);
 		if (addr + 4 > this.memSizeBytes) throw new MemoryViolation('内存访问越界: 0x' + hex(addr, 8));
 		value = u32(value);
@@ -885,6 +925,7 @@
 
 	VM.prototype.step = function () {
 		if (this.halted) return false;
+		this._resetChanges();            /* 每次执行前清空"这一步改了什么" */
 		this.jumped = false;
 		var dec = this.fetchDecode();
 		/* 中断入栈用的"下一条指令"地址（raw 含前缀，所以用它而不是 dec.length） */
@@ -908,7 +949,47 @@
 		/* 用 raw 长度（含 REX 等前缀）；dec.length 只是指令本体长度 */
 		if (!this.jumped) this.ip = u32(this.ip + dec.raw.length);
 		this.instructionCount += 1;
+		this._collectChanges();
 		return !this.halted;
+	};
+
+	/**
+	 * 直接执行一条已解析的指令（调试器 "#立即执行" 用）：
+	 * 不取指、不把指令写进内存 / ROM、跑完也不推进 ip（jmp / call 这类自己会改 ip 的按语义走）。
+	 * @param {{inst: object, fields: object, raw: Uint8Array}} spec
+	 * @returns {{regs: number[]}} 被改动的通用寄存器下标
+	 */
+	VM.prototype.execDirect = function (spec) {
+		var dec = {
+			inst: spec.inst,
+			fields: spec.fields,
+			raw: spec.raw instanceof Uint8Array ? spec.raw : new Uint8Array(spec.raw || []),
+			length: spec.inst.byteLength,
+			startIp: this.ip
+		};
+		this._resetChanges();
+		var before = this.gpr.slice();
+		this.jumped = false;
+		this.nextIp = this.ip;                  /* 之后若发生中断，返回地址就是当前 ip */
+		if (this.onTrace) this.onTrace(dec);
+		try {
+			var handler = this['_i_' + dec.inst.name.replace(/ /g, '_')];
+			if (typeof handler !== 'function') {
+				throw new UndefinedInstruction('指令 ' + dec.inst.name + ' 未实现');
+			}
+			handler.call(this, dec);
+		} catch (err) {
+			if (err instanceof HaltSignal) throw err;
+			if (err instanceof DivideByZero) this.fault(INT_DIV, '除零错误');
+			else if (err instanceof MemoryViolation) this.fault(INT_MAV, err.message);
+			else if (err instanceof UndefinedInstruction) this.fault(INT_UDI, err.message);
+			else throw err;
+		}
+		this.instructionCount += 1;
+		this._collectChanges();
+		var changed = [];
+		for (var i = 0; i < 32; i++) if (this.gpr[i] !== before[i]) changed.push(i);
+		return { regs: changed };
 	};
 
 	VM.prototype.run = function (maxSteps) {
@@ -974,6 +1055,65 @@
 
 	VM.prototype.disasmText = function (dec) {
 		return this.formatOperands(dec.inst, dec.fields);
+	};
+
+	/* 只写内存、不写目的寄存器的指令（标红"将要被修改"时会用到） */
+	var MEM_WRITE_INSTS = { ST: 1, STB: 1, STW: 1, STD: 1, PUSH: 1, PUSHIMMW: 1, CALL: 1, CALLR: 1 };
+	/* 目的寄存器字段并不是"被写"的指令（地址 / 端口 / 只读标志位之类） */
+	var NO_REG_DST_INSTS = {
+		CMP: 1, TEST: 1, OUT: 1, JMP: 1, JMPR: 1, JMPFAR: 1, JZ: 1, JNZ: 1, JC: 1, JNC: 1,
+		JO: 1, JNO: 1, JN: 1, JNN: 1, JL: 1, JGE: 1, JA: 1, JBE: 1, JLE: 1, JAG: 1,
+		RET: 1, IRET: 1, SYSRET: 1, HALT: 1, NOP: 1, SETIDT: 1, MODIDT: 1, INT: 1, SYSCALL: 1
+	};
+
+	/**
+	 * 这条指令执行后会改写什么（调试器标红"将要被修改"的寄存器 / 内存）。
+	 * @returns {{regs: number[], mem: number|null, port: number|null, preview: object|null}}
+	 */
+	VM.prototype.writeTargets = function (dec) {
+		var out = { regs: [], mem: null, port: null, preview: null };
+		if (!dec || !dec.inst || !dec.fields) return out;
+		var name = dec.inst.name;
+		var f = dec.fields;
+		if (name === 'OUT' || name === 'OUTB' || name === 'OUTW') {
+			out.port = f.PRT === undefined ? null : f.PRT;
+			return out;
+		}
+		/* 有一部分指令把寄存器写进了助记符（"PUSH ra" / "POP r9"），字段里没有 DRG */
+		var named = /^(PUSH|PUSHIMMW|POP)\s+(\S+)$/.exec(name);
+		if (named && GPR_ID[named[2].toLowerCase()] !== undefined) {
+			if (named[1] === 'POP') out.regs.push(GPR_ID[named[2].toLowerCase()]);
+			else out.mem = u32(this.gpr[GPR_ID.sp] - 4);
+			out.regs.push(GPR_ID.sp);          /* 顺带 sp 也会变 */
+			return out;
+		}
+		if (name === 'CALL' || name === 'CALLR' || name === 'RET' || name === 'IRET' || name === 'SYSRET') {
+			out.regs.push(GPR_ID.sp);
+		}
+		if (MEM_WRITE_INSTS[name]) {
+			if (name === 'PUSH' || name === 'PUSHIMMW' || name === 'CALL' || name === 'CALLR') {
+				out.mem = u32(this.gpr[GPR_ID.sp] - 4);
+			} else if (f.DRG !== undefined) {
+				out.mem = u32(this.readGpr(f.DRG) + (f.OF8 === undefined ? 0 : f.OF8));   /* OF8 解码时已符号扩展 */
+			}
+			return out;
+		}
+		if (f.DRG === undefined || NO_REG_DST_INSTS[name]) return out;
+		out.regs.push(f.DRG);
+		if ((name === 'MUL' || name === 'IMUL' || name === 'DIV' || name === 'IDIV') && f.SR3 !== undefined) out.regs.push(f.SR3);
+		var v = null;
+		if (name === 'IMM' && f.I32 !== undefined) v = f.I32;
+		else if (name === 'IMMB' && f.IM8 !== undefined) v = f.IM8;
+		else if (name === 'MOV' && f.SR1 !== undefined) v = this.readGpr(f.SR1);
+		else if (name === 'ADDIB' && f.IM8 !== undefined) v = u32(this.readGpr(f.SR1) + f.IM8);
+		else if (name === 'SUBIB' && f.IM8 !== undefined) v = u32(this.readGpr(f.SR1) - f.IM8);
+		else if (name === 'ADDIDW' && f.I32 !== undefined) v = u32(this.readGpr(f.SR1) + f.I32);
+		else if (name === 'ANDI' && f.IM8 !== undefined) v = u32(this.readGpr(f.SR1) & f.IM8);
+		if (v !== null) {
+			out.preview = {};
+			out.preview[out.regs[0]] = u32(v);
+		}
+		return out;
 	};
 
 	/** 调试器用：把助记符与操作数拆开（页面自己排版，不依赖空格对齐） */
@@ -1270,7 +1410,8 @@
 	function shiftReg(kind) {
 		return function (dec) {
 			var f = dec.fields;
-			var out = this._shiftValue(kind, this.readGpr(f.SR1), this.readGpr(f.SR2));
+			/* 这一族的"移位次数寄存器"字段在规范里写死 0x0（= x0，恒为 0），解码后没有 SR2 */
+			var out = this._shiftValue(kind, this.readGpr(f.SR1), this.readGpr(f.SR2 === undefined ? 0 : f.SR2));
 			this._flagsFromArith(out.result, out.cf, out.of);
 			this.writeGpr(f.DRG, out.result);
 		};
@@ -1497,6 +1638,8 @@
 
 	Assembler.prototype._resolve = function (token, pc) {
 		token = String(token).trim();
+		/* 反汇编会把端口打印成 "port 0x04"，这里容错一下，保证"反汇编文本再汇编"能还原 */
+		if (/^port\s+/i.test(token)) token = token.replace(/^port\s+/i, '');
 		if (this.constants[token] !== undefined) return this.constants[token];
 		if (this.labels[token] !== undefined) return this.labels[token];
 		if (token.charAt(0) === "'" && token.length >= 3) return token.charCodeAt(1);
@@ -1625,10 +1768,11 @@
 		return new Uint8Array(out);
 	};
 
-	Assembler.prototype._encodeInstruction = function (inst, operands, pc, lineno) {
+	/** 一条指令 -> fields（REX 之外的全部字段），_encodeInstruction 与 encodeOne 共用 */
+	Assembler.prototype._fieldsFor = function (inst, operands, pc, lineno) {
 		if (inst.format.length === 1 && inst.format[0] === 'OPC') {
 			if (operands.length) throw new AsmError(inst.name + ' 不需要操作数 (行 ' + lineno + ')');
-			return new Uint8Array([inst.opcode & 0xFF]);
+			return { SOP: 0 };
 		}
 		var order = [];
 		for (var i = 0; i < inst.format.length; i++) {
@@ -1649,7 +1793,39 @@
 				? 0
 				: this._resolveField(order[k], operands[k], pc, lineno);
 		}
-		return this._emit(inst, fields);
+		return fields;
+	};
+
+	Assembler.prototype._encodeInstruction = function (inst, operands, pc, lineno) {
+		return this._emit(inst, this._fieldsFor(inst, operands, pc, lineno));
+	};
+
+	/**
+	 * 解析并编码"单独一条"指令，返回 { inst, fields, raw } —— 供调试器 "#立即执行" 用，
+	 * 完全不碰内存 / ROM（只是把文本变成指令对象 + 机器码）。
+	 */
+	Assembler.prototype.encodeOne = function (text) {
+		this.startPc = 0;
+		this.labels = {};
+		this.constants = {};
+		this._parseLines(String(text) + '\n');
+		var row = null;
+		for (var i = 0; i < this.lines.length; i++) {
+			var line = this.lines[i];
+			if (!line.mnemonic) continue;
+			if (row) throw new AsmError('一次只能直接执行一条指令 (行 ' + line.lineno + ')');
+			row = line;
+		}
+		if (!row) throw new AsmError('没有指令');
+		if (row.mnemonic.charAt(0) === '.') throw new AsmError('伪指令不能直接执行 (行 ' + row.lineno + ')');
+		var found = this._findInst(row.mnemonic, row.rest);
+		if (!found.inst) throw new AsmError('未知指令 ' + row.mnemonic + ' (行 ' + row.lineno + ')');
+		var operands = found.exact ? [] : splitOperands(row.rest);
+		var fields = this._fieldsFor(found.inst, operands, 0, row.lineno);
+		/* _emit 会就地改写 fields（加 REX 前缀时把寄存器号压低 4 位），所以给它一份拷贝 */
+		var copy = {};
+		Object.keys(fields).forEach(function (k) { copy[k] = fields[k]; });
+		return { inst: found.inst, fields: fields, raw: this._emit(found.inst, copy) };
 	};
 
 	/** 这条指令的寄存器操作数里有没有 >= 16 的（有就得加 REX 前缀） */
@@ -1779,7 +1955,8 @@
 		{ id: 'screen', title: 'screen — 显示屏：32x32 渐变点阵' },
 		{ id: 'helloworld', title: 'helloworld — 5x7 方块字 HELLO / WORLD' },
 		{ id: 'syscall-font', title: 'syscall-font — SYSCALL 调字体绘制库（初稿 723B）' },
-		{ id: 'syscall-font-opt', title: 'syscall-font-opt — 同上，最短编码优化版（650B）' }
+		{ id: 'syscall-font-opt', title: 'syscall-font-opt — 同上，最短编码优化版（650B）' },
+		{ id: 'isa-coverage', title: 'isa-coverage — ISA 体检：156 条指令 + 全部寄存器 + 内存/屏幕/中断' }
 	];
 
 	var DEMO_IDS = DEMO_LIST.map(function (d) { return d.id; });

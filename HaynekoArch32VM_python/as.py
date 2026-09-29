@@ -158,6 +158,9 @@ class Assembler:
 
     def _resolve(self, tok, pc):
         tok = tok.strip()
+        # 反汇编会把端口打印成 "port 0x04"，这里容错，保证"反汇编文本再汇编"能还原
+        if tok.lower().startswith("port "):
+            tok = tok[5:].strip()
         if tok in self.constants:
             return self.constants[tok]
         if tok in self.labels:
@@ -363,7 +366,7 @@ DEMO_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file_
 
 # 示例源码都在仓库的 asmdemo/ 目录里（网页版读的是同一批文件）
 DEMO_LIST = ["hello", "fib", "fib3", "intr", "mem", "screen", "helloworld",
-             "syscall-font", "syscall-font-opt"]
+             "syscall-font", "syscall-font-opt", "isa-coverage"]
 
 
 def demo_path(name):

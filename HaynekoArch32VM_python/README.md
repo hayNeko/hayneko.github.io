@@ -25,6 +25,7 @@ py -3.13 as.py --demo screen -o rom.hvd         # 256x256 显示屏：渐变点�
 py -3.13 as.py --demo helloworld -o rom.hvd     # 5x7 方块字：第一行 HELLO、第二行 WORLD
 py -3.13 as.py --demo syscall-font -o rom.hvd   # SYSCALL 调用字体绘制库（初稿 723B）
 py -3.13 as.py --demo syscall-font-opt -o rom.hvd  # 最短编码优化版（650B，屏幕一致）
+py -3.13 as.py --demo isa-coverage -o rom.hvd    # ISA 体检：156 条指令 + 全部寄存器 + 内存/屏幕/中断
 
 # 2) 命令行运行模拟器
 py -3.13 vm.py --rom rom.hvd --mem 1024 --stats
@@ -91,7 +92,7 @@ python vm.py [--isa hayneko_arch32S-v1.json] [--rom rom.hvd] [--disk disk.hvd]
 
 ```
 python as.py 源码.asm -o rom.hvd [--list] [--no-pad]
-python as.py --demo hello|fib|fib3|intr|mem|screen|helloworld|syscall-font|syscall-font-opt -o rom.hvd
+python as.py --demo hello|fib|fib3|intr|mem|screen|helloworld|syscall-font|syscall-font-opt|isa-coverage -o rom.hvd
 ```
 
 **示例源码不在这个目录里**：全部放在仓库根的 `asmdemo/`（网页版读的是同一批文件），

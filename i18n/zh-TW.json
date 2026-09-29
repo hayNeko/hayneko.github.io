@@ -267,7 +267,7 @@
 			"step": "單步",
 			"over": "跳過呼叫",
 			"out": "跳出",
-			"restart": "重新啟動",
+			"restart": "重啟（長按）",
 			"clearBp": "清除中斷點",
 			"panel": {
 				"disasm": "反組譯",
@@ -314,7 +314,8 @@
 				"buffer": "緩衝區",
 				"clear": "清除畫面",
 				"aria": "256×256 小型顯示器"
-			}
+			},
+			"stackFollow": "跟隨 SP"
 		}
 	},
 	"links": {

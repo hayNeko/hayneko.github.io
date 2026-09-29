@@ -1525,7 +1525,9 @@ class InstructionHandlers(VM):
 
     def _shift_register(self, f, kind):
         v = self.read_gpr(f["SR1"])
-        n = self.read_gpr(f["SR2"]) & 31
+        # 规范里这一族指令的"移位次数寄存器"字段写死为 0x0（即 x0，恒为 0 = 不移动），
+        # 解码后 fields 里没有 SR2，所以缺省按寄存器 0 处理（网页版同样行为）
+        n = self.read_gpr(f.get("SR2", 0)) & 31
         if n == 0:
             result, cf, of = v, 0, 0
         elif kind == "shl":

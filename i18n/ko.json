@@ -267,7 +267,7 @@
 			"step": "단계 실행",
 			"over": "호출 건너뛰기",
 			"out": "빠져나가기",
-			"restart": "재시작",
+			"restart": "재시작(길게)",
 			"clearBp": "중단점 지우기",
 			"panel": {
 				"disasm": "디스어셈블",
@@ -314,7 +314,8 @@
 				"buffer": "버퍼",
 				"clear": "지우기",
 				"aria": "256×256 미니 디스플레이"
-			}
+			},
+			"stackFollow": "SP 따라가기"
 		}
 	},
 	"links": {

@@ -117,7 +117,13 @@
 		</section>
 
 		<section class="vm-panel vm-panel--stack">
-			<header class="vm-panel__head"><span i18n-key="lab.vm.panel.stack">Stack (SP)</span></header>
+			<header class="vm-panel__head">
+				<span i18n-key="lab.vm.panel.stack">Stack (SP)</span>
+				<span class="vm-mem-ctl">
+					<label for="vm-stack-follow" i18n-key="lab.vm.stackFollow">follow SP</label>
+					<input type="checkbox" id="vm-stack-follow" data-vm-stack-follow checked>
+				</span>
+			</header>
 			<ol class="vm-stack" data-vm-stack></ol>
 		</section>
 
