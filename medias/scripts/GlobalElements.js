@@ -5,7 +5,7 @@
 		header: `
 			<header class="body_header">
 				<a href="/index.html" class="body_header_anchor not-link">
-					<img class="body_header_logo protected-media" src="/medias/picures/avatarMikuHatsune.jpg" alt="Hayneko's blog" />
+					<img class="body_header_logo protected-media" src="/medias/pictures/avatarMikuHatsune.jpg" alt="Hayneko's blog" />
 					<h1 class="body_header_title" data-i18n="title">Hayneko's blog</h1>
 				</a>
 				<button class="body_header_menu_login-button" id="body_header_menu_login-button" data-i18n="login" onclick="javascript:alert(' Login feature is not available yet \\n 登录功能尚未开放 \\n 登錄功能尚未開放 \\n ログイン機能はまだご利用いただけません \\n 로그인 기능은 아직 사용할 수 없습니다');">Login</button>
@@ -74,7 +74,7 @@
 		dock: `
 			<nav class="dock">
 				<figure class="dock_avatar" id="avatar" onclick="javascript:HandleDockClickEvent_EmmitParticle();">
-					<img src="/medias/picures/avatarMikuHatsune.jpg" alt="Hayneko's blog" class="protected-media">
+					<img src="/medias/pictures/avatarMikuHatsune.jpg" alt="Hayneko's blog" class="protected-media">
 				</figure>
 				<p class="dock_boxes" id="home" data-i18n-tooltip="home" onclick="javascript:HandleDockClickEvent_Home();"><i class="fa-solid fa-house"></i></p>
 				<p class="dock_boxes" id="album" data-i18n-tooltip="album" onclick="javascript:HandleDockClickEvent_Album();"><i class="fa-solid fa-image"></i></p>

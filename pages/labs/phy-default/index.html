@@ -1,190 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-	<title>Force vs Motion Simulation</title>
-	<style>
-		@import url("root-theme-colors.css");
-		* {
-			margin: 0;
-			padding: 0;
-		}
-		body {
-			font-family: sans-serif;
-			color: var(--text-color-primary);
-		}
-		canvas {
-			border: 1px solid #333;
-			background: var(--dock-bg-color);
-		}
-		.controls {
-			margin-top: 10px;
-		}
-		.controls label {
-			font-weight: bold;
-			color: var(--text-color-primary);
-			margin-bottom: 5px;
-			display: inline-block;
-		}
-		.readout {
-			margin-top: 10px;
-			font-family: monospace;
-			background: var(--dock-menu-bg-color);
-			color: var(--text-color-primary);
-			padding: 10px;
-			width: fit-content;
-			
-		}
-	</style>
-	<link rel="stylesheet" href="/medias/css/dock.css">
-	<link rel="stylesheet" href="/medias/css/main-page.css">
-	<link rel="stylesheet" href="/medias/css/index.css">
-
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="color-scheme" content="dark">
+	<title>Force &amp; Motion · Hayneko Labs</title>
+
+	<link rel="icon" href="../../../medias/pictures/miku.JPG" sizes="32x32">
+
+	<!-- 新站样式层; 旧的 /medias/css/* 不再引用 -->
+	<link rel="stylesheet" href="../../../styles/tokens.css">
+	<link rel="stylesheet" href="../../../styles/lab.css">
 </head>
 <body>
-	<h3>力學大神模擬：力與運動的關係 (F = ma)</h3>
-	<canvas id="simCanvas" width="800" height="200"></canvas>
-	
-	<div class="controls">
-		<label>施力 (Force, N): <span id="forceVal">0</span></label><br>
-		<input type="range" id="forceSlider" min="-10" max="10" step="0.5" value="0" style="width: 300px;">
-		<br>
-		<button onclick="resetSim()">重置 (Reset)</button>
-	</div>
+	<div class="lab-page">
+		<header class="lab-head">
+			<span class="lab-head__glyph" aria-hidden="true">▚</span>
+			<span class="lab-head__prompt">hayneko@blog</span><span>:</span><span class="lab-head__path">~/labs/force</span>
+			<span class="lab-head__caret" aria-hidden="true"></span>
+			<span class="lab-head__spacer"></span>
+			<span class="lab-head__tag">labs · v1.0</span>
+			<a class="lab-back" href="../../../index.html#/labs">← labs</a>
+		</header>
 
-	<div class="readout">
-		質量 (Mass): 2 kg<br>
-		加速度 (a = F/m): <span id="accVal">0.00</span> m/s²<br>
-		速度 (v): <span id="velVal">0.00</span> m/s<br>
-		位置 (x): <span id="posVal">0.00</span> m
-	</div>
+		<h3>力學大神模擬：力與運動的關係 (F = ma)</h3>
 
-	
-	<br>
-	
-	<h3>公式1</h3>
-	<!-- <math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mtable displaystyle="true" columnalign="right left right left right left right left right left right left" columnspacing="0em 2em 0em 2em 0em 2em 0em 2em 0em 2em 0em" rowspacing="3pt"><mtr><mtd><mi>v</mi></mtd><mtd><mi></mi><mo>=</mo><mi>u</mi><mo>+</mo><mi>a</mi><mi>t</mi></mtd></mtr><mtr><mtd><msup><mi>v</mi><mn>2</mn></msup></mtd><mtd><mi></mi><mo>=</mo><msup><mi>u</mi><mn>2</mn></msup><mo>+</mo><mn>2</mn><mi>a</mi><mi>s</mi></mtd></mtr><mtr><mtd><mi>a</mi></mtd><mtd><mi></mi><mo>=</mo><mfrac><mrow><mi>v</mi><mo>−</mo><mi>u</mi></mrow><mi>t</mi></mfrac></mtd></mtr><mtr><mtd><mi>s</mi></mtd><mtd><mi></mi><mo>=</mo><mi>u</mi><mi>t</mi><mo>+</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>a</mi><msup><mi>t</mi><mn>2</mn></msup></mtd></mtr><mtr><mtd><mi>s</mi></mtd><mtd><mi></mi><mo>=</mo><mfrac><mrow><mo stretchy="false">(</mo><mi>u</mi><mo>+</mo><mi>v</mi><mo stretchy="false">)</mo><mi>t</mi></mrow><mn>2</mn></mfrac></mtd></mtr></mtable></math> -->
+		<div class="lab-stage">
+			<canvas id="simCanvas" width="800" height="200"></canvas>
+		</div>
 
-	<img src="/medias/picures/QianJianTec1764155459272.jpg" width="240">
+		<div class="controls">
+			<label>施力 (Force, N): <span id="forceVal">0</span></label>
+			<input type="range" id="forceSlider" min="-10" max="10" step="0.5" value="0">
+			<button onclick="resetSim()">重置 (Reset)</button>
+		</div>
 
-	<h3>公式2</h3>
+		<div class="readout">
+			質量 (Mass): 2 kg<br>
+			加速度 (a = F/m): <span id="accVal">0.00</span> m/s²<br>
+			速度 (v): <span id="velVal">0.00</span> m/s<br>
+			位置 (x): <span id="posVal">0.00</span> m
+		</div>
 
-	<script>
-		const canvas = document.getElementById('simCanvas');
-		const ctx = canvas.getContext('2d');
-		
-		// Physics variables
-		const mass = 2.0; // kg
-		let force = 0.0;
-		let acc = 0.0;
-		let vel = 0.0;
-		let pos = 50.0; // initial x position
-		
-		// Time step
-		let lastTime = performance.now();
+		<h3>公式1</h3>
+		<!-- <math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mtable displaystyle="true" columnalign="right left right left right left right left right left right left" columnspacing="0em 2em 0em 2em 0em 2em 0em 2em 0em 2em 0em" rowspacing="3pt"><mtr><mtd><mi>v</mi></mtd><mtd><mi></mi><mo>=</mo><mi>u</mi><mo>+</mo><mi>a</mi><mi>t</mi></mtd></mtr><mtr><mtd><msup><mi>v</mi><mn>2</mn></msup></mtd><mtd><mi></mi><mo>=</mo><msup><mi>u</mi><mn>2</mn></msup><mo>+</mo><mn>2</mn><mi>a</mi><mi>s</mi></mtd></mtr><mtr><mtd><mi>a</mi></mtd><mtd><mi></mi><mo>=</mo><mfrac><mrow><mi>v</mi><mo>−</mo><mi>u</mi></mrow><mi>t</mi></mfrac></mtd></mtr><mtr><mtd><mi>s</mi></mtd><mtd><mi></mi><mo>=</mo><mi>u</mi><mi>t</mi><mo>+</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>a</mi><msup><mi>t</mi><mn>2</mn></msup></mtd></mtr><mtr><mtd><mi>s</mi></mtd><mtd><mi></mi><mo>=</mo><mfrac><mrow><mo stretchy="false">(</mo><mi>u</mi><mo>+</mo><mi>v</mi><mo stretchy="false">)</mo><mi>t</mi></mrow><mn>2</mn></mfrac></mtd></mtr></mtable></math> -->
 
-		// UI Elements
-		const slider = document.getElementById('forceSlider');
-		const forceDisplay = document.getElementById('forceVal');
-		const accDisplay = document.getElementById('accVal');
-		const velDisplay = document.getElementById('velVal');
-		const posDisplay = document.getElementById('posVal');
+		<img src="../../../medias/pictures/QianJianTec1764155459272.jpg" alt="公式手稿" width="240">
 
-		slider.oninput = function() {
-			force = parseFloat(this.value);
-			forceDisplay.innerText = force;
-		};
+		<h3>公式2</h3>
 
-		function resetSim() {
-			force = 0;
-			slider.value = 0;
-			forceDisplay.innerText = 0;
-			vel = 0;
-			pos = 50;
-			acc = 0;
-		}
+		<script>
+			const canvas = document.getElementById('simCanvas');
+			const ctx = canvas.getContext('2d');
 
-		function update(timestamp) {
-			const dt = (timestamp - lastTime) / 1000; // convert to seconds
-			lastTime = timestamp;
+			// Physics variables
+			const mass = 2.0; // kg
+			let force = 0.0;
+			let acc = 0.0;
+			let vel = 0.0;
+			let pos = 50.0; // initial x position
 
-			// Physics Logic: F = ma => a = F/m
-			acc = force / mass;
-			
-			// Kinematics: v = u + at
-			vel += acc * dt;
-			
-			// Position: s = s0 + vt
-			pos += vel * dt * 50; // *50 for pixel scaling visual
+			// Time step
+			let lastTime = performance.now();
 
-			// Boundary handling (loop around)
-			if (pos > canvas.width) pos = 0;
-			if (pos < 0) pos = canvas.width;
+			// UI Elements
+			const slider = document.getElementById('forceSlider');
+			const forceDisplay = document.getElementById('forceVal');
+			const accDisplay = document.getElementById('accVal');
+			const velDisplay = document.getElementById('velVal');
+			const posDisplay = document.getElementById('posVal');
 
-			draw();
-			updateReadout();
-			requestAnimationFrame(update);
-		}
+			slider.oninput = function() {
+				force = parseFloat(this.value);
+				forceDisplay.innerText = force;
+			};
 
-		function draw() {
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			function resetSim() {
+				force = 0;
+				slider.value = 0;
+				forceDisplay.innerText = 0;
+				vel = 0;
+				pos = 50;
+				acc = 0;
+			}
 
-			// Draw Floor
-			ctx.beginPath();
-			ctx.moveTo(0, 150);
-			ctx.lineTo(canvas.width, 150);
-			ctx.stroke();
+			function update(timestamp) {
+				const dt = (timestamp - lastTime) / 1000; // convert to seconds
+				lastTime = timestamp;
 
-			// Draw Block
-			ctx.fillStyle = '#3498db';
-			ctx.fillRect(pos, 100, 50, 50);
+				// Physics Logic: F = ma => a = F/m
+				acc = force / mass;
 
-			// Draw Force Vector
-			if (force !== 0) {
+				// Kinematics: v = u + at
+				vel += acc * dt;
+
+				// Position: s = s0 + vt
+				pos += vel * dt * 50; // *50 for pixel scaling visual
+
+				// Boundary handling (loop around)
+				if (pos > canvas.width) pos = 0;
+				if (pos < 0) pos = canvas.width;
+
+				draw();
+				updateReadout();
+				requestAnimationFrame(update);
+			}
+
+			function draw() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+				// Draw Floor
+				ctx.strokeStyle = 'rgba(230, 237, 243, 0.28)';
 				ctx.beginPath();
-				ctx.strokeStyle = '#e74c3c';
-				ctx.lineWidth = 3;
-				const arrowLen = force * 10;
-				const startX = pos + 25;
-				const startY = 125;
-				ctx.moveTo(startX, startY);
-				ctx.lineTo(startX + arrowLen, startY);
+				ctx.moveTo(0, 150);
+				ctx.lineTo(canvas.width, 150);
 				ctx.stroke();
 
-				// Arrowhead
-				ctx.beginPath();
-				ctx.fillStyle = '#e74c3c';
-				const headSize = 5;
-				if (force > 0) {
-					ctx.moveTo(startX + arrowLen, startY);
-					ctx.lineTo(startX + arrowLen - headSize, startY - headSize);
-					ctx.lineTo(startX + arrowLen - headSize, startY + headSize);
-				} else {
-					ctx.moveTo(startX + arrowLen, startY);
-					ctx.lineTo(startX + arrowLen + headSize, startY - headSize);
-					ctx.lineTo(startX + arrowLen + headSize, startY + headSize);
+				// Draw Block —— 方块用绿色打底 + 深色描边(和站点配色一致)
+				ctx.fillStyle = '#3ce07b';
+				ctx.strokeStyle = 'rgba(4, 6, 10, 0.65)';
+				ctx.lineWidth = 1;
+				ctx.fillRect(pos, 100, 50, 50);
+				ctx.strokeRect(pos + 0.5, 100.5, 49, 49);
+
+				// Draw Force Vector —— 力箭头用红色
+				if (force !== 0) {
+					ctx.beginPath();
+					ctx.strokeStyle = '#ff4d5a';
+					ctx.lineWidth = 3;
+					const arrowLen = force * 10;
+					const startX = pos + 25;
+					const startY = 125;
+					ctx.moveTo(startX, startY);
+					ctx.lineTo(startX + arrowLen, startY);
+					ctx.stroke();
+
+					// Arrowhead
+					ctx.beginPath();
+					ctx.fillStyle = '#ff4d5a';
+					const headSize = 5;
+					if (force > 0) {
+						ctx.moveTo(startX + arrowLen, startY);
+						ctx.lineTo(startX + arrowLen - headSize, startY - headSize);
+						ctx.lineTo(startX + arrowLen - headSize, startY + headSize);
+					} else {
+						ctx.moveTo(startX + arrowLen, startY);
+						ctx.lineTo(startX + arrowLen + headSize, startY - headSize);
+						ctx.lineTo(startX + arrowLen + headSize, startY + headSize);
+					}
+					ctx.fill();
+					ctx.lineWidth = 1; // reset
 				}
-				ctx.fill();
-				ctx.lineWidth = 1; // reset
 			}
-		}
 
-		function updateReadout() {
-			accDisplay.innerText = acc.toFixed(2);
-			// Show velocity scaled down for readability
-			velDisplay.innerText = (vel).toFixed(2);
-			posDisplay.innerText = (pos/50).toFixed(2);
-		}
+			function updateReadout() {
+				accDisplay.innerText = acc.toFixed(2);
+				// Show velocity scaled down for readability
+				velDisplay.innerText = (vel).toFixed(2);
+				posDisplay.innerText = (pos/50).toFixed(2);
+			}
 
-		requestAnimationFrame(update);
-	</script>
+			requestAnimationFrame(update);
+		</script>
+	</div>
 </body>
-<script src="/medias/scripts/GlobalElements.js"></script>
-<script src="/medias/scripts/CreateParticle.js"></script>
-<script src="/medias/scripts/LanguageSwitcher.js"></script>
-<script src="/medias/scripts/ThemeSwitcher.js"></script>
-<script src="/medias/scripts/DockMenuSystem.js"></script>
-<script src="/medias/scripts/DockInitializer.js"></script>
-<script src="https://kit.fontawesome.com/1600b40260.js" crossorigin="anonymous"></script>
 </html>

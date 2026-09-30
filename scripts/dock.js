@@ -177,7 +177,7 @@
 
 		return '<nav class="dock" id="dock" aria-label="" i18n-attr="aria-label" i18n-key="dock.aria">' +
 			'<button type="button" class="dock__avatar" id="dock-avatar" data-tip="" i18n-attr="data-tip" i18n-key="dock.avatar.tip">' +
-			'<img src="medias/picures/avatarMikuHatsune1.jpg" alt="Hayno" draggable="false" class="protected-media">' +
+			'<img src="medias/pictures/avatarMikuHatsune1.jpg" alt="Hayno" draggable="false" class="protected-media">' +
 			'</button>' +
 			'<span class="dock__sep dock__sep--avatar" aria-hidden="true"></span>' +
 			items +

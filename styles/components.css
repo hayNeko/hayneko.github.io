@@ -46,7 +46,8 @@
 	color: var(--fg-dim);
 	border: 1px solid var(--line);
 	border-radius: 99px;
-	background: rgba(230, 237, 243, 0.03);
+	/* 背景字型现在排在左上角, 会从这枚标签后面经过 —— 给它一个实底, 标签里的字才清楚 */
+	background: rgba(6, 10, 15, 0.78);
 }
 .eyebrow__pulse {
 	width: 7px;
@@ -167,7 +168,7 @@
 .card {
 	position: relative;
 	padding: 22px 22px 24px;
-	background: linear-gradient(180deg, rgba(14, 20, 28, 0.62), rgba(8, 12, 18, 0.5));
+	background: linear-gradient(180deg, rgba(14, 20, 28, 0.88), rgba(8, 12, 18, 0.8));
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
 	overflow: hidden;
@@ -227,7 +228,7 @@
 	overflow: hidden;
 	box-shadow: 0 34px 70px -34px rgba(0, 0, 0, 0.95);
 }
-.term-window--bare { background: rgba(5, 8, 12, 0.86); }
+.term-window--bare { background: rgba(5, 8, 12, 0.95); }
 
 .term-window__bar {
 	display: flex;
@@ -287,7 +288,7 @@
 	padding: 11px 13px;
 	font-size: 13.5px;
 	color: var(--fg);
-	background: rgba(4, 6, 10, 0.6);
+	background: rgba(4, 6, 10, 0.8);
 	border: 1px solid var(--line);
 	border-radius: var(--radius-sm);
 	transition: border-color var(--dur-2) ease, box-shadow var(--dur-2) ease, background var(--dur-2) ease;
@@ -304,7 +305,7 @@
 	outline: none;
 	border-color: var(--accent);
 	box-shadow: 0 0 0 3px var(--accent-soft);
-	background: rgba(4, 6, 10, 0.85);
+	background: rgba(4, 6, 10, 0.95);
 }
 .input[aria-invalid="true"],
 .textarea[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }

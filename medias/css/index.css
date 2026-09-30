@@ -35,7 +35,7 @@ html.light-theme body::before {
 	background-size: cover;
 	background-attachment: fixed;
 	background-position: center center;
-	background-image: url("../picures/bg-hatsune-miku.jpg");
+	background-image: url("../pictures/bg-hatsune-miku.jpg");
 	filter: brightness(1.5) saturate(0.75);
 }
 
@@ -50,7 +50,7 @@ body::before {
 	background-size: cover;
 	background-attachment: fixed;
 	background-position: center center;
-	background-image: url("../picures/bg-hatsune-miku.jpg");
+	background-image: url("../pictures/bg-hatsune-miku.jpg");
 	filter: brightness(0.5) saturate(1.5);
 }
 

@@ -356,7 +356,7 @@ html.reduce-motion [data-smear]:not(.is-revealed) { opacity: 1; }
 
 /* components.css 里写死颜色的卡片 / 终端 / 统计条 */
 [data-theme="light"] .card {
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 247, 250, 0.7));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 249, 252, 0.88));
 }
 /* 浅色主题下卡片悬停不再换渐变背景, 改由 motion.css 的 --tint-hover 叠加 */
 [data-theme="light"] { --tint-hover: rgba(12, 18, 26, 0.035); }
@@ -372,4 +372,6 @@ html.reduce-motion [data-smear]:not(.is-revealed) { opacity: 1; }
 [data-theme="light"] .select:focus,
 [data-theme="light"] .textarea:focus { background: #fff; }
 [data-theme="light"] .kbd { background: rgba(12, 18, 26, 0.06); }
+/* components.css 里那枚标签(@系统在线)现在会压在字型上, 浅色下也给它一个实底 */
+[data-theme="light"] .eyebrow { background: rgba(255, 255, 255, 0.92); }
 

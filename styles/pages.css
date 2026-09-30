@@ -58,10 +58,10 @@
 	padding: 20px 22px 24px;
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
-	background: linear-gradient(180deg, rgba(14, 20, 28, 0.6), rgba(7, 11, 16, 0.5));
+	background: linear-gradient(180deg, rgba(14, 20, 28, 0.88), rgba(7, 11, 16, 0.8));
 }
 [data-theme="light"] .profile-card {
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 247, 250, 0.7));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 249, 252, 0.88));
 }
 
 .profile-row {
@@ -91,11 +91,11 @@
 	padding: 30px 24px;
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
-	background: linear-gradient(180deg, rgba(14, 20, 28, 0.6), rgba(7, 11, 16, 0.5));
+	background: linear-gradient(180deg, rgba(14, 20, 28, 0.88), rgba(7, 11, 16, 0.8));
 	text-align: center;
 }
 [data-theme="light"] .avatar-card {
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(244, 247, 250, 0.7));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 249, 252, 0.88));
 }
 .avatar-card__img {
 	width: 132px;
@@ -149,11 +149,11 @@
 	align-items: center;
 	gap: 16px;
 	padding: 14px 18px;
-	background: rgba(6, 10, 15, 0.45);
+	background: rgba(6, 10, 15, 0.78);
 	border-bottom: 1px solid var(--line);
 	transition: background var(--dur-2) ease, padding-left var(--dur-3) var(--ease-smear);
 }
-[data-theme="light"] .file-row { background: rgba(255, 255, 255, 0.6); }
+[data-theme="light"] .file-row { background: rgba(255, 255, 255, 0.92); }
 .file-row:last-child { border-bottom: none; }
 .file-row:hover { background: rgba(var(--blue-rgb), 0.06); padding-left: 24px; }
 .file-row__mark { color: var(--fg-ghost); font-size: 12px; user-select: none; }
@@ -194,12 +194,12 @@
 	padding: 22px;
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
-	background: linear-gradient(180deg, rgba(14, 20, 28, 0.62), rgba(8, 12, 18, 0.5));
+	background: linear-gradient(180deg, rgba(14, 20, 28, 0.88), rgba(8, 12, 18, 0.8));
 	overflow: hidden;
 	transition: border-color var(--dur-3) ease, transform var(--dur-3) var(--ease-out), background var(--dur-3) ease;
 }
 [data-theme="light"] .sim-card {
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(244, 247, 250, 0.72));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 249, 252, 0.88));
 }
 .sim-card:hover { transform: translateY(-4px); border-color: var(--line-strong); }
 .sim-card::before {

@@ -324,10 +324,12 @@ html.reduce-motion .btn::after { display: none; }
 
 .badge { position: relative; }
 
+/* 注意: 这里**不包含** .dock__item —— Dock 图标悬停时不再跑描边光效,
+   只保留底色/边框/缩放这几档静态反馈(见 dock.css 的 .dock__item:hover)。
+   想恢复的话, 把 .dock__item::after 加回下面两处选择器即可。 */
 .btn::before,
 .badge::before,
-.term-suggest button::before,
-.dock__item::after {
+.term-suggest button::before {
 	content: "";
 	position: absolute;
 	inset: 0;
@@ -354,9 +356,7 @@ html.reduce-motion .btn::after { display: none; }
 .btn:hover::before,
 .btn:focus-visible::before,
 .badge:hover::before,
-.term-suggest button:hover::before,
-.dock__item:hover::after,
-.dock__item:focus-visible::after {
+.term-suggest button:hover::before {
 	--fx-draw: 100%;
 }
 
