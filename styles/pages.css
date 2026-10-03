@@ -151,11 +151,20 @@
 	padding: 14px 18px;
 	background: rgba(6, 10, 15, 0.78);
 	border-bottom: 1px solid var(--line);
-	transition: background var(--dur-2) ease, padding-left var(--dur-3) var(--ease-smear);
+	transition: background var(--dur-2) ease,
+		padding-left var(--dur-3) var(--ease-smear),
+		padding-right var(--dur-3) var(--ease-smear);
 }
 [data-theme="light"] .file-row { background: rgba(255, 255, 255, 0.92); }
 .file-row:last-child { border-bottom: none; }
-.file-row:hover { background: rgba(var(--blue-rgb), 0.06); padding-left: 24px; }
+/*
+ * 悬停时内容整体右移 6px。
+ * ⚠️ 必须**左右互补**: 只加 padding-left 会把内容列挤窄 24px, 英文那种刚好卡在折行边界的
+ * 标题("Intel 80386 Programmer's Reference Manual (1986)")就会把 "(1986)" 挤到下一行。
+ * 左边 +6、右边 -6, 内容盒宽度不变, 于是只是平移, 不会重新折行。
+ * (motion.js 的 MOVE_PROPS 里 padding-left / padding-right 都在, 位移模糊照常工作。)
+ */
+.file-row:hover { background: rgba(var(--blue-rgb), 0.06); padding-left: 24px; padding-right: 12px; }
 .file-row__mark { color: var(--fg-ghost); font-size: 12px; user-select: none; }
 .file-row__main { min-width: 0; }
 .file-row__name {

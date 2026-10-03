@@ -34,10 +34,39 @@
 		};
 	</script>
 
+	<!--
+		设备分级: 必须在所有动效层之前算好, 所以它是**阻塞**脚本。
+		(它只做同步探测、不碰 DOM, 几百字节; 换来的是后面每个动效模块都不用自己判断设备。)
+	-->
+	<script src="scripts/perf-tier.js"></script>
+
 	<script src="scripts/motion-pref.js" defer></script>
 	<script src="scripts/i18n.js" defer></script>
 	<script src="scripts/smear.js" defer></script>
-	<script src="scripts/geometry-bg.js" defer></script>
+	<!--
+		背景动效**按需加载**:
+		  · 省流模式(saveData) / 单核 / ≤1G 内存 → 直接不加载这 30KB, 页面其余部分照常
+		    (app.js / router.js / dock.js 调用 GeometryBG 时都做了存在性判断);
+		  · 其余情况等 DOMContentLoaded 再注入 —— 那时 defer 脚本(motion-pref 等)已经跑完,
+		    顺序确定; 而背景本来就要等启动屏收起才开始, 所以并不慢。
+	-->
+	<script>
+		(function () {
+			var t = window.PerfTier;
+			if (t && t.budget && t.budget.background === false) return;
+			function inject() {
+				var s = document.createElement('script');
+				s.src = 'scripts/geometry-bg.js';
+				s.async = false;
+				document.head.appendChild(s);
+			}
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', inject, { once: true });
+			} else {
+				inject();
+			}
+		})();
+	</script>
 	<script src="scripts/motion.js" defer></script>
 	<script src="scripts/router.js" defer></script>
 	<script src="scripts/header-nav.js" defer></script>

@@ -31,6 +31,19 @@
 	var MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Courier New", monospace';
 	var TAU = Math.PI * 2;
 
+	/*
+	 * 动效预算: 由 scripts/perf-tier.js 按 UA + 设备能力(核数/内存/DPR/省流/网络/指针)
+	 * 事先算好。缺那个文件时按"满配"跑, 保证这条链路不会因为少一个脚本而挂掉。
+	 * 下面所有减法都只读这张表, 不再自己判断设备。
+	 */
+	var PERF = (global.PerfTier && global.PerfTier.budget) ? global.PerfTier : null;
+	var BUDGET = PERF ? PERF.budget : {
+		particles: 1, maskCols: 92, rings: 2, dprCap: 1.5, fps: 0, planetDensity: 1,
+		depth: 3, sweep: true, pulses: true, scramble: true, spin: true,
+		background: true, staticOnly: false, tier: 'high'
+	};
+	if (BUDGET.background === false) return;   /* 省流 / 极低端: 这块根本不跑 */
+
 	var TEXT = 'MIKU ICHINOSE';
 	var pathText = '/home';                 /* 由路由决定, 见 currentPathText() */
 
@@ -51,7 +64,7 @@
 	 */
 	var REST_YAW = 0;
 
-	var DEPTH = 3;             /* 文字: 字面 + 2 层暗影 */
+	var DEPTH = clamp(BUDGET.depth || 3, 2, 3);   /* 文字: 字面 + 1~2 层暗影 */
 	var DEPTH_STEP = 4.2;      /* 只在打开鼠标跟随时才起作用(给 z 一点厚度) */
 	var LAYER_DX = 1;          /* 每层往右错 1 格 */
 	var LAYER_DY = 1;          /* 每层往下错 1 格 → 右下方向的立体影 */
@@ -83,8 +96,14 @@
 		particleTotal: 0,
 		narrow: false,
 		quiet: 0,
+		/* 运行期品质: level 0 = 满配, 1/2/3 = 逐级降级(见 checkPerf) */
+		quality: 1,
+		perf: { tier: (PERF && PERF.tier) || 'high', level: 0, avgFrame: 0, frames: 0 },
 		accent: [60, 224, 123]
 	};
+
+	/** 当前有效品质(预算 × 运行期降级) */
+	function quality() { return (BUDGET.particles || 1) * state.quality; }
 
 	function rand(a, b) { return a + Math.random() * (b - a); }
 
@@ -272,8 +291,9 @@
 	/** 球面 + 两圈行星环; 每个点存模型坐标与法线(单位向量) */
 	function buildPlanet(R) {
 		var pts = [];
-		var spacing = 1.5;                       /* 单位: 格 */
-		var bands = Math.max(9, Math.round(Math.PI * R / spacing * 1.7));
+		/* 单位: 格。低端设备把间距拉大 → 点更少; 运行期降级同理 */
+		var spacing = 1.5 / (BUDGET.planetDensity || 1) / Math.max(0.5, state.quality);
+		var bands = Math.max(7, Math.round(Math.PI * R / spacing * 1.7));
 		var b, k, lat, ringR, count, lon, a;
 
 		for (b = 0; b < bands; b++) {
@@ -287,7 +307,7 @@
 			}
 		}
 
-		var rings = [1.72, 2.08];      /* 环再铺开一点, 远看更像土星 */
+		var rings = [1.72, 2.08].slice(0, BUDGET.rings || 2);   /* 低端设备只画一圈 */
 		for (var ri = 0; ri < rings.length; ri++) {
 			var rr = R * rings[ri];
 			count = Math.round(TAU * rr / (spacing * 1.05));
@@ -408,7 +428,7 @@
 		var layerTotal = 0;
 		for (i = 0; i < layers.length; i++) layerTotal += layers[i].length;
 		var face = layers[0] ? layers[0].length : 0;
-		var need = Math.min(layerTotal, Math.max(face, 2400));
+		var need = Math.min(layerTotal, Math.max(face, Math.round(2400 * quality())));
 
 		var picked = [];
 		for (j = 0; j < layers.length && picked.length < need; j++) {
@@ -425,7 +445,8 @@
 		}
 		if (!keep.length) {
 			var cellsTotal = (state.w * state.h) / (state.cell * state.cell);
-			var fillers = clamp(Math.round(cellsTotal * 0.2), 200, 900);
+			var fillers = clamp(Math.round(cellsTotal * 0.2 * quality()), 120,
+			Math.round(900 * Math.max(0.4, quality())));
 			for (i = 0; i < fillers; i++) keep.push(makeDrifter());
 		}
 
@@ -465,8 +486,9 @@
 			p.ch = pick(AMBIENT);
 			p.started = false;
 			p.lock = 0;
-			p.delay = relNow() + rand(120, 1500);
-			p.dur = rand(900, 1700);
+			/* 低端设备不做"漫游再归位", 直接快速补位 */
+			p.delay = relNow() + (BUDGET.scramble ? rand(120, 1500) : rand(0, 150));
+			p.dur = BUDGET.scramble ? rand(900, 1700) : rand(260, 460);
 			p.flash = 0;
 		}
 		state.quiet = 0;
@@ -479,7 +501,7 @@
 		state.narrow = state.w < 700;
 		var wantCell = state.narrow ? 7 : 12.5;
 		var artW = Math.min(state.w - (state.narrow ? 26 : 150), state.narrow ? 380 : 1080);
-		var cols = clamp(Math.round(artW / wantCell), 36, 92);
+		var cols = clamp(Math.round(artW / wantCell), 36, BUDGET.maskCols || 92);
 
 		var mask = rasterizeMask(cols);
 		if (!mask) {
@@ -515,7 +537,7 @@
 	function resize() {
 		var w = global.innerWidth;
 		var h = global.innerHeight;
-		var dpr = Math.min(global.devicePixelRatio || 1, 1.5);
+		var dpr = Math.min(global.devicePixelRatio || 1, BUDGET.dprCap || 1.5);
 		if (w === state.w && h === state.h && dpr === state.dpr) return;
 
 		var first = state.w === 0;
@@ -561,7 +583,7 @@
 		var cell = state.cell;
 		var Rpx = state.planetR * cell;
 		var cx = state.originX, cy = state.planetCY;
-		var spin = reduceMotion ? 0.6 : (t - state.t0) * 0.00042;
+		var spin = (reduceMotion || !BUDGET.spin) ? 0.6 : (t - state.t0) * 0.00042;
 
 		var yaw = state.planetYaw, tilt = state.planetTilt;
 		var ca = Math.cos(yaw), sa = Math.sin(yaw);
@@ -635,7 +657,7 @@
 		ctx.textBaseline = 'middle';
 
 		var sweep = -1;
-		if (!reduceMotion) {
+		if (!reduceMotion && BUDGET.sweep) {
 			var cyc = (t % 9000) / 9000;
 			sweep = (-0.1 + cyc * 1.25) * state.h;
 		}
@@ -796,14 +818,74 @@
 		drawCaption(rel);
 	}
 
+	/*
+	 * 运行期降级: 先按预算跑, 再盯着**实测帧耗时**。
+	 * 连续 45 帧平均超过 30ms(≈33fps 以下)就降一级 —— 这一步是"按需"的另一半:
+	 * 预算表管的是"这台设备大概是什么档次", 这里管的是"这一页此刻到底跑不跑得动"。
+	 *   1 级: 散字减半 + 星球点变稀
+	 *   2 级: 帧率封顶 30 + 停自转
+	 *   3 级: 只留一帧静态成品, 彻底停掉 rAF
+	 */
+	function setLevel(level) {
+		if (level === state.perf.level) return;
+		state.perf.level = level;
+		if (level >= 1) {
+			state.quality = level === 1 ? 0.6 : 0.42;
+			/* 散字直接砍掉一半, 不动已经拼好的字 */
+			var drop = Math.floor(state.particles.length * (level === 1 ? 0.35 : 0.2));
+			var kept = [];
+			for (var i = 0; i < state.particles.length; i++) {
+				var p = state.particles[i];
+				if (p.target || kept.length < drop) { kept.push(p); }
+			}
+			state.particles = kept;
+			state.planetPts = buildPlanet(state.planetR);
+		}
+		if (level >= 2) BUDGET.fps = 30;
+		if (level >= 3) {
+			stop();
+			render(state.time, 16);      /* 留一帧成品 */
+		}
+	}
+
+	function checkPerf(dt) {
+		if (reduceMotion || state.perf.level >= 3) return;
+		/* 预热: 开头那几十帧夹着启动屏淡出 / 首帧栅格化, 不能拿来判性能 */
+		if (state.perf.frames < 40 && !state.perf.warm) {
+			state.perf.frames++;
+			return;
+		}
+		state.perf.warm = 1;
+		state.perf.frames++;
+		state.perf.acc = (state.perf.acc || 0) + dt;
+		if (state.perf.frames < 50) return;
+		var avg = state.perf.acc / state.perf.frames;
+		state.perf.avgFrame = Math.round(avg * 10) / 10;
+		state.perf.frames = 0;
+		state.perf.acc = 0;
+		/* 连续两个窗口都超 32ms(≈31fps)才降一级, 免得偶发卡顿就砍特效 */
+		if (avg > 32) {
+			state.perf.bad = (state.perf.bad || 0) + 1;
+			if (state.perf.bad >= 2) {
+				state.perf.bad = 0;
+				setLevel(state.perf.level + 1);
+			}
+		} else {
+			state.perf.bad = 0;
+		}
+	}
+
 	function frame(now) {
 		if (!state.running) return;
+		state.raf = global.requestAnimationFrame(frame);
 		if (!state.last) state.last = now;
 		var dt = clamp(now - state.last, 0, 48);
+		/* 预算里的帧率上限(低端设备封 30fps, 省一半绘制) */
+		if (BUDGET.fps && dt < 1000 / BUDGET.fps - 3) return;
 		state.last = now;
 		state.time = now;
 		render(now, dt);
-		state.raf = global.requestAnimationFrame(frame);
+		checkPerf(dt);
 	}
 
 	function start() {
@@ -841,7 +923,7 @@
 	/* ------------------------------------------------------------ 对外 */
 
 	function pulse(px, py) {
-		if (reduceMotion) return;
+		if (reduceMotion || !BUDGET.pulses) return;
 		var r0 = Math.min(state.w, state.h) * 0.18;
 		state.pulses.push({
 			x: px == null ? rand(0.2, 0.8) * state.w : px,
@@ -865,6 +947,13 @@
 		timelineStarted = true;
 		state.started = true;
 		state.assembled = true;
+		/*
+		 * 这里再读一次 MotionPref: perf-tier.js 是阻塞脚本、motion-pref.js 是 defer,
+		 * 如果几何背景是"按需注入"的, 它可能在 motion-pref 之前就执行完了 ——
+		 * 到真正开跑的时间点(启动屏收起)补一次, ?motion=full 之类的覆盖值就不会丢。
+		 */
+		if (global.MotionPref) reduceMotion = !!global.MotionPref.reduced;
+		if (reduceMotion) setLevel(3);
 		state.t0 = global.performance && global.performance.now ? global.performance.now() : Date.now();
 		start();
 		pulse(state.w / 2, state.originY);

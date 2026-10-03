@@ -120,6 +120,79 @@
 			"start": "Start",
 			"undo": "Undo"
 		},
+		"funcball": {
+			"againHint": "Press Start duel to run again with these settings - hold Restart to go back and edit them",
+			"badge": "v1.0",
+			"boardAria": "function ball duel arena",
+			"bounceAria": "bounce height",
+			"btn": {
+				"duel": "Start duel"
+			},
+			"chipHits": "{n} hits",
+			"chipX": "x = {x}",
+			"desc": "Two function balls, one brick wall. Set f(x) on each side - factorial, percent change, a power, Fibonacci or your own - and watch every bounce turn into damage.",
+			"exprError": "f(x) cannot be read",
+			"field": {
+				"bounce": "Bounce height",
+				"expr": "Damage of one bounce - f(x)",
+				"growth": "HP × per layer",
+				"hp": "Brick HP",
+				"layers": "Layers",
+				"perRow": "Bricks per layer",
+				"step": "x grows by",
+				"template": "Template",
+				"x0": "Start x"
+			},
+			"flag": {
+				"easy": "FLAT",
+				"easyTip": "--easy-mode: no per-layer HP growth",
+				"slow": "SLOW",
+				"slowTip": "--slow-motion: higher, slower bounces"
+			},
+			"flagEasy": "Flat wall: every layer keeps the same HP, with no per-layer multiplier.",
+			"flagSlow": "Doubles the bounce height, so every bounce is slower and the damage numbers are easier to read.",
+			"flagsTitle": "Command-line flags - click to switch them here, or pass them to play funcball.",
+			"hud": {
+				"bricks": "Bricks left",
+				"dmgA": "A damage",
+				"dmgB": "B damage",
+				"time": "Time"
+			},
+			"keys": {
+				"pause": "pause",
+				"restart": "hold to restart",
+				"start": "start / pause"
+			},
+			"laneA": "Ball A",
+			"laneB": "Ball B",
+			"legend": {
+				"note": "Both balls always bounce to exactly the same height - the slider above changes it for both sides at once. Every bounce is one hit:",
+				"rule1": "The first hit uses the starting x, so x! deals 0! = 1 damage; after every hit x grows by the step you set.",
+				"rule2": "Every layer multiplies its HP, and a brick only disappears once its HP is below 0 - then the ball falls on to the next layer.",
+				"rule3": "The first ball to break through every layer and touch the floor wins. The duel stops the moment that happens.",
+				"title": "How a bounce becomes damage"
+			},
+			"overDamage": "A: {a} damage in {an} hits . B: {b} damage in {bn} hits",
+			"overTime": "Time {time}",
+			"overTitle": "Duel over",
+			"pausedHint": "Press P or Esc to resume - hold Restart to go back and edit the setup",
+			"readyHint": "Set both functions, then press Start duel",
+			"readyTitle": "FUNCTION BALL",
+			"title": "Function Ball Breaker",
+			"tpl": {
+				"custom": "Custom - f(x)",
+				"fact": "Factorial - x!",
+				"fib": "Fibonacci - Fₙ",
+				"percent": "Percent change - a·(1+r)ˣ",
+				"power": "Power - xⁿ"
+			},
+			"wallNote": "A brick breaks only when its HP drops below 0 - a hit that lands exactly on 0 leaves it standing. Overkill is not carried over.",
+			"wallTitle": "Brick wall - shared by both sides",
+			"win": {
+				"a": "Ball A wins!",
+				"b": "Ball B wins!"
+			}
+		},
 		"heading": "Games",
 		"hint": {
 			"restart": "Hold Restart to start over"

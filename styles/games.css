@@ -1,7 +1,7 @@
 /* ============================================================================
    games.css — 小游戏页(#/games): 卡片架 + 机台
    机台是"终端窗口"的变体: 同一套边框 / 标题栏 / 等宽字体, 只多了屏幕与控制区。
-   两款游戏各是一台(.cabinet-group[data-game-group]), 页面里都在, 只显示当前这台;
+   三款游戏各是一台(.cabinet-group[data-game-group]), 页面里都在, 只显示当前这台;
    Block Blast 那台多加一个 .cabinet--bb —— 棋盘是 8x8 的近方形, 井的比例与
    Russia 那台(1:2)不同, 手机上的排布也不一样。
    ========================================================================== */
@@ -594,32 +594,39 @@
 /* ------------------------------------------------- 连击颜色说明(页面下方) */
 
 /*
- * 放在 Block Blast 分组的最后: 说明 HUD 上"连击"那一格的五种颜色。
- * 色点用 currentColor 上色, 类名与 HUD 那格完全相同(is-off / is-live / is-miss1..3),
- * 配色只有一份定义 —— 图例不会和实际颜色各写各的、慢慢跑偏。
- * 这台之外看不到它(整块在 .cabinet-group[data-game-group="blockblast"] 里)。
+ * "页面下方的说明块"这一套外观两台机台共用:
+ *   - .combo-legend  Block Blast: 说明 HUD 上"连击"那一格的五种颜色, 色点用 currentColor
+ *     上色, 类名与 HUD 那格完全相同(is-off / is-live / is-miss1..3), 配色只有一份定义;
+ *   - .fb-legend     函数球打砖块: 三条判定规则(怎么算伤害 / 什么时候碎 / 谁算赢)。
+ * 两者的排版规则写在一起(选择器并列), 免得两处各写一套慢慢跑偏。
+ * 各自都整块在自己的 .cabinet-group 里, 所以换机台时跟着一起显隐。
  */
-.combo-legend {
+.combo-legend,
+.fb-legend {
 	margin-top: 14px;
 	padding: 14px 18px 16px;
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
 	background: rgba(6, 10, 15, 0.78);
 }
-[data-theme="light"] .combo-legend { background: rgba(255, 255, 255, 0.7); }
+[data-theme="light"] .combo-legend,
+[data-theme="light"] .fb-legend { background: rgba(255, 255, 255, 0.7); }
 
-.combo-legend__title {
+.combo-legend__title,
+.fb-legend__title {
 	font-size: 12.5px;
 	letter-spacing: 0.06em;
 	color: var(--fg-dim);
 }
-.combo-legend__note {
+.combo-legend__note,
+.fb-legend__note {
 	margin-top: 6px;
 	font-size: 11.5px;
 	line-height: 1.7;
 	color: var(--fg-faint);
 }
-.combo-legend__row {
+.combo-legend__row,
+.fb-legend__row {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px 18px;
@@ -627,7 +634,8 @@
 	padding: 0;
 	list-style: none;
 }
-.combo-legend__item {
+.combo-legend__item,
+.fb-legend__item {
 	display: inline-flex;
 	align-items: center;
 	gap: 7px;
@@ -635,7 +643,8 @@
 	line-height: 1.6;
 	color: var(--fg-faint);
 }
-.combo-legend__dot {
+.combo-legend__dot,
+.fb-legend__dot {
 	flex: 0 0 auto;
 	width: 9px;
 	height: 9px;
@@ -644,6 +653,219 @@
 }
 
 @media (max-width: 720px) {
-	.combo-legend { margin-top: 10px; padding: 12px; }
-	.combo-legend__row { gap: 5px 14px; }
+
+	.combo-legend,
+	.fb-legend { margin-top: 10px; padding: 12px; }
+	.combo-legend__row,
+	.fb-legend__row { gap: 5px 14px; }
+}
+
+/* ------------------------------------------------- 函数球打砖块机台 */
+
+/*
+ * 这台跟另外两台不一样: 场地是横向的(左右各一颗球, 中间一道挡板),
+ * 所以井的宽高比跟着画布走(640 x 456), 宽度由 grid 的第一列给, 窄屏自己缩。
+ * 参数面板排在场地上面 —— 手机上用 flex order 挪到场地下面, 先给拇指让路。
+ */
+.cabinet--fb {
+	display: flex;
+	flex-direction: column;
+}
+
+.cabinet--fb .cabinet__screen {
+	/* 数据栏比另外两台宽一点: 总伤害动辄十位数字(缩写成指数写法也还有 7 个字符) */
+	grid-template-columns: minmax(0, 640px) minmax(168px, 208px);
+	justify-content: center;
+	align-items: start;
+}
+
+/* 十位以上的数字不许把栅格撑破(长数字用 fbShort 缩写, 这里只是兜底) */
+.cabinet--fb .hud-stats dd {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.cabinet--fb .fb-well {
+	width: 100%;
+	height: auto;
+	aspect-ratio: 640 / 456;
+}
+
+/* 结算文案是两行(用时 / 双方伤害), 换行要真的换 */
+.cabinet--fb .cabinet__overlay-hint {
+	white-space: pre-line;
+	font-family: var(--font-mono);
+	letter-spacing: 0.01em;
+}
+
+/* ---- 参数面板 ---- */
+
+.fb-setup {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr);
+	gap: 12px;
+	padding: 16px clamp(14px, 2.6vw, 22px) 0;
+}
+
+.fb-lane,
+.fb-wall {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+	padding: 12px 13px 14px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: rgba(3, 5, 8, 0.35);
+}
+[data-theme="light"] .fb-lane,
+[data-theme="light"] .fb-wall { background: rgba(240, 244, 248, 0.7); }
+
+/* 左边一条本色, 与场地里那颗球同色 */
+.fb-lane--a { border-left: 2px solid var(--blue); }
+.fb-lane--b { border-left: 2px solid var(--yellow); }
+
+.fb-lane__head { display: flex; align-items: center; gap: 8px; }
+/* 小牌子就是球上那个符号的缩小版(模板一换它就换) */
+.fb-lane__tag {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 32px;
+	height: 22px;
+	padding: 0 8px;
+	border-radius: 99px;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	font-weight: 700;
+	color: var(--bg-0);
+	background: var(--blue);
+}
+.fb-lane--b .fb-lane__tag { background: var(--yellow); }
+.fb-lane__name { font-size: 12px; letter-spacing: 0.08em; color: var(--fg-dim); }
+
+.fb-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fb-field__key {
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--fg-faint);
+}
+.fb-field__input {
+	width: 100%;
+	min-width: 0;
+	padding: 7px 9px;
+	font: inherit;
+	font-size: 13px;
+	color: var(--fg);
+	background: rgba(3, 5, 8, 0.55);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+}
+[data-theme="light"] .fb-field__input { background: rgba(255, 255, 255, 0.9); }
+.fb-field__input:focus {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.fb-field__input--mono { font-family: var(--font-mono); letter-spacing: 0.02em; }
+.fb-field__input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.fb-lane__nums { display: flex; gap: 8px; }
+.fb-field--half { flex: 1 1 0; }
+
+/* 弹跳高度: 滑杆 + 读数一行放 */
+.fb-field--wide {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas: "key key" "range out";
+	align-items: center;
+	gap: 4px 8px;
+}
+.fb-field--wide .fb-field__key { grid-area: key; }
+.fb-field__input--range {
+	grid-area: range;
+	flex: 1 1 auto;
+	width: 100%;
+	height: 22px;
+	padding: 0;
+	border: none;
+	background: none;
+	accent-color: var(--accent);
+}
+.fb-field__out {
+	grid-area: out;
+	min-width: 3.6em;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--fg-dim);
+	text-align: right;
+}
+
+.fb-wall__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 8px 10px;
+}
+.fb-wall__note { font-size: 10.5px; line-height: 1.7; color: var(--fg-faint); }
+
+/* 表达式解析失败时的那行字(英文原话来自解析器) */
+.fb-lane__err {
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--red);
+	word-break: break-word;
+}
+
+/* --slow-motion 的小牌子 */
+.cabinet__flag--slow {
+	color: var(--yellow);
+	border-color: rgba(var(--yellow-rgb), 0.4);
+	background: var(--yellow-soft);
+}
+
+/* ---- 手机: 场地与按钮在前, 参数面板挪到后面 ---- */
+
+@media (max-width: 720px) {
+	.cabinet--fb .cabinet__screen {
+		order: 1;
+		grid-template-columns: minmax(0, 1fr);
+		justify-content: stretch;
+		gap: 10px;
+		padding: 10px;
+	}
+	.cabinet--fb .fb-setup {
+		order: 2;
+		grid-template-columns: minmax(0, 1fr);
+		padding: 10px 10px 0;
+	}
+	.cabinet--fb .cabinet__keys { order: 3; }
+
+	/* 拇指区: 开始对决整行, 暂停 / 重开各占一半, 都够 46px 以上 */
+	.cabinet--fb .cabinet__actions {
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.cabinet--fb .cabinet__actions .btn {
+		flex: 1 1 calc(50% - 3px);
+		width: auto;
+		min-height: 46px;
+		padding: 8px 10px;
+		font-size: 12.5px;
+	}
+	.cabinet--fb .cabinet__actions .btn[data-fb-action="start"] {
+		flex: 1 1 100%;
+		min-height: 52px;
+		font-size: 14px;
+	}
+	.cabinet--fb .cabinet__hint { flex: 1 1 100%; font-size: 10px; }
+	.cabinet--fb .hud-stats { gap: 4px 8px; padding: 8px 10px; }
+	.cabinet--fb .hud-stats dd { font-size: 12.5px; }
+
+	/* iOS 上输入框小于 16px, 一聚焦就把整页放大 */
+	.fb-field__input { font-size: 16px; padding: 9px 10px; }
+	.fb-lane__nums { gap: 6px; }
+	.fb-field--wide .fb-field__out { font-size: 13px; }
 }

@@ -101,6 +101,58 @@
 				<span class="badge badge--green" i18n-key="games.blockblast.badge">v1.0</span>
 			</div>
 		</article>
+
+		<article class="game-card" data-game-card="funcball" data-smear>
+			<div class="game-card__preview" aria-hidden="true">
+				<svg viewBox="0 0 200 80" preserveAspectRatio="xMidYMid meet">
+					<line x1="100" y1="2" x2="100" y2="78" stroke="currentColor" stroke-opacity=".22" stroke-width="2.5"/>
+					<g fill="#4d9dff">
+						<circle cx="37" cy="38" r="9" opacity=".5"/>
+						<circle cx="30" cy="43" r="7.4" opacity=".32"/>
+						<circle cx="24" cy="47" r="5.8" opacity=".2"/>
+						<circle cx="19" cy="50" r="4.2" opacity=".11"/>
+					</g>
+					<circle cx="45" cy="33" r="11" fill="#4d9dff"/>
+					<circle cx="45" cy="33" r="7.4" fill="#04060a"/>
+					<text x="45" y="36.2" text-anchor="middle" font-size="7" font-weight="700" fill="#4d9dff">n!</text>
+					<g fill="#ffd24d">
+						<circle cx="149" cy="34" r="9" opacity=".5"/>
+						<circle cx="142" cy="39" r="7.4" opacity=".32"/>
+						<circle cx="136" cy="43" r="5.8" opacity=".2"/>
+						<circle cx="131" cy="46" r="4.2" opacity=".11"/>
+					</g>
+					<circle cx="157" cy="29" r="11" fill="#ffd24d"/>
+					<circle cx="157" cy="29" r="7.4" fill="#04060a"/>
+					<text x="157" y="32.2" text-anchor="middle" font-size="8" font-weight="700" fill="#ffd24d">%</text>
+					<g fill="#4d9dff" fill-opacity=".16" stroke="#4d9dff" stroke-opacity=".45" stroke-width="1">
+						<rect x="6" y="50" width="88" height="12"/>
+						<rect x="6" y="66" width="88" height="12"/>
+					</g>
+					<g fill="#ffd24d" fill-opacity=".16" stroke="#ffd24d" stroke-opacity=".45" stroke-width="1">
+						<rect x="106" y="50" width="88" height="12"/>
+						<rect x="106" y="66" width="88" height="12"/>
+					</g>
+					<g fill="currentColor" fill-opacity=".82" font-size="9" text-anchor="middle" font-family="monospace">
+						<text x="50" y="59.5">9999999</text>
+						<text x="50" y="75.5">1000000000000</text>
+						<text x="150" y="59.5">9790000</text>
+						<text x="150" y="75.5">1000000000</text>
+					</g>
+				</svg>
+			</div>
+			<span class="game-card__idx">03 / MATH</span>
+			<h3 class="game-card__title" i18n-key="games.funcball.title">Function Ball Breaker</h3>
+			<p class="game-card__body" i18n-key="games.funcball.desc">
+				Two function balls, one brick wall. Set f(x) on each side — factorial, percent change, a power, Fibonacci or your own — and watch every bounce turn into damage.
+			</p>
+			<div class="game-card__foot">
+				<button type="button" class="btn btn--sm" data-game-launch="funcball">
+					<span i18n-key="games.play">Play</span>
+					<span class="btn__arrow" aria-hidden="true">↓</span>
+				</button>
+				<span class="badge badge--green" i18n-key="games.funcball.badge">v1.0</span>
+			</div>
+		</article>
 	</div>
 </section>
 
@@ -301,6 +353,195 @@
 				<li class="combo-legend__item"><span class="combo-legend__dot is-miss1" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.miss1">1st miss</span></li>
 				<li class="combo-legend__item"><span class="combo-legend__dot is-miss2" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.miss2">2nd miss</span></li>
 				<li class="combo-legend__item"><span class="combo-legend__dot is-miss3" aria-hidden="true"></span><span i18n-key="games.blockblast.comboLegend.miss3">3rd miss — one more and the combo is gone</span></li>
+			</ul>
+		</div>
+	</div>
+
+	<!-- ================= 机台三: 函数球打砖块 ================= -->
+	<!-- 两位选手各一颗函数球, 中间一道挡板。上面是函数与砖墙参数, 下面是场地:
+		 球只上下弹(弹跳高度固定), 每弹一次算一次命中, 这一次的伤害就是 f(x)。
+		 砖块生命值掉到 0 以下才碎(正好打到 0 不碎), 碎完一层球就落到下一层,
+		 先打穿整堵墙落到地面的那方获胜 —— 见 scripts/games.js 的 createFuncBall。 -->
+	<div class="cabinet-group" data-game-group="funcball" hidden>
+		<div class="cabinet cabinet--fb" data-game="funcball" data-smear>
+			<div class="cabinet__bar">
+				<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+				<span class="cabinet__name">funcball.sh</span>
+				<span class="cabinet__flags" data-game-flags></span>
+				<span class="cabinet__state" data-game-state i18n-key="games.state.ready">ready</span>
+			</div>
+
+			<!-- 两位选手的函数 + 双方共用的砖墙参数(开跑后整块锁住) -->
+			<div class="fb-setup">
+
+				<section class="fb-lane fb-lane--a" data-fb-lane="0">
+					<header class="fb-lane__head">
+						<span class="fb-lane__tag" data-fb-tag>n!</span>
+						<span class="fb-lane__name" i18n-key="games.funcball.laneA">Ball A</span>
+					</header>
+					<label class="fb-field">
+						<span class="fb-field__key" i18n-key="games.funcball.field.template">Template</span>
+						<select class="fb-field__input" data-fb-template>
+							<option value="fact" i18n-key="games.funcball.tpl.fact">Factorial · x!</option>
+							<option value="percent" i18n-key="games.funcball.tpl.percent">Percent change · a·(1+r)ˣ</option>
+							<option value="power" i18n-key="games.funcball.tpl.power">Power · xⁿ</option>
+							<option value="fib" i18n-key="games.funcball.tpl.fib">Fibonacci · Fₙ</option>
+							<option value="custom" i18n-key="games.funcball.tpl.custom">Custom · f(x)</option>
+						</select>
+					</label>
+					<label class="fb-field">
+						<span class="fb-field__key" i18n-key="games.funcball.field.expr">Damage of one bounce · f(x)</span>
+						<input class="fb-field__input fb-field__input--mono" data-fb-expr type="text"
+							value="x!" spellcheck="false" autocomplete="off" autocapitalize="off">
+					</label>
+					<p class="fb-lane__err" data-fb-err hidden></p>
+					<div class="fb-lane__nums">
+						<label class="fb-field fb-field--half">
+							<span class="fb-field__key" i18n-key="games.funcball.field.x0">Start x</span>
+							<input class="fb-field__input" data-fb-x0 type="number" inputmode="numeric"
+								value="0" min="0" max="400" step="1">
+						</label>
+						<label class="fb-field fb-field--half">
+							<span class="fb-field__key" i18n-key="games.funcball.field.step">x grows by</span>
+							<input class="fb-field__input" data-fb-step type="number" inputmode="numeric"
+								value="1" min="1" max="20" step="1">
+						</label>
+					</div>
+				</section>
+
+
+				<section class="fb-lane fb-lane--b" data-fb-lane="1">
+					<header class="fb-lane__head">
+						<span class="fb-lane__tag" data-fb-tag>%</span>
+						<span class="fb-lane__name" i18n-key="games.funcball.laneB">Ball B</span>
+					</header>
+					<label class="fb-field">
+						<span class="fb-field__key" i18n-key="games.funcball.field.template">Template</span>
+						<select class="fb-field__input" data-fb-template>
+							<option value="fact" i18n-key="games.funcball.tpl.fact">Factorial · x!</option>
+							<option value="percent" i18n-key="games.funcball.tpl.percent">Percent change · a·(1+r)ˣ</option>
+							<option value="power" i18n-key="games.funcball.tpl.power">Power · xⁿ</option>
+							<option value="fib" i18n-key="games.funcball.tpl.fib">Fibonacci · Fₙ</option>
+							<option value="custom" i18n-key="games.funcball.tpl.custom">Custom · f(x)</option>
+						</select>
+					</label>
+					<label class="fb-field">
+						<span class="fb-field__key" i18n-key="games.funcball.field.expr">Damage of one bounce · f(x)</span>
+						<input class="fb-field__input fb-field__input--mono" data-fb-expr type="text"
+							value="10 * 1.35^x" spellcheck="false" autocomplete="off" autocapitalize="off">
+					</label>
+					<p class="fb-lane__err" data-fb-err hidden></p>
+					<div class="fb-lane__nums">
+						<label class="fb-field fb-field--half">
+							<span class="fb-field__key" i18n-key="games.funcball.field.x0">Start x</span>
+							<input class="fb-field__input" data-fb-x0 type="number" inputmode="numeric"
+								value="46" min="0" max="400" step="1">
+						</label>
+						<label class="fb-field fb-field--half">
+							<span class="fb-field__key" i18n-key="games.funcball.field.step">x grows by</span>
+							<input class="fb-field__input" data-fb-step type="number" inputmode="numeric"
+								value="1" min="1" max="20" step="1">
+						</label>
+					</div>
+				</section>
+
+				<section class="fb-wall" data-fb-wall>
+					<header class="fb-lane__head">
+						<span class="fb-lane__name" i18n-key="games.funcball.wallTitle">Brick wall — shared by both sides</span>
+					</header>
+					<div class="fb-wall__grid">
+						<label class="fb-field">
+							<span class="fb-field__key" i18n-key="games.funcball.field.layers">Layers</span>
+							<input class="fb-field__input" data-fb-layers type="number" inputmode="numeric" value="3" min="1" max="8" step="1">
+						</label>
+						<label class="fb-field">
+							<span class="fb-field__key" i18n-key="games.funcball.field.perRow">Bricks per layer</span>
+							<input class="fb-field__input" data-fb-per-row type="number" inputmode="numeric" value="1" min="1" max="6" step="1">
+						</label>
+						<label class="fb-field">
+							<span class="fb-field__key" i18n-key="games.funcball.field.hp">Brick HP</span>
+							<input class="fb-field__input" data-fb-hp type="number" inputmode="numeric" value="1000" min="1" step="1">
+						</label>
+						<label class="fb-field">
+							<span class="fb-field__key" i18n-key="games.funcball.field.growth">HP × per layer</span>
+							<input class="fb-field__input" data-fb-growth type="number" inputmode="numeric" value="1000" min="1" step="1">
+						</label>
+						<label class="fb-field fb-field--wide">
+							<span class="fb-field__key" i18n-key="games.funcball.field.bounce">Bounce height</span>
+							<input class="fb-field__input fb-field__input--range" data-fb-bounce type="range" min="20" max="140" step="2" value="56"
+								aria-label="bounce height" i18n-attr="aria-label" i18n-key="games.funcball.bounceAria">
+							<output class="fb-field__out" data-fb-bounce-out>56</output>
+						</label>
+					</div>
+					<p class="fb-wall__note" i18n-key="games.funcball.wallNote">
+						A brick breaks only when its HP drops below 0 — a hit that lands exactly on 0 leaves it standing. Overkill is not carried over.
+					</p>
+				</section>
+			</div>
+
+			<div class="cabinet__screen cabinet__screen--fb">
+				<div class="cabinet__well fb-well">
+					<canvas class="cabinet__canvas" data-fb-canvas width="640" height="456"
+						role="img" aria-label="function ball duel arena" i18n-attr="aria-label" i18n-key="games.funcball.boardAria"></canvas>
+					<div class="cabinet__overlay is-shown" data-fb-overlay role="button" tabindex="0">
+						<strong class="cabinet__overlay-title" data-fb-ov-title i18n-key="games.funcball.readyTitle">FUNCTION BALL</strong>
+						<span class="cabinet__overlay-hint" data-fb-ov-hint i18n-key="games.funcball.readyHint">Set both functions, then press Start duel</span>
+					</div>
+				</div>
+
+				<aside class="cabinet__hud">
+					<dl class="hud-stats">
+						<dt i18n-key="games.funcball.hud.time">Time</dt><dd data-fb-time>0.00s</dd>
+						<dt i18n-key="games.funcball.hud.dmgA">A damage</dt><dd data-fb-dmg-a>0</dd>
+						<dt i18n-key="games.funcball.hud.dmgB">B damage</dt><dd data-fb-dmg-b>0</dd>
+						<dt i18n-key="games.funcball.hud.bricks">Bricks left</dt><dd data-fb-bricks>0</dd>
+					</dl>
+
+					<div class="cabinet__actions">
+						<button type="button" class="btn btn--sm btn--block" data-fb-action="start" i18n-key="games.funcball.btn.duel">Start duel</button>
+						<button type="button" class="btn btn--sm btn--ghost btn--block" data-fb-action="pause" disabled i18n-key="games.btn.pause">Pause</button>
+						<button type="button" class="btn btn--sm btn--ghost btn--block cabinet__hold" data-fb-action="restart">
+							<span class="cabinet__hold-fill" aria-hidden="true"></span>
+							<span class="btn__label" i18n-key="games.btn.restart">Restart</span>
+						</button>
+						<span class="cabinet__hint" i18n-key="games.hint.restart">Hold Restart to start over</span>
+					</div>
+				</aside>
+			</div>
+
+			<div class="cabinet__keys">
+				<span class="cabinet__key"><kbd>Space</kbd><em i18n-key="games.funcball.keys.start">start / pause</em></span>
+				<span class="cabinet__key"><kbd>P</kbd><kbd>Esc</kbd><em i18n-key="games.funcball.keys.pause">pause</em></span>
+				<span class="cabinet__key"><kbd>R</kbd><em i18n-key="games.funcball.keys.restart">hold to restart</em></span>
+			</div>
+		</div>
+
+		<div class="flag-panel" data-game-flags-panel data-smear>
+			<p class="flag-panel__title" i18n-key="games.funcball.flagsTitle">
+				Command-line flags — click to switch them here, or pass them to play funcball.
+			</p>
+			<div class="flag-panel__row">
+				<button type="button" class="flag-chip" data-flag="easy" aria-pressed="false">
+					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--easy-mode</code></span>
+					<span class="flag-chip__desc" i18n-key="games.funcball.flagEasy">Flat wall: every layer keeps the same HP, with no per-layer multiplier.</span>
+				</button>
+				<button type="button" class="flag-chip" data-flag="slow" aria-pressed="false">
+					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--slow-motion</code></span>
+					<span class="flag-chip__desc" i18n-key="games.funcball.flagSlow">Doubles the bounce height, so every bounce is slower and the damage numbers are easier to read.</span>
+				</button>
+			</div>
+		</div>
+
+		<!-- 规则说明: 外观与 Block Blast 的 .combo-legend 共用同一套规则(见 games.css) -->
+		<div class="fb-legend" data-smear>
+			<p class="fb-legend__title" i18n-key="games.funcball.legend.title">How a bounce becomes damage</p>
+			<p class="fb-legend__note" i18n-key="games.funcball.legend.note">
+				Both balls always bounce to exactly the same height — the slider above changes it for both sides at once. Every bounce is one hit:
+			</p>
+			<ul class="fb-legend__row">
+				<li class="fb-legend__item"><span class="fb-legend__dot" aria-hidden="true"></span><span i18n-key="games.funcball.legend.rule1">The first hit uses the starting x, so x! deals 0! = 1 damage; after every hit x grows by the step you set.</span></li>
+				<li class="fb-legend__item"><span class="fb-legend__dot" aria-hidden="true"></span><span i18n-key="games.funcball.legend.rule2">Every layer multiplies its HP, and a brick only disappears once its HP is below 0 — then the ball falls on to the next layer.</span></li>
+				<li class="fb-legend__item"><span class="fb-legend__dot" aria-hidden="true"></span><span i18n-key="games.funcball.legend.rule3">The first ball to break through every layer and touch the floor wins. The duel stops the moment that happens.</span></li>
 			</ul>
 		</div>
 	</div>

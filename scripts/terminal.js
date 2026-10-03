@@ -36,11 +36,13 @@
 		'games.txt': [
 			'1  tetris        classic falling-block puzzle',
 			'2  blockblast    8x8 board, three pieces at a time',
+			'3  funcball      two function balls race down a brick wall',
 			'',
-			'Run "play tetris" or "play blockblast" to open one.',
-			'Flags (same names for both, the meaning differs):',
-			'  --easy-mode       tetris: no speed-up / blockblast: more long bars & squares',
-			'  --with-roll-back  adds an Undo button'
+			'Run "play tetris" or "play funcball" to open one.',
+			'"play" starts the game right away; funcball stops at ready so you can set f(x) first.',
+			'Flags are per game (run "games" for the full list):',
+			'  tetris / blockblast   --easy-mode   --with-roll-back',
+			'  funcball              --easy-mode   --slow-motion'
 		],
 		'.help': [
 			'Try: help, ls, cat about.md, sim 2, play tetris, theme light, neofetch.'
@@ -58,10 +60,17 @@
 
 	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准(alias 也要跟着来) */
 	var GAMES_FALLBACK = [
-		{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle' },
+		{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle', flags: ['easy', 'rollback'] },
 		{
 			id: 'blockblast', title: 'Block Blast', desc: '8x8 board, three pieces at a time',
-			alias: ['block-blast', 'block_blast', 'blast', 'bb']
+			alias: ['block-blast', 'block_blast', 'blast', 'bb'],
+			flags: ['easy', 'rollback']
+		},
+		{
+			id: 'funcball', title: 'Function Ball Breaker', desc: 'two function balls race down a brick wall',
+			alias: ['function-ball', 'functionball', 'fnball', 'fball', 'fb'],
+			flags: ['easy', 'slow'],
+			needsSetup: true   /* 要先设 f(x) —— 开局会把参数面板锁掉 */
 		}
 	];
 
@@ -83,10 +92,11 @@
 			['clear', 'clear the screen']
 		] },
 		{ title: 'games', rows: [
-			['games', 'list the mini games on this site'],
-			['play <game> [flags]', 'open a mini game and start it (tetris | blockblast)'],
-			['  --easy-mode', 'tetris: never speeds up · blockblast: more long bars and squares'],
-			['  --with-roll-back', 'adds an Undo button (U) that takes back the last move']
+			['games', 'list the mini games and the flags each one takes'],
+			['play <game> [flags]', 'open a mini game and start it (funcball opens at ready, then you press Start)'],
+			['  --easy-mode', 'tetris: never speeds up · blockblast: gentle pieces · funcball: flat wall'],
+			['  --with-roll-back', 'tetris / blockblast: adds an Undo button (U)'],
+			['  --slow-motion', 'funcball: doubles the bounce height, so every hit is readable']
 		] },
 		{ title: 'encode & hash', rows: [
 			['b64 <text>', 'base64 encode'],
@@ -359,22 +369,33 @@
 			print('Available mini games', 't-info');
 			list.forEach(function (g, i) {
 				print('  ' + (i + 1) + '  ' + g.id.padEnd(12, ' ') + (g.desc || ''));
+				var names = (g.flags || []).map(flagName);
+				if (names.length) print('       ' + names.join('  '), 't-dim');
 			});
 			print('');
-			print('  --easy-mode        tetris: no speed-up / blockblast: more long bars & squares', 't-dim');
-			print('  --with-roll-back   adds an Undo button (U)', 't-dim');
-			print('');
-			print('usage: play <game> [flags]', 't-dim');
+			print('usage: play <game> [flags]  — each game takes its own flags (listed above)', 't-dim');
 		}
 
-		/* play 支持的命令行标志位 -> Games.launch() 里的开关 */
+		/* play 支持的命令行标志位 -> Games.launch() 里的开关。
+		   认不认是"这一款游戏"说了算(GAMES[].flags), 所以 play funcball --with-roll-back 会直接报错,
+		   而不是"收下了但什么也没发生"。 */
 		var PLAY_FLAGS = {
 			'--easy-mode': 'easy',
 			'--easy': 'easy',
 			'--with-roll-back': 'rollback',
 			'--with-rollback': 'rollback',
-			'--rollback': 'rollback'
+			'--rollback': 'rollback',
+			'--slow-motion': 'slow',
+			'--slow-mo': 'slow',
+			'--slow': 'slow'
 		};
+
+		/* opt 键 -> 命令行写法(列表与报错里显示这个) */
+		var FLAG_NAMES = { easy: '--easy-mode', rollback: '--with-roll-back', slow: '--slow-motion' };
+
+		function flagName(key) { return FLAG_NAMES[key] || ('--' + key); }
+
+		function flagList(g) { return (g.flags || []).map(flagName); }
 
 		/* play 认 id, 也认 GAMES 里写的 alias(block-blast / blast / bb), id 优先 */
 		function findGame(list, name) {
@@ -387,21 +408,27 @@
 		}
 
 		function cmdPlay(args) {
-			var flags = { easy: false, rollback: false };
+			var flags = { easy: false, rollback: false, slow: false };
 			var rest = [];
 			var unknown = null;
+			var asked = [];
 			args.forEach(function (arg) {
 				var lower = String(arg).toLowerCase();
 				if (lower.charAt(0) === '-') {
-					if (PLAY_FLAGS[lower]) flags[PLAY_FLAGS[lower]] = true;
-					else if (!unknown) unknown = arg;
+					if (PLAY_FLAGS[lower]) {
+						flags[PLAY_FLAGS[lower]] = true;
+						if (asked.indexOf(PLAY_FLAGS[lower]) === -1) asked.push(PLAY_FLAGS[lower]);
+					} else if (!unknown) {
+						unknown = arg;
+					}
 				} else {
 					rest.push(arg);
 				}
 			});
 			if (unknown) {
 				print('play: unknown flag "' + unknown + '"', 't-err');
-				print('  available: --easy-mode   --with-roll-back', 't-dim');
+				print('  known flags: ' + Object.keys(FLAG_NAMES).map(function (k) { return FLAG_NAMES[k]; }).join('  '), 't-dim');
+				print('  run "games" to see which game takes which', 't-dim');
 				return;
 			}
 			var name = (rest[0] || '').toLowerCase();
@@ -413,14 +440,30 @@
 				print('  try: ' + list.map(function (g) { return g.id; }).join(' | '), 't-dim');
 				return;
 			}
+			/* 这一款不认的开关直接拒绝 —— 别"收下了却没反应" */
+			for (var i = 0; i < asked.length; i++) {
+				if ((found.flags || []).indexOf(asked[i]) === -1) {
+					print('play: ' + found.id + ' does not take ' + flagName(asked[i]), 't-err');
+					var takes = flagList(found);
+					print('  ' + found.id + ' takes: ' + (takes.length ? takes.join('  ') : 'no flags'), 't-dim');
+					return;
+				}
+			}
 			if (!global.Games || !global.Games.launch) {
 				print('play: the games page is not loaded on this build', 't-err');
 				return;
 			}
-			var label = found.id + (flags.easy ? ' --easy-mode' : '') + (flags.rollback ? ' --with-roll-back' : '');
-			print('starting ' + label + ' ...', 't-ok');
+			var label = found.id;
+			asked.forEach(function (k) { label += ' ' + flagName(k); });
+			if (found.needsSetup) {
+				/* 函数球要先设 f(x): 自动开局会把整块参数面板锁上, 所以只把机台打开 */
+				print('opening ' + label + ' — set f(x), then press Start', 't-ok');
+			} else {
+				print('starting ' + label + ' ...', 't-ok');
+			}
 			scrollToEnd();
-			global.Games.launch(found.id, flags);
+			/* 第三个参数 = 挂载完直接开局; 卡片 Play / dock 搜索都不传, 只把机台换过来 */
+			global.Games.launch(found.id, flags, true);
 		}
 
 		function cmdTheme(args) {
@@ -1022,13 +1065,16 @@
 			}
 			var src = args.join(' ');
 			var note = '';
-			/* 括号没闭合: 自动补上(补在哪儿见 calcAutoClose), 并说明补了几个 */
-			var fixed = calcAutoClose(src);
-			if (fixed.closed) {
-				note = 'note: auto-closed ' + fixed.closed + ' unclosed "("';
-				src = fixed.src;
-			}
 			try {
+				/* 括号没闭合: 自动补上(补在哪儿见 calcAutoClose), 并说明补了几个。
+				   这一步也必须待在 try 里 —— 自动补括号要先过一遍词法分析, 碰到 "5!" / "1+@"
+				   这种非法字符会直接抛; 原来它抛在 try 外面, 于是整条命令一声不响地炸掉:
+				   终端里既没有结果也没有报错, 连收尾的 scrollToEnd 都跳过了。 */
+				var fixed = calcAutoClose(src);
+				if (fixed.closed) {
+					note = 'note: auto-closed ' + fixed.closed + ' unclosed "("';
+					src = fixed.src;
+				}
 				var out = calcEval(src);
 				if (note) print(note, 't-dim');
 				calcWarnings(out.tiers).forEach(function (w) { print(w, 't-warn'); });

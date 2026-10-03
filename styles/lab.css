@@ -174,6 +174,22 @@ input[type="range"]::-moz-range-thumb {
 
 label { color: var(--fg-dim); font-size: 13px; }
 
+/*
+ * 读数固定宽度 + 等宽数字。
+ * 否则同一根滑杆在 -6 ↔ -3.5 之间来回时会改变标签宽度, 后面的滑杆被推着左右位移
+ * (用户反馈: 拖滑杆时滑杆自己会晃)。"-10.5" 最长 5 字符, 给 5ch 富余量。
+ */
+#forceVal,
+[id$="-display"],
+[id$="-val"] {
+	font-variant-numeric: tabular-nums;
+}
+#forceVal {
+	display: inline-block;
+	min-width: 5ch;
+	text-align: right;
+}
+
 button,
 .btn,
 #export-btn {
