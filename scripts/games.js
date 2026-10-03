@@ -2474,14 +2474,15 @@
 	 * 免得"越打血越多"永远打不穿。
 	 */
 
+	/* 修改了部分参数，更适合对比两颗球 */
 	var FB_GRAVITY = 1800;        /* px/s^2: 弹跳高度是固定的, 重力只决定"多久弹一次" */
 	var FB_BOUNCE = 56;           /* 弹跳高度(px)的出厂值, 页面滑杆与 --slow-motion 都在这个基础上算 */
-	var FB_BOUNCE_MIN = 20;
-	var FB_BOUNCE_MAX = 140;
+	var FB_BOUNCE_MIN = 5;
+	var FB_BOUNCE_MAX = 150;
 	var FB_BOUNCE_SLOW = 2;       /* --slow-motion: 弹跳高度翻倍, 每跳更慢 */
 	var FB_TRAIL = 14;            /* 球的拖尾采样点数 */
 	var FB_X_MAX = 4000;          /* x 的上限, 防止跑飞 */
-	var FB_HP_MAX = 1e30;         /* 砖块生命值上限 */
+	var FB_HP_MAX = 1e304;         /* 砖块生命值上限 */
 	var FB_STEP_MS = 8;           /* 物理固定步长, 与帧率无关 */
 	var FB_HOLD_RESTART_MS = 700; /* 与另外两台一样: 重开要长按 */
 	var FB_FONT = '"JetBrains Mono", Menlo, Consolas, monospace';
@@ -2509,7 +2510,7 @@
 		for (var i = 0; i < n; i++) { var t = a + b; a = b; b = t; }
 		return a;
 	}
-
+	
 	var FB_CONSTS = { pi: Math.PI, e: Math.E };
 
 	var FB_FUNCS = {
