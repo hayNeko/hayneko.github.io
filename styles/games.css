@@ -810,6 +810,16 @@
 }
 .fb-wall__note { font-size: 10.5px; line-height: 1.7; color: var(--fg-faint); }
 
+/* 每层生命值的即时读数: 数值很长, 允许折行; 顶到上限时后面会多一句提示 */
+.fb-wall__hp {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	line-height: 1.7;
+	color: var(--fg-dim);
+	word-break: break-word;
+}
+
 /* 表达式解析失败时的那行字(英文原话来自解析器) */
 .fb-lane__err {
 	font-size: 11px;

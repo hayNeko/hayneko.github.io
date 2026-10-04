@@ -137,6 +137,7 @@
 				"expr": "Damage of one bounce - f(x)",
 				"growth": "HP × per layer",
 				"hp": "Brick HP",
+				"layerHp": "Per-layer HP",
 				"layers": "Layers",
 				"perRow": "Bricks per layer",
 				"step": "x grows by",
@@ -152,6 +153,7 @@
 			"flagEasy": "Flat wall: every layer keeps the same HP, with no per-layer multiplier.",
 			"flagSlow": "Doubles the bounce height, so every bounce is slower and the damage numbers are easier to read.",
 			"flagsTitle": "Command-line flags - click to switch them here, or pass them to play funcball.",
+			"hpCap": "capped at {max}",
 			"hud": {
 				"bricks": "Bricks left",
 				"dmgA": "A damage",

@@ -2788,20 +2788,35 @@
 
 	/* ------------------------------------------------------------ 砖墙与世界 */
 
-	function fbRowsFrom(wall) {
-		var rows = [];
+	/**
+	 * 每层生命值 = 生命值 × 倍数^层号, 逐层相乘; 一旦顶到 FB_HP_MAX 就截顶, 并记下 capped。
+	 * 砖墙上的那堆砖和面板上的读数都走这一份算法 —— 免得读数和实际血量各算各的。
+	 */
+	function fbRowHps(wall) {
+		var out = [];
+		var capped = false;
 		for (var i = 0; i < wall.layers; i++) {
 			var hp = wall.hp;
 			for (var k = 0; k < i; k++) {
 				hp *= wall.growth;
-				if (hp > FB_HP_MAX) { hp = FB_HP_MAX; break; }
+				/* 写成 !(hp <= 上限) 是故意的: Infinity 与 NaN 都会落进这个分支 */
+				if (!(hp <= FB_HP_MAX)) { hp = FB_HP_MAX; capped = true; break; }
 			}
 			hp = Math.max(1, Math.round(hp));
+			out.push(hp);
+		}
+		return { hps: out, capped: capped };
+	}
+
+	function fbRowsFrom(wall) {
+		var hps = fbRowHps(wall).hps;
+		var rows = [];
+		for (var i = 0; i < wall.layers; i++) {
 			var bricks = [];
 			for (var j = 0; j < wall.perRow; j++) {
-				bricks.push({ col: j, hp: hp, max: hp, broken: false });
+				bricks.push({ col: j, hp: hps[i], max: hps[i], broken: false });
 			}
-			rows.push({ max: hp, bricks: bricks });
+			rows.push({ max: hps[i], bricks: bricks });
 		}
 		return rows;
 	}
@@ -3066,6 +3081,7 @@
 		var flagChips = flagPanel ? flagPanel.querySelectorAll('[data-flag]') : [];
 		var setup = cab.querySelector('.fb-setup');
 		var bounceOut = cab.querySelector('[data-fb-bounce-out]');
+		var wallOut = cab.querySelector('[data-fb-wall-hp]');
 		var fields = {
 			layers: cab.querySelector('[data-fb-layers]'),
 			perRow: cab.querySelector('[data-fb-per-row]'),
@@ -3104,28 +3120,47 @@
 
 		/* ---- 读输入 ---- */
 
-		/* writeBack=false 时不回写输入框: 用户在打字, 每敲一下就抹掉重写太闹心 */
-		function readInt(el, min, max, dflt, writeBack) {
+		/*
+		 * 读一个数字输入。**夹紧范围以输入框自己的 min / max 为准**, 传进来的常数只是兜底 ——
+		 * 页面上一旦把量程放宽(层数 8→12、滑杆 5..150…), 这里就不能再按老常数悄悄夹回去。
+		 * 这一条是用户报的 bug: 每层倍数被死夹在 1e12, 他输 1e20 实际按 1e12 算。
+		 * step 带小数(0.1 这种)时保留小数 —— x 与"每跳增量"都允许 0.5; 否则取整。
+		 * writeBack=false 时不回写输入框: 用户在打字, 每敲一下就抹掉重写太闹心。
+		 */
+		function readNum(el, min, max, dflt, writeBack) {
+			var lo = min;
+			var hi = max;
+			var frac = false;
+			if (el) {
+				var a = parseFloat(el.getAttribute('min'));
+				var b = parseFloat(el.getAttribute('max'));
+				var st = parseFloat(el.getAttribute('step'));
+				if (isFinite(a)) lo = a;
+				if (isFinite(b)) hi = b;
+				frac = isFinite(st) && Math.round(st) !== st;
+			}
 			var v = el ? parseFloat(el.value) : NaN;
 			if (!isFinite(v)) v = dflt;
-			v = Math.round(v);
-			if (v < min) v = min;
-			if (v > max) v = max;
+			v = frac ? Math.round(v * 1000) / 1000 : Math.round(v);
+			if (v < lo) v = lo;
+			if (v > hi) v = hi;
 			if (el && writeBack) el.value = String(v);
 			return v;
 		}
 
+		/* 每层生命值倍数与砖块生命值同量级: 都由 FB_HP_MAX 兜底(逐层相乘的结果也在那里截顶),
+		   这两个输入框都没有 max 属性, 所以常数就是它们的量程 —— 别再写第二个更小的上限。 */
 		function readWall(writeBack) {
 			return {
-				layers: readInt(fields.layers, 1, 8, 3, writeBack),
-				perRow: readInt(fields.perRow, 1, 6, 1, writeBack),
-				hp: readInt(fields.hp, 1, FB_HP_MAX, 1000, writeBack),
-				growth: readInt(fields.growth, 1, 1e12, 1000, writeBack)
+				layers: readNum(fields.layers, 1, 12, 3, writeBack),
+				perRow: readNum(fields.perRow, 1, 6, 1, writeBack),
+				hp: readNum(fields.hp, 1, FB_HP_MAX, 1000, writeBack),
+				growth: readNum(fields.growth, 1, FB_HP_MAX, 1000, writeBack)
 			};
 		}
 
 		function bounceBase() {
-			return readInt(fields.bounce, FB_BOUNCE_MIN, FB_BOUNCE_MAX, FB_BOUNCE, false);
+			return readNum(fields.bounce, FB_BOUNCE_MIN, FB_BOUNCE_MAX, FB_BOUNCE, false);
 		}
 
 		function effectiveBounce() {
@@ -3161,8 +3196,8 @@
 					ast: ast,
 					expr: expr,
 					glyph: fbGlyphFor(expr),
-					x0: readInt(ui.x0, 0, 400, FB_TEMPLATES.fact.x0, writeBack),
-					step: readInt(ui.step, 1, 20, 1, writeBack)
+					x0: readNum(ui.x0, 0, 400, FB_TEMPLATES.fact.x0, writeBack),
+					step: readNum(ui.step, 1, 32, 1, writeBack)
 				});
 			}
 			if (!ok) return null;
@@ -3185,9 +3220,26 @@
 			}
 		}
 
+		/*
+		 * 每层生命值的即时读数(顶到上限时明说)。
+		 * 上限必须看得见 —— 用户就是被"倍数悄悄夹在 1e12"坑过一次:
+		 * 输入框里明明写着 1e20, 算出来的墙却是按 1e12 长的。
+		 */
+		function updateWallReadout() {
+			if (!wallOut) return;
+			var rows = fbRowHps(readWall(false));
+			var parts = rows.hps.map(fbNum);
+			/* 层数多的时候别把面板撑成三行: 留前三层 + 最后一层 */
+			if (parts.length > 4) parts = parts.slice(0, 3).concat('…', parts[parts.length - 1]);
+			var text = fbT('games.funcball.field.layerHp', 'Per-layer HP') + '  ' + parts.join(' · ');
+			if (rows.capped) text += '   (' + fbT('games.funcball.hpCap', 'capped at {max}', { max: fbNum(FB_HP_MAX) }) + ')';
+			if (wallOut.textContent !== text) wallOut.textContent = text;
+		}
+
 		/* 还没开跑时, 参数一动就把场地重画一遍(这就是"预览") */
 		function preview() {
 			refreshGeo();
+			updateWallReadout();
 			acc = 0;
 			world = buildWorld(false);
 			if (world) reseat();
@@ -3473,6 +3525,7 @@
 			if (!next) { afterEdit(); return; }
 			world = next;
 			refreshGeo();   /* buildWorld(true) 已经把输入回写成夹紧后的值, 几何照它算 */
+			updateWallReadout();
 			acc = 0;
 			overTime = 0;
 			st = 'running';
@@ -3514,6 +3567,7 @@
 			overTime = 0;
 			setLocked(false);
 			refreshGeo();
+			updateWallReadout();
 			world = buildWorld(false);
 			if (world) reseat();
 			showOverlay(fbT('games.funcball.readyTitle', 'FUNCTION BALL'), fbT('games.funcball.readyHint', 'Set both functions, then press Start duel'));
