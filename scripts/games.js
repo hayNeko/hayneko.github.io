@@ -2476,7 +2476,7 @@
 
 	/* 修改了部分参数，更适合对比两颗球 */
 	var FB_GRAVITY = 1800;        /* px/s^2: 弹跳高度是固定的, 重力只决定"多久弹一次" */
-	var FB_BOUNCE = 56;           /* 弹跳高度(px)的出厂值, 页面滑杆与 --slow-motion 都在这个基础上算 */
+	var FB_BOUNCE = 30;           /* 弹跳高度(px)的出厂值, 页面滑杆与 --slow-motion 都在这个基础上算 */
 	var FB_BOUNCE_MIN = 5;
 	var FB_BOUNCE_MAX = 150;
 	var FB_BOUNCE_SLOW = 2;       /* --slow-motion: 弹跳高度翻倍, 每跳更慢 */

@@ -399,12 +399,12 @@
 						<label class="fb-field fb-field--half">
 							<span class="fb-field__key" i18n-key="games.funcball.field.x0">Start x</span>
 							<input class="fb-field__input" data-fb-x0 type="number" inputmode="numeric"
-								value="0" min="0" max="400" step="1">
+								value="0" min="0" max="400" step="0.1">
 						</label>
 						<label class="fb-field fb-field--half">
 							<span class="fb-field__key" i18n-key="games.funcball.field.step">x grows by</span>
 							<input class="fb-field__input" data-fb-step type="number" inputmode="numeric"
-								value="1" min="1" max="20" step="1">
+								value="1" min="1" max="32" step="0.1">
 						</label>
 					</div>
 				</section>
@@ -435,12 +435,12 @@
 						<label class="fb-field fb-field--half">
 							<span class="fb-field__key" i18n-key="games.funcball.field.x0">Start x</span>
 							<input class="fb-field__input" data-fb-x0 type="number" inputmode="numeric"
-								value="46" min="0" max="400" step="1">
+								value="46" min="0" max="400" step="0.1">
 						</label>
 						<label class="fb-field fb-field--half">
 							<span class="fb-field__key" i18n-key="games.funcball.field.step">x grows by</span>
 							<input class="fb-field__input" data-fb-step type="number" inputmode="numeric"
-								value="1" min="1" max="20" step="1">
+								value="1" min="1" max="32" step="0.1">
 						</label>
 					</div>
 				</section>
@@ -452,7 +452,7 @@
 					<div class="fb-wall__grid">
 						<label class="fb-field">
 							<span class="fb-field__key" i18n-key="games.funcball.field.layers">Layers</span>
-							<input class="fb-field__input" data-fb-layers type="number" inputmode="numeric" value="3" min="1" max="8" step="1">
+							<input class="fb-field__input" data-fb-layers type="number" inputmode="numeric" value="3" min="1" max="12" step="1">
 						</label>
 						<label class="fb-field">
 							<span class="fb-field__key" i18n-key="games.funcball.field.perRow">Bricks per layer</span>
@@ -468,7 +468,7 @@
 						</label>
 						<label class="fb-field fb-field--wide">
 							<span class="fb-field__key" i18n-key="games.funcball.field.bounce">Bounce height</span>
-							<input class="fb-field__input fb-field__input--range" data-fb-bounce type="range" min="20" max="140" step="2" value="56"
+							<input class="fb-field__input fb-field__input--range" data-fb-bounce type="range" min="5" max="150" step="1" value="30"
 								aria-label="bounce height" i18n-attr="aria-label" i18n-key="games.funcball.bounceAria">
 							<output class="fb-field__out" data-fb-bounce-out>56</output>
 						</label>
