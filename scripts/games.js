@@ -33,7 +33,7 @@
 	var GAMES = [
 		{
 			id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle',
-			flags: ['easy', 'rollback', 'hard']
+			flags: ['easy', 'rollback', 'hard', 'free']
 		},
 		{
 			id: 'blockblast', title: 'Block Blast',
@@ -105,6 +105,282 @@
 	var HOLD_RESTART_MS = 700;  /* "重新游玩"要长按这么久才生效, 免得误触 */
 	var HISTORY_MAX = 30;       /* --with-roll-back: 最多能退多少步 */
 
+	/*
+	 * ------------------------------------------------------------- 自由模式
+	 *
+	 * --free-mode 用"种子"决定方块序列: 同一个种子永远给出同一串方块, 于是种子能分享、
+	 * 能复现。随机源不是全局替换, 而是当参数传进抽卡函数(randInt / shake / refillBag /
+	 * garbageGaps): 非自由模式传 Math.random —— 那条老路径一行没改, 行为逐位不变。
+	 */
+	var SEED_MIN = -2147483648;   /* 种子范围: 有符号 32 位整数 */
+	var SEED_MAX = 2147483647;
+	var SAVE_KEY = 'hayneko.game.tetris.save';   /* 存档码在本机浏览器里的槽位 */
+
+	/* xorshift32: 状态就是一个 32 位整数 —— 存档码里塞得下, 而且能中途接上继续跑 */
+	function makeRng(seed) {
+		var rng = { state: ((seed ^ 0x9E3779B9) >>> 0) || 0x1F123BB5 };
+		for (var i = 0; i < 8; i++) rngNext(rng);   /* 先空转几圈, 免得相邻种子开头太像 */
+		return rng;
+	}
+
+	function rngNext(rng) {
+		var x = rng.state >>> 0;
+		x ^= (x << 13) >>> 0;
+		x ^= x >>> 17;
+		x ^= (x << 5) >>> 0;
+		rng.state = x >>> 0;
+		return rng.state / 4294967296;
+	}
+
+	/* 存档码只用数字 + 大小写字母(62 个); 开头 T1 是为了"一眼认出、也一眼否掉"别的文本 */
+	var CODE_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+	var CODE_PREFIX = 'T1';
+	/*
+	 * 存档码格式版本 —— **只认这一个**(不做向后兼容: 格式一改就直接换掉旧码,
+	 * 解码器只读当前版本; 留着这一字节是为了校验"这是不是本格式的码",
+	 * 顺便当个防抄错的标记)。
+	 */
+	var CODE_VERSION = 2;
+	var CODE_STATES = ['ready', 'running', 'paused', 'over'];
+
+	/* 板面格子 <-> 4bit 值: 0 空 / 1~7 = 七种方块(PIECES 顺序) / 8 = 困难模式的散乱方块 */
+	function cellCode(cell) {
+		if (!cell) return 0;
+		if (cell === GARBAGE) return 8;
+		var i = PIECES.indexOf(cell);
+		return i < 0 ? 0 : i + 1;
+	}
+
+	function codeCell(code) {
+		if (code === 8) return GARBAGE;
+		return (code >= 1 && code <= 7) ? PIECES[code - 1] : null;
+	}
+
+	/*
+	 * 板面按扫描行走 RLE: 一个 token 一个字节 = 4bit 值 + 4bit 长度(1~16)。
+	 * 借鉴 PNG 扫描行的思路 —— 比"x y color 三元组"紧凑得多(整行空只要 13 个 token),
+	 * 而且不用存坐标, 200 格顺着读回来就行。
+	 */
+	function boardToBytes(board) {
+		var cells = [];
+		for (var y = 0; y < ROWS; y++) {
+			for (var x = 0; x < COLS; x++) cells.push(cellCode(board[y][x]));
+		}
+		var out = [];
+		var i = 0;
+		while (i < cells.length) {
+			var v = cells[i];
+			var run = 1;
+			while (i + run < cells.length && cells[i + run] === v && run < 16) run++;
+			out.push(((v & 15) << 4) | (run - 1));
+			i += run;
+		}
+		return out;
+	}
+
+	/* 读回板面; 越界 / 非法值一律 null(上层报"存档码无效") */
+	function bytesToBoard(bytes, at) {
+		var cells = [];
+		while (cells.length < ROWS * COLS) {
+			if (at >= bytes.length) return null;
+			var token = bytes[at++];
+			var v = (token >> 4) & 15;
+			var run = (token & 15) + 1;
+			if (v > 8) return null;
+			for (var k = 0; k < run && cells.length < ROWS * COLS; k++) cells.push(v);
+		}
+		var board = [];
+		for (var y = 0; y < ROWS; y++) {
+			var row = [];
+			for (var x = 0; x < COLS; x++) row.push(codeCell(cells[y * COLS + x]));
+			board.push(row);
+		}
+		return { board: board, at: at };
+	}
+
+	/* 字节 -> 文本: 反复除以 62, 余数就是一位(大整数进制转换, 不依赖 BigInt) */
+	function bytesToCode(bytes) {
+		var work = bytes.slice();
+		var start = 0;
+		var out = [];
+		while (start < work.length) {
+			var rem = 0;
+			for (var i = start; i < work.length; i++) {
+				var v = rem * 256 + work[i];
+				work[i] = Math.floor(v / 62);
+				rem = v % 62;
+			}
+			out.push(CODE_CHARS.charAt(rem));
+			while (start < work.length && work[start] === 0) start++;
+		}
+		if (!out.length) out.push(CODE_CHARS.charAt(0));
+		return out.reverse().join('');
+	}
+
+	/* 文本 -> 字节; 出现字母表以外的字符就 null */
+	function codeToBytes(text) {
+		var out = [];
+		for (var i = 0; i < text.length; i++) {
+			var d = CODE_CHARS.indexOf(text.charAt(i));
+			if (d < 0) return null;
+			var carry = d;
+			for (var j = out.length - 1; j >= 0; j--) {
+				var v = out[j] * 62 + carry;
+				out[j] = v & 255;
+				carry = v >> 8;
+			}
+			while (carry > 0) {
+				out.unshift(carry & 255);
+				carry = carry >> 8;
+			}
+		}
+		return out;
+	}
+
+	/* 自由模式提示条的中文/英文兜底: i18n 还没加载或缺 key 时显示这个, 而不是显示 key 本身 */
+	var FREE_TEXT = {
+		'games.tetris.msgSeedEmpty': 'Type a seed first (an integer).',
+		'games.tetris.msgSeedBad': 'The seed must be a whole number.',
+		'games.tetris.msgSeedClamped': 'Out of range — clamped to {seed}',
+		'games.tetris.msgSeedNew': 'New seed: {seed}',
+		'games.tetris.msgCopied': 'Save code copied to the clipboard.',
+		'games.tetris.msgCopyHint': 'The code is in the box — copy it by hand.',
+		'games.tetris.msgCopyFail': 'Copy failed — the code is selected, press Ctrl/Cmd+C.',
+		'games.tetris.msgSaved': 'Saved in this browser.',
+		'games.tetris.msgSaveFail': 'This browser refused to keep it.',
+		'games.tetris.msgLoaded': 'Browser save loaded — press Load save code to apply it.',
+		'games.tetris.msgNoSave': 'No save in this browser yet.',
+		'games.tetris.msgCodeBad': 'That save code is not valid.',
+		'games.tetris.msgCodeEmpty': 'Paste a save code first.',
+		'games.tetris.msgRestored': 'Loaded save code — seed {seed}'
+	};
+	/* 16 位校验和(位置也参与) —— 抄错一个字符基本都挡得住 */
+	function codeChecksum(bytes) {
+		var sum = 0x1F;
+		for (var i = 0; i < bytes.length; i++) sum = (sum * 131 + bytes[i] + i) & 0xFFFF;
+		return sum & 0xFFFF;
+	}
+	/*
+	 * 存档码的字节布局(全部大端)。开头一字节是版本(=1, 非 0), 所以 62 进制转换不会
+	 * 丢掉前导零, 解码时不用另外存长度:
+	 *
+	 *   0        版本
+	 *   1        标志: bit0 easy | bit1 hard | bit2 free | bit3 grounded | bit4 canHold |
+	 *                   bit5~6 状态(ready/running/paused/over)
+	 *   2 ~ 5    种子 int32          (存档码里"第 0 号资料", 题目要求放最前面)
+	 *   6 ~ 9    随机流当前位置 u32  —— 半路存下来也能接着同一条流继续跑
+	 *   10 ~ 13  分数 u32
+	 *   14 ~ 15  消行数 u16
+	 *   16       等级(速度) u8 —— 于是 HUD 上 SCORE / LEVEL / LINES 三样都原样回来
+	 *   17       正在下落: bit0 有没有 | bit1~3 类型 | bit4~5 旋转
+	 *   18       x + 4
+	 *   19       y + 4
+	 *   20       暂存: 0 = 空, 1~7 = 类型
+	 *   21       next 队列数量 + 类型(每块一字节, 0~6)
+	 *   ...      当前袋里剩下的块(数量 + 类型) + 上一块类型(255 = 无)
+	 *   ...      板面 RLE
+	 *   末 2 字节 校验和
+	 */
+	function encodeSave(snap) {
+		var w = [];
+		var u8 = function (v) { w.push(v & 255); };
+		var u16 = function (v) { u8((v >> 8) & 255); u8(v & 255); };
+		var u32 = function (v) { u8((v >>> 24) & 255); u8((v >>> 16) & 255); u8((v >>> 8) & 255); u8(v & 255); };
+		var flags = (snap.easy ? 1 : 0) | (snap.hard ? 2 : 0) | (snap.free ? 4 : 0) |
+			(snap.grounded ? 8 : 0) | (snap.canHold ? 16 : 0) |
+			((CODE_STATES.indexOf(snap.state) & 3) << 5);
+		u8(CODE_VERSION);
+		u8(flags);
+		u32(snap.seed >>> 0);
+		u32(snap.rng >>> 0);
+		u32(snap.score >>> 0);
+		u16(snap.lines & 0xFFFF);
+		u8(Math.max(1, Math.min(255, snap.level | 0)));      /* 等级(速度): 1~255, 少了就按 1 */
+		var has = !!(snap.cur && snap.cur.type);
+		u8((has ? 1 : 0) | (has ? ((PIECES.indexOf(snap.cur.type) + 1) << 1) : 0) |
+			(has ? ((snap.cur.rot & 3) << 4) : 0));
+		u8(has ? (snap.cur.x + 4) : 0);
+		u8(has ? (snap.cur.y + 4) : 0);
+		u8(snap.hold ? (PIECES.indexOf(snap.hold) + 1) : 0);
+		u8(snap.queue.length & 15);
+		for (var q = 0; q < snap.queue.length; q++) u8(PIECES.indexOf(snap.queue[q]));
+		u8(snap.bag.length & 255);
+		for (var b = 0; b < snap.bag.length; b++) u8(PIECES.indexOf(snap.bag[b]));
+		u8(snap.lastType ? (PIECES.indexOf(snap.lastType) + 1) : 255);
+		var rle = boardToBytes(snap.board);
+		for (var i = 0; i < rle.length; i++) u8(rle[i]);
+		u16(codeChecksum(w));
+		return CODE_PREFIX + bytesToCode(w);
+	}
+
+	/* 解码: 任何一处对不上(前缀 / 版本 / 取值 / 校验和 / 多余字节)都返回 null */
+	function decodeSave(text) {
+		if (typeof text !== 'string') return null;
+		var body = text.replace(/\s+/g, '');
+		if (body.slice(0, CODE_PREFIX.length).toUpperCase() !== CODE_PREFIX) return null;
+		var bytes = codeToBytes(body.slice(CODE_PREFIX.length));
+		if (!bytes || bytes.length < 25) return null;
+		var at = 0;
+		var u8 = function () { return bytes[at++] & 255; };
+		var u16 = function () { var v = (u8() << 8) | u8(); return v & 0xFFFF; };
+		var u32 = function () {
+			var v = u8() * 16777216 + (u8() << 16) + (u8() << 8) + u8();
+			return v >>> 0;
+		};
+		if (u8() !== CODE_VERSION) return null;
+		var flags = u8();
+		var snap = {
+			easy: !!(flags & 1), hard: !!(flags & 2), free: !!(flags & 4),
+			grounded: !!(flags & 8), canHold: !!(flags & 16),
+			state: CODE_STATES[(flags >> 5) & 3],
+			seed: 0, rng: 0, score: 0, lines: 0,
+			cur: null, hold: null, queue: [], bag: [], lastType: null, board: null
+		};
+		snap.seed = u32() | 0;      /* 存的是二进制补码, |0 换回有符号 */
+		snap.rng = u32();
+		snap.score = u32();
+		snap.lines = u16();
+		snap.level = Math.max(1, u8());
+		var curBits = u8();
+		var cx = u8() - 4;
+		var cy = u8() - 4;
+		var holdBits = u8();
+		if (curBits & 1) {
+			var ci = (curBits >> 1) & 7;
+			if (ci < 1 || ci > 7) return null;
+			snap.cur = { type: PIECES[ci - 1], rot: (curBits >> 4) & 3, x: cx, y: cy };
+		}
+		if (holdBits > 7) return null;
+		if (holdBits) snap.hold = PIECES[holdBits - 1];
+		var qn = u8();
+		if (qn > 8) return null;
+		for (var q = 0; q < qn; q++) {
+			var t = u8();
+			if (t > 6) return null;
+			snap.queue.push(PIECES[t]);
+		}
+		var bn = u8();
+		if (bn > 16) return null;
+		for (var b = 0; b < bn; b++) {
+			var t2 = u8();
+			if (t2 > 6) return null;
+			snap.bag.push(PIECES[t2]);
+		}
+		var lt = u8();
+		if (lt !== 255) {
+			if (lt < 1 || lt > 7) return null;   /* 存的是 index + 1, 255 表示"还没有上一块" */
+			snap.lastType = PIECES[lt - 1];
+		}
+		var boardRes = bytesToBoard(bytes, at);
+		if (!boardRes) return null;
+		snap.board = boardRes.board;
+		at = boardRes.at;
+		var stored = u16();
+		if (at !== bytes.length) return null;             /* 末尾不能有多余字节 */
+		if (codeChecksum(bytes.slice(0, bytes.length - 2)) !== stored) return null;
+		return snap;
+	}
+
 	function rotateCW(m) {
 		var n = m.length;
 		var out = [];
@@ -133,15 +409,20 @@
 	   设成 false 就一块都不会连着出 —— 更平均, 但少了点手感。 */
 	var BAG_EDGE_REPEAT = true;
 
-	/* [0, n] 上的随机整数(困难模式的缺口位置/宽度都用它) */
-	function randInt(n) {
-		return Math.floor(Math.random() * (n + 1));
+	/*
+	 * [0, n] 上的随机整数。随机源是**传进来的**(rnd):
+	 *   非自由模式 -> Math.random, 也就是原来那条路;
+	 *   自由模式   -> 种子伪随机流(见 makeRng / rngNext)。
+	 * 这样抽卡代码本身一行没改, 只是换了个随机源。
+	 */
+	function randInt(rnd, n) {
+		return Math.floor(rnd() * (n + 1));
 	}
 
 	/* 洗牌(原地): 困难模式的孔位、方块序列都用它 */
-	function shake(a) {
+	function shake(rnd, a) {
 		for (var i = a.length - 1; i > 0; i--) {
-			var j = Math.floor(Math.random() * (i + 1));
+			var j = Math.floor(rnd() * (i + 1));
 			var t = a[i]; a[i] = a[j]; a[j] = t;
 		}
 		return a;
@@ -159,24 +440,24 @@
 	 * (长条能一次清四行, T 好塞缝), 于是它们出现的次数比其余五种略多。
 	 * 权重 I = 2 / T = 2 / 其余各 1(合计 9), 所以多出来的那一块是 I 或 T 的概率是 4/9。
 	 */
-	function easyExtraType() {
+	function easyExtraType(rnd) {
 		var pool = [];
 		for (var i = 0; i < PIECES.length; i++) {
 			var w = (PIECES[i] === 'I' || PIECES[i] === 'T') ? 2 : 1;
 			for (var k = 0; k < w; k++) pool.push(PIECES[i]);
 		}
-		return pool[Math.floor(Math.random() * pool.length)];
+		return pool[Math.floor(rnd() * pool.length)];
 	}
 
-	function refillBag(state, easy) {
+	function refillBag(state, easy, rnd) {
 		var bag = PIECES.slice();
-		shake(bag);
+		shake(rnd, bag);
 		/* 简单模式: 一袋 8 块(七种各一 + 加权多给一块) */
-		if (easy) bag.push(easyExtraType());
+		if (easy) bag.push(easyExtraType(rnd));
 		/* 抽屉式发放: 从末尾取(见 drawType), 所以"下一个要发的"是最后一格 */
 		var top = bag.length - 1;
 		if (!BAG_EDGE_REPEAT && top > 0 && bag[top] === state.lastType) {
-			var k = Math.floor(Math.random() * top);
+			var k = Math.floor(rnd() * top);
 			var swap = bag[top];
 			bag[top] = bag[k];
 			bag[k] = swap;
@@ -185,8 +466,8 @@
 	}
 
 	/* 抽一块出来(袋空了就装新的一袋) */
-	function drawType(state, easy) {
-		if (!state.bag.length) refillBag(state, easy);
+	function drawType(state, easy, rnd) {
+		if (!state.bag.length) refillBag(state, easy, rnd);
 		var type = state.bag.pop();
 		state.lastType = type;
 		return type;
@@ -293,7 +574,6 @@
 		var btnUndo = cab.querySelector('[data-tetris-action="undo"]');
 		var flagsBox = cab.querySelector('[data-game-flags]');
 		/**
-		/**
 		 * 一层的孔位。三件事:
 		 *   ① 每层 HARD_GAPS_MIN~MAX 个(2~5 个, 随机);
 		 *   ② 一行里**完全随机** —— 整行洗牌后取前 n 个, 挨着、分散、扎堆都行, 不额外加约束;
@@ -302,15 +582,15 @@
 		 * 返回孔位列号数组。
 		 */
 		function garbageGaps(prev) {
-			var want = HARD_GAPS_MIN + randInt(HARD_GAPS_MAX - HARD_GAPS_MIN);
+			var want = HARD_GAPS_MIN + randInt(rand, HARD_GAPS_MAX - HARD_GAPS_MIN);
 			var free = [];
 			var taken = [];
 			for (var x = 0; x < COLS; x++) {
 				if (prev && prev.indexOf(x) !== -1) taken.push(x);
 				else free.push(x);
 			}
-			shake(free);
-			shake(taken);
+			shake(rand, free);
+			shake(rand, taken);
 			return free.concat(taken).slice(0, Math.min(want, COLS));
 		}
 
@@ -354,6 +634,14 @@
 		 */
 		var hardRowsRow = flagPanel ? flagPanel.querySelector('[data-hard-rows-row]') : null;
 		var hardRowsInput = hardRowsRow ? hardRowsRow.querySelector('[data-tetris-hard-rows]') : null;
+		/* 自由模式(--free-mode)的种子 / 存档码栏位也在标志位面板里 */
+		var freeRow = flagPanel ? flagPanel.querySelector('[data-free-row]') : null;
+		var seedInput = freeRow ? freeRow.querySelector('[data-tetris-seed]') : null;
+		var seedMsg = freeRow ? freeRow.querySelector('[data-tetris-seed-msg]') : null;
+		/* 存档码在它自己的面板里(和标志位面板一样, 是机台的兄弟节点) */
+		var savePanel = cab.parentNode ? cab.parentNode.querySelector('[data-free-save-panel]') : null;
+		var saveInput = savePanel ? savePanel.querySelector('[data-tetris-save]') : null;
+		var saveMsg = savePanel ? savePanel.querySelector('[data-tetris-save-msg]') : null;
 		/* 生成器状态: 当前这一袋 + 上一次发出的类型(跨袋规则要用) */
 		var bagState = { bag: [], lastType: null };
 
@@ -396,6 +684,341 @@
 			return gravityMs(game.level);
 		}
 
+		/* ---- 自由模式: 种子 / 存档码 ---- */
+
+		/* 这一台的随机源: 自由模式走种子流, 别的一律 Math.random(原来那条路) */
+		var freeRng = null;
+
+		function rand() {
+			return freeRng ? rngNext(freeRng) : Math.random();
+		}
+
+		/**
+		 * 读种子输入框。规格是题目定死的, 所以范围写在 JS 里(不是"用户可以调"的 UI 上限):
+		 *   有符号 32 位整数; 超出 -2147483648~2147483647 就夹到边界(并回写输入框);
+		 *   非整数(空 / 小数 / 字母 / 1e5 / 0x10)直接报错, 不给开局。
+		 * 返回 { ok, value, clamped, error, incomplete }: incomplete 是"只打了个正负号"这种没写完的状态。
+		 */
+		function readSeed(writeBack) {
+			var fallback = (typeof opt.seed === 'number' && isFinite(opt.seed)) ? (opt.seed | 0) : 0;
+			if (!seedInput) return { ok: true, value: fallback, clamped: false, incomplete: false };
+			var raw = String(seedInput.value).replace(/^\s+|\s+$/g, '');
+			if (!/^[+-]?\d+$/.test(raw)) {
+				return {
+					ok: false, value: fallback, clamped: false, incomplete: /^[+-]?$/.test(raw),
+					error: raw ? 'games.tetris.msgSeedBad' : 'games.tetris.msgSeedEmpty'
+				};
+			}
+			var v = Number(raw);
+			var clamped = false;
+			if (!isFinite(v) || v > SEED_MAX) {
+				v = raw.charAt(0) === '-' ? SEED_MIN : SEED_MAX;
+				clamped = true;
+			} else if (v < SEED_MIN) {
+				v = SEED_MIN;
+				clamped = true;
+			}
+			v = v | 0;
+			if (writeBack && seedInput.value !== String(v)) seedInput.value = String(v);
+			return { ok: true, value: v, clamped: clamped, incomplete: false };
+		}
+
+		/* 装/卸随机源: 自由模式按种子开一条新流, 非自由模式换回 Math.random */
+		function installRand() {
+			if (!opt.free) {
+				freeRng = null;
+				return { ok: true, value: 0, clamped: false };
+			}
+			var s = readSeed(false);
+			freeRng = s.ok ? makeRng(s.value) : null;
+			return s;
+		}
+
+		/* 当前这一块的矩阵是 SHAPES[type] 的第几个旋转 —— 存档要把姿态一起带上 */
+		function rotIndex(piece) {
+			var probe = SHAPES[piece.type];
+			for (var r = 0; r < 4; r++) {
+				if (probe.length === piece.m.length && probe.join('|') === piece.m.join('|')) return r;
+				probe = rotateCW(probe);
+			}
+			return -1;
+		}
+
+		/* ---- 提示条 ---- */
+
+		/*
+		 * 两条提示通道: 种子的错就显示在种子框下面, 存档码的事显示在存档码面板里 ——
+		 * 一条提示挂在离它最近的地方, 才不至于"报错在下面、出错的框在上面"。
+		 */
+		var notes = { seed: null, save: null };
+
+		function note(channel, key, params, kind) {
+			notes[channel] = key ? { key: key, params: params, kind: kind || '' } : null;
+			renderNotes();
+		}
+
+		function renderNotes() {
+			renderNote(seedMsg, notes.seed);
+			renderNote(saveMsg, notes.save);
+		}
+
+		function renderNote(el, msg) {
+			if (!el) return;
+			if (!msg) {
+				el.textContent = '';
+				el.hidden = true;
+				return;
+			}
+			el.textContent = t(msg.key, FREE_TEXT[msg.key] || msg.key, msg.params);
+			el.hidden = false;
+			el.classList.toggle('is-err', msg.kind === 'err');
+			el.classList.toggle('is-ok', msg.kind === 'ok');
+		}
+
+		/* 存档码是一长串: 填进去后按内容自动长高(有 max-height 兜底), 尽量一次看全 */
+		function growSave() {
+			if (!saveInput || !saveInput.style || !saveInput.scrollHeight) return;
+			saveInput.style.height = 'auto';
+			saveInput.style.height = (saveInput.scrollHeight + 2) + 'px';
+		}
+
+		/* ---- 导出 / 还原 ---- */
+
+		/**
+		 * 把当前局面打包成存档码。只读游戏状态 —— 唯一例外是"消行闪光"那 250ms:
+		 * 半截动画不值得序列化, 直接先结算掉, 于是码里的板面永远没有待消的整行。
+		 */
+		function exportCode() {
+			if (game.clearRows.length) applyClear();
+			var s = readSeed(false);
+			var cur = null;
+			if (game.cur) {
+				var rot = rotIndex(game.cur);
+				if (rot >= 0) cur = { type: game.cur.type, rot: rot, x: game.cur.x, y: game.cur.y };
+			}
+			return encodeSave({
+				easy: !!opt.easy, hard: !!opt.hard, free: !!opt.free,
+				grounded: !!game.grounded, canHold: !!game.canHold,
+				state: game.state,
+				seed: s.ok ? s.value : 0,
+				rng: freeRng ? freeRng.state : 0,
+				score: game.score, lines: game.lines, level: game.level,
+				cur: cur, hold: game.hold, queue: game.queue.slice(),
+				bag: bagState.bag.slice(), lastType: bagState.lastType, board: game.board
+			});
+		}
+
+		/* 把解码出来的快照盖到这一局上(顺序很重要: 先落标志位, 再整体覆盖状态) */
+		function applySnapshot(snap) {
+			setFlags({ easy: !!snap.easy, hard: !!snap.hard, free: true });
+			opt.seed = snap.seed;
+			if (seedInput) seedInput.value = String(snap.seed);
+			freeRng = { state: snap.rng >>> 0 };
+			game.board = snap.board.map(function (row) { return row.slice(); });
+			game.queue = snap.queue.slice();
+			bagState.bag = snap.bag.slice();
+			bagState.lastType = snap.lastType;
+			game.hold = snap.hold;
+			game.canHold = snap.canHold;
+			game.score = snap.score;
+			game.lines = snap.lines;
+			/* 等级(速度)就用码里的 —— SCORE / LEVEL / LINES 三样都原样回来 */
+			game.level = snap.level;
+			game.clearRows = [];
+			game.clearTimer = 0;
+			game.grounded = snap.grounded;
+			game.lockTimer = 0;
+			game.lockResets = 0;
+			game.dropTimer = 0;
+			game.dropScore = 0;
+			history.length = 0;              /* 撤回栈不进存档码(会拖长好几倍), 还原后就从这一手重新开始 */
+			updateUndoBtn();
+			game.cur = null;
+			if (snap.cur) {
+				game.cur = make(snap.cur.type);
+				for (var r = 0; r < (snap.cur.rot & 3); r++) game.cur.m = rotateCW(game.cur.m);
+				game.cur.x = snap.cur.x;
+				game.cur.y = snap.cur.y;
+			} else {
+				spawn();
+			}
+			game.state = snap.state;
+			if (game.state === 'running') ensureLoop();
+			else stopLoop();
+			drawMini(nextCv, game.queue[0]);
+			drawMini(holdCv, game.hold);
+			updateHud();
+			draw();
+			sync();
+			updateFreeUI();
+		}
+
+		/* 还原: 解不出来就一个字都不改, 只回一个错误 key 给上层提示 */
+		function importCode(code) {
+			var snap = decodeSave(String(code || ''));
+			if (!snap) return { ok: false, error: 'games.tetris.msgCodeBad' };
+			applySnapshot(snap);
+			return { ok: true, seed: snap.seed };
+		}
+
+		/* ---- 自由模式: 页面上的几个动作 ---- */
+
+		/* 摇一个合法种子 —— 这是"帮你想一个种子", 用真随机就好, 不该走种子流 */
+		function freshSeed() {
+			return Math.floor(Math.random() * 4294967296) | 0;
+		}
+
+		function rollSeed() {
+			var v = freshSeed();
+			if (seedInput) seedInput.value = String(v);
+			opt.seed = v;
+			installRand();
+			if (game.state === 'ready') reset();
+			sync();      /* 牌子上的种子要跟着变(updateFreeUI 里会摇新种子, 不能在这儿调它) */
+			note('seed', 'games.tetris.msgSeedNew', { seed: String(v) }, 'ok');
+		}
+
+		function selectSave() {
+			if (!saveInput || !saveInput.select) return false;
+			try { saveInput.select(); return true; } catch (e) { return false; }
+		}
+
+		/* 复制存档码: 有剪贴板 API 就用, 没有就退回"选中 + execCommand" */
+		function copyText(text) {
+			var nav = global.navigator;
+			if (nav && nav.clipboard && nav.clipboard.writeText) {
+				try {
+					var p = nav.clipboard.writeText(text);
+					if (p && p.then) {
+						p.then(function () { note('save', 'games.tetris.msgCopied', null, 'ok'); },
+							function () { selectSave(); note('save', 'games.tetris.msgCopyFail', null, 'err'); });
+						return 'copied';
+					}
+				} catch (e) {}
+			}
+			var sel = selectSave();
+			try { if (sel && doc.execCommand && doc.execCommand('copy')) return 'copied'; } catch (e2) {}
+			return sel ? 'selected' : 'fail';
+		}
+
+		function doExport() {
+			var code = exportCode();
+			if (saveInput) { saveInput.value = code; growSave(); }
+			var how = copyText(code);
+			if (how === 'copied') note('save', 'games.tetris.msgCopied', null, 'ok');
+			else if (how === 'selected') note('save', 'games.tetris.msgCopyHint', null, 'ok');
+			else note('save', 'games.tetris.msgCopyFail', null, 'err');
+			return code;
+		}
+
+		function doSaveLocal() {
+			var code = exportCode();
+			if (saveInput) { saveInput.value = code; growSave(); }
+			try {
+				global.localStorage.setItem(SAVE_KEY, code);
+				note('save', 'games.tetris.msgSaved', null, 'ok');
+			} catch (e) {
+				note('save', 'games.tetris.msgSaveFail', null, 'err');
+			}
+			return code;
+		}
+
+		function doLoadLocal() {
+			var code = null;
+			try { code = global.localStorage.getItem(SAVE_KEY); } catch (e) { code = null; }
+			if (!code) {
+				note('save', 'games.tetris.msgNoSave', null, 'err');
+				return null;
+			}
+			if (saveInput) { saveInput.value = code; growSave(); }
+			note('save', 'games.tetris.msgLoaded', null, 'ok');
+			return code;
+		}
+
+		function doRestore() {
+			var raw = saveInput ? String(saveInput.value) : '';
+			if (!raw.replace(/\s+/g, '')) {
+				note('save', 'games.tetris.msgCodeEmpty', null, 'err');
+				return { ok: false, error: 'games.tetris.msgCodeEmpty' };
+			}
+			var res = importCode(raw);
+			if (res.ok) note('save', 'games.tetris.msgRestored', { seed: String(res.seed) }, 'ok');
+			else note('save', res.error, null, 'err');
+			return res;
+		}
+
+		function onFreeClick(e) {
+			var btn = e.target.closest ? e.target.closest('[data-tetris-free]') : null;
+			if (!btn) return;
+			e.preventDefault();
+			var action = btn.getAttribute('data-tetris-free');
+			if (action === 'dice') rollSeed();
+			else if (action === 'export') doExport();
+			else if (action === 'save') doSaveLocal();
+			else if (action === 'load') doLoadLocal();
+			else if (action === 'restore') doRestore();
+		}
+
+		/* 种子框: 边打边校验(只报错, 不夹紧 —— 打字中途被改写很难用)
+		 * clampNow(失焦 / 回车 / 开局) 时才夹到边界并回写 */
+		function onSeedInput(clampNow) {
+			var s = readSeed(false);
+			if (seedInput && seedInput.setAttribute) {
+				if (s.ok) seedInput.removeAttribute('aria-invalid');
+				else if (!s.incomplete) seedInput.setAttribute('aria-invalid', 'true');
+				else seedInput.removeAttribute('aria-invalid');
+			}
+			if (s.ok) {
+				if (clampNow && s.clamped) {
+					readSeed(true);
+					note('seed', 'games.tetris.msgSeedClamped', { seed: seedInput ? seedInput.value : String(s.value) }, 'ok');
+				} else if (notes.seed && notes.seed.key === 'games.tetris.msgSeedClamped') {
+					note('seed', null);
+				}
+			} else if (!s.incomplete) {
+				note('seed', s.error, null, 'err');
+			}
+			installRand();
+			if (game.state === 'ready') reset();
+			updateFreeUI();
+		}
+
+		function onSeedTyping() { onSeedInput(false); }   /* input 事件: 只校验, 不夹紧 */
+		function onSeedChange() { onSeedInput(true); }    /* 失焦 / 回车: 夹到边界并回写 */
+
+		/* 存档码框里回车 = 还原, 省得再去点按钮 */
+		function onSaveKeyDown(e) {
+			if (e.key === 'Enter' || e.keyCode === 13) {
+				e.preventDefault();
+				doRestore();
+			}
+		}
+
+		/* 自由模式的界面: 关着就整块收起来(不留看不见/用不上的控件), 开着就同步校验状态 */
+		function updateFreeUI() {
+			var on = !!opt.free;
+			if (freeRow) freeRow.hidden = !on;
+			if (savePanel) savePanel.hidden = !on;   /* 存档码那一块跟着自由模式一起收/放 */
+			if (!on) {
+				note('seed', null);
+				note('save', null);
+				return;
+			}
+			if (savePanel && !savePanel.hidden) growSave();
+			/* 第一次打开自由模式: 先替玩家摇一个种子 —— 不然一上来就是"种子不能为空", 卡在门口 */
+			if (seedInput && String(seedInput.value).replace(/^\s+|\s+$/g, '') === '') {
+				var fresh = freshSeed();
+				seedInput.value = String(fresh);
+				opt.seed = fresh;
+				installRand();
+			}
+			var s = readSeed(false);
+			if (seedInput && seedInput.setAttribute) {
+				if (s.ok || s.incomplete) seedInput.removeAttribute('aria-invalid');
+				else seedInput.setAttribute('aria-invalid', 'true');
+			}
+			renderNotes();
+		}
 		var held = { left: false, right: false, down: false };
 		var repeat = { left: 0, right: 0, down: 0 };
 		var raf = 0;
@@ -410,7 +1033,7 @@
 		/* ---- 队列 / 出生 ---- */
 
 		function nextType() {
-			return drawType(bagState, opt.easy);
+			return drawType(bagState, opt.easy, rand);
 		}
 
 		function refillQueue() {
@@ -543,6 +1166,7 @@
 				queue: game.queue.slice(),
 				bag: bagState.bag.slice(),
 				lastType: bagState.lastType,
+				rng: freeRng ? freeRng.state : 0,
 				curType: game.cur ? game.cur.type : null,
 				hold: game.hold,
 				canHold: game.canHold,
@@ -571,6 +1195,8 @@
 			game.queue = snap.queue;
 			bagState.bag = snap.bag.slice();
 			bagState.lastType = snap.lastType;
+			/* 撤回也把随机流退回去, 免得同一局撤一次之后序列就分叉了 */
+			if (freeRng && snap.rng) freeRng.state = snap.rng >>> 0;
 			game.hold = snap.hold;
 			game.canHold = snap.canHold;
 			/* 这一块的软降/硬降加分也一并退掉, 否则撤回再放一次会白赚分 */
@@ -658,6 +1284,7 @@
 		/* ---- 状态 ---- */
 
 		function reset() {
+			installRand();     /* 自由模式: 每局都从种子开头来, 于是同一局可复现 */
 			history.length = 0;
 			updateUndoBtn();
 			game.board = emptyBoard();
@@ -684,6 +1311,18 @@
 
 		function start() {
 			if (destroyed || game.state === 'running') return;
+			if (opt.free) {
+				/* 自由模式: 种子不合法就不给开局(顺手把夹紧后的值回写输入框) */
+				var s = readSeed(true);
+				if (!s.ok) {
+					installRand();
+					note('seed', s.error, null, 'err');
+					updateFreeUI();
+					return false;
+				}
+				if (s.clamped) note('seed', 'games.tetris.msgSeedClamped', { seed: seedInput ? seedInput.value : String(s.value) }, 'ok');
+				installRand();
+			}
 			if (game.state === 'over' || game.state === 'ready') reset();
 			game.state = 'running';
 			ensureLoop();
@@ -778,7 +1417,8 @@
 			Array.prototype.forEach.call(flagChips, function (chip) {
 				var name = chip.getAttribute('data-flag');
 				var on = !!opt[name];
-				var blocked = name !== 'hard' && !!opt.hard;
+				/* 困难模式只焊死简单模式与撤回; 自由模式是正交的, 照样能点 */
+				var blocked = (name === 'easy' || name === 'rollback') && !!opt.hard;
 				chip.classList.toggle('is-on', on);
 				chip.classList.toggle('is-blocked', blocked);
 				chip.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -801,6 +1441,7 @@
 			if (undoKeyHint) undoKeyHint.hidden = !opt.rollback;
 			if (!opt.rollback) history.length = 0;
 			if (hardRowsRow) hardRowsRow.hidden = !opt.hard;
+			updateFreeUI();
 			/* 不加速: 等级立刻回到 1; 关掉时按消行数重算 */
 			game.level = levelFor(game.lines);
 			updateUndoBtn();
@@ -818,16 +1459,20 @@
 			if (typeof next.easy === 'boolean') opt.easy = next.easy;
 			if (typeof next.rollback === 'boolean') opt.rollback = next.rollback;
 			if (typeof next.hard === 'boolean') opt.hard = next.hard;
-			/* 困难模式与"简单模式 / 撤回"互斥: 困难一开, 那两个一律压下去 */
+			if (typeof next.free === 'boolean') {
+				opt.free = next.free;
+				installRand();     /* 打开就换到种子流, 关掉就换回 Math.random */
+			}
+			/* 困难模式与"简单模式 / 撤回"互斥: 困难一开, 那两个一律压下去(自由模式不受影响) */
 			if (opt.hard) { opt.easy = false; opt.rollback = false; }
 			applyFlags();
 		}
 
 		function toggleFlag(name) {
-			if (name !== 'easy' && name !== 'rollback' && name !== 'hard') return;
+			if (name !== 'easy' && name !== 'rollback' && name !== 'hard' && name !== 'free') return;
 			/* 困难模式下那两个是死的(按钮已经 disabled, 这里再挡一道: 键盘 / 终端也能改 flags) */
-			if (opt.hard && name !== 'hard') return;
-			var next = { easy: opt.easy, rollback: opt.rollback, hard: opt.hard };
+			if (opt.hard && (name === 'easy' || name === 'rollback')) return;
+			var next = { easy: opt.easy, rollback: opt.rollback, hard: opt.hard, free: opt.free };
 			next[name] = !next[name];
 			setFlags(next);
 		}
@@ -843,6 +1488,19 @@
 		function renderFlags() {
 			if (!flagsBox) return;
 			var chips = [];
+			if (opt.free) {
+				/* 牌子上带种子, 一眼看得出这台是按哪个种子在跑(太长就截断, 完整值看悬停) */
+				var si = readSeed(false);
+				var label = t('games.tetris.flag.free', 'FREE');
+				if (si.ok) {
+					var txt = String(si.value);
+					if (txt.length > 12) txt = txt.slice(0, 12) + '…';
+					label = label + ' ' + txt;
+				}
+				chips.push('<span class="cabinet__flag cabinet__flag--free" title="' +
+					esc(t('games.tetris.flag.freeTip', '--free-mode: the seed decides the piece sequence')) + '">' +
+					esc(label) + '</span>');
+			}
 			if (opt.hard) {
 				chips.push('<span class="cabinet__flag cabinet__flag--hard" title="' +
 					esc(t('games.tetris.flag.hardTip', '--hard-mode: garbage layers at the bottom, no easy mode, no undo')) + '">' +
@@ -1261,6 +1919,7 @@
 
 		function onI18n() {
 			sync();
+			renderNotes();   /* 提示条是 JS 写的文本, 切语言时也要跟着换 */
 		}
 
 		/* ---- 挂载 / 卸载 ---- */
@@ -1281,6 +1940,18 @@
 		doc.addEventListener('visibilitychange', onVisibility);
 		doc.addEventListener('i18n:applied', onI18n);
 		if (hardRowsInput) hardRowsInput.addEventListener('input', onHardRowsInput);
+		/* 自由模式: 种子边打边校验, 存档码框里回车 = 读取存档码, 面板上的按钮走 onFreeClick */
+		if (seedInput) {
+			seedInput.addEventListener('input', onSeedTyping);
+			seedInput.addEventListener('change', onSeedChange);
+		}
+		if (saveInput) saveInput.addEventListener('keydown', onSaveKeyDown);
+		/*
+		 * 自由模式的按钮分两处: 种子那一行(摇种子)与存档码面板(导出/保存/读取/读取存档码)。
+		 * 两边都要挂 —— 早先把存档码那一块搬出去时漏了这里, 按钮就变成「点了没反应」。
+		 */
+		if (freeRow) freeRow.addEventListener('click', onFreeClick);
+		if (savePanel) savePanel.addEventListener('click', onFreeClick);
 
 		if (global.ResizeObserver) {
 			observer = new global.ResizeObserver(function () { resize(); });
@@ -1298,6 +1969,13 @@
 			endHold();
 			if (flagPanel) flagPanel.removeEventListener('click', onFlagClick);
 			if (hardRowsInput) hardRowsInput.removeEventListener('input', onHardRowsInput);
+			if (seedInput) {
+				seedInput.removeEventListener('input', onSeedTyping);
+				seedInput.removeEventListener('change', onSeedChange);
+			}
+			if (saveInput) saveInput.removeEventListener('keydown', onSaveKeyDown);
+			if (freeRow) freeRow.removeEventListener('click', onFreeClick);
+			if (savePanel) savePanel.removeEventListener('click', onFreeClick);
 			doc.removeEventListener('pointerup', onPointerUp);
 			doc.removeEventListener('keydown', onKeyDown);
 			doc.removeEventListener('keyup', onKeyUp);
@@ -1315,10 +1993,18 @@
 
 		if (flagPanel) flagPanel.addEventListener('click', onFlagClick);
 
+		/* 终端给的种子先落到输入框里(reset 会读它装随机流), 存档码在 applyFlags 之后还原 */
+		if (opt.free && seedInput && opt.seed !== null && opt.seed !== undefined && opt.seed !== '') {
+			seedInput.value = String(opt.seed);
+		}
 		cab.dataset.gameReady = 'true';
 		updateHud();
 		reset();
 		applyFlags();     /* 撤回按钮 / 牌子 / 面板开关都按 opt 落一遍 */
+		if (opt.free && opt.save) {
+			var restored = importCode(opt.save);
+			if (!restored.ok) note('save', restored.error, null, 'err');
+		}
 		resize();
 		setTimeout(resize, 60);
 
@@ -1330,6 +2016,13 @@
 			resize: resize,
 			state: function () { return game.state; },
 			undo: undo,
+			/* 自由模式: 导出当前局面的存档码 / 用存档码还原(页面按钮与自动化验证都走这两个) */
+			saveCode: exportCode,
+			restore: importCode,
+			seedInfo: function () {
+				var s = readSeed(false);
+				return { ok: s.ok, value: s.value, clamped: !!s.clamped, error: s.error || null };
+			},
 			/* 只读快照: 排查手感 / 自动化验证时看看当前方块在哪 */
 			debug: function () {
 				return {
@@ -1347,6 +2040,20 @@
 					hardRows: readHardRows(false),
 					hardRowsHidden: hardRowsRow ? hardRowsRow.hidden : null,
 					hardRowsDisabled: hardRowsInput ? hardRowsInput.disabled : null,
+					free: !!opt.free,
+					seed: readSeed(false).value,
+					seedOk: readSeed(false).ok,
+					seedText: seedInput ? String(seedInput.value) : null,
+					rng: freeRng ? freeRng.state : null,
+					queue: game.queue.slice(),
+					hold: game.hold,
+					freeRowHidden: freeRow ? freeRow.hidden : null,
+					seedNote: notes.seed ? notes.seed.key : null,
+					saveNote: notes.save ? notes.save.key : null,
+					saveMsgText: saveMsg ? String(saveMsg.textContent) : null,
+					seedMsgText: seedMsg ? String(seedMsg.textContent) : null,
+					savePanelHidden: savePanel ? savePanel.hidden : null,
+					saveLen: saveInput ? String(saveInput.value).length : 0,
 					garbage: game.board.reduce(function (n, row) {
 						return n + row.filter(function (c) { return c === GARBAGE; }).length;
 					}, 0),
@@ -4157,7 +4864,12 @@
 		var o = raw || {};
 		/* slow 只有函数球认(GAMES[].flags): --slow-motion, 弹跳高度翻倍 */
 		/* hard 只有俄罗斯方块认(GAMES[].flags): --hard-mode, 底下先铺几层散乱方块 */
-		return { easy: !!o.easy, rollback: !!o.rollback, slow: !!o.slow, hard: !!o.hard };
+		/* free / seed / save 也只有俄罗斯方块认: --free-mode --seed=<整数> --save=<存档码> */
+		var seed = (o.seed === undefined || o.seed === null || o.seed === '') ? null : o.seed;
+		return {
+			easy: !!o.easy, rollback: !!o.rollback, slow: !!o.slow, hard: !!o.hard,
+			free: !!o.free, seed: seed, save: typeof o.save === 'string' ? o.save : null
+		};
 	}
 
 	function destroyCurrent() {
@@ -4280,14 +4992,36 @@
 	global.Games = {
 		list: function () { return GAMES.slice(); },
 		/* 俄罗斯方块的 7-bag 生成序列(不碰正在玩的那一局):
-		     Games.sample(20)       → ['T', 'I', 'S', ...]
-		     Games.sample(20, true) → --easy-mode 的加权序列(长条 / T 略多) */
-		sample: function (count, easy) {
+		     Games.sample(20)             → ['T', 'I', 'S', ...]  完全随机
+		     Games.sample(20, true)       → --easy-mode 的加权序列(长条 / T 略多)
+		     Games.sample(20, false, 42)  → --free-mode 种子 42 的序列(同种子永远一样) */
+		sample: function (count, easy, seed) {
 			var state = { bag: [], lastType: null };
 			var n = Math.max(1, Math.min(count || 100, 100000));
+			var rnd = Math.random;
+			if (seed !== undefined && seed !== null && seed !== '') {
+				var rng = makeRng(seed | 0);
+				rnd = function () { return rngNext(rng); };
+			}
 			var out = [];
-			for (var i = 0; i < n; i++) out.push(drawType(state, !!easy));
+			for (var i = 0; i < n; i++) out.push(drawType(state, !!easy, rnd));
 			return out;
+		},
+		/*
+		 * 俄罗斯方块: 种子与存档码的**纯函数**部分(不碰正在玩的那一局, 跑格式回归用)。
+		 *   Games.tetris.codec.encode(snap) → 'T1...'   存档码
+		 *   Games.tetris.codec.decode(code) → snap|null  (前缀 / 版本 / 取值 / 校验和有一处不对就是 null)
+		 * snap 字段见 encodeSave 上面那张字节布局表:
+		 *   { easy, hard, free, grounded, canHold, state, seed, rng, score, lines, level,
+		 *     cur: {type,rot,x,y}|null, hold, queue, bag, lastType, board }
+		 */
+		tetris: {
+			codec: {
+				encode: function (snap) { return encodeSave(snap); },
+				decode: function (code) { return decodeSave(code); }
+			},
+			min: SEED_MIN,
+			max: SEED_MAX
 		},
 		ids: function () { return GAMES.map(function (g) { return g.id; }); },
 		/**

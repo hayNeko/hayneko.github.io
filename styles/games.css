@@ -140,6 +140,12 @@
 	border-color: rgba(var(--red-rgb), 0.4);
 	background: var(--red-soft);
 }
+/* --free-mode 的牌子: 蓝底, 上面带着种子 */
+.cabinet__flag--free {
+	color: var(--blue);
+	border-color: rgba(var(--blue-rgb), 0.4);
+	background: var(--blue-soft);
+}
 
 /* ------------------------------------------------------------- 屏幕 */
 
@@ -382,6 +388,22 @@
 }
 
 /*
+ * 自由模式的那个开关: 蓝点 —— 与"困难(红)"区分开。它跟其它开关是正交的, 不会被焊死。
+ */
+/* 自由模式独占一行: flex-basis 给 100%, 无论容器多宽都会换到下一行 */
+.flag-chip--free { flex: 1 1 100%; }
+.flag-chip--free .flag-chip__top code { color: var(--blue); }
+.flag-chip--free.is-on {
+	border-color: rgba(var(--blue-rgb), 0.45);
+	background: var(--blue-soft);
+}
+.flag-chip--free.is-on .flag-chip__top code { color: var(--blue); }
+.flag-chip--free.is-on .flag-chip__dot {
+	background: var(--blue);
+	box-shadow: 0 0 8px rgba(var(--blue-rgb), 0.75);
+}
+
+/*
  * 困难模式的那个开关: 红灯亮的那个不是"开"的绿, 而是红的 —— 它是个模式, 不是加个便利功能。
  */
 .flag-chip--hard .flag-chip__top code { color: var(--red); }
@@ -422,6 +444,37 @@
 	border-top: 1px solid var(--line);
 }
 .flag-panel__extra[hidden] { display: none !important; }
+.flag-panel__field--wide { width: 100%; }
+
+/*
+ * 存档码那一块: 它自己的区域 —— 码是一长串(中局 80~150 字符, 最坏 300 上下),
+ * 用可以换行的 textarea 尽量一次显示完整; 它长多高都只影响这一块, 不会动上面的排版。
+ */
+.flag-panel--save { margin-top: 12px; }
+.save-panel__code {
+	width: 100%;
+	min-height: 82px;
+	max-height: 42vh;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	line-height: 1.65;
+	word-break: break-all;
+	overflow: auto;
+	resize: vertical;
+}
+.save-panel__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.save-panel__actions .btn:last-child { margin-left: auto; }
+/* 输入框 + 旁边的小按钮(摇种子): 一行放得下就一行 */
+.flag-panel__inline { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.flag-panel__inline .flag-panel__num { flex: 1 1 180px; width: auto; }
+.flag-panel__num--code { font-size: 12px; letter-spacing: 0.02em; }
+.flag-panel__btns { display: flex; flex-wrap: wrap; gap: 10px; flex: 1 1 100%; }
+/* 提示条: 平时收着, 有话说才出现 */
+.flag-panel__note--msg { flex: 1 1 100%; }
+.flag-panel__note--msg.is-ok { color: var(--green); }
+.flag-panel__note--msg.is-err { color: var(--red); }
+/* 输入框里的数不合法时描红(和前端的 .input[aria-invalid] 一致) */
+.flag-panel__num[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
 .flag-panel__field { display: flex; flex-direction: column; gap: 6px; width: 116px; }
 .flag-panel__key {
 	font-size: 10px;
@@ -612,6 +665,19 @@
 	.flag-panel__field { width: 100%; }
 	/* iOS 上输入框小于 16px, 一聚焦就把整页放大 */
 	.flag-panel__num { font-size: 16px; min-height: 44px; }
+	.flag-panel__inline { flex-direction: column; }
+	/* 竖排之后 flex-basis 会变成"高度" —— 必须把它按掉, 否则输入框会变成 180px 高的大方块 */
+	.flag-panel__inline .flag-panel__num { flex: 0 0 auto; width: 100%; }
+	.flag-panel__inline .btn { width: 100%; min-height: 46px; }
+	.flag-panel__btns { flex-direction: column; }
+	.flag-panel__btns .btn { width: 100%; min-height: 46px; }
+	/* 存档码那一块: 手机上一行一个按钮, 码的字号再小一点 */
+	.save-panel__actions { flex-direction: column; }
+	.save-panel__actions .btn { width: 100%; min-height: 46px; }
+	.save-panel__actions .btn:last-child { margin-left: 0; }
+	.save-panel__code { font-size: 11.5px; max-height: 34vh; }
+	/* 存档码是一长串, 手机上给它小一点字号 + 等宽, 免得撑破一行 */
+	.flag-panel__num--code { font-size: 13px; }
 
 	/*
 	 * Block Blast 手机上仍然是"左棋盘 + 右一列", 但井是近方形的, 所以按宽度定尺寸,

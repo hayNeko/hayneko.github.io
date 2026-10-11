@@ -41,7 +41,8 @@
 			'Run "play tetris" or "play funcball" to open one.',
 			'"play" starts the game right away; funcball stops at ready so you can set f(x) first.',
 			'Flags are per game (run "games" for the full list):',
-			'  tetris                --easy-mode   --with-roll-back   --hard-mode',
+			'  tetris                --easy-mode   --with-roll-back   --hard-mode   --free-mode',
+			'                        (--seed=<int> / --save=<code> go with --free-mode)',
 			'  blockblast            --easy-mode   --with-roll-back',
 			'  funcball              --easy-mode   --slow-motion',
 			'--hard-mode (tetris only) falls at a constant one-third speed, rules out --easy-mode / --with-roll-back, and',
@@ -63,7 +64,7 @@
 
 	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准(alias 也要跟着来) */
 	var GAMES_FALLBACK = [
-		{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle', flags: ['easy', 'rollback', 'hard'] },
+		{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle', flags: ['easy', 'rollback', 'hard', 'free'] },
 		{
 			id: 'blockblast', title: 'Block Blast', desc: '8x8 board, three pieces at a time',
 			alias: ['block-blast', 'block_blast', 'blast', 'bb'],
@@ -100,7 +101,10 @@
 			['  --easy-mode', 'tetris: never speeds up (and I / T come up a bit more often) · blockblast: gentle pieces · funcball: flat wall'],
 			['  --with-roll-back', 'tetris / blockblast: adds an Undo button (U)'],
 			['  --slow-motion', 'funcball: doubles the bounce height, so every hit is readable'],
-			['  --hard-mode', 'tetris only: falls at a constant one-third speed + garbage layers; locks out --easy-mode / --with-roll-back']
+			['  --hard-mode', 'tetris only: falls at a constant one-third speed + garbage layers; locks out --easy-mode / --with-roll-back'],
+			['  --free-mode', 'tetris only: a seed decides the piece sequence, plus shareable save codes'],
+			['  --seed=<n>', 'tetris + --free-mode: whole number, -2147483648 ~ 2147483647 (out of range is clamped)'],
+			['  --save=<code>', 'tetris + --free-mode: restore a save code (T1...), same as pasting it on the page']
 		] },
 		{ title: 'encode & hash', rows: [
 			['b64 <text>', 'base64 encode'],
@@ -393,11 +397,13 @@
 			'--slow-mo': 'slow',
 			'--slow': 'slow',
 			'--hard-mode': 'hard',
-			'--hard': 'hard'
+			'--hard': 'hard',
+			'--free-mode': 'free',
+			'--free': 'free'
 		};
 
 		/* opt 键 -> 命令行写法(列表与报错里显示这个) */
-		var FLAG_NAMES = { easy: '--easy-mode', rollback: '--with-roll-back', slow: '--slow-motion', hard: '--hard-mode' };
+		var FLAG_NAMES = { easy: '--easy-mode', rollback: '--with-roll-back', slow: '--slow-motion', hard: '--hard-mode', free: '--free-mode' };
 
 		function flagName(key) { return FLAG_NAMES[key] || ('--' + key); }
 
@@ -415,12 +421,26 @@
 
 		function cmdPlay(args) {
 			var flags = { easy: false, rollback: false, slow: false };
+			var params = {};        /* 取值型参数: --seed=<整数> / --save=<存档码> */
 			var rest = [];
 			var unknown = null;
 			var asked = [];
-			args.forEach(function (arg) {
-				var lower = String(arg).toLowerCase();
+			for (var a = 0; a < args.length; a++) {
+				var arg = String(args[a]);
+				var lower = arg.toLowerCase();
 				if (lower.charAt(0) === '-') {
+					/*
+					 * 取值型参数: --seed=42 和 --seed 42 都认。
+					 * 注意用 arg 而不是 lower 来取**值** —— 存档码是大小写敏感的, 转小写就废了。
+					 */
+					var vm = /^--(seed|save)(?:=(.*))?$/i.exec(arg);
+					if (vm) {
+						var val = vm[2] !== undefined ? vm[2] : String(args[a + 1] === undefined ? '' : args[a + 1]);
+						if (vm[2] === undefined) a++;
+						params[String(vm[1]).toLowerCase()] = val;
+						if (asked.indexOf('free') === -1) asked.push('free');
+						continue;
+					}
 					if (PLAY_FLAGS[lower]) {
 						flags[PLAY_FLAGS[lower]] = true;
 						if (asked.indexOf(PLAY_FLAGS[lower]) === -1) asked.push(PLAY_FLAGS[lower]);
@@ -430,7 +450,7 @@
 				} else {
 					rest.push(arg);
 				}
-			});
+			}
 			if (unknown) {
 				print('play: unknown flag "' + unknown + '"', 't-err');
 				print('  known flags: ' + Object.keys(FLAG_NAMES).map(function (k) { return FLAG_NAMES[k]; }).join('  '), 't-dim');
@@ -455,6 +475,24 @@
 					return;
 				}
 			}
+			/* 取值型参数先校验 —— 别把不合法的值原样塞给游戏 */
+			if (params.seed !== undefined) {
+				if (!/^[+-]?\d+$/.test(params.seed)) {
+					print('play: --seed needs an integer, got "' + params.seed + '"', 't-err');
+					return;
+				}
+				var sv = Number(params.seed);
+				var clampedSeed = false;
+				if (!isFinite(sv) || sv > 2147483647) { sv = params.seed.charAt(0) === '-' ? -2147483648 : 2147483647; clampedSeed = true; }
+				else if (sv < -2147483648) { sv = -2147483648; clampedSeed = true; }
+				params.seed = sv | 0;
+				if (clampedSeed) print('play: seed out of range — clamped to ' + params.seed, 't-dim');
+			}
+			if ((params.seed !== undefined || params.save !== undefined) && !flags.free) {
+				print('play: --seed / --save only work together with --free-mode', 't-err');
+				print('  free mode is what turns the seed into the piece sequence', 't-dim');
+				return;
+			}
 			/* 互相排斥的组合: 困难模式锁掉简单模式与撤回 —— 与其悄悄压掉一个, 不如直接说清楚 */
 			if (flags.hard) {
 				var clash = [];
@@ -472,6 +510,8 @@
 			}
 			var label = found.id;
 			asked.forEach(function (k) { label += ' ' + flagName(k); });
+			if (params.seed !== undefined) label += ' --seed=' + params.seed;
+			if (params.save !== undefined) label += ' --save=<code>';
 			if (found.needsSetup) {
 				/* 函数球要先设 f(x): 自动开局会把整块参数面板锁上, 所以只把机台打开 */
 				print('opening ' + label + ' — set f(x), then press Start', 't-ok');
@@ -480,6 +520,9 @@
 			}
 			scrollToEnd();
 			/* 第三个参数 = 挂载完直接开局; 卡片 Play / dock 搜索都不传, 只把机台换过来 */
+			/* 自由模式的 seed / save 一起塞进 opts(见 games.js 的 normalizeOpts) */
+			if (params.seed !== undefined) flags.seed = params.seed;
+			if (params.save !== undefined) flags.save = params.save;
 			global.Games.launch(found.id, flags, true);
 		}
 

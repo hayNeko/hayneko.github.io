@@ -53,7 +53,7 @@
 					<span i18n-key="games.play">Play</span>
 					<span class="btn__arrow" aria-hidden="true">↓</span>
 				</button>
-				<span class="badge badge--green" i18n-key="games.tetris.badge">v1.0</span>
+				<span class="badge badge--green" i18n-key="games.tetris.badge">v2.0</span>
 			</div>
 		</article>
 
@@ -245,6 +245,10 @@
 				Command-line flags — click to switch them here, or pass them to play tetris.
 			</p>
 			<div class="flag-panel__row">
+				<button type="button" class="flag-chip" data-flag="rollback" aria-pressed="false">
+					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--with-roll-back</code></span>
+					<span class="flag-chip__desc" i18n-key="games.tetris.flagRollback">Adds the Undo button (key U, pad ↶) that takes back the last piece.</span>
+				</button>
 				<button type="button" class="flag-chip flag-chip--hard" data-flag="hard" aria-pressed="false">
 					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--hard-mode</code></span>
 					<span class="flag-chip__desc" i18n-key="games.tetris.flagHard">Hard mode: garbage layers at the bottom (2-5 gaps per layer, placed at random and never on a column the layer below left empty), and blocks fall constantly at one third of the top speed. No easy mode, no undo.</span>
@@ -253,9 +257,9 @@
 					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--easy-mode</code></span>
 					<span class="flag-chip__desc" i18n-key="games.tetris.flagEasy">No speed-up: the level stays at 1, the fall interval is a constant 800ms, and I / T pieces come up a bit more often.</span>
 				</button>
-				<button type="button" class="flag-chip" data-flag="rollback" aria-pressed="false">
-					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--with-roll-back</code></span>
-					<span class="flag-chip__desc" i18n-key="games.tetris.flagRollback">Adds the Undo button (key U, pad ↶) that takes back the last piece.</span>
+				<button type="button" class="flag-chip flag-chip--free" data-flag="free" aria-pressed="false">
+					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--free-mode</code></span>
+					<span class="flag-chip__desc" i18n-key="games.tetris.flagFree">Free mode: the seed decides the piece sequence (same seed → same game), and you can share a run with a save code.</span>
 				</button>
 			</div>
 
@@ -267,9 +271,41 @@
 						aria-label="starting garbage rows" i18n-attr="aria-label" i18n-key="games.tetris.hardRowsAria">
 				</label>
 				<p class="flag-panel__note" i18n-key="games.tetris.hardRowsHint">
-					Every garbage layer keeps 1-3 gaps, staggered from the layer below, so clearing one takes deliberate work. The count applies from the next board on.
+					Each layer keeps 2-5 gaps placed at random (they may sit next to each other), but never on a column the layer below already left empty. The count applies from the next board on.
 				</p>
 			</div>
+
+			<!-- 自由模式的种子: 只有自由模式开着时才存在(updateFreeUI 摘/挂 hidden) -->
+			<div class="flag-panel__extra" data-free-row hidden>
+				<label class="flag-panel__field flag-panel__field--wide">
+					<span class="flag-panel__key" i18n-key="games.tetris.seedLabel">Seed</span>
+					<span class="flag-panel__inline">
+						<input class="input flag-panel__num flag-panel__num--wide" data-tetris-seed type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="123456789"
+							aria-label="seed" i18n-attr="aria-label" i18n-key="games.tetris.seedAria">
+						<button type="button" class="btn btn--sm btn--ghost" data-tetris-free="dice" i18n-key="games.tetris.seedRandom">Random</button>
+					</span>
+				</label>
+				<p class="flag-panel__note flag-panel__note--msg" data-tetris-seed-msg aria-live="polite" hidden></p>
+				<p class="flag-panel__note" i18n-key="games.tetris.seedHint">Any whole number from -2147483648 to 2147483647. Anything outside that range is clamped to the nearest end, and anything that is not a whole number is refused. Same seed → same piece sequence.</p>
+			</div>
+		</div>
+
+		<!--
+		  存档码单独一块: 它是一长串(中局 ~80~150 字符, 最坏 300 上下), 放在标志位面板里会把
+		  排版撑歪 —— 这里给它自己的区域, 长多大都只影响自己这一块。
+		-->
+		<div class="flag-panel flag-panel--save" data-free-save-panel hidden>
+			<p class="flag-panel__title" i18n-key="games.tetris.savePanelTitle">Save code — copy it, or paste one and load it</p>
+			<textarea class="textarea save-panel__code" data-tetris-save rows="3" spellcheck="false" autocomplete="off" placeholder="T1..."
+				aria-label="save code" i18n-attr="aria-label" i18n-key="games.tetris.saveAria"></textarea>
+			<div class="save-panel__actions">
+				<button type="button" class="btn btn--sm" data-tetris-free="export" i18n-key="games.tetris.btnExport">Export code</button>
+				<button type="button" class="btn btn--sm btn--ghost" data-tetris-free="save" i18n-key="games.tetris.btnSave">Save to browser</button>
+				<button type="button" class="btn btn--sm btn--ghost" data-tetris-free="load" i18n-key="games.tetris.btnLoad">Load browser save</button>
+				<button type="button" class="btn btn--sm" data-tetris-free="restore" i18n-key="games.tetris.btnRestore">Load save code</button>
+			</div>
+			<p class="flag-panel__note flag-panel__note--msg" data-tetris-save-msg aria-live="polite" hidden></p>
+			<p class="flag-panel__note" i18n-key="games.tetris.saveHint">The code carries the seed, the board and every piece — copy it to share a run, or paste one here and press Load save code to carry on from it.</p>
 		</div>
 	</div>
 
