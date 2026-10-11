@@ -134,6 +134,12 @@
 	border-color: rgba(var(--green-rgb), 0.4);
 	background: var(--green-soft);
 }
+/* --hard-mode 的牌子: 红底, 与 --easy-mode 的蓝区分开 */
+.cabinet__flag--hard {
+	color: var(--red);
+	border-color: rgba(var(--red-rgb), 0.4);
+	background: var(--red-soft);
+}
 
 /* ------------------------------------------------------------- 屏幕 */
 
@@ -375,6 +381,63 @@
 	box-shadow: 0 0 8px rgba(var(--green-rgb), 0.75);
 }
 
+/*
+ * 困难模式的那个开关: 红灯亮的那个不是"开"的绿, 而是红的 —— 它是个模式, 不是加个便利功能。
+ */
+.flag-chip--hard .flag-chip__top code { color: var(--red); }
+.flag-chip--hard.is-on {
+	border-color: rgba(var(--red-rgb), 0.5);
+	background: var(--red-soft);
+}
+.flag-chip--hard.is-on .flag-chip__top code { color: var(--red); }
+.flag-chip--hard.is-on .flag-chip__dot {
+	background: var(--red);
+	box-shadow: 0 0 8px rgba(var(--red-rgb), 0.75);
+}
+
+/*
+ * 困难模式开着时, 简单模式与撤回是"焊死"的: 按钮直接禁用 + 变灰 + 不再响应 hover,
+ * 而不是留着能点却什么也不发生(那样玩家只会以为坏了)。
+ */
+.flag-chip.is-blocked,
+.flag-chip:disabled {
+	opacity: 0.42;
+	cursor: not-allowed;
+}
+.flag-chip.is-blocked:hover,
+.flag-chip:disabled:hover {
+	transform: none;
+	color: var(--fg-faint);
+	border-color: var(--line);
+}
+
+/* 困难模式的设置行(层数): 只在困难模式开着时存在, 见 applyFlags */
+.flag-panel__extra {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 10px 14px;
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px solid var(--line);
+}
+.flag-panel__extra[hidden] { display: none !important; }
+.flag-panel__field { display: flex; flex-direction: column; gap: 6px; width: 116px; }
+.flag-panel__key {
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--fg-faint);
+}
+.flag-panel__num { padding: 8px 10px; font-family: var(--font-mono); }
+.flag-panel__note {
+	flex: 1 1 300px;
+	margin: 0;
+	font-size: 11.5px;
+	line-height: 1.7;
+	color: var(--fg-faint);
+}
+
 /* ------------------------------------------------------------- 触屏按钮 */
 
 .cabinet__pad {
@@ -545,6 +608,10 @@
 	.cabinet__keys { padding: 10px; font-size: 11px; }
 	.flag-panel { margin-top: 10px; padding: 14px 12px; }
 	.flag-chip { flex: 1 1 100%; min-height: 56px; }
+	.flag-panel__extra { gap: 10px; }
+	.flag-panel__field { width: 100%; }
+	/* iOS 上输入框小于 16px, 一聚焦就把整页放大 */
+	.flag-panel__num { font-size: 16px; min-height: 44px; }
 
 	/*
 	 * Block Blast 手机上仍然是"左棋盘 + 右一列", 但井是近方形的, 所以按宽度定尺寸,

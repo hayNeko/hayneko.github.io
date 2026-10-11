@@ -33,7 +33,7 @@
 	var GAMES = [
 		{
 			id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle',
-			flags: ['easy', 'rollback']
+			flags: ['easy', 'rollback', 'hard']
 		},
 		{
 			id: 'blockblast', title: 'Block Blast',
@@ -57,6 +57,10 @@
 	var ROWS = 20;
 	var PIECES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z'];
 
+	/* 困难模式的"散乱方块": 灰格子(G), 开局前就铺在底下几层。与七种方块分开一个类型,
+	   只是为了上色和调试时一眼能认出来 —— 它就是个普通格子, 填满了照样消行。 */
+	var GARBAGE = 'G';
+	var HARD_ROWS_DEFAULT = 4;   /* 底下默认铺几层(面板上可改) */
 	var SHAPES = {
 		I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
 		J: [[1, 0, 0], [1, 1, 1], [0, 0, 0]],
@@ -69,7 +73,8 @@
 
 	var COLORS = {
 		I: '#4dd8ff', J: '#4d9dff', L: '#ff9f45', O: '#ffd24d',
-		S: '#3ce07b', T: '#b06bff', Z: '#ff4d5a'
+		S: '#3ce07b', T: '#b06bff', Z: '#ff4d5a',
+		G: '#6b7785'              /* 困难模式的散乱方块: 水泥灰 */
 	};
 
 	/* 旋转踢墙: 先原地, 再左右各试两格, 最后试上抬一格(贴地时也转得动) */
@@ -88,7 +93,15 @@
 	var SCORE_TABLE = [0, 100, 300, 500, 800];
 	var BEST_KEY = 'hayneko.game.tetris.best';
 
+	var MIN_GRAVITY_MS = 70;    /* 正常玩法里最快的一档(gravityMs 的下限) */
 	var EASY_GRAVITY_MS = 800;  /* --easy-mode: 不加速, 永远按第一档下落 */
+	/* --hard-mode: 恒定按"最高速度的三分之一"落 —— 最高速是 MIN_GRAVITY_MS(70ms/格),
+	   三分之一速度就是它的三倍间隔(210ms/格), 而且不随等级变快。 */
+	var HARD_GRAVITY_MS = MIN_GRAVITY_MS * 3;
+
+	/* 困难模式的散乱方块: 每层留几个孔(位置完全随机, 只要求跟下一层错开) */
+	var HARD_GAPS_MIN = 2;
+	var HARD_GAPS_MAX = 5;
 	var HOLD_RESTART_MS = 700;  /* "重新游玩"要长按这么久才生效, 免得误触 */
 	var HISTORY_MAX = 30;       /* --with-roll-back: 最多能退多少步 */
 
@@ -120,6 +133,19 @@
 	   设成 false 就一块都不会连着出 —— 更平均, 但少了点手感。 */
 	var BAG_EDGE_REPEAT = true;
 
+	/* [0, n] 上的随机整数(困难模式的缺口位置/宽度都用它) */
+	function randInt(n) {
+		return Math.floor(Math.random() * (n + 1));
+	}
+
+	/* 洗牌(原地): 困难模式的孔位、方块序列都用它 */
+	function shake(a) {
+		for (var i = a.length - 1; i > 0; i--) {
+			var j = Math.floor(Math.random() * (i + 1));
+			var t = a[i]; a[i] = a[j]; a[j] = t;
+		}
+		return a;
+	}
 	/**
 	 * 方块生成: **7-bag**(每七个方块装一袋, 袋内七种形状各有且仅有一个)。
 	 *
@@ -128,14 +154,25 @@
 	 * 某种形状可能一袋都见不到。现在每 7 块必定七种齐全, 不会缺谁、也不会扎堆,
 	 * 最长只能连出两块(官方 guideline 也是这个行为), 连着三块已经不可能。
 	 */
-	function refillBag(state) {
-		var bag = PIECES.slice();
-		for (var i = bag.length - 1; i > 0; i--) {
-			var j = Math.floor(Math.random() * (i + 1));
-			var tmp = bag[i];
-			bag[i] = bag[j];
-			bag[j] = tmp;
+	/*
+	 * --easy-mode: 袋里多塞一块, 再从"长条 / T"里按权重抽 —— 这两个形状对新手最有用的
+	 * (长条能一次清四行, T 好塞缝), 于是它们出现的次数比其余五种略多。
+	 * 权重 I = 2 / T = 2 / 其余各 1(合计 9), 所以多出来的那一块是 I 或 T 的概率是 4/9。
+	 */
+	function easyExtraType() {
+		var pool = [];
+		for (var i = 0; i < PIECES.length; i++) {
+			var w = (PIECES[i] === 'I' || PIECES[i] === 'T') ? 2 : 1;
+			for (var k = 0; k < w; k++) pool.push(PIECES[i]);
 		}
+		return pool[Math.floor(Math.random() * pool.length)];
+	}
+
+	function refillBag(state, easy) {
+		var bag = PIECES.slice();
+		shake(bag);
+		/* 简单模式: 一袋 8 块(七种各一 + 加权多给一块) */
+		if (easy) bag.push(easyExtraType());
 		/* 抽屉式发放: 从末尾取(见 drawType), 所以"下一个要发的"是最后一格 */
 		var top = bag.length - 1;
 		if (!BAG_EDGE_REPEAT && top > 0 && bag[top] === state.lastType) {
@@ -148,8 +185,8 @@
 	}
 
 	/* 抽一块出来(袋空了就装新的一袋) */
-	function drawType(state) {
-		if (!state.bag.length) refillBag(state);
+	function drawType(state, easy) {
+		if (!state.bag.length) refillBag(state, easy);
 		var type = state.bag.pop();
 		state.lastType = type;
 		return type;
@@ -157,8 +194,9 @@
 
 	/* 等级越高落得越快; 70ms 是上限, 再快就没法玩了 */
 	function gravityMs(level) {
-		return Math.max(70, 800 * Math.pow(0.85, level - 1));
+		return Math.max(MIN_GRAVITY_MS, 800 * Math.pow(0.85, level - 1));
 	}
+
 
 	/* 最高分按 key 分开存: 俄罗斯方块 hayneko.game.tetris.best,
 	   Block Blast hayneko.game.blockblast.best —— 两款带分数的游戏没有可比性。 */
@@ -228,6 +266,7 @@
 	 * GAMES[].flags 里声明的那几个, 名字一样也各解释各的:
 	 *   easy     --easy-mode       tetris: 不加速 / blockblast: 温和出牌 / funcball: 平坦砖墙
 	 *   rollback --with-roll-back  tetris / blockblast: 多一个"撤回"按钮(函数球不接受)
+	 *   hard     --hard-mode       tetris: 困难模式 —— 底下先铺几层散乱方块, 且与 easy / rollback 互斥
 	 *   slow     --slow-motion     funcball: 弹跳高度翻倍
 	 * 不带标志位时都是 false —— 机台就是默认形态, 而且只在这一次挂载生效,
 	 * 离开 #/games 后标志位与撤回记录一并丢掉(下次进来还是默认机台)。
@@ -253,12 +292,68 @@
 		var btnRestart = cab.querySelector('[data-tetris-action="restart"]');
 		var btnUndo = cab.querySelector('[data-tetris-action="undo"]');
 		var flagsBox = cab.querySelector('[data-game-flags]');
+		/**
+		/**
+		 * 一层的孔位。三件事:
+		 *   ① 每层 HARD_GAPS_MIN~MAX 个(2~5 个, 随机);
+		 *   ② 一行里**完全随机** —— 整行洗牌后取前 n 个, 挨着、分散、扎堆都行, 不额外加约束;
+		 *   ③ 与下一层错开 —— 只从"下一层不是孔"的列里挑, 一根竖条填不了两层的孔。
+		 *      列够用: 下一层最多 5 个孔, 至少还剩 5 列, 而这里最多也只要 5 个。
+		 * 返回孔位列号数组。
+		 */
+		function garbageGaps(prev) {
+			var want = HARD_GAPS_MIN + randInt(HARD_GAPS_MAX - HARD_GAPS_MIN);
+			var free = [];
+			var taken = [];
+			for (var x = 0; x < COLS; x++) {
+				if (prev && prev.indexOf(x) !== -1) taken.push(x);
+				else free.push(x);
+			}
+			shake(free);
+			shake(taken);
+			return free.concat(taken).slice(0, Math.min(want, COLS));
+		}
+
+		function fillGarbage() {
+			if (!opt.hard) return;
+			var rows = readHardRows(false);
+			var prev = null;
+			for (var i = 0; i < rows && i < ROWS; i++) {
+				var y = ROWS - 1 - i;
+				var holes = garbageGaps(prev);
+				prev = holes;
+				for (var x = 0; x < COLS; x++) game.board[y][x] = holes.indexOf(x) === -1 ? GARBAGE : null;
+			}
+		}
+
+		/* 层数夹紧同样以输入框自己的 min / max 为准(与函数球那台同一个教训: 别在 JS 里另写更小的上限) */
+		function readHardRows(writeBack) {
+			if (!hardRowsInput) return HARD_ROWS_DEFAULT;
+			var lo = parseFloat(hardRowsInput.getAttribute('min'));
+			var hi = parseFloat(hardRowsInput.getAttribute('max'));
+			if (!isFinite(lo)) lo = 1;
+			if (!isFinite(hi)) hi = ROWS;
+			var v = parseFloat(hardRowsInput.value);
+			if (!isFinite(v)) v = HARD_ROWS_DEFAULT;
+			v = Math.round(v);
+			if (v < lo) v = lo;
+			if (v > hi) v = hi;
+			if (writeBack) hardRowsInput.value = String(v);
+			return v;
+		}
 		var padUndo = cab.querySelector('[data-pad="undo"]');
 		var undoKeyHint = cab.querySelector('[data-undo-key]');
 		/* 标志位面板在机台"下面", 是机台的兄弟节点 —— 从同一节里找 */
 		var flagPanel = cab.parentNode ? cab.parentNode.querySelector('[data-game-flags-panel]') : null;
 		var flagChips = flagPanel ? flagPanel.querySelectorAll('[data-flag]') : [];
 
+		/*
+		 * 困难模式的"初始层数"输入框在标志位面板里 —— 面板是机台的兄弟节点, 所以得从面板里找。
+		 * (一开始写成 cab.querySelector, 结果永远是 null: 面板照样能显示, 但输入框怎么改都
+		 *  只按出厂默认值走 —— 页面上看得见、实际不生效, 比不显示还糟。)
+		 */
+		var hardRowsRow = flagPanel ? flagPanel.querySelector('[data-hard-rows-row]') : null;
+		var hardRowsInput = hardRowsRow ? hardRowsRow.querySelector('[data-tetris-hard-rows]') : null;
 		/* 生成器状态: 当前这一袋 + 上一次发出的类型(跨袋规则要用) */
 		var bagState = { bag: [], lastType: null };
 
@@ -282,6 +377,25 @@
 			dropScore: 0        /* 当前这一块靠软降/硬降拿到的分, 撤回时要一起还回去 */
 		};
 
+		/**
+		 * 困难 / 不加速这两种模式下速度是恒定的, 等级就没有意义了 —— 一律钉在 1,
+		 * 免得 HUD 上挂着一个"看起来会越来越快"的等级。
+		 */
+		function levelFor(lines) {
+			if (opt.easy || opt.hard) return 1;
+			return Math.floor(lines / 10) + 1;
+		}
+
+		/**
+		 * 每格下落多少毫秒只有三档: 困难恒定半速(HARD_GRAVITY_MS) / 不加速恒定 800ms /
+		 * 其余按等级加速。tick 与 debug 都读这一处, 免得两边说法不一致。
+		 */
+		function dropInterval() {
+			if (opt.hard) return HARD_GRAVITY_MS;
+			if (opt.easy) return EASY_GRAVITY_MS;
+			return gravityMs(game.level);
+		}
+
 		var held = { left: false, right: false, down: false };
 		var repeat = { left: 0, right: 0, down: 0 };
 		var raf = 0;
@@ -296,7 +410,7 @@
 		/* ---- 队列 / 出生 ---- */
 
 		function nextType() {
-			return drawType(bagState);
+			return drawType(bagState, opt.easy);
 		}
 
 		function refillQueue() {
@@ -534,7 +648,7 @@
 			game.clearTimer = 0;
 			game.lines += count;
 			game.score += SCORE_TABLE[count] * game.level;
-			game.level = opt.easy ? 1 : Math.floor(game.lines / 10) + 1;
+			game.level = levelFor(game.lines);
 			if (game.score > game.best) { game.best = game.score; writeBest(BEST_KEY, game.best); }
 			spawn();
 			updateHud();
@@ -547,6 +661,7 @@
 			history.length = 0;
 			updateUndoBtn();
 			game.board = emptyBoard();
+			fillGarbage();
 			game.queue = [];
 			bagState.bag = [];
 			bagState.lastType = null;
@@ -655,12 +770,22 @@
 			updateUndoBtn();
 		}
 
-		/* 面板上的两个开关与当前状态同步 */
+		/*
+		 * 面板上的三个开关与当前状态同步。困难模式一开, 简单模式与撤回就是"焊死"的:
+		 * 按钮直接 disabled + 变灰 + 挂一句原因 —— 而不是留着能点却什么也不发生。
+		 */
 		function updateFlagChips() {
 			Array.prototype.forEach.call(flagChips, function (chip) {
-				var on = chip.getAttribute('data-flag') === 'easy' ? !!opt.easy : !!opt.rollback;
+				var name = chip.getAttribute('data-flag');
+				var on = !!opt[name];
+				var blocked = name !== 'hard' && !!opt.hard;
 				chip.classList.toggle('is-on', on);
+				chip.classList.toggle('is-blocked', blocked);
 				chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+				chip.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+				chip.disabled = blocked;
+				if (blocked) chip.setAttribute('title', t('games.tetris.hardConflict', 'Not available while hard mode is on'));
+				else chip.removeAttribute('title');
 			});
 		}
 
@@ -668,32 +793,41 @@
 		 * 把 opt 落到界面上。撤回相关的三样东西(按钮 / 触屏键 / 键位图例)
 		 * 只有开着 --with-roll-back 时才存在 —— 注意 [hidden] 会被 .btn 的
 		 * display: inline-flex 盖掉, 所以 CSS 里另外写了一条 !important 兜底。
+		 * 困难模式的"初始层数"输入框同理: 不开困难模式就整个收起来。
 		 */
 		function applyFlags() {
 			if (btnUndo) btnUndo.hidden = !opt.rollback;
 			if (padUndo) padUndo.hidden = !opt.rollback;
 			if (undoKeyHint) undoKeyHint.hidden = !opt.rollback;
 			if (!opt.rollback) history.length = 0;
+			if (hardRowsRow) hardRowsRow.hidden = !opt.hard;
 			/* 不加速: 等级立刻回到 1; 关掉时按消行数重算 */
-			game.level = opt.easy ? 1 : Math.floor(game.lines / 10) + 1;
+			game.level = levelFor(game.lines);
 			updateUndoBtn();
 			updateFlagChips();
 			renderFlags();
 			updateHud();
 			draw();
 			sync();
+			/* 开关 / 层数刚变过: ready 状态下立刻重摆砖墙, 让"困难模式长什么样"当场看得见 */
+			if (game.state === 'ready') reset();
 		}
 
 		function setFlags(next) {
 			if (!next) return;
 			if (typeof next.easy === 'boolean') opt.easy = next.easy;
 			if (typeof next.rollback === 'boolean') opt.rollback = next.rollback;
+			if (typeof next.hard === 'boolean') opt.hard = next.hard;
+			/* 困难模式与"简单模式 / 撤回"互斥: 困难一开, 那两个一律压下去 */
+			if (opt.hard) { opt.easy = false; opt.rollback = false; }
 			applyFlags();
 		}
 
 		function toggleFlag(name) {
-			if (name !== 'easy' && name !== 'rollback') return;
-			var next = { easy: opt.easy, rollback: opt.rollback };
+			if (name !== 'easy' && name !== 'rollback' && name !== 'hard') return;
+			/* 困难模式下那两个是死的(按钮已经 disabled, 这里再挡一道: 键盘 / 终端也能改 flags) */
+			if (opt.hard && name !== 'hard') return;
+			var next = { easy: opt.easy, rollback: opt.rollback, hard: opt.hard };
 			next[name] = !next[name];
 			setFlags(next);
 		}
@@ -705,10 +839,15 @@
 			toggleFlag(chip.getAttribute('data-flag'));
 		}
 
-		/* 机台标题栏上的标志位小牌子(终端用 --easy-mode / --with-roll-back 开局时才有) */
+		/* 机台标题栏上的标志位小牌子(--easy-mode / --with-roll-back / --hard-mode 开局时才有) */
 		function renderFlags() {
 			if (!flagsBox) return;
 			var chips = [];
+			if (opt.hard) {
+				chips.push('<span class="cabinet__flag cabinet__flag--hard" title="' +
+					esc(t('games.tetris.flag.hardTip', '--hard-mode: garbage layers at the bottom, no easy mode, no undo')) + '">' +
+					esc(t('games.tetris.flag.hard', 'HARD')) + '</span>');
+			}
 			if (opt.easy) {
 				chips.push('<span class="cabinet__flag cabinet__flag--easy" title="' +
 					esc(t('games.tetris.flag.easyTip', '--easy-mode: no speed-up')) + '">' +
@@ -889,7 +1028,7 @@
 			}
 
 			game.dropTimer += dt;
-			if (game.dropTimer >= (opt.easy ? EASY_GRAVITY_MS : gravityMs(game.level))) {
+			if (game.dropTimer >= dropInterval()) {
 				game.dropTimer = 0;
 				if (!tryMove(0, 1)) ground();
 			}
@@ -1141,6 +1280,7 @@
 		doc.addEventListener('keyup', onKeyUp);
 		doc.addEventListener('visibilitychange', onVisibility);
 		doc.addEventListener('i18n:applied', onI18n);
+		if (hardRowsInput) hardRowsInput.addEventListener('input', onHardRowsInput);
 
 		if (global.ResizeObserver) {
 			observer = new global.ResizeObserver(function () { resize(); });
@@ -1157,6 +1297,7 @@
 			else global.removeEventListener('resize', resize);
 			endHold();
 			if (flagPanel) flagPanel.removeEventListener('click', onFlagClick);
+			if (hardRowsInput) hardRowsInput.removeEventListener('input', onHardRowsInput);
 			doc.removeEventListener('pointerup', onPointerUp);
 			doc.removeEventListener('keydown', onKeyDown);
 			doc.removeEventListener('keyup', onKeyUp);
@@ -1164,6 +1305,12 @@
 			doc.removeEventListener('i18n:applied', onI18n);
 			releaseAll();
 			delete cab.dataset.gameReady;
+		}
+
+		/* 困难模式的"初始层数": 夹紧后立刻回写; ready 状态下立刻重摆砖墙(不跑起来也看得见) */
+		function onHardRowsInput() {
+			readHardRows(true);
+			if (game.state === 'ready') reset();
 		}
 
 		if (flagPanel) flagPanel.addEventListener('click', onFlagClick);
@@ -1193,8 +1340,18 @@
 					score: game.score,
 					lines: game.lines,
 					level: game.level,
+					dropMs: dropInterval(),
 					easy: !!opt.easy,
 					rollback: !!opt.rollback,
+					hard: !!opt.hard,
+					hardRows: readHardRows(false),
+					hardRowsHidden: hardRowsRow ? hardRowsRow.hidden : null,
+					hardRowsDisabled: hardRowsInput ? hardRowsInput.disabled : null,
+					garbage: game.board.reduce(function (n, row) {
+						return n + row.filter(function (c) { return c === GARBAGE; }).length;
+					}, 0),
+					/* 板面文字图: "#" = 有块(含散乱方块), "." = 空, 从上往下每一行一行 */
+					board: game.board.map(function (row) { return row.map(function (c) { return c ? '#' : '.'; }).join(''); }),
 					undoHidden: btnUndo ? btnUndo.hidden : null,
 					undoDisabled: btnUndo ? btnUndo.disabled : null,
 					history: history.length,
@@ -3999,7 +4156,8 @@
 	function normalizeOpts(raw) {
 		var o = raw || {};
 		/* slow 只有函数球认(GAMES[].flags): --slow-motion, 弹跳高度翻倍 */
-		return { easy: !!o.easy, rollback: !!o.rollback, slow: !!o.slow };
+		/* hard 只有俄罗斯方块认(GAMES[].flags): --hard-mode, 底下先铺几层散乱方块 */
+		return { easy: !!o.easy, rollback: !!o.rollback, slow: !!o.slow, hard: !!o.hard };
 	}
 
 	function destroyCurrent() {
@@ -4121,12 +4279,14 @@
 
 	global.Games = {
 		list: function () { return GAMES.slice(); },
-		/* 俄罗斯方块的 7-bag 生成序列(不碰正在玩的那一局): Games.sample(20) → ['T','I','S',...] */
-		sample: function (count) {
+		/* 俄罗斯方块的 7-bag 生成序列(不碰正在玩的那一局):
+		     Games.sample(20)       → ['T', 'I', 'S', ...]
+		     Games.sample(20, true) → --easy-mode 的加权序列(长条 / T 略多) */
+		sample: function (count, easy) {
 			var state = { bag: [], lastType: null };
 			var n = Math.max(1, Math.min(count || 100, 100000));
 			var out = [];
-			for (var i = 0; i < n; i++) out.push(drawType(state));
+			for (var i = 0; i < n; i++) out.push(drawType(state, !!easy));
 			return out;
 		},
 		ids: function () { return GAMES.map(function (g) { return g.id; }); },

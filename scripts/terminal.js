@@ -41,8 +41,11 @@
 			'Run "play tetris" or "play funcball" to open one.',
 			'"play" starts the game right away; funcball stops at ready so you can set f(x) first.',
 			'Flags are per game (run "games" for the full list):',
-			'  tetris / blockblast   --easy-mode   --with-roll-back',
-			'  funcball              --easy-mode   --slow-motion'
+			'  tetris                --easy-mode   --with-roll-back   --hard-mode',
+			'  blockblast            --easy-mode   --with-roll-back',
+			'  funcball              --easy-mode   --slow-motion',
+			'--hard-mode (tetris only) falls at a constant one-third speed, rules out --easy-mode / --with-roll-back, and',
+			'starts with garbage layers at the bottom (the row count is set on the page, next to the flags).'
 		],
 		'.help': [
 			'Try: help, ls, cat about.md, sim 2, play tetris, theme light, neofetch.'
@@ -60,7 +63,7 @@
 
 	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准(alias 也要跟着来) */
 	var GAMES_FALLBACK = [
-		{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle', flags: ['easy', 'rollback'] },
+		{ id: 'tetris', title: 'Tetris', desc: 'classic falling-block puzzle', flags: ['easy', 'rollback', 'hard'] },
 		{
 			id: 'blockblast', title: 'Block Blast', desc: '8x8 board, three pieces at a time',
 			alias: ['block-blast', 'block_blast', 'blast', 'bb'],
@@ -94,9 +97,10 @@
 		{ title: 'games', rows: [
 			['games', 'list the mini games and the flags each one takes'],
 			['play <game> [flags]', 'open a mini game and start it (funcball opens at ready, then you press Start)'],
-			['  --easy-mode', 'tetris: never speeds up · blockblast: gentle pieces · funcball: flat wall'],
+			['  --easy-mode', 'tetris: never speeds up (and I / T come up a bit more often) · blockblast: gentle pieces · funcball: flat wall'],
 			['  --with-roll-back', 'tetris / blockblast: adds an Undo button (U)'],
-			['  --slow-motion', 'funcball: doubles the bounce height, so every hit is readable']
+			['  --slow-motion', 'funcball: doubles the bounce height, so every hit is readable'],
+			['  --hard-mode', 'tetris only: falls at a constant one-third speed + garbage layers; locks out --easy-mode / --with-roll-back']
 		] },
 		{ title: 'encode & hash', rows: [
 			['b64 <text>', 'base64 encode'],
@@ -387,11 +391,13 @@
 			'--rollback': 'rollback',
 			'--slow-motion': 'slow',
 			'--slow-mo': 'slow',
-			'--slow': 'slow'
+			'--slow': 'slow',
+			'--hard-mode': 'hard',
+			'--hard': 'hard'
 		};
 
 		/* opt 键 -> 命令行写法(列表与报错里显示这个) */
-		var FLAG_NAMES = { easy: '--easy-mode', rollback: '--with-roll-back', slow: '--slow-motion' };
+		var FLAG_NAMES = { easy: '--easy-mode', rollback: '--with-roll-back', slow: '--slow-motion', hard: '--hard-mode' };
 
 		function flagName(key) { return FLAG_NAMES[key] || ('--' + key); }
 
@@ -446,6 +452,17 @@
 					print('play: ' + found.id + ' does not take ' + flagName(asked[i]), 't-err');
 					var takes = flagList(found);
 					print('  ' + found.id + ' takes: ' + (takes.length ? takes.join('  ') : 'no flags'), 't-dim');
+					return;
+				}
+			}
+			/* 互相排斥的组合: 困难模式锁掉简单模式与撤回 —— 与其悄悄压掉一个, 不如直接说清楚 */
+			if (flags.hard) {
+				var clash = [];
+				if (flags.easy) clash.push('--easy-mode');
+				if (flags.rollback) clash.push('--with-roll-back');
+				if (clash.length) {
+					print('play: --hard-mode cannot be combined with ' + clash.join(' / '), 't-err');
+					print('  hard mode already rules those out — drop them, or drop --hard-mode', 't-dim');
 					return;
 				}
 			}

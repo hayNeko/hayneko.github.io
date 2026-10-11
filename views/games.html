@@ -245,14 +245,30 @@
 				Command-line flags — click to switch them here, or pass them to play tetris.
 			</p>
 			<div class="flag-panel__row">
+				<button type="button" class="flag-chip flag-chip--hard" data-flag="hard" aria-pressed="false">
+					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--hard-mode</code></span>
+					<span class="flag-chip__desc" i18n-key="games.tetris.flagHard">Hard mode: garbage layers at the bottom (2-5 gaps per layer, placed at random and never on a column the layer below left empty), and blocks fall constantly at one third of the top speed. No easy mode, no undo.</span>
+				</button>
 				<button type="button" class="flag-chip" data-flag="easy" aria-pressed="false">
 					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--easy-mode</code></span>
-					<span class="flag-chip__desc" i18n-key="games.tetris.flagEasy">No speed-up: the level stays at 1 and the fall interval is a constant 800ms.</span>
+					<span class="flag-chip__desc" i18n-key="games.tetris.flagEasy">No speed-up: the level stays at 1, the fall interval is a constant 800ms, and I / T pieces come up a bit more often.</span>
 				</button>
 				<button type="button" class="flag-chip" data-flag="rollback" aria-pressed="false">
 					<span class="flag-chip__top"><span class="flag-chip__dot" aria-hidden="true"></span><code>--with-roll-back</code></span>
 					<span class="flag-chip__desc" i18n-key="games.tetris.flagRollback">Adds the Undo button (key U, pad ↶) that takes back the last piece.</span>
 				</button>
+			</div>
+
+			<!-- 困难模式的"初始层数": 只有困难模式开着时才存在(applyFlags 摘/挂 hidden) -->
+			<div class="flag-panel__extra" data-hard-rows-row hidden>
+				<label class="flag-panel__field">
+					<span class="flag-panel__key" i18n-key="games.tetris.hardRows">Starting garbage rows</span>
+					<input class="input flag-panel__num" data-tetris-hard-rows type="number" inputmode="numeric" min="1" max="8" step="1" value="4"
+						aria-label="starting garbage rows" i18n-attr="aria-label" i18n-key="games.tetris.hardRowsAria">
+				</label>
+				<p class="flag-panel__note" i18n-key="games.tetris.hardRowsHint">
+					Every garbage layer keeps 1-3 gaps, staggered from the layer below, so clearing one takes deliberate work. The count applies from the next board on.
+				</p>
 			</div>
 		</div>
 	</div>

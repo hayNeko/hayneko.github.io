@@ -221,12 +221,19 @@
 			"flag": {
 				"easy": "EASY",
 				"easyTip": "--easy-mode: no speed-up",
+				"hard": "HARD",
+				"hardTip": "--hard-mode: constant one-third speed + garbage layers, no easy mode, no undo",
 				"rollback": "UNDO",
 				"rollbackTip": "--with-roll-back: undo enabled"
 			},
-			"flagEasy": "No speed-up: the level stays at 1 and the fall interval is a constant 800ms.",
+			"flagEasy": "No speed-up: the level stays at 1, the fall interval is a constant 800ms, and I / T pieces come up a bit more often.",
+			"flagHard": "Hard mode: garbage layers at the bottom (2-5 gaps per layer, placed at random and never on a column the layer below left empty), and blocks fall constantly at one third of the top speed. No easy mode, no undo.",
 			"flagRollback": "Adds the Undo button (key U, pad undo) that takes back the last piece.",
 			"flagsTitle": "Command-line flags - click a switch below, same as adding it to play tetris.",
+			"hardConflict": "Not available in hard mode",
+			"hardRows": "Starting garbage rows",
+			"hardRowsAria": "starting garbage rows",
+			"hardRowsHint": "Each layer keeps 2-5 gaps placed at random (they may sit next to each other), but never on a column the layer below already left empty — so one vertical piece cannot fill two layers at once. The count applies from the next board on.",
 			"hud": {
 				"best": "Best",
 				"hold": "Hold",
