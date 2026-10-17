@@ -1,33 +1,28 @@
 /* ============================================================================
    lab.css — 三个物理模拟页(pages/labs/phy-*)的独立外壳样式
    ----------------------------------------------------------------------------
-   这三页是**独立打开的**(从 #/labs 用 target="_blank" 跳出去), 不经过单页外壳,
+   这三页是独立打开的(从 #/labs 用 target="_blank" 跳出去), 不经过单页外壳,
    所以它们自带一套最小的页面骨架: 顶栏提示行 + 内容面板 + 底部说明。
-   视觉沿用主站的 tokens.css(黑白灰、等宽字体、细线边框), 一页都不引入旧 medias/css。
-
-   注意: 这里仍然在给**旧的 class / id 名**写样式(#main-container、.lab-container …),
-   页面结构没有被改动, 只是把原来那层"彩色圆角玻璃"换成了新的单色终端语言。
+   视觉沿用主站的 tokens.css(纸 + 墨 + 细线 + 衬线标题), 一页都不引入旧 medias/css。
+   页面结构完全没有改动, 只换外观。
    ========================================================================== */
 
 body {
-	background: var(--bg-0);
-	color: var(--fg-dim);
+	background: var(--paper-1);
+	color: var(--fg);
 	min-height: 100vh;
+	font-family: var(--font);
 }
 
-/* 顶点上一条极淡的网格, 撑住"仪表盘"的感觉 */
+/* 顶上一条极淡的 12 栏格线, 与主站同一套网格语言 */
 body::before {
 	content: "";
 	position: fixed;
 	inset: 0;
 	pointer-events: none;
 	z-index: 0;
-	background-image:
-		linear-gradient(to right, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
-		linear-gradient(to bottom, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-	background-size: 46px 46px;
-	-webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000 20%, transparent 85%);
-	mask-image: radial-gradient(120% 80% at 50% 0%, #000 20%, transparent 85%);
+	background-image: repeating-linear-gradient(to right,
+		var(--line-faint) 0 1px, transparent 1px calc(100% / 12));
 }
 
 /* ---------------------------------------------------------------- 顶栏 */
@@ -37,65 +32,71 @@ body::before {
 	z-index: 1;
 	max-width: 1160px;
 	margin: 0 auto;
-	padding: 0 clamp(14px, 3vw, 30px) clamp(40px, 8vw, 80px);
+	padding: 0 clamp(16px, 3.4vw, 44px) clamp(44px, 8vw, 88px);
 }
 
 .lab-head {
 	display: flex;
-	align-items: center;
+	align-items: baseline;
 	gap: 10px;
 	flex-wrap: wrap;
-	padding: 16px 0 14px;
-	margin-bottom: clamp(18px, 3vw, 30px);
-	border-bottom: 1px solid var(--line);
-	font-size: 13px;
-}
-
-.lab-head__glyph { color: var(--accent); }
-.lab-head__prompt { color: var(--green); }
-.lab-head__path { color: var(--fg); }
-.lab-head__caret {
-	display: inline-block;
-	width: 0.55em;
-	height: 1em;
-	margin-left: 2px;
-	vertical-align: -0.14em;
-	background: var(--accent);
-	animation: lab-blink 1.05s steps(2, start) infinite;
-}
-@keyframes lab-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
-
-.lab-head__spacer { flex: 1 1 auto; }
-
-.lab-head__tag {
-	font-size: 11px;
+	padding: 16px 0 12px;
+	margin-bottom: clamp(20px, 3vw, 34px);
+	border-bottom: 1px solid var(--line-strong);
+	font-family: var(--font-mono);
+	font-size: 12.5px;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: var(--fg-ghost);
+	color: var(--fg-faint);
 }
+
+.lab-head__glyph { display: none; }
+.lab-head__prompt { color: var(--fg-dim); }
+.lab-head__path { color: var(--fg); }
+.lab-head__caret { display: none; }
+.lab-head__spacer { flex: 1 1 auto; }
+.lab-head__tag { color: var(--fg-ghost); }
 
 .lab-back {
-	padding: 4px 11px;
-	font-size: 11.5px;
-	letter-spacing: 0.06em;
-	color: var(--fg-faint);
-	border: 1px solid var(--line);
-	border-radius: 99px;
-	transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+	padding: 0 0 2px;
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--fg-dim);
+	border: 0;
+	border-bottom: 1px solid var(--accent);
+	transition: color 160ms ease;
 }
-.lab-back:hover { color: var(--fg); border-color: var(--line-strong); background: rgba(255, 255, 255, 0.04); }
+.lab-back:hover { color: var(--accent); background: none; }
 
+/* 标题: 衬线大字号, 与主站的 page-head 同一档 */
+.lab-title,
+h1, h2, h3 {
+	font-family: var(--font-serif);
+	font-weight: 400;
+	letter-spacing: -0.02em;
+}
 .lab-title {
-	margin: 0 0 6px;
-	font-size: clamp(17px, 2.4vw, 23px);
+	margin: 0 0 8px;
+	font-size: clamp(25px, 4vw, 41px);
+	line-height: 1.1;
 	color: var(--fg);
-	letter-spacing: -0.01em;
+}
+h1:not(.lab-title), h2:not(.lab-title), h3:not(.lab-title) {
+	margin: 0 0 8px;
+	font-size: clamp(21px, 3vw, 31px);
+	line-height: 1.16;
+	color: var(--fg);
 }
 .lab-sub {
-	margin: 0 0 clamp(16px, 2.4vw, 24px);
-	font-size: 13.5px;
+	margin: 0 0 clamp(18px, 2.6vw, 28px);
+	max-width: 34ch;
+	font-family: var(--font-mono);
+	font-size: 13px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
 	color: var(--fg-faint);
-	max-width: 70ch;
 }
 
 /* ---------------------------------------------------------------- 面板 */
@@ -104,13 +105,15 @@ body::before {
 .lab-stage,
 .lab-container,
 #left-panel,
-.graph-container {
+.graph-container,
+#main-container {
 	position: relative;
 	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: linear-gradient(180deg, rgba(10, 15, 22, 0.86), rgba(6, 9, 14, 0.8));
+	border-radius: 0;
+	background: var(--paper-0);
 	padding: 18px 20px;
 }
+#main-container { padding: 0; border: 0; background: none; }
 
 /* 画布容器: 手机上要能横向缩, 不能把页面撑出滚动条 */
 .lab-stage { padding: 14px; overflow: hidden; }
@@ -119,30 +122,32 @@ body::before {
 .lab-panel + .lab-panel,
 .lab-container + .lab-panel { margin-top: 18px; }
 
-/* 面板角落的小标签, 像终端窗口的标题栏 */
+/* 面板角落的小标签, 像印刷品里的栏目标注 */
 .lab-panel__tag {
 	display: block;
-	margin-bottom: 14px;
-	font-size: 11px;
-	letter-spacing: 0.16em;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--line);
+	font-family: var(--font-mono);
+	font-size: 12px;
+	letter-spacing: 0.22em;
 	text-transform: uppercase;
-	color: var(--fg-ghost);
+	color: var(--fg-faint);
 }
-.lab-panel__tag::before { content: "# "; color: var(--accent); }
+.lab-panel__tag::before { content: none; }
 
 /* ---------------------------------------------------------------- 画布 */
-
+/* 模拟画面保留深底: 那是仪表, 不是装饰 */
 canvas {
 	max-width: 100%;
-	background: rgba(4, 4, 4, 0.9);
-	border: 1px solid var(--line);
-	border-radius: var(--radius-sm);
+	background: #100e0a;
+	border: 1px solid var(--line-strong);
+	border-radius: 0;
 	touch-action: none;
 }
 
 /* ---------------------------------------------------------------- 控件 */
 
-/* 原生 range 在暗色下的默认外观太"浏览器", 统一压成细轨 + 白色滑块 */
 input[type="range"] {
 	-webkit-appearance: none;
 	appearance: none;
@@ -158,32 +163,26 @@ input[type="range"]::-webkit-slider-runnable-track {
 input[type="range"]::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	appearance: none;
-	width: 13px;
-	height: 13px;
-	margin-top: -5.5px;
+	width: 12px;
+	height: 12px;
+	margin-top: -5px;
 	border-radius: 50%;
-	background: var(--fg);
+	background: var(--accent);
 	border: none;
 	transition: transform 140ms var(--ease-pop);
 }
 input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.15); }
 input[type="range"]::-moz-range-track { height: 2px; background: var(--line-strong); }
 input[type="range"]::-moz-range-thumb {
-	width: 13px; height: 13px; border: none; border-radius: 50%; background: var(--fg);
+	width: 12px; height: 12px; border: none; border-radius: 50%; background: var(--accent);
 }
 
-label { color: var(--fg-dim); font-size: 13px; }
+label { color: var(--fg-dim); font-size: 14.5px; }
 
-/*
- * 读数固定宽度 + 等宽数字。
- * 否则同一根滑杆在 -6 ↔ -3.5 之间来回时会改变标签宽度, 后面的滑杆被推着左右位移
- * (用户反馈: 拖滑杆时滑杆自己会晃)。"-10.5" 最长 5 字符, 给 5ch 富余量。
- */
+/* 读数固定宽度 + 等宽数字, 拖滑杆时后面的控件不会被推着晃 */
 #forceVal,
 [id$="-display"],
-[id$="-val"] {
-	font-variant-numeric: tabular-nums;
-}
+[id$="-val"] { font-variant-numeric: tabular-nums; }
 #forceVal {
 	display: inline-block;
 	min-width: 5ch;
@@ -193,140 +192,342 @@ label { color: var(--fg-dim); font-size: 13px; }
 button,
 .btn,
 #export-btn {
-	padding: 8px 16px;
-	font-size: 12.5px;
-	font-weight: 600;
-	letter-spacing: 0.03em;
+	padding: 8px 15px;
+	font-family: var(--font-mono);
+	font-size: 13px;
+	font-weight: 400;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
 	color: var(--fg);
-	background: rgba(255, 255, 255, 0.04);
+	background: none;
 	border: 1px solid var(--line-strong);
-	border-radius: var(--radius-sm);
+	border-radius: 0;
 	cursor: pointer;
-	transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 140ms var(--ease-pop);
+	transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 button:hover,
 .btn:hover,
-#export-btn:hover { color: var(--fg); border-color: var(--fg); background: rgba(255, 255, 255, 0.08); }
+#export-btn:hover { color: var(--paper-0); background: var(--fg); border-color: var(--fg); }
 button:active,
 .btn:active,
-#export-btn:active { transform: scale(0.97); }
+#export-btn:active { transform: none; }
 
-/* 选中态: 单色体系下用"实心反白"表示, 而不是换颜色 */
+/* 选中态用实心反白, 不换颜色 */
 .btn.active,
 #export-btn {
-	color: var(--fg-inverse);
+	color: var(--paper-0);
 	background: var(--fg);
 	border-color: var(--fg);
 }
-.btn.active:hover { background: #ffffff; border-color: #ffffff; }
+.btn.active:hover { background: var(--accent); border-color: var(--accent); }
 
-/* ---------------------------------------------------------------- 读数 */
-
+/* 读数 / 数值块 */
 .readout,
 .info,
-.status-bar {
-	margin-top: 14px;
-	padding: 12px 14px;
+.status-bar,
+.controls,
+.header,
+.control-group {
 	font-family: var(--font-mono);
-	font-size: 12.5px;
-	line-height: 1.9;
+	font-size: 13.5px;
+	letter-spacing: 0.04em;
 	color: var(--fg-dim);
-	background: rgba(6, 6, 6, 0.72);
-	border: 1px dashed var(--line);
-	border-radius: var(--radius-sm);
 }
-.readout span,
-.info span,
-.status-bar span { color: var(--fg); }
-
-/* ---------------------------------------------------------------- 公式 / 图片 */
-
-h3 {
-	margin: 26px 0 12px;
-	font-size: 14px;
-	letter-spacing: 0.02em;
-	color: var(--fg);
+.status-bar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 8px;
+	padding: 10px 0 0;
+	border: 0;
+	border-top: 1px solid var(--line);
+	background: none;
 }
-h3::before { content: "> "; color: var(--accent); font-weight: 400; }
 
-img {
-	max-width: 100%;
-	height: auto;
+#info-badge {
+	padding: 3px 9px;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--fg-dim);
+	background: none;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-sm);
-	filter: grayscale(1) contrast(1.05);
+	border-radius: 0;
 }
 
-math { font-size: 1.05em; }
+select, input[type="number"], input[type="text"] {
+	padding: 6px 9px;
+	font-family: var(--font-mono);
+	font-size: 13px;
+	color: var(--fg);
+	background: var(--paper-0);
+	border: 1px solid var(--line);
+	border-radius: 0;
+}
+select:focus, input:focus { outline: none; border-color: var(--accent); }
 
-/* ---------------------------------------------------------------- 布局 */
+a { color: inherit; }
 
-/* phy-default: 单列, 控件在画布下面 */
+
+/* ============================================================================
+   水波實驗 (pages/labs/phy-wave)
+   ----------------------------------------------------------------------------
+   左: 正方形水槽(透明容器 + 深色水面)  右: 參數面板。
+   畫布本身是深色"水面"; 面板沿用 lab.css 的滑桿與按鈕。
+   ========================================================================== */
+
+.wave {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+	gap: clamp(16px, 3vw, 32px);
+	align-items: start;
+}
+
+.wave__stage { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* 正方形透明容器: 用 aspect-ratio 保證波紋不被拉扁 */
+.wave__tank {
+	position: relative;
+	width: 100%;
+	/* 桌面用高度封顶; 手机上也要保证下面的控件还在拇指范围内 */
+	max-width: min(72vh, 720px, 100%);
+	margin: 0 auto;
+	aspect-ratio: 1 / 1;
+	border: 1px solid var(--line-strong);
+	background: #0f0e0d;
+	overflow: hidden;
+	touch-action: none;
+	cursor: crosshair;
+}
+.wave__tank canvas { display: block; width: 100%; height: 100%; }
+
+/* 容器内一圈细线, 像水槽的玻璃边 */
+.wave__tank::after {
+	content: "";
+	position: absolute;
+	inset: 8px;
+	border: 1px solid rgba(226, 235, 244, 0.10);
+	pointer-events: none;
+}
+
+.wave__hint {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 12px;
+	text-align: center;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	letter-spacing: 0.1em;
+	color: rgba(240, 235, 224, 0.62);
+	pointer-events: none;
+	transition: opacity 320ms ease;
+}
+
+.wave__readout {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 22px;
+	padding-top: 10px;
+	border-top: 1px solid var(--line);
+	font-family: var(--font-mono);
+	font-size: 12px;
+	letter-spacing: 0.06em;
+	color: var(--fg-faint);
+}
+.wave__readout b {
+	margin-left: 4px;
+	font-weight: 400;
+	color: var(--fg);
+	font-variant-numeric: tabular-nums;
+}
+
+.wave__panel { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.wave__group { display: flex; flex-direction: column; gap: 10px; }
+.wave__label {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--fg-faint);
+}
+
+.wave__modes,
+.wave__presets,
+.wave__seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.wave__modes .btn,
+.wave__presets .btn,
+.wave__seg .btn {
+	padding: 7px 10px;
+	font-size: 11.5px;
+	letter-spacing: 0.06em;
+	border: 1px solid var(--line);
+	background: none;
+}
+/* 面板上的小按钮: 覆盖前面那条 button/.btn 的通用外观(那条给的是 8px 15px) */
+.wave .btn {
+	padding: 7px 10px;
+	font-size: 11.5px;
+	letter-spacing: 0.06em;
+	border: 1px solid var(--line);
+	background: none;
+	border-radius: 0;
+}
+.wave .btn:hover { color: var(--fg); background: var(--tint-hover); border-color: var(--line-strong); }
+.wave .modes .btn.active,
+.wave .btn.active {
+	color: var(--paper-0);
+	background: var(--fg);
+	border-color: var(--fg);
+}
+.wave .btn.active:hover { background: var(--fg); border-color: var(--fg); }
+
+.wave__row {
+	display: grid;
+	grid-template-columns: 84px minmax(0, 1fr) 66px;
+	align-items: center;
+	gap: 10px;
+}
+.wave__row label {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	letter-spacing: 0.04em;
+	color: var(--fg-dim);
+}
+.wave__row output {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--fg-faint);
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+.wave__row input[type="range"] { width: 100%; }
+
+.wave__actions { display: flex; gap: 8px; padding-top: 4px; }
+.wave__actions .btn {
+	flex: 1 1 0;
+	justify-content: center;
+	padding: 9px 12px;
+	border: 1px solid var(--line-strong);
+	text-align: center;
+}
+.wave__actions .btn:hover { background: var(--tint-hover); }
+.wave__actions .btn[aria-pressed="false"] { color: var(--accent); border-color: var(--accent); }
+
+.wave__note {
+	margin: 0;
+	font-size: 12.5px;
+	line-height: 1.7;
+	color: var(--fg-ghost);
+}
+
+/* ---- 手机: 水槽在上, 面板在下; 滑杆给拇指留高度 ---- */
+@media (max-width: 900px) {
+	.wave { grid-template-columns: 1fr; }
+	.wave__tank { max-width: min(100%, 62vh); }
+}
+@media (max-width: 720px) {
+	.wave__tank { max-width: min(100%, 46vh); }
+	.wave__hint { display: none; }
+	/* 手机上把页头压矮, 好把水槽和控件一起留在首屏 */
+	.lab-title { font-size: 22px; line-height: 1.28; }
+	.lab-sub { margin-bottom: 14px; font-size: 11px; }
+	.lab-head { margin-bottom: 14px; }
+}
+@media (max-width: 720px) {
+	.wave__panel { gap: 16px; }
+	.wave__row { grid-template-columns: 76px minmax(0, 1fr) 58px; gap: 8px; }
+	.wave__row input[type="range"] { height: 34px; }
+	.wave__row input[type="range"]::-webkit-slider-thumb { width: 20px; height: 20px; margin-top: -9px; }
+	.wave__row input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; }
+	.wave__modes .btn,
+	.wave__presets .btn,
+	.wave__seg .btn { flex: 1 1 calc(50% - 6px); min-height: 42px; }
+	.wave__actions .btn { min-height: 46px; }
+}
+
+/* ============================================================================
+   布局（照旧版抄回来，只换配色）
+   ----------------------------------------------------------------------------
+   上一轮改版重写这张表时把布局整段丢了，导致:
+     · #canvas-wrapper 没有确定高度 → 里面 height:100% 的 canvas 退回默认 150px（透镜页只有顶上一条）
+     · #joystick-container 没有宽高 → getBoundingClientRect().width = 0 → maxDragDist 为负数，摇杆整个不可用
+   这些尺寸和结构照旧版恢复，配色/圆角换成本期语言。
+   ========================================================================== */
+
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; }
-.controls label { font-weight: 600; color: var(--fg); }
+.controls label { color: var(--fg); }
+.controls > div { display: flex; align-items: center; gap: 10px; }
+.controls input[type="range"] { flex: 1 1 140px; }
 
 /* phy-lens */
-.lab-container { padding: 18px 20px 8px; }
-.header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; margin-bottom: 14px; }
+.lab-container { padding: 18px 20px 10px; }
+.header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
 .header h3 { margin: 0; }
-.header h3::before { content: none; }
 .header .controls { margin-top: 0; }
 #canvas-wrapper {
 	/* 必须给**确定高度**: 里面 canvas 是 height:100%, 而百分比高度要求父级有确定高度 ——
 	   只写 min-height 的话 canvas 会退回它自己的默认 150px, 画面被压缩在顶上一条。 */
 	height: clamp(340px, 58vh, 640px);
-	background: rgba(4, 4, 4, 0.9);
+	background: #100e0a;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-sm);
+	border-radius: 0;
 	overflow: hidden;
 	margin-bottom: 8px;
 }
 #canvas-wrapper canvas { width: 100%; height: 100%; border: none; border-radius: 0; cursor: move; }
-#info-badge {
-	padding: 5px 14px;
-	font-size: 12px;
-	letter-spacing: 0.06em;
-	color: var(--fg);
-	background: rgba(255, 255, 255, 0.06);
-	border: 1px solid var(--line);
-	border-radius: 99px;
+.status-bar {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 6px;
+	padding: 10px 0 0;
+	border: 0;
+	border-top: 1px solid var(--line);
+	background: none;
 }
-.status-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-top: 6px; border: none; background: none; padding: 8px 2px; }
 
 /* phy-ntlaw2: 左右两栏 */
-#main-container {
-	display: flex;
-	gap: 18px;
-	align-items: flex-start;
-	margin: 0;
-}
+#main-container { display: flex; gap: 18px; align-items: flex-start; margin: 0; }
 #left-panel { flex: 1 1 46%; }
 #right-panel { flex: 1 1 54%; display: flex; flex-direction: column; gap: 18px; }
 .graph-container h2 {
 	margin: 0 0 12px;
 	padding-bottom: 8px;
+	font-family: var(--font-mono);
 	font-size: 13px;
-	font-weight: 600;
-	letter-spacing: 0.04em;
+	font-weight: 400;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
 	color: var(--fg-dim);
 	border-bottom: 1px solid var(--line);
 }
 .control-group { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.control-group label { flex: 0 0 auto; font-weight: 600; color: var(--fg-dim); }
+.control-group label { flex: 0 0 auto; color: var(--fg-dim); }
 .control-group input[type="range"] { flex: 1 1 auto; }
 
-/* 摇杆: 单色, 底盘细线 + 白色滑钮 */
+/* 摇杆: 细线底盘 + 油墨色滑钮 */
 #joystick-container {
 	position: relative;
 	width: 120px;
 	height: 120px;
-	margin: 12px auto;
+	margin: 14px auto;
 	border: 1px solid var(--line-strong);
 	border-radius: 50%;
-	background:
-		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.06), transparent 62%);
+	background: radial-gradient(circle at 50% 50%, var(--tint-hover), transparent 62%);
 	touch-action: none;
 	user-select: none;
+	cursor: grab;
 }
 #joystick-handle {
 	position: absolute;
@@ -335,13 +536,20 @@ math { font-size: 1.05em; }
 	width: 30px;
 	height: 30px;
 	border-radius: 50%;
-	background: var(--fg);
+	background: var(--accent);
 	transform: translate(-50%, -50%);
 	pointer-events: none;
 }
-#joystick-text { text-align: center; font-size: 12px; color: var(--fg-faint); margin-top: 8px; }
+#joystick-text {
+	margin-top: 8px;
+	text-align: center;
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	letter-spacing: 0.1em;
+	color: var(--fg-faint);
+}
 
-/* phy-ntlaw2 的两块画布: 属性宽度是 500/550, 交给 CSS 缩放 */
+/* 属性宽度是 500 / 550 的两块画布, 交给 CSS 缩放 */
 #mechanicsCanvas,
 .graph-container canvas { width: 100%; height: auto; display: block; }
 
@@ -351,81 +559,39 @@ math { font-size: 1.05em; }
 	#canvas-wrapper { height: clamp(260px, 44vh, 480px); }
 }
 
-/* ---------------------------------------------------------------------------
-   移动端(<= 640px): 触摸友好 + 不横向溢出
-   --------------------------------------------------------------------------- */
-
-@media (max-width: 640px) {
-	body { font-size: 15px; }
-
-	.lab-page { padding: 0 12px 40px; }
-
-	.lab-head {
-		padding: 12px 0 10px;
-		margin-bottom: 16px;
-		font-size: 12px;
-		gap: 6px;
-	}
+/* ---------------------------------------------------------------- 移动端 */
+@media (max-width: 720px) {
+	.lab-page { padding: 0 14px 46px; }
+	.lab-head { gap: 8px; }
 	.lab-head__path { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.lab-head__tag { display: none; }        /* 窄屏先让位给"返回" */
-	.lab-back { padding: 5px 12px; font-size: 12px; }
+	.lab-head__tag { display: none; }
 
-	.lab-title, h1.lab-title { font-size: 17px; line-height: 1.35; }
-	h3 { font-size: 13.5px; margin: 20px 0 10px; }
-
-	/* 面板内边距收一收, 别让内容只剩一条缝 */
-	.lab-panel,
-	.lab-stage,
-	.lab-container,
-	#left-panel,
-	.graph-container { padding: 12px; border-radius: 6px; }
+	.lab-panel, .lab-stage, .lab-container, #left-panel, .graph-container { padding: 12px; }
 
 	/* 手指点得中的控件 */
-	button,
-	.btn,
-	#export-btn {
-		min-height: 42px;
-		padding: 10px 16px;
-		font-size: 13px;
-	}
-	input[type="range"] { height: 34px; width: 100%; }
+	button, .btn, #export-btn { min-height: 42px; padding: 10px 14px; font-size: 13.5px; }
+	input[type="range"] { height: 34px; }
 	input[type="range"]::-webkit-slider-thumb { width: 20px; height: 20px; margin-top: -9px; }
 	input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; }
 
-	/* phy-default: 控件竖着排, 滑杆占满一行 */
-	.controls {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 10px;
-	}
-	.controls label { text-align: left; }
+	/* phy-default: 控件竖排, 滑杆占满一行 */
+	.controls { flex-direction: column; align-items: stretch; gap: 10px; }
+	.controls > div { display: flex; align-items: center; gap: 10px; }
 	.controls input[type="range"] { width: 100%; }
 
 	/* phy-lens: 头部竖排, 画布矮一点 */
 	.header { flex-direction: column; align-items: stretch; gap: 10px; }
 	.header .controls { flex-direction: column; align-items: stretch; gap: 10px; }
-	.header .controls > div { display: flex; align-items: center; gap: 10px; }
-	.header .controls > div input[type="range"] { flex: 1 1 auto; }
 	#info-badge { align-self: flex-start; }
 	#canvas-wrapper { height: clamp(240px, 42vh, 420px); }
-	.status-bar { justify-content: space-between; font-size: 12px; }
-
-	.readout, .info, .status-bar { font-size: 12px; padding: 10px 12px; }
 
 	/* 摇杆给大一点, 拇指才推得动 */
 	#joystick-container { width: 150px; height: 150px; }
 	#joystick-handle { width: 38px; height: 38px; }
 	#export-btn { width: 100%; }
-
-	/* 公式手稿图别超过一屏 */
-	img { max-width: 100%; height: auto; }
 }
 
-/* 横屏手机: 画布不要吃掉整屏 */
 @media (max-width: 900px) and (orientation: landscape) {
 	#canvas-wrapper { height: clamp(200px, 56vh, 340px); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.lab-head__caret { animation: none; }
-}

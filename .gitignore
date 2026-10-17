@@ -11,3 +11,6 @@ __pycache__/
 
 # cpp lib
 medias/files/programming/
+
+# mnemon
+.mnemon/

@@ -29,7 +29,7 @@
 [data-theme="light"] .game-card {
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 249, 252, 0.88));
 }
-.game-card:hover { transform: translateY(-4px); border-color: var(--line-strong); }
+.game-card:hover { border-color: var(--line-strong); }
 .game-card::before {
 	content: "";
 	position: absolute;
@@ -60,15 +60,15 @@
 .game-card__preview svg { width: 100%; height: 100%; display: block; }
 .game-card__art {
 	font-family: var(--font-mono);
-	font-size: 10.5px;
+	font-size: 12.5px;
 	line-height: 1.25;
 	color: var(--fg-ghost);
 	white-space: pre;
 }
 
-.game-card__idx { font-size: 11px; letter-spacing: 0.18em; color: var(--fg-ghost); }
-.game-card__title { font-size: 16px; letter-spacing: 0.01em; }
-.game-card__body { flex: 1 1 auto; font-size: 13px; line-height: 1.75; color: var(--fg-faint); }
+.game-card__idx { font-size: 13px; letter-spacing: 0.18em; color: var(--fg-ghost); }
+.game-card__title { font-size: 17.5px; letter-spacing: 0.01em; }
+.game-card__body { flex: 1 1 auto; font-size: 14px; line-height: 1.75; color: var(--fg-faint); }
 .game-card__foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* ------------------------------------------------------------- 机台分组 */
@@ -101,13 +101,13 @@
 	padding: 9px 14px;
 	background: rgba(230, 237, 243, 0.035);
 	border-bottom: 1px solid var(--line);
-	font-size: 11.5px;
+	font-size: 13.5px;
 	color: var(--fg-faint);
 }
 [data-theme="light"] .cabinet__bar { background: rgba(12, 18, 26, 0.045); }
 .cabinet__name { flex: 1 1 auto; text-align: center; letter-spacing: 0.05em; }
 .cabinet__state {
-	font-size: 10.5px;
+	font-size: 12.5px;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--accent);
@@ -117,7 +117,7 @@
 .cabinet__flags { display: inline-flex; align-items: center; gap: 6px; }
 .cabinet__flag {
 	padding: 1px 7px;
-	font-size: 10px;
+	font-size: 12px;
 	letter-spacing: 0.14em;
 	border: 1px solid var(--line);
 	border-radius: 99px;
@@ -200,8 +200,8 @@
 	visibility: visible;
 	transition: opacity var(--dur-3) ease, visibility 0s;
 }
-.cabinet__overlay-title { font-size: 15px; letter-spacing: 0.22em; color: var(--fg); }
-.cabinet__overlay-hint { font-size: 11.5px; line-height: 1.7; color: var(--fg-faint); }
+.cabinet__overlay-title { font-size: 16.5px; letter-spacing: 0.22em; color: var(--fg); }
+.cabinet__overlay-hint { font-size: 13.5px; line-height: 1.7; color: var(--fg-faint); }
 
 /* ------------------------------------------------------------- 侧栏数据 */
 
@@ -224,7 +224,7 @@
 }
 [data-theme="light"] .hud-block { background: rgba(255, 255, 255, 0.72); }
 .hud-block__key {
-	font-size: 10px;
+	font-size: 12px;
 	letter-spacing: 0.18em;
 	text-transform: uppercase;
 	color: var(--fg-ghost);
@@ -242,7 +242,7 @@
 }
 [data-theme="light"] .hud-stats { background: rgba(255, 255, 255, 0.72); }
 .hud-stats dt {
-	font-size: 10.5px;
+	font-size: 12.5px;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--fg-faint);
@@ -250,7 +250,7 @@
 .hud-stats dd {
 	margin: 0;
 	font-family: var(--font-mono);
-	font-size: 13.5px;
+	font-size: 14.5px;
 	font-weight: 600;
 	color: var(--fg);
 	font-variant-numeric: tabular-nums;
@@ -303,7 +303,7 @@
 .cabinet__hold.is-done { border-color: var(--green); color: var(--green); }
 .cabinet__hold .btn__label { position: relative; z-index: 1; }
 .cabinet__hint {
-	font-size: 10.5px;
+	font-size: 12.5px;
 	line-height: 1.6;
 	text-align: center;
 	color: var(--fg-ghost);
@@ -331,7 +331,7 @@
 
 .flag-panel__title {
 	margin-bottom: 12px;
-	font-size: 12.5px;
+	font-size: 13.5px;
 	line-height: 1.8;
 	color: var(--fg-faint);
 }
@@ -355,18 +355,18 @@
 		background var(--dur-2) ease, transform 200ms var(--ease-pop);
 }
 [data-theme="light"] .flag-chip { background: rgba(12, 18, 26, 0.03); }
-.flag-chip:hover { color: var(--fg); border-color: var(--line-strong); transform: translateY(-2px); }
+.flag-chip:hover { color: var(--fg); border-color: var(--line-strong); }
 .flag-chip:active { transform: scale(0.985); }
 
 .flag-chip__top {
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	font-size: 12.5px;
+	font-size: 13.5px;
 	color: var(--fg-dim);
 }
-.flag-chip__top code { font-size: 12.5px; }
-.flag-chip__desc { font-size: 11.5px; line-height: 1.7; color: var(--fg-faint); }
+.flag-chip__top code { font-size: 13.5px; }
+.flag-chip__desc { font-size: 13.5px; line-height: 1.7; color: var(--fg-faint); }
 
 /* 圆点当指示灯: 关是灰的, 开是绿的 */
 .flag-chip__dot {
@@ -456,7 +456,7 @@
 	min-height: 82px;
 	max-height: 42vh;
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: 13px;
 	line-height: 1.65;
 	word-break: break-all;
 	overflow: auto;
@@ -467,7 +467,7 @@
 /* 输入框 + 旁边的小按钮(摇种子): 一行放得下就一行 */
 .flag-panel__inline { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
 .flag-panel__inline .flag-panel__num { flex: 1 1 180px; width: auto; }
-.flag-panel__num--code { font-size: 12px; letter-spacing: 0.02em; }
+.flag-panel__num--code { font-size: 13px; letter-spacing: 0.02em; }
 .flag-panel__btns { display: flex; flex-wrap: wrap; gap: 10px; flex: 1 1 100%; }
 /* 提示条: 平时收着, 有话说才出现 */
 .flag-panel__note--msg { flex: 1 1 100%; }
@@ -477,7 +477,7 @@
 .flag-panel__num[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
 .flag-panel__field { display: flex; flex-direction: column; gap: 6px; width: 116px; }
 .flag-panel__key {
-	font-size: 10px;
+	font-size: 12px;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 	color: var(--fg-faint);
@@ -486,7 +486,7 @@
 .flag-panel__note {
 	flex: 1 1 300px;
 	margin: 0;
-	font-size: 11.5px;
+	font-size: 13.5px;
 	line-height: 1.7;
 	color: var(--fg-faint);
 }
@@ -507,7 +507,7 @@
 .cabinet__pad-btn {
 	width: 48px;
 	height: 38px;
-	font-size: 15px;
+	font-size: 16.5px;
 	line-height: 1;
 	color: var(--fg-dim);
 	background: rgba(230, 237, 243, 0.045);
@@ -519,7 +519,7 @@
 		background var(--dur-2) ease, transform 160ms var(--ease-pop);
 }
 [data-theme="light"] .cabinet__pad-btn { background: rgba(12, 18, 26, 0.04); }
-.cabinet__pad-btn:hover { color: var(--fg); border-color: var(--line-strong); transform: translateY(-2px); }
+.cabinet__pad-btn:hover { color: var(--fg); border-color: var(--line-strong); background: var(--tint-hover); }
 .cabinet__pad-btn:active { transform: scale(0.92); color: var(--accent); border-color: var(--accent); }
 
 /* ------------------------------------------------------------- 按键说明 */
@@ -531,14 +531,14 @@
 	gap: 8px 20px;
 	padding: 12px clamp(14px, 2.6vw, 22px) 16px;
 	border-top: 1px solid var(--line);
-	font-size: 11.5px;
+	font-size: 13.5px;
 	color: var(--fg-faint);
 }
 .cabinet__key { display: inline-flex; align-items: center; gap: 5px; }
 .cabinet__key em { font-style: normal; margin-left: 3px; }
 .cabinet__key kbd {
 	padding: 1px 6px 2px;
-	font-size: 10.5px;
+	font-size: 12.5px;
 	color: var(--fg-dim);
 	background: rgba(230, 237, 243, 0.05);
 	border: 1px solid var(--line-strong);
@@ -579,7 +579,7 @@
  * 竖着堆的版本要滑很久才够得着按钮, 手指还得在两个屏幕高度之间来回跑。
  */
 @media (max-width: 720px) {
-	.cabinet__bar { padding: 8px 10px; gap: 8px; font-size: 11px; }
+	.cabinet__bar { padding: 8px 10px; gap: 8px; font-size: 13px; }
 
 	/* 井按高度定宽(1:2), 侧栏最多 260px; space-between 把井贴左、侧栏贴右 */
 	.cabinet__screen {
@@ -605,11 +605,11 @@
 		min-width: 0;
 	}
 	.hud-block { padding: 6px; gap: 4px; }
-	.hud-block__key { font-size: 9.5px; letter-spacing: 0.12em; }
+	.hud-block__key { font-size: 11.5px; letter-spacing: 0.12em; }
 	.hud-block__mini { width: 42px; height: 42px; }
 	.hud-stats { grid-column: 1 / -1; gap: 4px 8px; padding: 8px 10px; }
-	.hud-stats dt { font-size: 9.5px; letter-spacing: 0.1em; }
-	.hud-stats dd { font-size: 12.5px; }
+	.hud-stats dt { font-size: 11.5px; letter-spacing: 0.1em; }
+	.hud-stats dd { font-size: 13.5px; }
 
 	/* 这几个按钮带 .btn--block(width: 100%), 横向排布里会各自占满一行 ——
 	   手机上排成 2×2, 省纵向空间, 也留住 40px 以上的触控高度 */
@@ -624,9 +624,9 @@
 		width: auto;
 		min-height: 42px;
 		padding: 8px 10px;
-		font-size: 12.5px;
+		font-size: 13.5px;
 	}
-	.cabinet__hint { flex: 1 1 100%; font-size: 10px; }
+	.cabinet__hint { flex: 1 1 100%; font-size: 12px; }
 
 	/* 手指区: 左边十字键(上=旋转), 右边两个大键(硬降 / 暂存), 撤回在右下 */
 	.cabinet__pad {
@@ -653,18 +653,18 @@
 		width: 100%;
 		height: 100%;
 		min-height: var(--pad);
-		font-size: 20px;
+		font-size: 22px;
 	}
 	.cabinet__pad-btn[data-pad="drop"],
-	.cabinet__pad-btn[data-pad="hold"] { font-size: 23px; }
+	.cabinet__pad-btn[data-pad="hold"] { font-size: 25px; }
 
-	.cabinet__keys { padding: 10px; font-size: 11px; }
+	.cabinet__keys { padding: 10px; font-size: 13px; }
 	.flag-panel { margin-top: 10px; padding: 14px 12px; }
 	.flag-chip { flex: 1 1 100%; min-height: 56px; }
 	.flag-panel__extra { gap: 10px; }
 	.flag-panel__field { width: 100%; }
 	/* iOS 上输入框小于 16px, 一聚焦就把整页放大 */
-	.flag-panel__num { font-size: 16px; min-height: 44px; }
+	.flag-panel__num { font-size: 17.5px; min-height: 44px; }
 	.flag-panel__inline { flex-direction: column; }
 	/* 竖排之后 flex-basis 会变成"高度" —— 必须把它按掉, 否则输入框会变成 180px 高的大方块 */
 	.flag-panel__inline .flag-panel__num { flex: 0 0 auto; width: 100%; }
@@ -675,9 +675,9 @@
 	.save-panel__actions { flex-direction: column; }
 	.save-panel__actions .btn { width: 100%; min-height: 46px; }
 	.save-panel__actions .btn:last-child { margin-left: 0; }
-	.save-panel__code { font-size: 11.5px; max-height: 34vh; }
+	.save-panel__code { font-size: 13.5px; max-height: 34vh; }
 	/* 存档码是一长串, 手机上给它小一点字号 + 等宽, 免得撑破一行 */
-	.flag-panel__num--code { font-size: 13px; }
+	.flag-panel__num--code { font-size: 14px; }
 
 	/*
 	 * Block Blast 手机上仍然是"左棋盘 + 右一列", 但井是近方形的, 所以按宽度定尺寸,
@@ -703,14 +703,14 @@
 		gap: 8px;
 	}
 	.cabinet--bb .hud-stats { gap: 4px 6px; padding: 8px 9px; }
-	.cabinet--bb .hud-stats dt { font-size: 9px; letter-spacing: 0.08em; }
-	.cabinet--bb .hud-stats dd { font-size: 12px; }
+	.cabinet--bb .hud-stats dt { font-size: 11px; letter-spacing: 0.08em; }
+	.cabinet--bb .hud-stats dd { font-size: 13px; }
 	.cabinet--bb .cabinet__actions .btn {
 		flex: 1 1 100%;
 		width: 100%;
 		min-height: 40px;
 	}
-	.cabinet--bb .cabinet__hint { font-size: 9.5px; }
+	.cabinet--bb .cabinet__hint { font-size: 11.5px; }
 
 	/* 十字键上键: Russia 那台用的是 rotate, 这台叫 up */
 	.cabinet--bb .cabinet__pad [data-pad="up"] { grid-area: up; }
@@ -747,14 +747,14 @@
 
 .combo-legend__title,
 .fb-legend__title {
-	font-size: 12.5px;
+	font-size: 13.5px;
 	letter-spacing: 0.06em;
 	color: var(--fg-dim);
 }
 .combo-legend__note,
 .fb-legend__note {
 	margin-top: 6px;
-	font-size: 11.5px;
+	font-size: 13.5px;
 	line-height: 1.7;
 	color: var(--fg-faint);
 }
@@ -772,7 +772,7 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 7px;
-	font-size: 11.5px;
+	font-size: 13.5px;
 	line-height: 1.6;
 	color: var(--fg-faint);
 }
@@ -869,17 +869,17 @@
 	padding: 0 8px;
 	border-radius: 99px;
 	font-family: var(--font-mono);
-	font-size: 11.5px;
+	font-size: 13.5px;
 	font-weight: 700;
 	color: var(--bg-0);
 	background: var(--blue);
 }
 .fb-lane--b .fb-lane__tag { background: var(--yellow); }
-.fb-lane__name { font-size: 12px; letter-spacing: 0.08em; color: var(--fg-dim); }
+.fb-lane__name { font-size: 13px; letter-spacing: 0.08em; color: var(--fg-dim); }
 
 .fb-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .fb-field__key {
-	font-size: 10px;
+	font-size: 12px;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 	color: var(--fg-faint);
@@ -889,7 +889,7 @@
 	min-width: 0;
 	padding: 7px 9px;
 	font: inherit;
-	font-size: 13px;
+	font-size: 14px;
 	color: var(--fg);
 	background: rgba(3, 5, 8, 0.55);
 	border: 1px solid var(--line);
@@ -931,7 +931,7 @@
 	grid-area: out;
 	min-width: 3.6em;
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: 13px;
 	color: var(--fg-dim);
 	text-align: right;
 }
@@ -941,13 +941,13 @@
 	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	gap: 8px 10px;
 }
-.fb-wall__note { font-size: 10.5px; line-height: 1.7; color: var(--fg-faint); }
+.fb-wall__note { font-size: 12.5px; line-height: 1.7; color: var(--fg-faint); }
 
 /* 每层生命值的即时读数: 数值很长, 允许折行; 顶到上限时后面会多一句提示 */
 .fb-wall__hp {
 	margin: 0;
 	font-family: var(--font-mono);
-	font-size: 10.5px;
+	font-size: 12.5px;
 	line-height: 1.7;
 	color: var(--fg-dim);
 	word-break: break-word;
@@ -955,7 +955,7 @@
 
 /* 表达式解析失败时的那行字(英文原话来自解析器) */
 .fb-lane__err {
-	font-size: 11px;
+	font-size: 13px;
 	line-height: 1.5;
 	color: var(--red);
 	word-break: break-word;
@@ -996,19 +996,106 @@
 		width: auto;
 		min-height: 46px;
 		padding: 8px 10px;
-		font-size: 12.5px;
+		font-size: 13.5px;
 	}
 	.cabinet--fb .cabinet__actions .btn[data-fb-action="start"] {
 		flex: 1 1 100%;
 		min-height: 52px;
-		font-size: 14px;
+		font-size: 15.5px;
 	}
-	.cabinet--fb .cabinet__hint { flex: 1 1 100%; font-size: 10px; }
+	.cabinet--fb .cabinet__hint { flex: 1 1 100%; font-size: 12px; }
 	.cabinet--fb .hud-stats { gap: 4px 8px; padding: 8px 10px; }
-	.cabinet--fb .hud-stats dd { font-size: 12.5px; }
+	.cabinet--fb .hud-stats dd { font-size: 13.5px; }
 
 	/* iOS 上输入框小于 16px, 一聚焦就把整页放大 */
-	.fb-field__input { font-size: 16px; padding: 9px 10px; }
+	.fb-field__input { font-size: 17.5px; padding: 9px 10px; }
 	.fb-lane__nums { gap: 6px; }
-	.fb-field--wide .fb-field__out { font-size: 13px; }
+	.fb-field--wide .fb-field__out { font-size: 14px; }
 }
+
+/* ============================================================================
+   版式兼容层 (2026 编辑部改版)
+   ----------------------------------------------------------------------------
+   机台本身仍然是一块"屏幕", 但外壳换成与全站一致的印刷零件:
+   方角、细线、纸面, 去掉深空渐变、投影与玻璃虚化。
+   游戏里格子的颜色是玩法信息, 不动。
+   ========================================================================== */
+
+/* 卡片架 → 栏目索引: 一行一条, 细线分区 */
+/* 一行三张卡必须一样高: 标题/说明长短不一, 底部按钮对不齐是最显眼的没排好 */
+.game-grid {
+	gap: 0;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	column-gap: var(--col-gap);
+	align-items: stretch;
+}
+.game-grid + * { margin-top: 0; }
+.game-card + .game-card { padding-left: 18px; border-left: 1px solid var(--line); }
+.game-card {
+	height: 100%;
+	gap: 0;
+	padding: 20px 0 24px;
+	border: 0;
+	border-top: 1px solid var(--line-strong);
+	border-radius: 0;
+	background: none;
+	overflow: visible;
+	transition: border-color var(--dur-3) ease, padding-left var(--dur-3) var(--ease-smear);
+}
+.game-card:hover { transform: none; border-top-color: var(--accent); background: var(--tint-hover); }
+.game-card.is-active { border-top-color: var(--fg); }
+.game-card::before { content: none; }
+.game-card__preview { border-radius: 0; background: var(--paper-0); }
+.game-card__idx { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+.game-card__title { font-family: var(--font-serif); font-weight: 400; font-size: 24px; letter-spacing: -0.01em; }
+.game-card__body { color: var(--fg-dim); }
+.game-card__foot { margin-top: auto; padding-top: 18px; }
+
+/* 机台外壳: 暂停/开始的那层提示压在游戏画面上 ——
+   底色必须是暗的, 文字用米白, 两种版次下都读得清。
+   (旧版在浅色主题下给了 rgba(240,244,248,.82) 的浅底, 暂停提示几乎看不见。) */
+.cabinet__overlay { background: rgba(14, 15, 19, 0.86); backdrop-filter: none; -webkit-backdrop-filter: none; }
+[data-theme="light"] .cabinet__overlay,
+[data-theme="dark"] .cabinet__overlay { background: rgba(16, 15, 14, 0.86) !important; }
+.cabinet__overlay-title { color: #f2f1ee; letter-spacing: 0.2em; }
+.cabinet__overlay-hint { color: rgba(242, 241, 238, 0.72); }
+
+.cabinet {
+	border-radius: 0;
+	background: var(--paper-0);
+	box-shadow: none;
+}
+.cabinet__bar {
+	background: none;
+	border-bottom: 1px solid var(--line-strong);
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+.cabinet__name { text-align: left; letter-spacing: 0.1em; }
+.cabinet__flag { border-radius: 0; font-family: var(--font-mono); letter-spacing: 0.14em; }
+.cabinet__screen { background: var(--paper-1); }
+/* 机台的井是黑屏, 与版次无关: 油墨/网格/文字都按深底配色, 底色必须钉死。
+   旧版在浅色主题下给了 rgba(238,242,247,.92), 那条选择器带 [data-theme],
+   特异性更高, 所以这里用同等特异性 + !important 压住。 */
+[data-theme="light"] .cabinet__well,
+[data-theme="dark"] .cabinet__well { border-radius: 0; background: #131110 !important; }
+.cabinet__overlay { background: rgba(241, 236, 226, 0.92); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.cabinet__actions, .cabinet__hint { font-family: var(--font-mono); }
+.cabinet__pad-btn, .cabinet__key { border-radius: 0; }
+.cabinet__hud, .hud-stats { border-radius: 0; }
+.cabinet__canvas { border-radius: 0; }
+
+/* 标志位面板 / 表单 */
+.flag-panel, .flag-panel__extra, .flag-panel__num, .save-panel, .save-panel__code {
+	border-radius: 0;
+	background: var(--paper-1);
+}
+.flag-chip { border-radius: 0; }
+.flag-panel__num, .fb-field__input { border-radius: 0; background: var(--paper-0); }
+.flag-panel__num[aria-invalid="true"], .fb-field__input:focus { box-shadow: none; }
+.flag-panel__btns .btn, .save-panel__actions .btn { border-radius: 0; }
+.combo-legend__dot, .fb-legend__dot { box-shadow: none !important; border-radius: 50%; }
+.hud-block, .combo-legend, .fb-legend { border-radius: 0; }
+

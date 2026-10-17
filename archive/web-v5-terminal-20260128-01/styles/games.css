@@ -1,0 +1,1014 @@
+/* ============================================================================
+   games.css — 小游戏页(#/games): 卡片架 + 机台
+   机台是"终端窗口"的变体: 同一套边框 / 标题栏 / 等宽字体, 只多了屏幕与控制区。
+   三款游戏各是一台(.cabinet-group[data-game-group]), 页面里都在, 只显示当前这台;
+   Block Blast 那台多加一个 .cabinet--bb —— 棋盘是 8x8 的近方形, 井的比例与
+   Russia 那台(1:2)不同, 手机上的排布也不一样。
+   ========================================================================== */
+
+/* ------------------------------------------------------------- 卡片架 */
+
+.game-grid {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.game-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 22px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: linear-gradient(180deg, rgba(14, 20, 28, 0.88), rgba(8, 12, 18, 0.8));
+	overflow: hidden;
+	transition: border-color var(--dur-3) ease, transform var(--dur-3) var(--ease-out), background var(--dur-3) ease;
+}
+[data-theme="light"] .game-card {
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(246, 249, 252, 0.88));
+}
+.game-card:hover { transform: translateY(-4px); border-color: var(--line-strong); }
+.game-card::before {
+	content: "";
+	position: absolute;
+	top: 0; left: 0; right: 0;
+	height: 1px;
+	background: var(--grad-rgb);
+	opacity: 0;
+	transform: scaleX(0.2);
+	transform-origin: left center;
+	transition: opacity var(--dur-3) ease, transform var(--dur-4) var(--ease-smear);
+}
+.game-card:hover::before { opacity: 0.9; transform: scaleX(1); }
+.game-card.is-active::before { opacity: 0.55; transform: scaleX(1); }
+.game-card--soon { opacity: 0.78; }
+.game-card--soon:hover { transform: none; }
+
+.game-card__preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 96px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: rgba(3, 5, 8, 0.55);
+	overflow: hidden;
+}
+[data-theme="light"] .game-card__preview { background: rgba(240, 244, 248, 0.9); }
+.game-card__preview svg { width: 100%; height: 100%; display: block; }
+.game-card__art {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	line-height: 1.25;
+	color: var(--fg-ghost);
+	white-space: pre;
+}
+
+.game-card__idx { font-size: 11px; letter-spacing: 0.18em; color: var(--fg-ghost); }
+.game-card__title { font-size: 16px; letter-spacing: 0.01em; }
+.game-card__body { flex: 1 1 auto; font-size: 13px; line-height: 1.75; color: var(--fg-faint); }
+.game-card__foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ------------------------------------------------------------- 机台分组 */
+
+/*
+ * 一款游戏一个分组: 里面是机台 + 它自己的标志位面板。
+ * 挂载时只给当前这款摘掉 hidden(见 games.js 的 showGame) —— 分组是 .cabinet 的
+ * 父节点, 于是 createTetris / createBlockBlast 用 cab.parentNode.querySelector
+ * 找标志位面板时, 永远只会找到自己那一份。
+ */
+.cabinet-group + .cabinet-group { margin-top: 18px; }
+.cabinet-group[hidden] { display: none !important; }
+
+/* ------------------------------------------------------------- 机台外壳 */
+
+.cabinet {
+	position: relative;
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius);
+	background: var(--grad-panel);
+	overflow: hidden;
+	box-shadow: 0 34px 70px -34px rgba(0, 0, 0, 0.95);
+}
+[data-theme="light"] .cabinet { box-shadow: 0 30px 60px -34px rgba(20, 32, 48, 0.35); }
+
+.cabinet__bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 9px 14px;
+	background: rgba(230, 237, 243, 0.035);
+	border-bottom: 1px solid var(--line);
+	font-size: 11.5px;
+	color: var(--fg-faint);
+}
+[data-theme="light"] .cabinet__bar { background: rgba(12, 18, 26, 0.045); }
+.cabinet__name { flex: 1 1 auto; text-align: center; letter-spacing: 0.05em; }
+.cabinet__state {
+	font-size: 10.5px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--accent);
+}
+
+/* 终端标志位的小牌子: play tetris --easy-mode / --with-roll-back */
+.cabinet__flags { display: inline-flex; align-items: center; gap: 6px; }
+.cabinet__flag {
+	padding: 1px 7px;
+	font-size: 10px;
+	letter-spacing: 0.14em;
+	border: 1px solid var(--line);
+	border-radius: 99px;
+	color: var(--fg-faint);
+	white-space: nowrap;
+}
+.cabinet__flag--easy {
+	color: var(--blue);
+	border-color: rgba(var(--blue-rgb), 0.4);
+	background: var(--blue-soft);
+}
+.cabinet__flag--undo {
+	color: var(--green);
+	border-color: rgba(var(--green-rgb), 0.4);
+	background: var(--green-soft);
+}
+/* --hard-mode 的牌子: 红底, 与 --easy-mode 的蓝区分开 */
+.cabinet__flag--hard {
+	color: var(--red);
+	border-color: rgba(var(--red-rgb), 0.4);
+	background: var(--red-soft);
+}
+/* --free-mode 的牌子: 蓝底, 上面带着种子 */
+.cabinet__flag--free {
+	color: var(--blue);
+	border-color: rgba(var(--blue-rgb), 0.4);
+	background: var(--blue-soft);
+}
+
+/* ------------------------------------------------------------- 屏幕 */
+
+.cabinet__screen {
+	display: grid;
+	grid-template-columns: auto minmax(148px, 188px);
+	justify-content: center;
+	gap: clamp(14px, 2.6vw, 26px);
+	padding: clamp(14px, 2.6vw, 22px);
+}
+
+.cabinet__well {
+	position: relative;
+	height: clamp(320px, 56vh, 540px);
+	aspect-ratio: 1 / 2;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: rgba(3, 5, 8, 0.6);
+	overflow: hidden;
+}
+[data-theme="light"] .cabinet__well { background: rgba(238, 242, 247, 0.92); }
+
+.cabinet__canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+.cabinet__overlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	padding: 16px;
+	text-align: center;
+	background: rgba(3, 5, 8, 0.74);
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
+	cursor: pointer;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity var(--dur-3) ease, visibility 0s linear var(--dur-3);
+}
+[data-theme="light"] .cabinet__overlay { background: rgba(240, 244, 248, 0.82); }
+.cabinet__overlay.is-shown {
+	opacity: 1;
+	visibility: visible;
+	transition: opacity var(--dur-3) ease, visibility 0s;
+}
+.cabinet__overlay-title { font-size: 15px; letter-spacing: 0.22em; color: var(--fg); }
+.cabinet__overlay-hint { font-size: 11.5px; line-height: 1.7; color: var(--fg-faint); }
+
+/* ------------------------------------------------------------- 侧栏数据 */
+
+.cabinet__hud {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+}
+
+.hud-block {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: rgba(6, 10, 15, 0.78);
+}
+[data-theme="light"] .hud-block { background: rgba(255, 255, 255, 0.72); }
+.hud-block__key {
+	font-size: 10px;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--fg-ghost);
+}
+.hud-block__mini { width: 56px; height: 56px; }
+
+.hud-stats {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 6px 10px;
+	padding: 12px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: rgba(6, 10, 15, 0.78);
+}
+[data-theme="light"] .hud-stats { background: rgba(255, 255, 255, 0.72); }
+.hud-stats dt {
+	font-size: 10.5px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--fg-faint);
+}
+.hud-stats dd {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--fg);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+/*
+ * Block Blast 连击的五档颜色(状态由 games.js 的 updateHud 打类):
+ *   没连击 / 连击中断  灰
+ *   刚触发连击         白
+ *   空放 1 次          绿
+ *   空放 2 次          黄
+ *   空放 3 次          红   —— 再空放就断了(宽限 BB_COMBO_GRACE = 4)
+ * 空放不会立刻断连击, 所以得让玩家看见它正在被消耗, 不然只会觉得"连击莫名其妙没了"。
+ * HUD 那一格和页面下方 .combo-legend 的色点共用这套类名 —— 图例永远不会和实际配色跑偏。
+ */
+.hud-stats dd.is-off,
+.combo-legend__dot.is-off { color: var(--fg-ghost); }
+.hud-stats dd.is-live,
+.combo-legend__dot.is-live { color: var(--fg); }
+.hud-stats dd.is-miss1,
+.combo-legend__dot.is-miss1 { color: var(--green); }
+.hud-stats dd.is-miss2,
+.combo-legend__dot.is-miss2 { color: var(--yellow); }
+.hud-stats dd.is-miss3,
+.combo-legend__dot.is-miss3 { color: var(--red); }
+
+.cabinet__actions { display: flex; flex-direction: column; gap: 8px; }
+
+/*
+ * "重新游玩"要按住才生效(见 games.js 的 HOLD_RESTART_MS = 700ms):
+ * 按住时一条填充从左扫到右, 松开就缩回去, 满了才真的重开。
+ * 选择器写成 .cabinet__hold .cabinet__hold-fill 而不是单个类 ——
+ * components.css 的 .btn > * 把直接子元素设成了 position: relative; z-index: 1,
+ * 同特异性下靠后加载的 motion.css 还可能再压一次, 提高一级最稳。
+ */
+.cabinet__hold { position: relative; }
+.cabinet__hold .cabinet__hold-fill {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	background: rgba(var(--red-rgb), 0.22);
+	transform: scaleX(0);
+	transform-origin: left center;
+	transition: transform 700ms linear;
+	pointer-events: none;
+}
+.cabinet__hold.is-holding .cabinet__hold-fill { transform: scaleX(1); }
+.cabinet__hold.is-holding { border-color: rgba(var(--red-rgb), 0.55); }
+.cabinet__hold.is-done { border-color: var(--green); color: var(--green); }
+.cabinet__hold .btn__label { position: relative; z-index: 1; }
+.cabinet__hint {
+	font-size: 10.5px;
+	line-height: 1.6;
+	text-align: center;
+	color: var(--fg-ghost);
+}
+
+/*
+ * [hidden] 千万别以为一定管用: components.css 的 .btn { display: inline-flex }
+ * 与这里的 .cabinet__key { display: inline-flex } 都是作者样式, 优先级高过浏览器
+ * 默认的 [hidden] { display: none }, 于是"隐藏"的撤回按钮照样画在屏幕上。
+ * 撤回相关的一切都靠这条兜底。
+ */
+.cabinet [hidden],
+.flag-panel [hidden] { display: none !important; }
+
+/* ------------------------------------------------------------- 标志位面板 */
+
+.flag-panel {
+	margin-top: 14px;
+	padding: 16px 18px 18px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: rgba(6, 10, 15, 0.78);
+}
+[data-theme="light"] .flag-panel { background: rgba(255, 255, 255, 0.7); }
+
+.flag-panel__title {
+	margin-bottom: 12px;
+	font-size: 12.5px;
+	line-height: 1.8;
+	color: var(--fg-faint);
+}
+.flag-panel__title code { color: var(--fg-dim); }
+
+.flag-panel__row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.flag-chip {
+	display: flex;
+	flex: 1 1 250px;
+	flex-direction: column;
+	gap: 7px;
+	padding: 12px 14px;
+	text-align: left;
+	color: var(--fg-faint);
+	background: rgba(230, 237, 243, 0.03);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	touch-action: manipulation;
+	transition: color var(--dur-2) ease, border-color var(--dur-2) ease,
+		background var(--dur-2) ease, transform 200ms var(--ease-pop);
+}
+[data-theme="light"] .flag-chip { background: rgba(12, 18, 26, 0.03); }
+.flag-chip:hover { color: var(--fg); border-color: var(--line-strong); transform: translateY(-2px); }
+.flag-chip:active { transform: scale(0.985); }
+
+.flag-chip__top {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12.5px;
+	color: var(--fg-dim);
+}
+.flag-chip__top code { font-size: 12.5px; }
+.flag-chip__desc { font-size: 11.5px; line-height: 1.7; color: var(--fg-faint); }
+
+/* 圆点当指示灯: 关是灰的, 开是绿的 */
+.flag-chip__dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--fg-ghost);
+	transition: background var(--dur-2) ease, box-shadow var(--dur-2) ease;
+}
+.flag-chip.is-on {
+	border-color: rgba(var(--green-rgb), 0.45);
+	background: var(--green-soft);
+}
+.flag-chip.is-on .flag-chip__top { color: var(--fg); }
+.flag-chip.is-on .flag-chip__top code { color: var(--green); }
+.flag-chip.is-on .flag-chip__dot {
+	background: var(--green);
+	box-shadow: 0 0 8px rgba(var(--green-rgb), 0.75);
+}
+
+/*
+ * 自由模式的那个开关: 蓝点 —— 与"困难(红)"区分开。它跟其它开关是正交的, 不会被焊死。
+ */
+/* 自由模式独占一行: flex-basis 给 100%, 无论容器多宽都会换到下一行 */
+.flag-chip--free { flex: 1 1 100%; }
+.flag-chip--free .flag-chip__top code { color: var(--blue); }
+.flag-chip--free.is-on {
+	border-color: rgba(var(--blue-rgb), 0.45);
+	background: var(--blue-soft);
+}
+.flag-chip--free.is-on .flag-chip__top code { color: var(--blue); }
+.flag-chip--free.is-on .flag-chip__dot {
+	background: var(--blue);
+	box-shadow: 0 0 8px rgba(var(--blue-rgb), 0.75);
+}
+
+/*
+ * 困难模式的那个开关: 红灯亮的那个不是"开"的绿, 而是红的 —— 它是个模式, 不是加个便利功能。
+ */
+.flag-chip--hard .flag-chip__top code { color: var(--red); }
+.flag-chip--hard.is-on {
+	border-color: rgba(var(--red-rgb), 0.5);
+	background: var(--red-soft);
+}
+.flag-chip--hard.is-on .flag-chip__top code { color: var(--red); }
+.flag-chip--hard.is-on .flag-chip__dot {
+	background: var(--red);
+	box-shadow: 0 0 8px rgba(var(--red-rgb), 0.75);
+}
+
+/*
+ * 困难模式开着时, 简单模式与撤回是"焊死"的: 按钮直接禁用 + 变灰 + 不再响应 hover,
+ * 而不是留着能点却什么也不发生(那样玩家只会以为坏了)。
+ */
+.flag-chip.is-blocked,
+.flag-chip:disabled {
+	opacity: 0.42;
+	cursor: not-allowed;
+}
+.flag-chip.is-blocked:hover,
+.flag-chip:disabled:hover {
+	transform: none;
+	color: var(--fg-faint);
+	border-color: var(--line);
+}
+
+/* 困难模式的设置行(层数): 只在困难模式开着时存在, 见 applyFlags */
+.flag-panel__extra {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 10px 14px;
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px solid var(--line);
+}
+.flag-panel__extra[hidden] { display: none !important; }
+.flag-panel__field--wide { width: 100%; }
+
+/*
+ * 存档码那一块: 它自己的区域 —— 码是一长串(中局 80~150 字符, 最坏 300 上下),
+ * 用可以换行的 textarea 尽量一次显示完整; 它长多高都只影响这一块, 不会动上面的排版。
+ */
+.flag-panel--save { margin-top: 12px; }
+.save-panel__code {
+	width: 100%;
+	min-height: 82px;
+	max-height: 42vh;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	line-height: 1.65;
+	word-break: break-all;
+	overflow: auto;
+	resize: vertical;
+}
+.save-panel__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.save-panel__actions .btn:last-child { margin-left: auto; }
+/* 输入框 + 旁边的小按钮(摇种子): 一行放得下就一行 */
+.flag-panel__inline { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.flag-panel__inline .flag-panel__num { flex: 1 1 180px; width: auto; }
+.flag-panel__num--code { font-size: 12px; letter-spacing: 0.02em; }
+.flag-panel__btns { display: flex; flex-wrap: wrap; gap: 10px; flex: 1 1 100%; }
+/* 提示条: 平时收着, 有话说才出现 */
+.flag-panel__note--msg { flex: 1 1 100%; }
+.flag-panel__note--msg.is-ok { color: var(--green); }
+.flag-panel__note--msg.is-err { color: var(--red); }
+/* 输入框里的数不合法时描红(和前端的 .input[aria-invalid] 一致) */
+.flag-panel__num[aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
+.flag-panel__field { display: flex; flex-direction: column; gap: 6px; width: 116px; }
+.flag-panel__key {
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--fg-faint);
+}
+.flag-panel__num { padding: 8px 10px; font-family: var(--font-mono); }
+.flag-panel__note {
+	flex: 1 1 300px;
+	margin: 0;
+	font-size: 11.5px;
+	line-height: 1.7;
+	color: var(--fg-faint);
+}
+
+/* ------------------------------------------------------------- 触屏按钮 */
+
+.cabinet__pad {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+	padding: 0 clamp(14px, 2.6vw, 22px) 14px;
+}
+.cabinet__pad {
+	/* 按住方向键时手指滑动不要带着页面一起滚 */
+	touch-action: none;
+}
+.cabinet__pad-btn {
+	width: 48px;
+	height: 38px;
+	font-size: 15px;
+	line-height: 1;
+	color: var(--fg-dim);
+	background: rgba(230, 237, 243, 0.045);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	user-select: none;
+	touch-action: manipulation;
+	transition: color var(--dur-2) ease, border-color var(--dur-2) ease,
+		background var(--dur-2) ease, transform 160ms var(--ease-pop);
+}
+[data-theme="light"] .cabinet__pad-btn { background: rgba(12, 18, 26, 0.04); }
+.cabinet__pad-btn:hover { color: var(--fg); border-color: var(--line-strong); transform: translateY(-2px); }
+.cabinet__pad-btn:active { transform: scale(0.92); color: var(--accent); border-color: var(--accent); }
+
+/* ------------------------------------------------------------- 按键说明 */
+
+.cabinet__keys {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 20px;
+	padding: 12px clamp(14px, 2.6vw, 22px) 16px;
+	border-top: 1px solid var(--line);
+	font-size: 11.5px;
+	color: var(--fg-faint);
+}
+.cabinet__key { display: inline-flex; align-items: center; gap: 5px; }
+.cabinet__key em { font-style: normal; margin-left: 3px; }
+.cabinet__key kbd {
+	padding: 1px 6px 2px;
+	font-size: 10.5px;
+	color: var(--fg-dim);
+	background: rgba(230, 237, 243, 0.05);
+	border: 1px solid var(--line-strong);
+	border-bottom-width: 2px;
+	border-radius: 4px;
+}
+[data-theme="light"] .cabinet__key kbd { background: rgba(12, 18, 26, 0.06); }
+
+/* ------------------------------------------------------- Block Blast 机台 */
+
+/*
+ * 棋盘 8 格宽、8 格高, 下面还有一条 2.6 格高的手牌条 —— 所以井不是 1:2 的窄条,
+ * 而是 8 : 10.6 的近方形(画布里的比例和 CSS 的 aspect-ratio 必须一致,
+ * 否则 Canvas 里会留出空白边)。手机上的宽度也由 games.css 末尾那段媒体查询接管。
+ */
+.cabinet--bb .cabinet__well {
+	height: clamp(280px, 46vh, 430px);
+	aspect-ratio: 8 / 10.6;
+}
+
+/* 键位说明里那句"拖动"要独占一行 */
+.cabinet__key--wide { flex: 1 1 100%; }
+
+/* ------------------------------------------------------------- 响应式 */
+
+/* 触屏: 不要长按选中文字 / 弹出系统菜单 —— "重新游玩"正是长按触发的 */
+.cabinet button,
+.cabinet__well {
+	-webkit-tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+.cabinet__canvas { touch-action: none; }
+
+/*
+ * 手机上是横向布局: 井在左, Next/Hold + 数据 + 按钮在右,
+ * 井压矮（省下来的高度全给下面的手指区）, 下面一排是十字键 + 右手两个大键。
+ * 竖着堆的版本要滑很久才够得着按钮, 手指还得在两个屏幕高度之间来回跑。
+ */
+@media (max-width: 720px) {
+	.cabinet__bar { padding: 8px 10px; gap: 8px; font-size: 11px; }
+
+	/* 井按高度定宽(1:2), 侧栏最多 260px; space-between 把井贴左、侧栏贴右 */
+	.cabinet__screen {
+		grid-template-columns: auto minmax(0, 260px);
+		justify-content: space-between;
+		align-items: start;
+		gap: 10px;
+		padding: 12px 10px 10px;
+	}
+
+	/* 井: 高度跟着屏宽走(缩矮了约 90px), 宽度按 1:2 反推, 画布不会被拉变形 */
+	.cabinet__well {
+		height: clamp(240px, 86vw, 330px);
+		width: auto;
+		aspect-ratio: 1 / 2;
+	}
+
+	.cabinet__hud {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		width: 100%;
+		min-width: 0;
+	}
+	.hud-block { padding: 6px; gap: 4px; }
+	.hud-block__key { font-size: 9.5px; letter-spacing: 0.12em; }
+	.hud-block__mini { width: 42px; height: 42px; }
+	.hud-stats { grid-column: 1 / -1; gap: 4px 8px; padding: 8px 10px; }
+	.hud-stats dt { font-size: 9.5px; letter-spacing: 0.1em; }
+	.hud-stats dd { font-size: 12.5px; }
+
+	/* 这几个按钮带 .btn--block(width: 100%), 横向排布里会各自占满一行 ——
+	   手机上排成 2×2, 省纵向空间, 也留住 40px 以上的触控高度 */
+	.cabinet__actions {
+		grid-column: 1 / -1;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.cabinet__actions .btn {
+		flex: 1 1 calc(50% - 3px);
+		width: auto;
+		min-height: 42px;
+		padding: 8px 10px;
+		font-size: 12.5px;
+	}
+	.cabinet__hint { flex: 1 1 100%; font-size: 10px; }
+
+	/* 手指区: 左边十字键(上=旋转), 右边两个大键(硬降 / 暂存), 撤回在右下 */
+	.cabinet__pad {
+		--pad: clamp(44px, 13.5vw, 58px);
+		display: grid;
+		grid-template-columns: repeat(3, var(--pad)) minmax(8px, 1fr) repeat(2, var(--pad));
+		grid-template-rows: repeat(3, var(--pad));
+		grid-template-areas:
+			".    up    .     .  drop hold"
+			"left .     right .  drop hold"
+			".    down  .     .  undo undo";
+		gap: 6px;
+		justify-content: center;
+		padding: 0 10px 12px;
+	}
+	.cabinet__pad [data-pad="rotate"] { grid-area: up; }
+	.cabinet__pad [data-pad="left"] { grid-area: left; }
+	.cabinet__pad [data-pad="right"] { grid-area: right; }
+	.cabinet__pad [data-pad="down"] { grid-area: down; }
+	.cabinet__pad [data-pad="drop"] { grid-area: drop; }
+	.cabinet__pad [data-pad="hold"] { grid-area: hold; }
+	.cabinet__pad [data-pad="undo"] { grid-area: undo; }
+	.cabinet__pad-btn {
+		width: 100%;
+		height: 100%;
+		min-height: var(--pad);
+		font-size: 20px;
+	}
+	.cabinet__pad-btn[data-pad="drop"],
+	.cabinet__pad-btn[data-pad="hold"] { font-size: 23px; }
+
+	.cabinet__keys { padding: 10px; font-size: 11px; }
+	.flag-panel { margin-top: 10px; padding: 14px 12px; }
+	.flag-chip { flex: 1 1 100%; min-height: 56px; }
+	.flag-panel__extra { gap: 10px; }
+	.flag-panel__field { width: 100%; }
+	/* iOS 上输入框小于 16px, 一聚焦就把整页放大 */
+	.flag-panel__num { font-size: 16px; min-height: 44px; }
+	.flag-panel__inline { flex-direction: column; }
+	/* 竖排之后 flex-basis 会变成"高度" —— 必须把它按掉, 否则输入框会变成 180px 高的大方块 */
+	.flag-panel__inline .flag-panel__num { flex: 0 0 auto; width: 100%; }
+	.flag-panel__inline .btn { width: 100%; min-height: 46px; }
+	.flag-panel__btns { flex-direction: column; }
+	.flag-panel__btns .btn { width: 100%; min-height: 46px; }
+	/* 存档码那一块: 手机上一行一个按钮, 码的字号再小一点 */
+	.save-panel__actions { flex-direction: column; }
+	.save-panel__actions .btn { width: 100%; min-height: 46px; }
+	.save-panel__actions .btn:last-child { margin-left: 0; }
+	.save-panel__code { font-size: 11.5px; max-height: 34vh; }
+	/* 存档码是一长串, 手机上给它小一点字号 + 等宽, 免得撑破一行 */
+	.flag-panel__num--code { font-size: 13px; }
+
+	/*
+	 * Block Blast 手机上仍然是"左棋盘 + 右一列", 但井是近方形的, 所以按宽度定尺寸,
+	 * 右侧那一列只放数据与按钮(格子窄, 按钮改成一列全宽)。
+	 * 省下来的高度全给下面的十字键与两个大键 —— 那才是拇指够得到的地方,
+	 * 整台机台加上 54px 的 dock 也得能塞进一屏。
+	 */
+	.cabinet--bb .cabinet__screen {
+		grid-template-columns: auto minmax(0, 124px);
+		justify-content: space-between;
+		align-items: start;
+		gap: 8px;
+		padding: 10px;
+	}
+	.cabinet--bb .cabinet__well {
+		height: auto;
+		width: min(60vw, 280px);
+		aspect-ratio: 8 / 10.6;
+	}
+	.cabinet--bb .cabinet__hud {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.cabinet--bb .hud-stats { gap: 4px 6px; padding: 8px 9px; }
+	.cabinet--bb .hud-stats dt { font-size: 9px; letter-spacing: 0.08em; }
+	.cabinet--bb .hud-stats dd { font-size: 12px; }
+	.cabinet--bb .cabinet__actions .btn {
+		flex: 1 1 100%;
+		width: 100%;
+		min-height: 40px;
+	}
+	.cabinet--bb .cabinet__hint { font-size: 9.5px; }
+
+	/* 十字键上键: Russia 那台用的是 rotate, 这台叫 up */
+	.cabinet--bb .cabinet__pad [data-pad="up"] { grid-area: up; }
+}
+
+/* 触屏设备: 键位说明没有意义, hover 效果也只会"粘"在按钮上 */
+@media (hover: none) and (pointer: coarse) {
+	.cabinet__keys { display: none; }
+	.cabinet__pad-btn:hover,
+	.cabinet__hold:hover,
+	.cabinet__actions .btn:hover { transform: none; }
+}
+
+/* ------------------------------------------------- 连击颜色说明(页面下方) */
+
+/*
+ * "页面下方的说明块"这一套外观两台机台共用:
+ *   - .combo-legend  Block Blast: 说明 HUD 上"连击"那一格的五种颜色, 色点用 currentColor
+ *     上色, 类名与 HUD 那格完全相同(is-off / is-live / is-miss1..3), 配色只有一份定义;
+ *   - .fb-legend     函数球打砖块: 三条判定规则(怎么算伤害 / 什么时候碎 / 谁算赢)。
+ * 两者的排版规则写在一起(选择器并列), 免得两处各写一套慢慢跑偏。
+ * 各自都整块在自己的 .cabinet-group 里, 所以换机台时跟着一起显隐。
+ */
+.combo-legend,
+.fb-legend {
+	margin-top: 14px;
+	padding: 14px 18px 16px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: rgba(6, 10, 15, 0.78);
+}
+[data-theme="light"] .combo-legend,
+[data-theme="light"] .fb-legend { background: rgba(255, 255, 255, 0.7); }
+
+.combo-legend__title,
+.fb-legend__title {
+	font-size: 12.5px;
+	letter-spacing: 0.06em;
+	color: var(--fg-dim);
+}
+.combo-legend__note,
+.fb-legend__note {
+	margin-top: 6px;
+	font-size: 11.5px;
+	line-height: 1.7;
+	color: var(--fg-faint);
+}
+.combo-legend__row,
+.fb-legend__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+}
+.combo-legend__item,
+.fb-legend__item {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 11.5px;
+	line-height: 1.6;
+	color: var(--fg-faint);
+}
+.combo-legend__dot,
+.fb-legend__dot {
+	flex: 0 0 auto;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+@media (max-width: 720px) {
+
+	.combo-legend,
+	.fb-legend { margin-top: 10px; padding: 12px; }
+	.combo-legend__row,
+	.fb-legend__row { gap: 5px 14px; }
+}
+
+/* ------------------------------------------------- 函数球打砖块机台 */
+
+/*
+ * 这台跟另外两台不一样: 场地是横向的(左右各一颗球, 中间一道挡板),
+ * 所以井的宽高比跟着画布走(640 x 456), 宽度由 grid 的第一列给, 窄屏自己缩。
+ * 参数面板排在场地上面 —— 手机上用 flex order 挪到场地下面, 先给拇指让路。
+ */
+.cabinet--fb {
+	display: flex;
+	flex-direction: column;
+}
+
+.cabinet--fb .cabinet__screen {
+	/* 数据栏比另外两台宽一点: 总伤害动辄十位数字(缩写成指数写法也还有 7 个字符) */
+	grid-template-columns: minmax(0, 640px) minmax(168px, 208px);
+	justify-content: center;
+	align-items: start;
+}
+
+/* 十位以上的数字不许把栅格撑破(长数字用 fbShort 缩写, 这里只是兜底) */
+.cabinet--fb .hud-stats dd {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.cabinet--fb .fb-well {
+	width: 100%;
+	height: auto;
+	aspect-ratio: 640 / 456;
+}
+
+/* 结算文案是两行(用时 / 双方伤害), 换行要真的换 */
+.cabinet--fb .cabinet__overlay-hint {
+	white-space: pre-line;
+	font-family: var(--font-mono);
+	letter-spacing: 0.01em;
+}
+
+/* ---- 参数面板 ---- */
+
+.fb-setup {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr);
+	gap: 12px;
+	padding: 16px clamp(14px, 2.6vw, 22px) 0;
+}
+
+.fb-lane,
+.fb-wall {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+	padding: 12px 13px 14px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: rgba(3, 5, 8, 0.35);
+}
+[data-theme="light"] .fb-lane,
+[data-theme="light"] .fb-wall { background: rgba(240, 244, 248, 0.7); }
+
+/* 左边一条本色, 与场地里那颗球同色 */
+.fb-lane--a { border-left: 2px solid var(--blue); }
+.fb-lane--b { border-left: 2px solid var(--yellow); }
+
+.fb-lane__head { display: flex; align-items: center; gap: 8px; }
+/* 小牌子就是球上那个符号的缩小版(模板一换它就换) */
+.fb-lane__tag {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 32px;
+	height: 22px;
+	padding: 0 8px;
+	border-radius: 99px;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	font-weight: 700;
+	color: var(--bg-0);
+	background: var(--blue);
+}
+.fb-lane--b .fb-lane__tag { background: var(--yellow); }
+.fb-lane__name { font-size: 12px; letter-spacing: 0.08em; color: var(--fg-dim); }
+
+.fb-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fb-field__key {
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--fg-faint);
+}
+.fb-field__input {
+	width: 100%;
+	min-width: 0;
+	padding: 7px 9px;
+	font: inherit;
+	font-size: 13px;
+	color: var(--fg);
+	background: rgba(3, 5, 8, 0.55);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+}
+[data-theme="light"] .fb-field__input { background: rgba(255, 255, 255, 0.9); }
+.fb-field__input:focus {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.fb-field__input--mono { font-family: var(--font-mono); letter-spacing: 0.02em; }
+.fb-field__input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.fb-lane__nums { display: flex; gap: 8px; }
+.fb-field--half { flex: 1 1 0; }
+
+/* 弹跳高度: 滑杆 + 读数一行放 */
+.fb-field--wide {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas: "key key" "range out";
+	align-items: center;
+	gap: 4px 8px;
+}
+.fb-field--wide .fb-field__key { grid-area: key; }
+.fb-field__input--range {
+	grid-area: range;
+	flex: 1 1 auto;
+	width: 100%;
+	height: 22px;
+	padding: 0;
+	border: none;
+	background: none;
+	accent-color: var(--accent);
+}
+.fb-field__out {
+	grid-area: out;
+	min-width: 3.6em;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--fg-dim);
+	text-align: right;
+}
+
+.fb-wall__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 8px 10px;
+}
+.fb-wall__note { font-size: 10.5px; line-height: 1.7; color: var(--fg-faint); }
+
+/* 每层生命值的即时读数: 数值很长, 允许折行; 顶到上限时后面会多一句提示 */
+.fb-wall__hp {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	line-height: 1.7;
+	color: var(--fg-dim);
+	word-break: break-word;
+}
+
+/* 表达式解析失败时的那行字(英文原话来自解析器) */
+.fb-lane__err {
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--red);
+	word-break: break-word;
+}
+
+/* --slow-motion 的小牌子 */
+.cabinet__flag--slow {
+	color: var(--yellow);
+	border-color: rgba(var(--yellow-rgb), 0.4);
+	background: var(--yellow-soft);
+}
+
+/* ---- 手机: 场地与按钮在前, 参数面板挪到后面 ---- */
+
+@media (max-width: 720px) {
+	.cabinet--fb .cabinet__screen {
+		order: 1;
+		grid-template-columns: minmax(0, 1fr);
+		justify-content: stretch;
+		gap: 10px;
+		padding: 10px;
+	}
+	.cabinet--fb .fb-setup {
+		order: 2;
+		grid-template-columns: minmax(0, 1fr);
+		padding: 10px 10px 0;
+	}
+	.cabinet--fb .cabinet__keys { order: 3; }
+
+	/* 拇指区: 开始对决整行, 暂停 / 重开各占一半, 都够 46px 以上 */
+	.cabinet--fb .cabinet__actions {
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.cabinet--fb .cabinet__actions .btn {
+		flex: 1 1 calc(50% - 3px);
+		width: auto;
+		min-height: 46px;
+		padding: 8px 10px;
+		font-size: 12.5px;
+	}
+	.cabinet--fb .cabinet__actions .btn[data-fb-action="start"] {
+		flex: 1 1 100%;
+		min-height: 52px;
+		font-size: 14px;
+	}
+	.cabinet--fb .cabinet__hint { flex: 1 1 100%; font-size: 10px; }
+	.cabinet--fb .hud-stats { gap: 4px 8px; padding: 8px 10px; }
+	.cabinet--fb .hud-stats dd { font-size: 12.5px; }
+
+	/* iOS 上输入框小于 16px, 一聚焦就把整页放大 */
+	.fb-field__input { font-size: 16px; padding: 9px 10px; }
+	.fb-lane__nums { gap: 6px; }
+	.fb-field--wide .fb-field__out { font-size: 13px; }
+}

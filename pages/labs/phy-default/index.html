@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="color-scheme" content="dark">
+	<meta name="color-scheme" content="light dark">
 	<title>Force &amp; Motion · Hayneko Labs</title>
 
 	<link rel="icon" href="../../../medias/pictures/miku.JPG" sizes="32x32">
@@ -110,15 +110,16 @@
 				ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 				// Draw Floor
-				ctx.strokeStyle = 'rgba(230, 237, 243, 0.28)';
+				/* 画布本身是黑底(仪表), 笔画一律用亮色 —— 之前的近黑描边会整个融进去 */
+			ctx.strokeStyle = 'rgba(226, 235, 244, 0.45)';
 				ctx.beginPath();
 				ctx.moveTo(0, 150);
 				ctx.lineTo(canvas.width, 150);
 				ctx.stroke();
 
 				// Draw Block —— 方块用绿色打底 + 深色描边(和站点配色一致)
-				ctx.fillStyle = '#3ce07b';
-				ctx.strokeStyle = 'rgba(4, 6, 10, 0.65)';
+				ctx.fillStyle = '#79a7cf';
+				ctx.strokeStyle = 'rgba(226, 235, 244, 0.55)';
 				ctx.lineWidth = 1;
 				ctx.fillRect(pos, 100, 50, 50);
 				ctx.strokeRect(pos + 0.5, 100.5, 49, 49);
@@ -126,7 +127,7 @@
 				// Draw Force Vector —— 力箭头用红色
 				if (force !== 0) {
 					ctx.beginPath();
-					ctx.strokeStyle = '#ff4d5a';
+					ctx.strokeStyle = '#d9968c';
 					ctx.lineWidth = 3;
 					const arrowLen = force * 10;
 					const startX = pos + 25;
@@ -137,7 +138,7 @@
 
 					// Arrowhead
 					ctx.beginPath();
-					ctx.fillStyle = '#ff4d5a';
+					ctx.fillStyle = '#d9968c';
 					const headSize = 5;
 					if (force > 0) {
 						ctx.moveTo(startX + arrowLen, startY);

@@ -58,7 +58,8 @@
 	var SIMS = [
 		{ href: 'pages/labs/phy-default/', key: 'sim.default', icon: 'flask' },
 		{ href: 'pages/labs/phy-ntlaw2/', key: 'sim.ntlaw2', icon: 'grid' },
-		{ href: 'pages/labs/phy-lens/', key: 'sim.lens', icon: 'search' }
+		{ href: 'pages/labs/phy-lens/', key: 'sim.lens', icon: 'search' },
+		{ href: 'pages/labs/phy-wave/', key: 'sim.wave', icon: 'grid' }
 	];
 
 	var LANGS = [
@@ -70,22 +71,39 @@
 	];
 
 	/* 顶栏按钮: id / 图标 / i18n key / 行为 */
-	var ITEMS = [
-		{ id: 'home', icon: 'home', key: 'dock.home', act: 'route:home' },
-		{ id: 'terminal', icon: 'term', key: 'dock.terminal', act: 'route:terminal' },
-		{ id: 'storage', icon: 'box', key: 'dock.storage', act: 'route:storage' },
-		{ id: 'labs', icon: 'flask', key: 'dock.lab', act: 'menu:labs' },
-		{ id: 'games', icon: 'gamepad', key: 'dock.games', act: 'route:games' },
-		{ id: 'links', icon: 'link', key: 'dock.links', act: 'route:links', compact: true },
-		{ sep: true },
-		{ id: 'search', icon: 'search', key: 'dock.search', act: 'menu:search' },
-		{ id: 'contact', icon: 'chat', key: 'dock.contact', act: 'menu:contact' },
-		{ id: 'language', icon: 'globe', key: 'dock.language', act: 'menu:language' },
-		{ id: 'theme', icon: 'moon', key: 'dock.theme', act: 'theme', dual: true },
-		{ sep: true, compact: true },
-		{ id: 'projects', icon: 'github', key: 'dock.projects', act: 'link:' + GITHUB, compact: true },
-		{ id: 'album', icon: 'image', key: 'dock.album', act: 'soon', compact: true }
+	/*
+	 * 目录页的六栏。顺序与页码就是这一期的目次。
+	 * label/desc 只是 HTML 兜底文本, 真正显示的是 titleKey/descKey(语言包)。
+	 */
+	var NAV = [
+		{ id: '01', route: 'home', icon: 'home', label: 'Home', desc: 'Contents',
+			titleKey: 'nav.item.home.label', descKey: 'nav.item.home.desc' },
+		{ id: '02', route: 'terminal', icon: 'term', label: 'Terminal', desc: 'A shell that works',
+			titleKey: 'nav.item.terminal.label', descKey: 'nav.item.terminal.desc' },
+		{ id: '03', route: 'storage', icon: 'box', label: 'Storage', desc: 'The archive',
+			titleKey: 'nav.item.storage.label', descKey: 'nav.item.storage.desc' },
+		{ id: '04', route: 'labs', icon: 'flask', label: 'Labs', desc: 'Simulations & VM',
+			titleKey: 'nav.item.lab.label', descKey: 'nav.item.lab.desc' },
+		{ id: '05', route: 'games', icon: 'gamepad', label: 'Games', desc: 'Playable',
+			titleKey: 'nav.item.games.label', descKey: 'nav.item.games.desc' },
+		{ id: '06', route: 'links', icon: 'link', label: 'Friendly Links', desc: 'Elsewhere',
+			titleKey: 'nav.item.links.label', descKey: 'nav.item.links.desc' }
 	];
+
+	/* 顶栏(索引条)上的按钮: 前六个是栏目本身, 后面是工具。
+	   tip 只给图标看不出含义的那几个, 栏目图标本身已经说明问题。 */
+	var navItems = NAV.map(function (n) {
+		return { id: n.route, icon: n.icon, key: n.titleKey, act: 'route:' + n.route };
+	});
+
+	var ITEMS = navItems.concat([
+		{ sep: true },
+		{ id: 'index', icon: 'grid', key: 'dock.index.label', act: 'index', tip: true, tipKey: 'dock.index.tip' },
+		{ id: 'search', icon: 'search', key: 'dock.search', act: 'menu:search', tip: true, tipKey: 'dock.search' },
+		{ id: 'contact', icon: 'chat', key: 'dock.contact', act: 'menu:contact', tip: true, tipKey: 'dock.contact' },
+		{ id: 'language', icon: 'globe', key: 'dock.language', act: 'menu:language', tip: true, tipKey: 'dock.language' },
+		{ id: 'theme', icon: 'moon', key: 'dock.theme', act: 'theme', dual: true, tip: true, tipKey: 'dock.theme' }
+	]);
 
 	/* ------------------------------------------------------------ 构建 */
 
@@ -99,9 +117,11 @@
 			? '<span class="dock__icon dock__icon--dual">' + svg('moon', 'icon-moon') + svg('sun', 'icon-sun') + '</span>'
 			: icon(item.icon);
 
+		var idx = ITEMS.indexOf(item);
 		return '<button type="button" class="dock__item" id="dock-' + item.id + '" data-dock="' + item.id + '"' +
+			' style="--di:' + (idx < 0 ? 0 : idx) + '"' +
 			(item.compact ? ' data-compact-hide' : '') +
-			' data-tip="" i18n-attr="data-tip" i18n-key="' + item.key + '"' +
+			(item.tip ? ' data-tip="" i18n-attr="data-tip" i18n-key="' + item.tipKey + '"' : '') +
 			' aria-label="" i18n-attr="aria-label" i18n-key="' + item.key + '">' +
 			inner + '</button>';
 	}
@@ -175,14 +195,79 @@
 					'</div><div id="dock-search-results"></div>'
 			});
 
-		return '<nav class="dock" id="dock" aria-label="" i18n-attr="aria-label" i18n-key="dock.aria">' +
-			'<button type="button" class="dock__avatar" id="dock-avatar" data-tip="" i18n-attr="data-tip" i18n-key="dock.avatar.tip">' +
-			'<img src="medias/pictures/avatarMikuHatsune1.jpg" alt="Hayno" draggable="false" class="protected-media">' +
+		/* 目录页: 六个栏目 + 版次色标, 排版像一本刊的目次页 */
+		var indexRows = NAV.map(function (n) {
+			return '<a class="dock-index__item" href="#' + n.id + '" data-route="' + n.route + '">' +
+				'<span class="dock-index__no">' + n.id + '</span>' +
+				'<span class="dock-index__body">' +
+				'<span class="dock-index__label" i18n-key="' + n.titleKey + '">' + n.label + '</span>' +
+				'<span class="dock-index__desc" i18n-key="' + n.descKey + '">' + n.desc + '</span>' +
+				'</span>' +
+				'<span class="dock-index__key" aria-hidden="true">↵</span>' +
+				'</a>';
+		}).join('');
+
+		var indexPanel = '<div class="dock-index" id="dock-index" aria-hidden="true">' +
+			'<div class="dock-index__inner">' +
+			'<div class="dock-index__head">' +
+			'<span class="dock-index__flag">Hayneko</span>' +
+			'<span class="dock-index__issue" i18n-key="dock.index.issue">No. 01 — 2026</span>' +
+			'<span class="dock-index__rule" aria-hidden="true"></span>' +
+			'<span class="dock-index__hint" i18n-key="dock.index.hint"></span>' +
+			'</div>' +
+			'<nav class="dock-index__list" aria-label="" i18n-attr="aria-label" i18n-key="dock.index.aria">' + indexRows + '</nav>' +
+			/* 目录页底部把"索引条上没有的东西"补齐:
+			   版次色标、主题、语言。手机上索引条只留栏目 + 目录,
+			   这三样都在这里, 不会出现"看不到的控件"。 */
+			'<div class="dock-index__foot">' +
+			'<span class="dock-index__label-sm" i18n-key="dock.index.edition">Edition</span>' +
+			'<span class="accent-switch" role="group" aria-label="Edition colour">' +
+			'<button type="button" data-accent="bordeaux" title="bordeaux"></button>' +
+			'<button type="button" data-accent="racing" title="racing green"></button>' +
+			'<button type="button" data-accent="prussian" title="prussian blue"></button>' +
+			'</span>' +
+			'<button type="button" class="dock-index__act" id="dock-theme-m" data-dock="theme">' +
+			'<span class="dock__icon dock__icon--dual">' + svg('moon', 'icon-moon') + svg('sun', 'icon-sun') + '</span>' +
+			'<span i18n-key="dock.index.theme">Theme</span>' +
 			'</button>' +
-			'<span class="dock__sep dock__sep--avatar" aria-hidden="true"></span>' +
+			'<span class="dock-index__lang">' +
+			'<span class="dock-index__label-sm" i18n-key="dock.index.language">Language</span>' +
+			'<span class="lang-switch">' +
+			'<button type="button" data-locale="en">EN</button>' +
+			'<button type="button" data-locale="zh-CN">简</button>' +
+			'<button type="button" data-locale="zh-TW">繁</button>' +
+			'<button type="button" data-locale="ja">日</button>' +
+			'<button type="button" data-locale="ko">한</button>' +
+			'</span>' +
+			'</span>' +
+			'<span class="dock-index__spacer"></span>' +
+			'<button type="button" class="dock-index__close" id="dock-index-close" i18n-key="dock.index.close">Close</button>' +
+			'</div>' +
+			'</div>' +
+			'</div>';
+
+		return indexPanel +
+			'<nav class="dock" id="dock" aria-label="" i18n-attr="aria-label" i18n-key="dock.aria">' +
+			'<button type="button" class="dock__avatar" id="dock-avatar" data-tip="" aria-expanded="true" aria-controls="dock-rail" ' +
+				'i18n-attr="data-tip" i18n-key="dock.avatar.tip">' +
+			'<img src="medias/pictures/avatarMikuHatsune1.jpg" alt="" draggable="false" class="protected-media">' +
+			'</button>' +
+			'<div class="dock__rail" id="dock-rail">' +
 			items +
 			'<span class="dock__spacer"></span>' +
+			'</div>' +
 			'<span class="dock__status" id="dock-status"><b>online</b> <span data-dock-locale>en</span></span>' +
+			/* 收起态显示的东西: 当前时间 / 星期 / 当前页面。
+			   放在轨外面, 所以收起时它留下、"轨"消失。 */
+			'<div class="dock__now" aria-hidden="true">' +
+			'<span class="dock__now-time" id="dock-now-time">--:--</span>' +
+			'<span class="dock__now-sep">·</span>' +
+			'<span class="dock__now-day" id="dock-now-day"></span>' +
+			'<span class="dock__now-sep dock__now-sep--path">·</span>' +
+			'<span class="dock__now-path" id="dock-now-path">~/home</span>' +
+			'</div>' +
+			'<button type="button" class="dock__toggle" id="dock-toggle" aria-expanded="true" aria-controls="dock-rail" ' +
+				'aria-label="" i18n-attr="aria-label" i18n-key="dock.index.toggle"><i></i><i></i></button>' +
 			'</nav>' +
 			labMenu + contactMenu + langMenu + searchMenu;
 	}
@@ -235,16 +320,18 @@
 		doc.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
 		try {
 			global.localStorage.setItem('preferredTheme', light ? 'light' : 'dark');
-			global.localStorage.setItem('hayneko.theme', light ? 'light' : 'dark');
+			global.localStorage.setItem('hayneko.theme.v6', light ? 'light' : 'dark');
 		} catch (e) { /* 忽略 */ }
+		/* 改版后旧站的 dark 偏好不再沿用: 键名带版次号 */
 		if (global.GeometryBG && global.GeometryBG.setTheme) global.GeometryBG.setTheme(!light);
 		return light ? 'light' : 'dark';
 	}
 
 	function initTheme() {
 		var saved = null;
-		try { saved = global.localStorage.getItem('hayneko.theme') || global.localStorage.getItem('preferredTheme'); } catch (e) { /* 忽略 */ }
-		applyTheme(saved === 'light' ? 'light' : 'dark');
+		try { saved = global.localStorage.getItem('hayneko.theme.v6'); } catch (e) { /* 忽略 */ }
+		/* 没有存过偏好时不要动 <html> 上的默认值 —— 默认是日读版(浅色)。 */
+		applyTheme(saved === 'light' || saved === 'dark' ? saved : currentTheme());
 	}
 
 	/** 用户主动切换主题: 走整屏擦除过渡 + 图标旋转, 不再"啪"地一下换掉 */
@@ -267,7 +354,8 @@
 
 	/* ---- 粒子 ---- */
 
-	var PARTICLE_COLORS = ['#ff4d5a', '#3ce07b', '#4d9dff', '#e6edf3', '#ff4d5a', '#4d9dff'];
+	/* 点头像时溅开的墨点: 用当前版次的油墨色 + 一点纸色, 不再是 RGB 三原色 */
+	var PARTICLE_COLORS = ['rgba(125, 37, 50, .75)', 'rgba(36, 73, 47, .7)', 'rgba(28, 63, 94, .7)', 'rgba(20, 17, 13, .55)'];
 
 	function burst(cx, cy) {
 		for (var i = 0; i < 16; i++) {
@@ -276,7 +364,7 @@
 			var size = 3 + Math.random() * 5;
 			var color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
 			p.style.cssText = 'left:' + cx + 'px;top:' + cy + 'px;width:' + size + 'px;height:' + size +
-				'px;background:' + color + ';box-shadow:0 0 10px ' + color;
+				'px;background:' + color;
 			doc.body.appendChild(p);
 			var angle = Math.random() * Math.PI * 2;
 			var dist = 26 + Math.random() * 78;
@@ -316,6 +404,7 @@
 		{ label: 'Labs', key: 'dock.lab', route: 'labs', icon: 'flask', hint: '~/labs' },
 		{ label: 'Arch32S VM', key: 'lab.vm.heading', route: 'labs-vm', icon: 'term', hint: '~/labs/vm' },
 		{ label: 'Games', key: 'dock.games', route: 'games', icon: 'gamepad', hint: '~/games' },
+		{ label: 'Dust Range', route: 'range', icon: 'gamepad', hint: '~/range · 3D FPS' },
 		{ label: 'Links', key: 'dock.links', route: 'links', icon: 'link', hint: '~/links' }
 	];
 
@@ -502,13 +591,118 @@
 		syncStatus();
 	}
 
+	/* ---- 索引条收起 / 展开 ---- */
+
+	var COLLAPSE_KEY = 'hayneko.dock';
+
+	/**
+	 * 收起时轨里只剩一个头像。状态记在 localStorage 里, 刷新后保持。
+	 * 头像与右侧箭头都是开关 —— 点了不会回首页, 只切换这一条。
+	 */
+	function setCollapsed(flag, persist) {
+		var on = !!flag;
+		if (dockEl) dockEl.classList.toggle('is-collapsed', on);
+		var avatar = doc.getElementById('dock-avatar');
+		var toggle = doc.getElementById('dock-toggle');
+		if (avatar) avatar.setAttribute('aria-expanded', on ? 'false' : 'true');
+		if (toggle) toggle.setAttribute('aria-expanded', on ? 'false' : 'true');
+		if (on) closeMenus(true);
+		if (persist !== false) {
+			try { global.localStorage.setItem(COLLAPSE_KEY, on ? '1' : '0'); } catch (e) { /* 忽略 */ }
+		}
+		return on;
+	}
+
+	/* ---- 收起态里的时间 / 星期 / 当前页 ---- */
+
+	var clockTimer = 0;
+
+	function tickClock() {
+		var t = doc.getElementById('dock-now-time');
+		var d = doc.getElementById('dock-now-day');
+		if (!t) return;
+		var now = new Date();
+		var hh = ('0' + now.getHours()).slice(-2);
+		var mm = ('0' + now.getMinutes()).slice(-2);
+		t.textContent = hh + ':' + mm;
+		if (d) d.textContent = '星期' + ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
+	}
+
+	function syncNowPath() {
+		var el = doc.getElementById('dock-now-path');
+		if (!el) return;
+		var hash = (global.location.hash || '').replace(/^#\/?/, '').split('?')[0];
+		var route = hash || 'home';
+		var table = global.Router && global.Router.routes;
+		if (table && !table[route]) route = 'home';
+		el.textContent = (table && table[route]) ? table[route].path : '~/' + route;
+	}
+
+	function startClock() {
+		tickClock();
+		clearInterval(clockTimer);
+		/* 10s 轮询: 页面从后台唤醒、或跨过整分钟时也不会慢一拍 */
+		clockTimer = setInterval(tickClock, 10000);
+	}
+
+	function initCollapse() {
+		var saved = null;
+		try { saved = global.localStorage.getItem(COLLAPSE_KEY); } catch (e) { /* 忽略 */ }
+		setCollapsed(saved === '1', false);
+	}
+
+	function toggleCollapsed() {
+		var on = dockEl ? dockEl.classList.contains('is-collapsed') : false;
+		return setCollapsed(!on);
+	}
+
+	/* ---- 目录页(整屏) ---- */
+
+	var indexOpen = false;
+
+	function setIndex(open) {
+		var panel = doc.getElementById('dock-index');
+		if (!panel) return false;
+		indexOpen = !!open;
+		panel.classList.toggle('is-open', indexOpen);
+		panel.setAttribute('aria-hidden', indexOpen ? 'false' : 'true');
+		doc.documentElement.classList.toggle('is-index-open', indexOpen);
+		if (indexOpen) closeMenus(true);
+		return indexOpen;
+	}
+
+	function toggleIndex() { return setIndex(!indexOpen); }
+
 	/* ---- 事件 ---- */
 
 	function onClick(e) {
 		var avatar = e.target.closest && e.target.closest('#dock-avatar');
 		if (avatar) {
 			emitParticle();
-			if (global.Router) global.Router.navigate('home');
+			/* 改版: 点头像不再回首页, 只把索引条收成一个头像(再点展开) */
+			toggleCollapsed();
+			return;
+		}
+
+		var toggleBtn = e.target.closest && e.target.closest('#dock-toggle');
+		if (toggleBtn) {
+			toggleCollapsed();
+			return;
+		}
+
+		var closeIndex = e.target.closest && e.target.closest('#dock-index-close');
+		if (closeIndex) {
+			setIndex(false);
+			return;
+		}
+
+		/* 目录页里的栏目: 走 hash, 由 router 接住, 点完把目录收起来 */
+		var indexLink = e.target.closest && e.target.closest('.dock-index__item[data-route]');
+		if (indexLink) {
+			e.preventDefault();
+			var target = indexLink.getAttribute('data-route');
+			setIndex(false);
+			if (global.Router) global.Router.navigate(target);
 			return;
 		}
 
@@ -560,6 +754,10 @@
 			if (global.Router) global.Router.navigate(action.slice(6));
 			return;
 		}
+		if (action === 'index') {
+			toggleIndex();
+			return;
+		}
 		if (action === 'theme') {
 			switchTheme();
 			return;
@@ -591,6 +789,10 @@
 		applyTheme: function (t) { return applyTheme(t); },
 		burst: function () { return emitParticle(); },
 		menu: function () { return openMenuId; },
+		index: function (open) { return open === undefined ? indexOpen : setIndex(open); },
+		indexToggle: function () { return toggleIndex(); },
+		collapsed: function (flag) { return flag === undefined ? (dockEl ? dockEl.classList.contains('is-collapsed') : false) : setCollapsed(flag); },
+		collapseToggle: function () { return toggleCollapsed(); },
 		mounted: false
 	};
 
@@ -602,6 +804,9 @@
 		dockEl = root.querySelector('#dock');
 
 		initTheme();
+		initCollapse();
+		startClock();
+		syncNowPath();
 		renderSearch('');
 
 		root.addEventListener('click', onClick);
@@ -622,9 +827,15 @@
 			closeMenus();
 		});
 		doc.addEventListener('keydown', function (e) {
-			if (e.key === 'Escape' && openMenuId != null) closeMenus();
+			if (e.key !== 'Escape') return;
+			if (indexOpen) { setIndex(false); return; }
+			if (openMenuId != null) closeMenus();
 		});
-		doc.addEventListener('route:changed', syncActive);
+		doc.addEventListener('route:changed', function () {
+			syncActive();
+			syncNowPath();
+			setIndex(false);
+		});
 		doc.addEventListener('i18n:applied', function () {
 			/* 再入保护: renderSearch 里若再触发 i18n 相关逻辑, 不会绕回来 */
 			if (applying) return;

@@ -1,99 +1,93 @@
-<!-- views/home.html -->
-<section class="hero">
-	<p class="eyebrow" data-smear="slide">
-		<span class="eyebrow__pulse" aria-hidden="true"></span>
-		<span i18n-key="home.eyebrow">System online · all services nominal</span>
-	</p>
+<!-- views/home.html — 扉页 + 封面图版 + 目次 + 版权页 -->
+<section class="opening" aria-labelledby="cover-title">
+	<div class="opening__meta">
+		<span class="opening__kicker" i18n-key="home.cover.kicker">Hayneko</span>
+		<span class="opening__hair" aria-hidden="true"></span>
+		<span class="opening__issue" i18n-key="home.cover.issue">No. 01</span>
+		<span class="opening__date" i18n-key="home.statement.date">January 2026</span>
+	</div>
 
-	<h1 class="hero__title" data-smear="drop" data-fx-split>
-		<span class="hero__prompt" aria-hidden="true">$</span><span data-fx-text i18n-key="home.title">Hayneko</span><span class="caret" aria-hidden="true"></span>
+	<h1 class="opening__title" id="cover-title" data-smear="drop" data-fx-split>
+		<span data-fx-text i18n-key="home.title">Hayneko</span><span class="opening__caret" aria-hidden="true"></span>
 	</h1>
 
-	<p class="hero__sub" data-smear i18n-key="home.subtitle">
-		A personal corner rebuilt in the terminal language: canvas geometry, a macOS-style dock, smear motion blur, and not a single page reload.
+	<div class="opening__sub">
+		<span class="opening__cjk" i18n-key="home.cover.cjk">个人刊物 · 第一号</span>
+		<span class="opening__mark" aria-hidden="true"></span>
+	</div>
+
+	<p class="opening__lede" data-smear i18n-key="home.cover.lede">
+		A student, a keyboard, and a long-running argument with physics. This is where the results are kept.
 	</p>
-
-	<div class="hero__actions" data-smear>
-		<a class="btn btn--primary" href="#/storage" data-route="storage">
-			<span i18n-key="home.cta.storage">Open storage</span>
-			<span class="btn__arrow" aria-hidden="true">→</span>
-		</a>
-		<a class="btn btn--ghost" href="#/labs" data-route="labs">
-			<span i18n-key="home.cta.lab">Physics lab</span>
-		</a>
-	</div>
-
-	<div class="hero__tags" data-smear>
-		<span class="badge badge--green">Miku</span>
-		<span class="badge badge--blue">Web</span>
-		<span class="badge badge--red">ACG</span>
-		<span class="badge">Minecraft</span>
-		<span class="badge">NTE</span>
-	</div>
 </section>
 
-<section class="section">
-	<div class="profile-grid">
-		<div class="profile-card" data-smear>
-			<div class="profile-row">
-				<span class="profile-row__key" i18n-key="info.name">Name</span>
-				<span class="profile-row__val">Hayneko</span>
-			</div>
-			<div class="profile-row">
-				<span class="profile-row__key" i18n-key="info.email">Email</span>
-				<span class="profile-row__val">
-					<a href="mailto:haydenwong825@gmail.com">haydenwong825@gmail.com</a><br>
-					<a href="mailto:mikudword_t32@hotmail.com">mikudword_t32@hotmail.com</a>
-				</span>
-			</div>
-			<div class="profile-row">
-				<span class="profile-row__key" i18n-key="info.hobbies">Hobbies</span>
-				<span class="profile-row__val" i18n-key="info.hobbies_content">Music, Anime, Programming</span>
-			</div>
-			<div class="profile-row">
-				<span class="profile-row__key" i18n-key="info.games">Games</span>
-				<span class="profile-row__val" i18n-key="info.games_content">Minecraft, NTE</span>
-			</div>
-			<div class="profile-row">
-				<span class="profile-row__key" i18n-key="info.projects">Projects</span>
-				<span class="profile-row__val"><a href="https://github.com/hayNeko" target="_blank" rel="noopener noreferrer">github.com/hayNeko</a></span>
-			</div>
-		</div>
+<figure class="plate" data-smear>
+	<img class="plate__img protected-media" src="medias/pictures/【哲风壁纸】少女-校园背景.png" alt="" draggable="false">
+	<figcaption class="plate__cap">
+		<span class="plate__meta" i18n-key="home.cover.credit">Cover artwork</span>
+		<span class="plate__no">Fig. 01</span>
+	</figcaption>
+</figure>
 
-		<div class="avatar-card" data-smear>
-			<img class="avatar-card__img protected-media" src="medias/pictures/avatarMikuHatsune1.jpg" alt="Hayneko" draggable="false">
-			<span class="avatar-card__name">Hayneko</span>
-			<span class="avatar-card__meta" i18n-key="info.role">Student · Hobbyist developer</span>
-			<span class="avatar-card__status">
-				<span class="dot dot--green"></span><span i18n-key="info.status">Open to new things</span>
-			</span>
-		</div>
+<section class="section contents" aria-labelledby="contents-title">
+	<div class="folio">
+		<span class="folio__no">02</span>
+		<span id="contents-title" i18n-key="home.quick.title">Contents</span>
+		<span class="folio__rule" aria-hidden="true"></span>
+		<span i18n-key="home.quick.sub">Four places to start.</span>
 	</div>
+
+	<ol class="contents__list">
+		<li>
+			<a class="contents__row" href="#/storage" data-route="storage" data-smear>
+				<span class="contents__no">01</span>
+				<span class="contents__name" i18n-key="home.card.storage.title">Storage</span>
+				<span class="contents__desc" i18n-key="home.card.storage.desc">Maps, libraries and manuals I keep around — with honest labels about what is still available.</span>
+				<span class="contents__go" aria-hidden="true">↗</span>
+			</a>
+		</li>
+		<li>
+			<a class="contents__row" href="#/labs" data-route="labs" data-smear>
+				<span class="contents__no">02</span>
+				<span class="contents__name" i18n-key="home.card.lab.title">Labs</span>
+				<span class="contents__desc" i18n-key="home.card.lab.desc">Force and motion, Newton&#39;s second law, lenses — built while studying. The Arch32S virtual machine is here too.</span>
+				<span class="contents__go" aria-hidden="true">↗</span>
+			</a>
+		</li>
+		<li>
+			<a class="contents__row" href="#/terminal" data-route="terminal" data-smear>
+				<span class="contents__no">03</span>
+				<span class="contents__name" i18n-key="home.card.terminal.title">Terminal</span>
+				<span class="contents__desc" i18n-key="home.card.terminal.desc" i18n-html>A shell that really runs: calculator, hashes, encoders, password generator, cron parser. Type <code>help</code>.</span>
+				<span class="contents__go" aria-hidden="true">↗</span>
+			</a>
+		</li>
+		<li>
+			<a class="contents__row" href="#/links" data-route="links" data-smear>
+				<span class="contents__no">04</span>
+				<span class="contents__name" i18n-key="home.card.links.title">Friendly links</span>
+				<span class="contents__desc" i18n-key="home.card.links.desc">Short on purpose. If you run a site worth reading, say hello and I will add it.</span>
+				<span class="contents__go" aria-hidden="true">↗</span>
+			</a>
+		</li>
+		<li>
+			<a class="contents__row" href="pages/forest-cabin.html" target="_blank" rel="noopener noreferrer" data-smear>
+				<span class="contents__no">05</span>
+				<span class="contents__name" i18n-key="home.card.cabin.title">Forest cabin</span>
+				<span class="contents__desc" i18n-key="home.card.cabin.desc">A firelit log cabin in a living pine forest. Drag to look around, switch between dusk, night and morning, and step up to the porch.</span>
+				<span class="contents__go" aria-hidden="true">↗</span>
+			</a>
+		</li>
+	</ol>
 </section>
 
-<section class="section">
-	<header class="section__head">
-		<h2 class="section__title" data-smear="slide" i18n-key="home.quick.title">Jump in</h2>
-		<p class="section__sub" i18n-key="home.quick.sub">Three ways to get somewhere useful.</p>
-	</header>
+<footer class="colophon-block">
+	<p class="colophon-block__quote" data-smear i18n-key="home.archive.quote">Everything here was made at night, after the homework was finished.</p>
 
-	<div class="grid grid--3">
-		<a class="card card--blue" href="#/storage" data-route="storage" data-smear>
-			<span class="card__idx">01 / STORAGE</span>
-			<h3 class="card__title" i18n-key="home.card.storage.title">Storage</h3>
-			<p class="card__body" i18n-key="home.card.storage.desc">Maps, libraries and manuals I keep around — with honest labels about what is still available.</p>
-		</a>
-
-		<a class="card card--red" href="#/labs" data-route="labs" data-smear>
-			<span class="card__idx">02 / LAB</span>
-			<h3 class="card__title" i18n-key="home.card.lab.title">Physics lab</h3>
-			<p class="card__body" i18n-key="home.card.lab.desc">Three interactive simulations built while studying: force &amp; motion, Newton's second law, and lenses.</p>
-		</a>
-
-		<a class="card card--green" href="#/links" data-route="links" data-smear>
-			<span class="card__idx">03 / LINKS</span>
-			<h3 class="card__title" i18n-key="home.card.links.title">Friendly links</h3>
-			<p class="card__body" i18n-key="home.card.links.desc">Still empty. If you have a site worth reading, say hello and I will add it here.</p>
-		</a>
-	</div>
-</section>
+	<dl class="colophon-block__meta" data-smear>
+		<div><dt i18n-key="info.name">Name</dt><dd>Hayneko</dd></div>
+		<div><dt i18n-key="info.role">Role</dt><dd i18n-key="info.role_value">Student · hobbyist developer</dd></div>
+		<div><dt i18n-key="info.hobbies">Hobbies</dt><dd i18n-key="info.hobbies_content">Music, Anime, Programming</dd></div>
+		<div><dt i18n-key="info.email">Email</dt><dd><a href="mailto:haydenwong825@gmail.com">haydenwong825@gmail.com</a></dd></div>
+	</dl>
+</footer>

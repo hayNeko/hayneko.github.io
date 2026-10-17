@@ -1,5 +1,11 @@
 <!-- views/games.html -->
 <header class="page-head">
+	<div class="folio">
+		<span class="folio__no">05</span>
+		<span i18n-key="nav.item.games.label">Games</span>
+		<span class="folio__rule" aria-hidden="true"></span>
+		<span>~/games</span>
+	</div>
 	<h1 class="page-head__title" data-smear="drop" data-fx-split><span data-fx-text i18n-key="games.heading">Games</span></h1>
 	<p class="page-head__sub" data-smear i18n-key="games.subtitle">
 		Small games that run right in the page. No download, no plugin — and the terminal can start them too.
@@ -10,6 +16,68 @@
 	data-game-card 与机台分组的 id 对应, 挂载时把当前这款的卡片点亮(is-active)。 -->
 <section class="section" style="margin-top:0">
 	<div class="game-grid">
+		<article class="game-card game-card--fps" data-smear>
+			<div class="game-card__preview game-card__preview--fps" aria-hidden="true">
+				<svg viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice">
+					<defs>
+						<linearGradient id="csr-card-sky" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0" stop-color="#5b7896"/>
+							<stop offset="1" stop-color="#c2a77e"/>
+						</linearGradient>
+						<linearGradient id="csr-card-sand" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0" stop-color="#b99a6d"/>
+							<stop offset="1" stop-color="#6d573a"/>
+						</linearGradient>
+					</defs>
+					<rect width="320" height="160" fill="#090c10"/>
+					<rect y="0" width="320" height="96" fill="url(#csr-card-sky)" opacity=".6"/>
+					<path d="M0 96h320v64H0z" fill="url(#csr-card-sand)" opacity=".5"/>
+					<path d="M0 98l48-20 36 12 33-15 47 22 44-10 48 16 44-8v45H0z" fill="#8e744f" fill-opacity=".4"/>
+					<g fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.2">
+						<path d="M20 52h84v66H20z"/>
+						<path d="M20 70h84M20 90h84M42 52v66M82 52v66"/>
+						<path d="M232 40h68v78h-68z"/>
+						<path d="M232 58h68M232 78h68M254 40v78M282 40v78"/>
+					</g>
+					<g fill="#6b5639" fill-opacity=".82" stroke="currentColor" stroke-opacity=".55" stroke-width="1">
+						<rect x="120" y="112" width="34" height="30"/>
+						<rect x="128" y="96" width="24" height="16"/>
+						<rect x="196" y="118" width="26" height="24"/>
+					</g>
+					<g transform="translate(168 74)">
+						<path d="M-12 20l-5 26h8l5-19 4 19h8l-5-26z" fill="currentColor" fill-opacity=".72"/>
+						<rect x="-13" y="-12" width="26" height="34" rx="3" fill="currentColor" fill-opacity=".8"/>
+						<rect x="-17" y="-9" width="5" height="17" fill="currentColor" fill-opacity=".5"/>
+						<rect x="12" y="-9" width="5" height="17" fill="currentColor" fill-opacity=".5"/>
+						<rect x="-9" y="-28" width="18" height="16" rx="3" fill="currentColor" fill-opacity=".92"/>
+						<rect x="-7" y="-24" width="14" height="4" fill="#ff8a45"/>
+						<path d="M13 -2h27v5H13z" fill="currentColor" fill-opacity=".75"/>
+						<path d="M34 -6h5v13h-5z" fill="currentColor" fill-opacity=".55"/>
+					</g>
+					<g stroke="#8cf49a" stroke-width="1.3" opacity=".9">
+						<circle cx="160" cy="82" r="26" fill="none" stroke-opacity=".18"/>
+						<path d="M160 62v14M160 88v14M140 82h14M166 82h14"/>
+					</g>
+					<g fill="currentColor" fill-opacity=".7" font-family="monospace" font-size="7">
+						<text x="12" y="146">DUST_RANGE</text>
+						<text x="268" y="146" text-anchor="end">BOT 03</text>
+					</g>
+				</svg>
+			</div>
+			<span class="game-card__idx">00 / FPS · 3D</span>
+			<h3 class="game-card__title" i18n-key="games.range.title">Dust Range</h3>
+			<p class="game-card__body" i18n-key="games.range.desc">
+				A CS:GO-flavoured 3D shooting range: a procedural de_dust map, randomised robot squads, a buy menu and a working radar. Mouse and keyboard.
+			</p>
+			<div class="game-card__foot">
+				<a class="btn btn--sm" href="#/range" data-route="range">
+					<span i18n-key="games.play">Play</span>
+					<span class="btn__arrow" aria-hidden="true">↗</span>
+				</a>
+				<span class="badge badge--red" i18n-key="games.range.badge">3D</span>
+			</div>
+		</article>
+
 		<article class="game-card is-active" data-game-card="tetris" data-smear>
 			<div class="game-card__preview" aria-hidden="true">
 				<svg viewBox="0 0 200 80" preserveAspectRatio="xMidYMid meet">

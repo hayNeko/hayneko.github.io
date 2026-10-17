@@ -1,7 +1,13 @@
 <!-- views/terminal.html -->
 <header class="page-head">
+	<div class="folio">
+		<span class="folio__no">02</span>
+		<span i18n-key="nav.item.terminal.label">Terminal</span>
+		<span class="folio__rule" aria-hidden="true"></span>
+		<span>hayneko-sh 1.0</span>
+	</div>
 	<h1 class="page-head__title" data-smear="drop" data-fx-split><span data-fx-text i18n-key="terminal.heading">Terminal</span></h1>
-	<p class="page-head__sub" data-smear i18n-key="terminal.subtitle">Type <code>help</code> to see what this shell can do.</p>
+	<p class="page-head__sub" data-smear i18n-key="terminal.subtitle" i18n-html><code>help</code> lists every command.</p>
 </header>
 
 <section class="section" style="margin-top:0">
@@ -9,7 +15,7 @@
 		<div class="term__bar">
 			<span class="term-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
 			<span class="term__title">hayneko@blog: ~</span>
-			<span class="term-window__tag" i18n-key="terminal.term.tag">interactive</span>
+			<span class="term-window__tag" i18n-key="terminal.term.tag">Interactive</span>
 		</div>
 		<div class="term__body" tabindex="-1"></div>
 		<div class="term__prompt-line">
@@ -17,6 +23,12 @@
 			<input class="term__input" type="text" spellcheck="false" autocomplete="off"
 				aria-label="terminal input" i18n-attr="aria-label" i18n-key="terminal.term.input">
 		</div>
+	</div>
+
+	<div class="folio" style="margin-top:26px">
+		<span i18n-key="terminal.index">Command index</span>
+		<span class="folio__rule" aria-hidden="true"></span>
+		<span i18n-key="terminal.indexHint">Tab completes, ↑ recalls</span>
 	</div>
 
 	<div class="term-suggest" data-smear>
@@ -30,15 +42,15 @@
 		<button type="button" data-cmd="base 0xff">base</button>
 		<button type="button" data-cmd="hash sha256 abc">hash</button>
 		<button type="button" data-cmd="hex hello">hex</button>
-		<button type="button" data-cmd="color #3ce07b">color</button>
+		<button type="button" data-cmd="color #7d2532">color</button>
 		<button type="button" data-cmd="ts">ts</button>
 		<button type="button" data-cmd="pass 20 -s">pass</button>
-		<button type="button" data-cmd="cron &quot;*/15 9-17 * * 1-5&quot;">cron</button>
+		<button type="button" data-cmd="cron "*/15 9-17 * * 1-5"">cron</button>
 		<button type="button" data-cmd="env">env</button>
 		<button type="button" data-cmd="neofetch">neofetch</button>
 		<button type="button" data-cmd="matrix">matrix</button>
-		<button type="button" data-cmd="theme light">theme light</button>
-		<button type="button" data-cmd="accent blue">accent blue</button>
+		<button type="button" data-cmd="theme dark">theme dark</button>
+		<button type="button" data-cmd="accent prussian">accent prussian</button>
 		<button type="button" data-cmd="clear">clear</button>
 	</div>
 </section>

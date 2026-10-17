@@ -1,11 +1,13 @@
 /**
  * smear.js — DOM 运动模糊 (Motion Blur / Smear) 引擎
  *
- * 原理与 deepseek_html_..._smear_motion_demo.html 中的 canvas 版本一致:
+ * 原理:
  *   1. 主元素沿轨迹运动;
- *   2. 在运动方向上叠加 N 个"残影", 每个残影都沿同一条轨迹、但时间上滞后 lag 毫秒;
+ *   2. 在运动方向上叠加 N 个"残影", 每个残影沿同一条轨迹、但时间上滞后 lag 毫秒;
  *   3. 残影越靠后, 透明度越低、模糊半径越大 —— 形成拖尾;
- *   4. 残影使用 mix-blend-mode: screen(等价 canvas 的 'lighter'), 叠加处更亮。
+ *   4. 残影用普通叠加(blend: normal)而不是 screen —— 因为本站同时有纸张(浅底)
+ *      与墨底两种版式, screen 在浅底上会把拖影叠成白色, 反而像"复制了一份元素"。
+ *      normal + 低透明度在两种底上都读得出"一条干净利落的拖影"。
  *
  * 残影放在 #smear-host (position: fixed) 里, 因此:
  *   - 不会被父级的 overflow: hidden 裁掉, 拖影可以飞出面板;
@@ -14,11 +16,10 @@
  * 用法:
  *   Smear.play(el, keyframes, { duration, easing, delay, ghosts, lag, blur, fade, blend })
  *   Smear.dropIn(el, { duration, delay, ghosts, stretch })
- *   Smear.slideOut(el, { ... })
+ *   Smear.slideIn(el, { duration, delay, stretch })
+ *   Smear.popIn(el, { duration, delay })
  *
- * ghostsOnly: true —— 只生成拖影, 不动主元素。
- * 主元素交给 CSS transition 驱动时用这个模式, 避免 WAAPI 与 CSS 抢同一个属性。
- * 只要两边用同一组 keyframes 值、同一 duration/easing/delay, 拖影就会贴合主元素。
+ * ghostsOnly: true —— 只生成拖影, 不动主元素(主元素交给 CSS transition 驱动时用)。
  */
 (function (global) {
 	'use strict';
@@ -29,6 +30,13 @@
 	function reduced() {
 		if (global.MotionPref) return !!global.MotionPref.reduced;
 		return !!(mq && mq.matches);
+	}
+
+	function parseMs(value) {
+		value = String(value || '').trim();
+		if (value.slice(-2) === 'ms') return parseFloat(value) || 0;
+		if (value.slice(-1) === 's') return (parseFloat(value) || 0) * 1000;
+		return 0;
 	}
 
 	var host = null;
@@ -52,18 +60,38 @@
 	 *   同时第一层就得有足够模糊, 否则它就是一份清晰的拷贝。
 	 */
 	var DEFAULTS = {
-		duration: 500,
+		duration: 520,
 		easing: 'cubic-bezier(0.15, 1, 0, 1)',
 		delay: 0,
-		ghosts: 7,
-		lag: 9,
-		blur: 3.6,
-		/* 第一层就已经很淡: 否则实心元素(徽章/按钮)的残影会被看成"复制的第二份" */
-		fade: 0.4,
-		blend: 'screen',
-		tail: 150,
+		ghosts: 8,
+		lag: 7,
+		blur: 4.2,
+		fade: 0.34,
+		/* 普通叠加: 纸张底与墨底都能读, 不用 screen(浅底上会发白) */
+		blend: 'normal',
+		tail: 170,
 		ghostsOnly: false
 	};
+
+	/**
+	 * 拖影动画要用 CSS 自己的过渡时长, 否则残影会比主元素先停/后停。
+	 * 读不到就退回 opts.duration。
+	 */
+	function resolveDuration(target, prop, opts) {
+		if (!target || !prop || !global.getComputedStyle) return opts.duration;
+		var cs = global.getComputedStyle(target);
+		var props = String(cs.transitionProperty || '').split(',');
+		var durs = String(cs.transitionDuration || '').split(',');
+		var delays = String(cs.transitionDelay || '').split(',');
+		var longest = 0;
+		for (var i = 0; i < props.length; i++) {
+			var name = props[i].trim();
+			if (name !== prop && name !== 'all') continue;
+			var ms = parseMs(durs[i % durs.length]) + parseMs(delays[i % delays.length]);
+			if (ms > longest) longest = ms;
+		}
+		return longest || opts.duration;
+	}
 
 	/**
 	 * 在"去掉 transform"的状态下测量元素, 得到不受动画影响的视口矩形。
@@ -104,7 +132,7 @@
 	function ghostKeyframes(keyframes, index, opts) {
 		var factor = Math.pow(opts.fade, index);
 		/* 模糊半径也要封顶, 否则最外层是一团 20px+ 的糊, 又贵又难看 */
-		var blurPx = Math.min(opts.blur * index, 14);
+		var blurPx = Math.min(opts.blur * index, 18);
 		return keyframes.map(function (kf) {
 			var out = {};
 			for (var key in kf) {
@@ -137,6 +165,13 @@
 			}
 		}
 
+		/* 不传 duration 时, 自动贴合主元素在该属性上的 CSS 过渡时长 */
+		if (opts.follow && !(options && options.duration != null)) {
+			opts.duration = resolveDuration(target, opts.followProp, opts);
+		}
+
+		/* 主元素用 fill: 'both' —— 最后一帧是自然状态(transform: none / filter: none),
+		   动画跑完由 motion.js 在 finished 上 dispose, 所以不会长期挂着滤镜层。 */
 		var timing = {
 			duration: opts.duration,
 			easing: opts.easing,
@@ -163,7 +198,7 @@
 					duration: opts.duration,
 					easing: opts.easing,
 					delay: opts.delay + opts.lag * i,
-					fill: 'both'
+					fill: 'forwards'
 				});
 				group.push({ el: ghost, anim: anim });
 			}
@@ -201,19 +236,22 @@
 		return result;
 	}
 
-	/** 从上方带 smear 落下的入场 */
+	/*
+	 * 落版(dropIn):
+	 * 起手是"被上方的速度拉长"的形态 —— 竖向拉伸 + 一点点横向压窄, 再加整体偏斜。
+	 * 这就是"文字在动画过程中被大幅度拉伸"的来源; 最后一帧必须是 none,
+	 * 否则元素会一直挂着一个 filter, 停下来还发糊。
+	 */
 	function dropIn(el, options) {
 		var opts = options || {};
-		var stretch = opts.stretch == null ? 1.34 : opts.stretch;
-		var squash = opts.squash == null ? 0.95 : opts.squash;
-		/* filter 的模糊量跟着速度走: 起手最快 -> 最糊, 落位就清晰。
-		   这是"真·运动模糊", 而且完全不产生副本元素。 */
+		var stretch = opts.stretch == null ? 1.52 : opts.stretch;
+		var squash = opts.squash == null ? 0.96 : opts.squash;
 		var kfs = [
-			{ offset: 0,    transform: 'translateY(-205%) scaleY(' + stretch + ')', opacity: 0, filter: 'blur(9px)' },
-			{ offset: 0.45, transform: 'translateY(3%) scaleY(1.03)', opacity: 1, filter: 'blur(5px)' },
-			{ offset: 0.62, transform: 'translateY(9%) scaleY(' + squash + ')', opacity: 1, filter: 'blur(2.4px)' },
-			{ offset: 0.82, transform: 'translateY(-2.5%) scaleY(1.02)', opacity: 1, filter: 'blur(0.7px)' },
-			{ offset: 1,    transform: 'translateY(0) scaleY(1)', opacity: 1, filter: 'blur(0px)' }
+			{ offset: 0,    transform: 'translateY(-175%) skewY(-2.4deg) scaleY(' + stretch + ') scaleX(0.9)', opacity: 0, filter: 'blur(13px)' },
+			{ offset: 0.42, transform: 'translateY(3%) skewY(0.8deg) scaleY(1.04) scaleX(1.01)', opacity: 1, filter: 'blur(5px)' },
+			{ offset: 0.6,  transform: 'translateY(9%) skewY(-0.5deg) scaleY(' + squash + ')', opacity: 1, filter: 'blur(2.2px)' },
+			{ offset: 0.8,  transform: 'translateY(-2.5%) scaleY(1.02)', opacity: 1, filter: 'blur(0.6px)' },
+			{ offset: 1,    transform: 'none', opacity: 1, filter: 'none' }
 		];
 		return play(el, kfs, opts);
 	}
@@ -222,36 +260,37 @@
 	function liftOut(el, options) {
 		var opts = options || {};
 		var kfs = [
-			{ offset: 0, transform: 'translateY(0)', opacity: 1 },
-			{ offset: 0.32, transform: 'translateY(-4%) scaleY(1.06)', opacity: 1 },
-			{ offset: 1, transform: 'translateY(-150%) scaleY(0.92)', opacity: 0 }
+			{ offset: 0, transform: 'none', opacity: 1 },
+			{ offset: 0.32, transform: 'translateY(-4%) scaleY(1.08)', opacity: 1, filter: 'blur(2px)' },
+			{ offset: 1, transform: 'translateY(-150%) scaleY(0.9)', opacity: 0, filter: 'blur(8px)' }
 		];
-		return play(el, kfs, Object.assign({ duration: 300 }, opts));
+		return play(el, kfs, Object.assign({ duration: 320 }, opts));
 	}
 
-	/** 侧向滑入(用于标题 / 段落) */
+	/** 侧向滑入: 横向被速度拉长, 行进方向带拖影 */
 	function slideIn(el, options) {
 		var opts = options || {};
-		var from = opts.from == null ? -26 : opts.from;
+		var from = opts.from == null ? -30 : opts.from;
+		var stretch = opts.stretch == null ? 1.18 : opts.stretch;
 		var kfs = [
-			{ offset: 0,    transform: 'translateX(' + from + 'px)', opacity: 0, filter: 'blur(5.5px)' },
-			{ offset: 0.45, transform: 'translateX(-4px)', opacity: 1, filter: 'blur(2.6px)' },
-			{ offset: 0.7,  transform: 'translateX(3px)', opacity: 1, filter: 'blur(0.8px)' },
-			{ offset: 1,    transform: 'translateX(0)', opacity: 1, filter: 'blur(0px)' }
+			{ offset: 0,    transform: 'translateX(' + from + 'px) skewX(-7deg) scaleX(' + stretch + ')', opacity: 0, filter: 'blur(9.5px)' },
+			{ offset: 0.42, transform: 'translateX(-5px) skewX(2.4deg) scaleX(0.99)', opacity: 1, filter: 'blur(3.4px)' },
+			{ offset: 0.68, transform: 'translateX(3px) skewX(-1deg) scaleX(1.008)', opacity: 1, filter: 'blur(1px)' },
+			{ offset: 1,    transform: 'none', opacity: 1, filter: 'none' }
 		];
-		return play(el, kfs, Object.assign({ duration: 460, delay: opts.delay || 0, ghosts: 7, blur: 3.4, fade: 0.4 }, opts));
+		return play(el, kfs, Object.assign({ duration: 520, delay: opts.delay || 0, ghosts: 8, lag: 7, blur: 4.2, fade: 0.34 }, opts));
 	}
 
-	/** 缩放淡入 */
+	/** 缩放淡入(最克制的一种, 用于成组的内容块) */
 	function popIn(el, options) {
 		var opts = options || {};
 		var kfs = [
-			{ offset: 0,   transform: 'translateY(16px) scale(0.97)', opacity: 0, filter: 'blur(4.5px)' },
-			{ offset: 0.5, transform: 'translateY(4px) scale(0.995)', opacity: 1, filter: 'blur(1.8px)' },
-			{ offset: 0.7, transform: 'translateY(-2px) scale(1.004)', opacity: 1, filter: 'blur(0.5px)' },
-			{ offset: 1,   transform: 'translateY(0) scale(1)', opacity: 1, filter: 'blur(0px)' }
+			{ offset: 0,   transform: 'translateY(18px) skewY(0.7deg) scaleY(1.12) scaleX(0.99)', opacity: 0, filter: 'blur(8px)' },
+			{ offset: 0.5, transform: 'translateY(4px) scaleY(0.995)', opacity: 1, filter: 'blur(2.6px)' },
+			{ offset: 0.72, transform: 'translateY(-2px) scaleY(1.006)', opacity: 1, filter: 'blur(0.7px)' },
+			{ offset: 1,   transform: 'none', opacity: 1, filter: 'none' }
 		];
-		return play(el, kfs, Object.assign({ duration: 480, ghosts: 6, blur: 3.6, fade: 0.4 }, opts));
+		return play(el, kfs, Object.assign({ duration: 500, ghosts: 6, blur: 4.2, fade: 0.34 }, opts));
 	}
 
 	global.Smear = {

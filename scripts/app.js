@@ -6,8 +6,9 @@
 	'use strict';
 
 	var doc = global.document;
-	var ACCENT_KEY = 'hayneko.accent';
-	var ACCENTS = ['red', 'green', 'blue'];
+	/* 键名带版次号: 改版后旧的强调色偏好不该继续生效 */
+	var ACCENT_KEY = 'hayneko.accent.v6';
+	var ACCENTS = ['bordeaux', 'racing', 'prussian'];
 
 	/* ------------------------------------------------------------ Toast */
 
@@ -60,7 +61,7 @@
 	/* ------------------------------------------------------------ 强调色 */
 
 	function applyAccent(name) {
-		if (ACCENTS.indexOf(name) === -1) name = 'green';
+		if (ACCENTS.indexOf(name) === -1) name = 'bordeaux';
 		doc.documentElement.setAttribute('data-accent', name);
 		Array.prototype.forEach.call(doc.querySelectorAll('.accent-switch button'), function (btn) {
 			btn.classList.toggle('is-active', btn.getAttribute('data-accent') === name);
@@ -71,7 +72,7 @@
 	function initAccent() {
 		var saved = null;
 		try { saved = global.localStorage.getItem(ACCENT_KEY); } catch (e) { /* 忽略 */ }
-		applyAccent(saved || doc.documentElement.getAttribute('data-accent') || 'green');
+		applyAccent(saved || doc.documentElement.getAttribute('data-accent') || 'bordeaux');
 
 		doc.addEventListener('click', function (e) {
 			var btn = e.target.closest ? e.target.closest('.accent-switch button') : null;
@@ -124,14 +125,14 @@
 		/* 只在语言包就绪之后取文案, 避免刷一屏"缺少翻译"告警 */
 		doc.addEventListener('i18n:applied', function () {
 			refresh();
-			if (doc.hidden) doc.title = ' (>_<) ' + away + base;
+			if (doc.hidden) doc.title = '· ' + away + base;
 		});
 		if (global.i18n && global.i18n.ready) global.i18n.ready.then(refresh);
 		doc.addEventListener('route:changed', function () {
 			setTimeout(function () { if (!doc.hidden) base = doc.title; }, 60);
 		});
 		doc.addEventListener('visibilitychange', function () {
-			if (doc.hidden) doc.title = ' (>_<) ' + away + base;
+			if (doc.hidden) doc.title = '· ' + away + base;
 			else doc.title = base;
 		});
 		global.addEventListener('focus', function () { if (!doc.hidden) doc.title = base; });
@@ -142,12 +143,15 @@
 	function initShortcuts() {
 		var pending = false;
 		doc.addEventListener('keydown', function (e) {
+			/* 3D 靶场里所有按键都归游戏(准星、购买菜单、暂停); 不抢站内快捷键 */
+			if (global.CSRange && global.CSRange.active && global.CSRange.active()) return;
 			var tag = (e.target && e.target.tagName || '').toLowerCase();
 			var typing = tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable);
 
 			if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
 				e.preventDefault();
-				if (global.HeaderNav) global.HeaderNav.toggle();
+				/* 改版后没有刊头了: Ctrl+K 打开 / 收起整屏目录页 */
+				if (global.Dock && global.Dock.indexToggle) global.Dock.indexToggle();
 				return;
 			}
 			if (typing) return;
@@ -179,12 +183,12 @@
 		var bar = boot.querySelector('.boot__bar i');
 		var log = boot.querySelector('.boot__log');
 		var lines = [
-			['go', 'hayneko.kernel 16.0.0'],
-			['ok', 'mount  /dev/canvas ......... geometry online'],
-			['ok', 'load   /styles/*.css ....... tokens ready'],
-			['ok', 'link   /scripts/dock.js .... dock mounted'],
-			['go', 'probe  /i18n/*.json ........ resolving locale'],
-			['ok', 'route  #/home .............. views cached'],
+			['go', 'hayneko — issue no. 01'],
+			['ok', 'typeset  serif / mincho ...... done'],
+			['ok', 'grid     12 columns ......... set'],
+			['ok', 'ink      bordeaux #7d2532 .... inked'],
+			['go', 'locale   i18n/*.json ........ resolved'],
+			['ok', 'press    #/home ............. printed'],
 			['ok', 'ready']
 		];
 
@@ -213,6 +217,9 @@
 				if (bar) bar.style.width = '100%';
 				setTimeout(function () {
 					boot.classList.add('is-done');
+					/* 开机屏开始淡出时就派 boot:done ——
+					   路由收到后才补播入场, 于是"从页面外飞进来"正好落在用户眼前 */
+					doc.dispatchEvent(new CustomEvent('boot:done'));
 					setTimeout(function () { boot.remove(); }, 700);
 				}, 260);
 			}

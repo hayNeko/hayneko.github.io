@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+	<meta name="color-scheme" content="light dark">
+	<title>水波實驗 · Hayneko Labs</title>
+
+	<link rel="icon" href="../../../medias/pictures/miku.JPG" sizes="32x32">
+	<link rel="stylesheet" href="../../../styles/tokens.css">
+	<link rel="stylesheet" href="../../../styles/lab.css">
+</head>
+<body>
+<div class="lab-page">
+	<header class="lab-head">
+		<span class="lab-head__prompt">hayneko</span><span>:</span><span class="lab-head__path">~/labs/wave</span>
+		<span class="lab-head__spacer"></span>
+		<span class="lab-head__tag">labs · v1.0</span>
+		<a class="lab-back" href="../../../index.html#/labs">← 返回實驗室</a>
+	</header>
+
+	<h1 class="lab-title">水波實驗：傳播、干涉、繞射與折射</h1>
+	<p class="lab-sub">在正方形水槽裡放波源、放障礙物，看波紋怎麼相遇、怎麼轉彎。</p>
+
+<div class="wave" id="wave-root">
+	<div class="wave__stage">
+		<div class="wave__tank" id="wave-tank">
+			<canvas id="waveCanvas" aria-label="水波模擬"></canvas>
+			<div class="wave__hint" id="wave-hint">在容器內點一下：放一個波源</div>
+		</div>
+		<div class="wave__readout" id="wave-readout">
+			<span>波長 λ <b id="out-lambda">--</b></span>
+			<span>頻率 f <b id="out-f">--</b></span>
+			<span>波速 v <b id="out-v">--</b></span>
+			<span>來源 <b id="out-src">0</b></span>
+		</div>
+	</div>
+
+	<aside class="wave__panel">
+		<div class="wave__group">
+			<span class="wave__label">點擊放置</span>
+			<div class="wave__modes" role="group" aria-label="放置模式">
+				<button type="button" class="btn active" data-mode="point">點狀波源</button>
+				<button type="button" class="btn" data-mode="bar">條狀波源</button>
+				<button type="button" class="btn" data-mode="wall">障礙物</button>
+				<button type="button" class="btn" data-mode="lens">介質（折射）</button>
+			</div>
+		</div>
+
+		<div class="wave__group">
+			<span class="wave__label">條狀波源的長度與方向</span>
+			<div class="wave__row">
+				<label for="bar-len">長度</label>
+				<input type="range" id="bar-len" min="15" max="100" step="1" value="46">
+				<output id="bar-len-out">46%</output>
+			</div>
+			<div class="wave__seg" role="group" aria-label="條狀波源方向">
+				<button type="button" class="btn active" data-dir="h">橫向</button>
+				<button type="button" class="btn" data-dir="v">縱向</button>
+			</div>
+		</div>
+
+		<div class="wave__group">
+			<span class="wave__label">物理參數</span>
+			<div class="wave__row">
+				<label for="freq">頻率 f</label>
+				<input type="range" id="freq" min="0.6" max="4" step="0.05" value="1.3">
+				<output id="freq-out">1.3 Hz</output>
+			</div>
+			<div class="wave__row">
+				<label for="speed">波速 v</label>
+				<input type="range" id="speed" min="20" max="76" step="1" value="62">
+				<output id="speed-out">120</output>
+			</div>
+			<div class="wave__row">
+				<label for="damp">阻尼</label>
+				<input type="range" id="damp" min="0" max="0.004" step="0.0001" value="0.0014">
+				<output id="damp-out">0.0014</output>
+			</div>
+		</div>
+
+		<div class="wave__group">
+			<span class="wave__label">預設情境</span>
+			<div class="wave__presets">
+				<button type="button" class="btn" data-preset="single">單一波源</button>
+				<button type="button" class="btn" data-preset="interfere">雙源干涉</button>
+				<button type="button" class="btn" data-preset="slit">單縫繞射</button>
+				<button type="button" class="btn" data-preset="lens">透鏡折射</button>
+			</div>
+		</div>
+
+		<div class="wave__actions">
+			<button type="button" class="btn" id="wave-play" aria-pressed="true">暫停</button>
+			<button type="button" class="btn" id="wave-clear">清空</button>
+		</div>
+		<p class="wave__note">拖動波源調整位置；點兩下可以刪掉。波速 v 是格子內的傳播速度，λ = v / f。</p>
+	</aside>
+</div>
+
+<script>
+(function () {
+	"use strict";
+
+	/* ============================================================ 參數 */
+	var GRID = 320;                 /* 模擬格數(正方形) */
+	var SUB = 4;                    /* 每幀子步數 */
+	var MAX_SRC = 8, MAX_WALLS = 8, MAX_MEDIA = 3;
+	var CMAX = 0.32;                 /* 显式差分稳定上限(二维是 1/√2≈0.707, 留余量) */
+	var BETA = 0.05;                 /* 网格级噪声抑制系数(见 stepOnce) */
+
+	var root = document.getElementById("wave-root");
+	var tank = document.getElementById("wave-tank");
+	var canvas = document.getElementById("waveCanvas");
+	var ctx = canvas.getContext("2d", { alpha: false });
+	var hint = document.getElementById("wave-hint");
+
+	var bufA = new Float32Array(GRID * GRID);
+	var bufB = new Float32Array(GRID * GRID);
+	var cur = bufA, nxt = bufB;
+	var mult = new Float32Array(GRID * GRID);   /* 介質系數 1 或 折射率 */
+	var wall = new Uint8Array(GRID * GRID);      /* 障礙物 */
+	var src = new Float32Array(GRID * GRID);     /* 這一子步要注入的加速度 */
+	var sponge = new Float32Array(GRID * GRID);  /* 邊界吸收 */
+	var back = new Float32Array(GRID * GRID);    /* 條狀源背後的擋板, 預設 1 */
+	back.fill(1);
+
+	var state = {
+		mode: "point", barDir: "h", barLen: 0.46,
+		freq: 1.3, speed: 62, damp: 0.0014,
+		running: true, t: 0
+	};
+
+	var sources = [];   /* {kind:"point"|"bar", x, y, len, dir, phase} */
+	var walls = [];     /* {kind:"wall"|"medium", x, y, w, h, r, n} */
+	var img, data, dpr = 1, small = null, sctx = null;
+
+	function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+	function idx(x, y) { return y * GRID + x; }
+
+	/* ============================================================ 開放邊界
+	 *
+	 * 容器四邊"開放": 波到了邊緣應該走出去, 不該原樣彈回來。
+	 * 做法是兩層一起:
+	 *   1. 邊界上一圈**吸收帶**(sponge): 從內到外平滑把場壓到 0, 厚度 12%,
+	 *      只衰減不外推, 所以不會在邊上留下一道硬反射;
+	 *   2. 最外圈再套一階**吸收邊界條件**(Mur): 只讓向外走的波通過。
+	 * 兩者疊在一起, 視覺上就是"水塘沒有牆"。
+	 */
+	var SPONGE_W = Math.round(GRID * 0.12);
+
+	/*
+	 * 吸收帶: 每子步把振幅乘上一個 <1 的係數, 係數從內緣的 1 平滑降到最外側的 1−SIGMA。
+	 *
+	 * 兩個坑:
+	 *   ① 之前寫成 t³(t 是離邊距離的比例), 吸收帶中段每子步只剩 0.125 ——
+	 *      那不是吸收帶, 是一塊棉被, 阻抗突變, 波撞上去整塊彈回來;
+	 *   ② 只把係數調溫和又不夠: 波在帶裡待的時間短, 衰減量不足, 殘波還是會漏出去。
+	 *
+	 * 現在用 s³ 起頭(s = 1 − 離邊比例): 剛進帶時幾乎不衰減(避免反射),
+	 * 靠邊才下狠手。SIGMA 取 0.15, 波穿過整條帶累積衰減約 1/100。
+	 */
+	var SIGMA = 0.15;
+
+	function buildSponge() {
+		for (var y = 0; y < GRID; y++) {
+			for (var x = 0; x < GRID; x++) {
+				var dx = Math.min(x, GRID - 1 - x) / SPONGE_W;
+				var dy = Math.min(y, GRID - 1 - y) / SPONGE_W;
+				var d = clamp(Math.min(dx, dy), 0, 1);
+				if (d >= 1) { sponge[idx(x, y)] = 1; continue; }
+				var s = 1 - d;            /* 0 = 吸收帶內緣, 1 = 最外側 */
+				sponge[idx(x, y)] = 1 - SIGMA * s * s * s;
+			}
+		}
+	}
+	buildSponge();
+
+	/*
+	 * 條狀源背後的擋板。
+	 *
+	 * 條狀源靠"相鄰行反相位"抵銷反向波, 但那是近似 —— 殘留會往背後漏出一圈波,
+	 * 撞到邊界再折回來, 看起來就像邊界在反射。與其把抵銷系數調到極限(正向波也一起被削),
+	 * 不如在背後鋪一小段衰減: 波的去路不受影響, 背後的殘漏在幾格內就吃掉了。
+	 */
+	function rebuildBackstop() {
+		back.fill(1);
+		for (var s = 0; s < sources.length; s++) {
+			var src = sources[s];
+			if (src.kind !== "bar") continue;
+			var half = Math.max(4, Math.round(src.len * GRID / 2));
+			var fx = 0, fy = 0;
+			if (src.dir === "h") fy = src.face === "up" ? -1 : 1;
+			else fx = src.face === "left" ? -1 : 1;
+			for (var d = -half - 6; d <= half + 6; d++) {
+				var bx = src.dir === "v" ? Math.round(src.x) : Math.round(src.x + d);
+				var by = src.dir === "v" ? Math.round(src.y + d) : Math.round(src.y);
+				for (var k = 1; k <= 16; k++) {
+					var x = bx - fx * k, y = by - fy * k;
+					if (x < 0 || y < 0 || x >= GRID || y >= GRID) break;
+					var i = idx(x, y);
+					/* 貼著線的那一行壓得最狠, 16 格外已經沒事了 */
+					var f = 1 - 0.55 * Math.exp(-k / 3.2);
+					if (f < back[i]) back[i] = f;
+				}
+			}
+		}
+	}
+
+	/* ============================================================ 幾何寫入 */
+	function resetMaps() {
+		mult.fill(1);
+		wall.fill(0);
+	}
+
+	function stampWall(x0, y0, w, h) {
+		var x1 = clamp(Math.round(x0), 0, GRID - 1);
+		var y1 = clamp(Math.round(y0), 0, GRID - 1);
+		var x2 = clamp(Math.round(x0 + w), 0, GRID - 1);
+		var y2 = clamp(Math.round(y0 + h), 0, GRID - 1);
+		for (var y = y1; y <= y2; y++) for (var x = x1; x <= x2; x++) wall[idx(x, y)] = 1;
+	}
+
+	/*
+	 * 介質的折射率邊界必須**漸變**。
+	 * 硬跳變(一圈格子從 1 直接掉到 0.42)會像一面毛玻璃: 波在上面被強烈散射,
+	 * 介質內部變成一片亂紋, 看不出"折射"。把邊界抹開幾個格子, 波才會乾淨地彎進去。
+	 */
+	var EDGE = 7;
+	function stampMedium(cx, cy, r, n) {
+		var outer = r + EDGE;
+		for (var y = Math.max(0, Math.floor(cy - outer)); y <= Math.min(GRID - 1, Math.ceil(cy + outer)); y++) {
+			for (var x = Math.max(0, Math.floor(cx - outer)); x <= Math.min(GRID - 1, Math.ceil(cx + outer)); x++) {
+				var dx = x - cx, dy = y - cy;
+				var d = Math.sqrt(dx * dx + dy * dy);
+				if (d > outer) continue;
+				var t = d <= r ? 1 : 1 - (d - r) / EDGE;
+				/* smoothstep, 避免一階導數在邊上斷開 */
+				t = t * t * (3 - 2 * t);
+				mult[idx(x, y)] = 1 + (n - 1) * t;
+			}
+		}
+	}
+
+	function rebuildMaps() {
+		resetMaps();
+		for (var i = 0; i < walls.length; i++) {
+			var w = walls[i];
+			if (w.kind === "wall") stampWall(w.x - w.w / 2, w.y - w.h / 2, w.w, w.h);
+			else stampMedium(w.x, w.y, w.r, w.n);
+		}
+	}
+
+	/* ============================================================ 物理 */
+	/*
+	 * 二維波動方程（顯式差分）:
+	 *   ∂²u/∂t² = c²∇²u   →   u_new = 2u - u_old + C²(u_左+u_右+u_上+u_下-4u)
+	 * C = 0.5 時是最穩的邊界（離散穩定條件 C ≤ 1/√2）。
+	 */
+	/*
+	 * 每子步真實經過的秒數(dtS)、格子尺寸 dx = 1 格。
+	 * 二維顯式差分的穩定條件: v / dx * dtS ≤ 0.5  ⇒  C = v*dtS 要封頂在 0.5。
+	 * 這裡 dtS 由主迴圈算好放進 state.dtS, C 每子步現算, 所以改波速是真的會改變波長。
+	 */
+	function courant() {
+		/* 介質里面 C 會被再乘上 sqrt(mult) —— 所以基準值要留出余量,
+		   否則一進介質就超過 0.5 的穩定上限, 整塊場直接炸成滿格色。 */
+		var c = state.speed * (state.dtS || 1 / 240);
+		/* 滑杆上限已经保证 c <= CMAX, 这里的截断只是保险 */
+		return c > CMAX ? CMAX : c;
+	}
+
+	function stepOnce() {
+		var C = courant();
+		var C2 = C * C;
+		var damp = 1 - state.damp;   /* state.damp 是每子步的阻尼系数, 量级 1e-3 */
+		var g = GRID;
+		for (var y = 1; y < g - 1; y++) {
+			var row = y * g;
+			var up = row - g, down = row + g;
+			for (var x = 1; x < g - 1; x++) {
+				var i = row + x;
+				if (wall[i]) { nxt[i] = 0; continue; }
+				var c2 = C2 * mult[i];
+				var lap = cur[i - 1] + cur[i + 1] + cur[up + x] + cur[down + x] - 4 * cur[i];
+				/* src[i] 是这一子步要加进去的"加速度" —— 波源直接进差分式,
+				   而不是事后往场上叠一个值(那样只会把位移整体抬高, 不产生波)。 */
+				var v = (2 * cur[i] - nxt[i] + c2 * lap + src[i]) * damp;
+				/*
+				 * 網格級噪聲抑制: 加一項 beta·∇²u。
+				 * 它對波長的衰減與 -k² 成正比, 對 lambda 約 30 格的波幾乎不動,
+				 * 但對兩格一抖的鋸齒是致命打擊。少了這一項, 遠處會浮起一層
+				 * 菱形摩爾紋, 看著像髒, 不像水。
+				 */
+				v += BETA * lap;
+				nxt[i] = v * sponge[i] * back[i];
+				src[i] = 0;
+			}
+		}
+		/*
+		 * 最外圈: 一階吸收邊界(Mur)。
+		 *   u(t+1) = u_prev + (C-1)/(C+1) · (u_next - u_prev)
+		 * 只放行"向外傳播"的波, 所以打到邊上的波會離開而不是反彈。
+		 * (外面還有一圈吸收帶, 這一圈只是把最後一點殘餘反射擦掉。)
+		 */
+		/*
+		 * Mur 的標準形式是:
+		 *   u_new(邊界) = u_prev(內側) + kk · ( u_new(內側) − u_prev(邊界) )
+		 * 之前把 u_new(內側) 當成 u_prev(內側) 用了 —— 兩項都取錯, 邊界等於沒做功,
+		 * 殘餘的波照樣從最外一圈反彈回來。
+		 */
+		var kk = (C - 1) / (C + 1);
+		for (var k = 1; k < g - 1; k++) {
+			var top = k, bottom = (g - 1) * g + k;
+			var left = k * g, right = k * g + (g - 1);
+				nxt[top] = cur[top + g] + kk * (nxt[top + g] - cur[top]);
+				nxt[bottom] = cur[bottom - g] + kk * (nxt[bottom - g] - cur[bottom]);
+				nxt[left] = cur[left + 1] + kk * (nxt[left + 1] - cur[left]);
+			nxt[right] = cur[right - 1] + kk * (nxt[right - 1] - cur[right]);
+		}
+		/* 邊界環也吃一次吸收帶(它不在上面那個內圈迴圈裡) */
+		for (var m = 0; m < g; m++) {
+			nxt[m] *= sponge[m];
+			nxt[(g - 1) * g + m] *= sponge[(g - 1) * g + m];
+			nxt[m * g] *= sponge[m * g];
+			nxt[m * g + g - 1] *= sponge[m * g + g - 1];
+		}
+		nxt[0] = 0; nxt[g - 1] = 0; nxt[(g - 1) * g] = 0; nxt[g * g - 1] = 0;
+		/* 軟限幅: 長時間驅動下數值會慢慢爬高, 留一點餘裕, 超過就壓回去 */
+		for (var q = 0; q < nxt.length; q++) {
+			var val = nxt[q];
+			if (val > 1.6) nxt[q] = 1.6;
+			else if (val < -1.6) nxt[q] = -1.6;
+		}
+		var t = cur; cur = nxt; nxt = t;
+	}
+
+	/*
+	 * 波源注入。
+	 *
+	 * ⚠️ 不能把 sin(ωt) 直接写进 u —— u 是位移, 而 u = u_old + (u - u_old);
+	 * 每步都把格点设成同一组值, 等于把位移钉死, 差分算出来的加速度会把整片场
+	 * 往上推, 几十帧后整块变成饱和色。
+	 * 正确做法是注入**加速度**(速度的增量): u_new = 2u - u_old + C²∇²u + a。
+	 * 于是这里在 stepOnce 之后, 把波源格点的 u_new 再叠一个 a 的分量。
+	 */
+	var lastPhase = 0;
+
+	/* 高斯核: 波源不能只往一格上砸。单格驱动等于在格网上放了个脉冲,
+	   传播出去的波前会带一圈方格状的抖动 —— 远看就是"波纹不干净"。
+	   用半径 3 的高斯铺开, 波前才是一条平滑的圆弧。 */
+	var KW = 3;
+	/* 垂直方向的一维核(偏移, 权重), 用于條狀源 */
+	var PERP = (function () {
+		var k = [], sum = 0;
+		for (var o = -KW; o <= KW; o++) {
+			var wgt = Math.exp(-(o * o) / (KW * KW * 0.5));
+			k.push([o, wgt]);
+			sum += wgt;
+		}
+		for (var i = 0; i < k.length; i++) k[i][1] /= sum;
+		return k;
+	})();
+	var KERNEL = (function () {
+		var k = [], sum = 0;
+		for (var dy = -KW; dy <= KW; dy++) {
+			for (var dx = -KW; dx <= KW; dx++) {
+				var d2 = dx * dx + dy * dy;
+				if (d2 > KW * KW) continue;
+				var wgt = Math.exp(-d2 / (KW * KW * 0.42));
+				k.push([dx, dy, wgt]);
+				sum += wgt;
+			}
+		}
+		for (var i = 0; i < k.length; i++) k[i][2] /= sum;
+		return k;
+	})();
+
+	function blobAt(cx, cy, a) {
+		for (var i = 0; i < KERNEL.length; i++) {
+			var k = KERNEL[i];
+			addAt(cx + k[0], cy + k[1], a * k[2]);
+		}
+	}
+
+	function injectSources() {
+		var w = 2 * Math.PI * state.freq;
+		var amp = Math.sin(w * state.t);
+		/* 高斯把能量摊开了, 峰值要相应放大; 0.9 是单格驱动时的量级 */
+		var a = amp * 10;
+		for (var s = 0; s < sources.length; s++) {
+			var src = sources[s];
+			if (src.kind === "point") {
+				var px = Math.round(src.x), py = Math.round(src.y);
+				if (px > KW && py > KW && px < GRID - KW - 1 && py < GRID - KW - 1) {
+					blobAt(px, py, a);
+				}
+			} else {
+				/*
+				 * 條狀波源只向一側發射。
+				 *
+				 * 一條線在二維波動方程裡本來是雙向輻射。要讓它只往一個方向走,
+				 * 得在"波要去的那一側"的相鄰一行上疊一個反相位的驅動, 把另一邊抵消掉。
+				 * 主線 +a; 前側 −a·q; 後側 +a·q·0.6。
+				 */
+				var half = Math.max(4, Math.round(src.len * GRID / 2));
+				var q = 0.92;
+				var fx = 0, fy = 0;
+				if (src.dir === "h") { fy = src.face === "up" ? -1 : 1; }
+				else { fx = src.face === "left" ? -1 : 1; }
+				var aBar = a * 0.032;
+				/* 線源兩端做餘弦收邊, 否則波會從兩個銳利的端點繞出去 */
+				for (var d = -half; d <= half; d++) {
+					var bx = src.dir === "v" ? Math.round(src.x) : Math.round(src.x + d);
+					var by = src.dir === "v" ? Math.round(src.y + d) : Math.round(src.y);
+					if (bx <= KW + 1 || by <= KW + 1 || bx >= GRID - KW - 2 || by >= GRID - KW - 2) continue;
+					var taper = Math.cos((d / half) * Math.PI * 0.5);
+					var av = aBar * taper;
+					/*
+					 * 只沿**垂直線的方向**鋪高斯(沿線方向 1:1), 這樣既平滑又便宜。
+					 * 三層: 主線 +a; 前側 −a·q 把反向波抵掉; 後側 +a·q·0.55 補回一點。
+					 */
+					for (var kk = 0; kk < PERP.length; kk++) {
+						var off = PERP[kk][0], wgt = PERP[kk][1];
+						addAt(bx + fx * off, by + fy * off, av * wgt);
+						addAt(bx - fx * off, by - fy * off, -av * q * wgt);
+						addAt(bx + fx * (off + 1), by + fy * (off + 1), av * q * 0.55 * wgt);
+					}
+				}
+			}
+		}
+	}
+
+	/*
+	 * 注入到 **cur** 里。
+	 * stepOnce 读的是 cur(旧) 与 nxt(更旧), 算出新的 nxt;	 所以在 stepOnce 之前
+	 * 往 cur 上叠 a, 就等价于给位移加速度项加了一个外驱 —— 波才会真的往外传。
+	 */
+	function addAt(x, y, a) {
+		var i = idx(x, y);
+		if (wall[i]) return;
+		src[i] += a;
+	}
+
+	/* ============================================================ 繪圖 */
+	function resize() {
+		dpr = Math.min(window.devicePixelRatio || 1, 2);
+		var box = tank.getBoundingClientRect();
+		var side = Math.max(120, Math.round(Math.min(box.width, box.height)));
+		canvas.width = Math.round(side * dpr);
+		canvas.height = Math.round(side * dpr);
+		canvas.style.width = side + "px";
+		canvas.style.height = side + "px";
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		/* 先把 200×200 的场画到一块小画布, 再平滑放大 —— 比逐像素扫整块画布快一个数量级 */
+		if (!small) {
+			small = document.createElement("canvas");
+			small.width = GRID * 2;
+			small.height = GRID * 2;
+			sctx = small.getContext("2d");
+			img = sctx.createImageData(GRID * 2, GRID * 2);
+			data = img.data;
+		}
+	}
+
+	/*
+	 * 波高 → 顏色。
+	 *
+	 * 用**分級**而不是連續漸層: 水波在連續明暗裡看就是"一團霧", 只有等值線才讀得出波前。
+	 * 6 級 + 級間硬跳變, 出來像水槽的高空俯拍。
+	 *   v < 0 : 墨藍 → 深青     (波谷)
+	 *   v > 0 : 灰藍 → 米白     (波峰)
+	 */
+	/*
+	 * 分兩層上色:
+	 *   1. 底色用**連續**色階 —— 波谷墨、波峰紙色, 中間平滑過渡, 不會出"色塊"；
+	 *   2. 每隔 CONTOUR 個單位畫一條**等值線**(壓深), 波前就變成一根清楚的線。
+	 * 只分級不畫線會糊成塊, 只畫線又顯單薄 —— 兩層疊起來才是"水波等高線圖"。
+	 */
+	var VALLEY = [2, 10, 18];       /* 波谷: 深墨藍 */
+	var MID = [26, 66, 82];         /* 靜水 */
+	var CREST = [250, 248, 236];    /* 波峰: 米白 */
+	var CONTOUR = 0.62;             /* 只留最外一兩條等值線, 其餘交給連續色階 */
+
+	function ramp(v) {
+		/* 把 v ∈ [-1,1] 映到 0..1, 再從 谷 → 靜水 → 峰 兩段插值 */
+		if (v > 1) v = 1; else if (v < -1) v = -1;
+		var k = (v + 1) * 0.5;
+		var a, b, t;
+		if (k < 0.5) { a = VALLEY; b = MID; t = k * 2; }
+		else { a = MID; b = CREST; t = (k - 0.5) * 2; }
+		return [
+			(a[0] + (b[0] - a[0]) * t) | 0,
+			(a[1] + (b[1] - a[1]) * t) | 0,
+			(a[2] + (b[2] - a[2]) * t) | 0
+		];
+	}
+
+	/*
+	 * 顯示用的壓縮映射。
+	 *
+	 * 場的振幅離波源越遠越小, 源附近又能到 ±3。直接線性上色的話, 源邊一片死白,
+	 * 遠處卻淡到看不出波前 —— 這就是"波紋不清晰"的真正原因。
+	 * tanh 把兩頭都拉回中間: 源邊不會糊死, 遠處的波前也被抬起來, 整塊水槽的通
+	 * 用對比度一致。
+	 */
+	var GAIN = 2.9;
+	function display(v) {
+		return Math.tanh(v * GAIN);
+	}
+
+	function shade(v, out, at) {
+		var c = ramp(display(v));
+		out[at] = c[0];
+		out[at + 1] = c[1];
+		out[at + 2] = c[2];
+		out[at + 3] = 255;
+	}
+
+
+
+
+	/* 渲染到一张 2× 的中间缓冲(双线性采样场), 再放大到画布 —— 比逐像素扫全画布快, 边缘也干净 */
+	var R = GRID * 2;
+	var rx = new Float32Array(R * R);
+	var sm = new Float32Array(R * R);
+
+	function upsample() {
+		for (var y = 0; y < R; y++) {
+			var sy = (y / R) * GRID - 0.5;
+			var y0 = Math.floor(sy);
+			var fy = sy - y0;
+			if (y0 < 0) { y0 = 0; fy = 0; }
+			if (y0 > GRID - 2) { y0 = GRID - 2; fy = 1; }
+			var y1 = y0 + 1;
+			var row0 = y0 * GRID, row1 = y1 * GRID;
+			var dst = y * R;
+			for (var x = 0; x < R; x++) {
+				var sx = (x / R) * GRID - 0.5;
+				var x0 = Math.floor(sx);
+				var fx = sx - x0;
+				if (x0 < 0) { x0 = 0; fx = 0; }
+				if (x0 > GRID - 2) { x0 = GRID - 2; fx = 1; }
+				var x1 = x0 + 1;
+				var v00 = cur[row0 + x0], v10 = cur[row0 + x1];
+				var v01 = cur[row1 + x0], v11 = cur[row1 + x1];
+				rx[dst + x] = (v00 * (1 - fx) + v10 * fx) * (1 - fy) + (v01 * (1 - fx) + v11 * fx) * fy;
+			}
+		}
+	}
+
+	/* 上采样后再抹一次: 场里 1 格宽的数值毛刺会被压平, 等值线才不会抖成噪点 */
+	function smoothField() {
+		for (var y = 1; y < R - 1; y++) {
+			var row = y * R;
+			for (var x = 1; x < R - 1; x++) {
+				var i = row + x;
+				sm[i] = (rx[i - 1] + rx[i + 1] + rx[i - R] + rx[i + R] + rx[i] * 2) * 0.16666667;
+			}
+		}
+		for (var y2 = 1; y2 < R - 1; y2++) {
+			var r2 = y2 * R;
+			for (var x2 = 1; x2 < R - 1; x2++) rx[r2 + x2] = sm[r2 + x2];
+		}
+	}
+
+	function paint() {
+		upsample();
+		smoothField();   /* 波源已经是高斯了, 一遍就够; 两遍会把波前糊开 */
+		var i = 0;
+		for (var gy = 0; gy < R; gy++) {
+			var row = gy * R;
+			for (var gx = 0; gx < R; gx++) {
+				/*
+				 * 只上連續色階, 不畫等值線。
+				 * 試過好幾輪分級 / 等值線: 波源附近的值域跨度太大, 任何"跨級"判斷都會在
+				 * 平坦區抖出一片碎點, 遠看就是髒。tanh 壓縮後的平滑色階反而最乾淨、
+				 * 波前也最清楚。
+				 */
+				shade(rx[row + gx], data, i);
+				i += 4;
+			}
+		}
+		sctx.putImageData(img, 0, 0);
+		ctx.imageSmoothingEnabled = true;
+		ctx.imageSmoothingQuality = "medium";
+		ctx.drawImage(small, 0, 0, R, R, 0, 0, canvas.width, canvas.height);
+		/* 障礙物 / 介質 疊在上面 */
+		var s = canvas.width / GRID;
+		for (var k = 0; k < walls.length; k++) {
+			var w = walls[k];
+			if (w.kind === "wall") {
+				ctx.fillStyle = "rgba(24, 22, 20, 0.86)";
+				ctx.fillRect((w.x - w.w / 2) * s, (w.y - w.h / 2) * s, w.w * s, w.h * s);
+				ctx.strokeStyle = "rgba(226, 235, 244, 0.35)";
+				ctx.lineWidth = 1;
+				ctx.strokeRect((w.x - w.w / 2) * s + 0.5, (w.y - w.h / 2) * s + 0.5, w.w * s - 1, w.h * s - 1);
+			} else {
+				ctx.beginPath();
+				ctx.arc(w.x * s, w.y * s, w.r * s, 0, Math.PI * 2);
+				ctx.fillStyle = "rgba(140, 210, 190, 0.20)";
+				ctx.fill();
+				ctx.strokeStyle = "rgba(140, 210, 190, 0.7)";
+				ctx.lineWidth = 1.4;
+				ctx.stroke();
+			}
+		}
+		/*
+		 * 波源標記: 一圈暖白細線 + 中心一個點。
+		 * 條狀源另外畫一個小箭頭, 指出它只往哪一側發波 —— 這件事從畫面上看不出來,
+		 * 不標的話會讓人以為是 bug。
+		 */
+		for (var q = 0; q < sources.length; q++) {
+			var src = sources[q];
+			ctx.strokeStyle = "rgba(255, 244, 214, 0.92)";
+			ctx.fillStyle = "rgba(255, 244, 214, 0.92)";
+			ctx.lineWidth = 1.4;
+			if (src.kind === "point") {
+				ctx.beginPath();
+				ctx.arc(src.x * s, src.y * s, 5 * s * 0.5 + 2, 0, Math.PI * 2);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.arc(src.x * s, src.y * s, 1.6, 0, Math.PI * 2);
+				ctx.fill();
+			} else {
+				var half = Math.max(4, Math.round(src.len * GRID / 2));
+				var x1 = src.dir === "v" ? src.x : src.x - half;
+				var y1 = src.dir === "v" ? src.y - half : src.y;
+				var x2 = src.dir === "v" ? src.x : src.x + half;
+				var y2 = src.dir === "v" ? src.y + half : src.y;
+				ctx.beginPath();
+				ctx.moveTo(x1 * s, y1 * s);
+				ctx.lineTo(x2 * s, y2 * s);
+				ctx.stroke();
+
+				/* 單向箭頭: 從線的中段往發波方向挑一格 */
+				var mx = src.dir === "v" ? src.x : src.x;
+				var my = src.dir === "v" ? src.y : src.y;
+				var ax = src.dir === "v" ? 0 : (src.face === "left" ? -1 : 1);
+				var ay = src.dir === "v" ? (src.face === "up" ? -1 : 1) : 0;
+				var len = 12;
+				ctx.beginPath();
+				ctx.moveTo(mx * s + ax * 3, my * s + ay * 3);
+				ctx.lineTo(mx * s + ax * len, my * s + ay * len);
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.moveTo(mx * s + ax * (len + 5), my * s + ay * (len + 5));
+				ctx.lineTo(mx * s + ax * len + (ay !== 0 ? 4 : 0), my * s + ay * len + (ax !== 0 ? 4 : 0));
+				ctx.lineTo(mx * s + ax * len - (ay !== 0 ? 4 : 0), my * s + ay * len - (ax !== 0 ? 4 : 0));
+				ctx.closePath();
+				ctx.fill();
+			}
+		}
+	}
+
+	/* ============================================================ 讀數 */
+	function updateReadout() {
+		var v = state.speed;               /* 格/秒 */
+		var f = state.freq;
+		var lambda = v / f;                /* 格 */
+		document.getElementById("out-lambda").textContent = lambda.toFixed(1) + " 格";
+		document.getElementById("out-f").textContent = f.toFixed(1) + " Hz";
+		document.getElementById("out-v").textContent = Math.round(v) + " 格/秒";
+		document.getElementById("out-src").textContent = String(sources.length);
+	}
+
+	/* ============================================================ 主循環 */
+	var lastTs = 0, acc = 0;
+	var FRAME_MS = 1000 / 60;
+
+	function frame(ts) {
+		if (!lastTs) lastTs = ts;
+		var dt = Math.min(64, ts - lastTs);
+		lastTs = ts;
+		if (state.running) {
+			acc += dt;
+			var guard = 0;
+			while (acc >= FRAME_MS && guard++ < 2) {
+				acc -= FRAME_MS;
+				/* 把一幀的模擬時間平分成 SUB 個子步: 每步 dtS 秒, C = v·dtS ≤ 0.5 */
+				var dtS = (FRAME_MS / 1000) / SUB;
+				state.dtS = dtS;
+				for (var sub = 0; sub < SUB; sub++) {
+					state.t += dtS;
+					/* 顺序必须是 注入 → 推进:
+					   注入写进的是"上一帧"的场, 推进时才会被用上;
+					   反过来, 注入写进的是刚交换出来的备用缓冲, 下一步又被覆盖 —— 源等于没开。 */
+					injectSources();
+					stepOnce();
+				}
+			}
+		}
+		paint();
+		requestAnimationFrame(frame);
+	}
+
+	/* ============================================================ 互動 */
+	function cellOf(clientX, clientY) {
+		var r = canvas.getBoundingClientRect();
+		var s = r.width / GRID;
+		return { x: clamp((clientX - r.left) / s, 2, GRID - 3), y: clamp((clientY - r.top) / s, 2, GRID - 3) };
+	}
+
+	function clearAll() {
+		sources.length = 0;
+		walls.length = 0;
+		cur.fill(0); nxt.fill(0);
+		rebuildMaps();
+		rebuildBackstop();
+		updateReadout();
+	}
+
+	function placeAt(cx, cy) {
+		var mode = state.mode;
+		if (mode === "point" || mode === "bar") {
+			if (sources.length >= MAX_SRC) sources.shift();
+			sources.push({
+				kind: mode, x: cx, y: cy,
+				len: mode === "bar" ? state.barLen : 0,
+				dir: state.barDir,
+				/* 條狀源往哪一側發射: 自動取"離對邊較遠"的那一側, 給波留出空間 */
+				face: state.barDir === "h"
+					? (cy < GRID / 2 ? "down" : "up")
+					: (cx < GRID / 2 ? "right" : "left")
+			});
+		} else if (mode === "wall") {
+			if (walls.length >= MAX_WALLS) { walls.shift(); rebuildMaps(); }
+			walls.push({ kind: "wall", x: cx, y: cy, w: 34, h: 12 });
+			rebuildMaps();
+		} else if (mode === "lens") {
+			if (walls.length >= MAX_MEDIA + MAX_WALLS) { walls.shift(); rebuildMaps(); }
+			walls.push({ kind: "medium", x: cx, y: cy, r: 48, n: 0.6 });
+			rebuildMaps();
+		}
+		rebuildBackstop();
+		updateReadout();
+		if (hint) hint.style.opacity = "0";
+	}
+
+	/* 拖動: 按在最近的物件上拖走; 不動就當成新增 */
+	var drag = null, dragMoved = false;
+
+	function nearest(cx, cy) {
+		var best = null, bestD = 900;
+		for (var i = 0; i < sources.length; i++) {
+			var d = Math.pow(sources[i].x - cx, 2) + Math.pow(sources[i].y - cy, 2);
+			if (d < bestD) { bestD = d; best = { type: "src", i: i }; }
+		}
+		for (var j = 0; j < walls.length; j++) {
+			var d2 = Math.pow(walls[j].x - cx, 2) + Math.pow(walls[j].y - cy, 2);
+			if (d2 < bestD) { bestD = d2; best = { type: "wall", i: j }; }
+		}
+		return bestD <= 400 ? best : null;
+	}
+
+	canvas.addEventListener("pointerdown", function (e) {
+		e.preventDefault();
+		var c = cellOf(e.clientX, e.clientY);
+		drag = nearest(c.x, c.y);
+		dragMoved = false;
+		if (!drag) placeAt(c.x, c.y);
+		else if (e.pointerType !== "mouse") { /* 觸控先當拖動 */ }
+		try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+	});
+
+	canvas.addEventListener("pointermove", function (e) {
+		if (!drag) return;
+		var c = cellOf(e.clientX, e.clientY);
+		var tgt = drag.type === "src" ? sources[drag.i] : walls[drag.i];
+		if (!tgt) return;
+		tgt.x = c.x; tgt.y = c.y;
+		dragMoved = true;
+		if (drag.type === "wall") rebuildMaps();
+	});
+
+	function endDrag() {
+		if (drag && dragMoved) rebuildBackstop();
+		drag = null;
+		dragMoved = false;
+	}
+	canvas.addEventListener("pointerup", endDrag);
+	canvas.addEventListener("pointercancel", endDrag);
+
+	canvas.addEventListener("dblclick", function (e) {
+		e.preventDefault();
+		var c = cellOf(e.clientX, e.clientY);
+		var hit = nearest(c.x, c.y);
+		if (!hit) return;
+		if (hit.type === "src") sources.splice(hit.i, 1);
+		else { walls.splice(hit.i, 1); rebuildMaps(); }
+		rebuildBackstop();
+		updateReadout();
+	});
+
+	/* 模式按鈕 */
+	document.querySelectorAll("[data-mode]").forEach(function (b) {
+		b.addEventListener("click", function () {
+			state.mode = b.getAttribute("data-mode");
+			document.querySelectorAll("[data-mode]").forEach(function (x) { x.classList.toggle("active", x === b); });
+		});
+	});
+	document.querySelectorAll("[data-dir]").forEach(function (b) {
+		b.addEventListener("click", function () {
+			state.barDir = b.getAttribute("data-dir");
+			document.querySelectorAll("[data-dir]").forEach(function (x) { x.classList.toggle("active", x === b); });
+		});
+	});
+
+	/* 滑桿 */
+	function bindRange(id, key, fmt, after) {
+		var el = document.getElementById(id);
+		var out = document.getElementById(id + "-out");
+		el.addEventListener("input", function () {
+			var val = parseFloat(el.value);
+			state[key] = val;
+			if (out) out.textContent = fmt(val);
+			if (after) after(val);
+			syncLambda();
+		});
+		if (out) out.textContent = fmt(parseFloat(el.value));
+	}
+	bindRange("bar-len", "barLen", function (v) { return v + "%"; }, function (v) { state.barLen = v / 100; });
+	bindRange("freq", "freq", function (v) { return v.toFixed(1) + " Hz"; });
+	bindRange("speed", "speed", function (v) { return String(Math.round(v)); });
+	bindRange("damp", "damp", function (v) { return v.toFixed(4); });
+
+	function syncLambda() { updateReadout(); syncGridSpeed(); }
+
+	function syncGridSpeed() {
+		/* 速度直接進 courant(), 這裡只負責讓讀數跟著更新 */
+		updateReadout();
+	}
+	syncGridSpeed();
+
+	/* 暫停 / 清空 */
+	document.getElementById("wave-play").addEventListener("click", function () {
+		state.running = !state.running;
+		this.textContent = state.running ? "暫停" : "繼續";
+		this.setAttribute("aria-pressed", state.running ? "true" : "false");
+	});
+	document.getElementById("wave-clear").addEventListener("click", clearAll);
+
+	/* 預設情境 */
+	function preset(name) {
+		clearAll();
+		if (name === "single") {
+			sources.push({ kind: "point", x: GRID * 0.3, y: GRID * 0.5 });
+		} else if (name === "interfere") {
+			sources.push({ kind: "point", x: GRID * 0.42, y: GRID * 0.42 });
+			sources.push({ kind: "point", x: GRID * 0.58, y: GRID * 0.42 });
+		} else if (name === "slit") {
+			/* 頂端一道單向條狀源往下打, 下面一道帶縫的水牆 */
+			sources.push({ kind: "bar", x: GRID * 0.5, y: GRID * 0.14, len: 0.8, dir: "h", face: "down" });
+			walls.push({ kind: "wall", x: GRID * 0.27, y: GRID * 0.5, w: GRID * 0.42, h: 10 });
+			walls.push({ kind: "wall", x: GRID * 0.82, y: GRID * 0.5, w: GRID * 0.30, h: 10 });
+			rebuildMaps();
+		} else if (name === "lens") {
+			/* 點源在上 + 大圓介質: 進介質後波長變短、波前轉彎 */
+			sources.push({ kind: "point", x: GRID * 0.5, y: GRID * 0.12 });
+			walls.push({ kind: "medium", x: GRID * 0.5, y: GRID * 0.58, r: GRID * 0.28, n: 0.6 });
+			rebuildMaps();
+		}
+		rebuildBackstop();
+		updateReadout();
+	}
+	document.querySelectorAll("[data-preset]").forEach(function (b) {
+		b.addEventListener("click", function () { preset(b.getAttribute("data-preset")); });
+	});
+
+	/* 啟動 */
+
+	resize();
+	window.addEventListener("resize", resize);
+	preset("interfere");
+	requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

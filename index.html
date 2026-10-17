@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-accent="green" data-theme="dark">
+<html lang="en" data-accent="bordeaux" data-theme="light">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="color-scheme" content="dark light">
-	<meta name="description" content="Hayneko — 科技风 / 终端风格的个人站点: 资源下载、物理模拟实验室、友情链接。">
+	<meta name="color-scheme" content="light dark">
+	<meta name="description" content="Hayneko — 一份关于代码、物理与动画的个人刊物。">
 	<meta name="keyword" content="Hayneko, haynekogithubio, blog, web development, acg, programmer, 博客, 个人网站, 二次元, miku, physics simulation">
-	<title i18n-key="title.default">Hayneko</title>
+	<title>Hayneko</title>
 
 	<link rel="icon" href="medias/pictures/miku.JPG" sizes="32x32">
 	<link rel="manifest" href="manifest.json">
@@ -14,11 +14,11 @@
 
 	<link rel="stylesheet" href="styles/tokens.css">
 	<link rel="stylesheet" href="styles/base.css">
-	<link rel="stylesheet" href="styles/header.css">
 	<link rel="stylesheet" href="styles/components.css">
 	<link rel="stylesheet" href="styles/dock.css">
 	<link rel="stylesheet" href="styles/pages.css">
 	<link rel="stylesheet" href="styles/games.css">
+	<link rel="stylesheet" href="views/cs-range/game.css">
 	<link rel="stylesheet" href="styles/motion.css">
 	<link rel="stylesheet" href="styles/labs-vm.css">
 
@@ -43,161 +43,48 @@
 	<script src="scripts/motion-pref.js" defer></script>
 	<script src="scripts/i18n.js" defer></script>
 	<script src="scripts/smear.js" defer></script>
-	<!--
-		背景动效**按需加载**:
-		  · 省流模式(saveData) / 单核 / ≤1G 内存 → 直接不加载这 30KB, 页面其余部分照常
-		    (app.js / router.js / dock.js 调用 GeometryBG 时都做了存在性判断);
-		  · 其余情况等 DOMContentLoaded 再注入 —— 那时 defer 脚本(motion-pref 等)已经跑完,
-		    顺序确定; 而背景本来就要等启动屏收起才开始, 所以并不慢。
-	-->
-	<script>
-		(function () {
-			var t = window.PerfTier;
-			if (t && t.budget && t.budget.background === false) return;
-			function inject() {
-				var s = document.createElement('script');
-				s.src = 'scripts/geometry-bg.js';
-				s.async = false;
-				document.head.appendChild(s);
-			}
-			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', inject, { once: true });
-			} else {
-				inject();
-			}
-		})();
-	</script>
 	<script src="scripts/motion.js" defer></script>
 	<script src="scripts/router.js" defer></script>
-	<script src="scripts/header-nav.js" defer></script>
 	<script src="scripts/terminal.js" defer></script>
 	<script src="scripts/games.js" defer></script>
 	<!-- Hayneko_Arch32S 引擎(vm.py/as.py 的移植) + ~~/labs/vm 调试器界面 -->
 	<script src="scripts/hayneko-arch32.js" defer></script>
 	<script src="scripts/labs-vm.js" defer></script>
 	<script src="scripts/dock.js" defer></script>
+	<script src="views/cs-range/bootstrap.js" defer></script>
 	<script src="scripts/app.js" defer></script>
 </head>
 <body>
 	<a class="skip-link" href="#main" i18n-key="a11y.skip">Skip to content</a>
 
-	<!-- ===================== 动态几何背景 ===================== -->
-	<canvas id="bg-canvas" class="bg-canvas" aria-hidden="true"></canvas>
-	<div class="bg-overlay bg-overlay--grid" aria-hidden="true"></div>
-	<div class="bg-overlay bg-overlay--scan" aria-hidden="true"></div>
-	<div class="bg-overlay bg-overlay--vignette" aria-hidden="true"></div>
-
-	<!-- ===================== 顶栏 / 导航 ===================== -->
-	<header class="site-header" id="site-header" data-open="false">
-		<div class="site-header__bar" id="header-bar" role="button" tabindex="0"
-			aria-expanded="false" aria-controls="site-nav">
-			<span class="site-header__glyph" aria-hidden="true">▚</span>
-			<span class="site-header__prompt">hayneko@blog</span><span class="site-header__sep">:</span><span class="site-header__path" id="header-path">~/home</span><span class="site-header__caret-sym" aria-hidden="true">$</span>
-			<span class="site-header__spacer"></span>
-			<span class="site-header__status" id="header-status" data-state="idle">[ ready ]</span>
-			<span class="site-header__hint" i18n-key="header.hint">Click to expand</span>
-			<span class="site-header__chev" aria-hidden="true"></span>
-		</div>
-
-		<div class="site-header__panel" id="site-nav-panel">
-			<div class="site-header__panel-bg" aria-hidden="true"></div>
-
-			<nav class="site-nav" id="site-nav" aria-label="Main navigation" i18n-attr="aria-label" i18n-key="nav.aria">
-				<a class="nav-item" href="#/home" data-route="home">
-					<span class="nav-item__idx">01</span>
-					<span class="nav-item__body">
-						<span class="nav-item__label" i18n-key="nav.item.home.label">Home</span>
-						<span class="nav-item__desc" i18n-key="nav.item.home.desc">Who I am, and what this site is</span>
-					</span>
-					<span class="nav-item__key" aria-hidden="true">↵</span>
-				</a>
-
-				<a class="nav-item" href="#/terminal" data-route="terminal">
-					<span class="nav-item__idx">02</span>
-					<span class="nav-item__body">
-						<span class="nav-item__label" i18n-key="nav.item.terminal.label">Terminal</span>
-						<span class="nav-item__desc" i18n-key="nav.item.terminal.desc">A shell that actually works</span>
-					</span>
-					<span class="nav-item__key" aria-hidden="true">↵</span>
-				</a>
-
-				<a class="nav-item" href="#/storage" data-route="storage">
-					<span class="nav-item__idx">03</span>
-					<span class="nav-item__body">
-						<span class="nav-item__label" i18n-key="nav.item.storage.label">Storage</span>
-						<span class="nav-item__desc" i18n-key="nav.item.storage.desc">Files worth keeping around</span>
-					</span>
-					<span class="nav-item__key" aria-hidden="true">↵</span>
-				</a>
-
-				<a class="nav-item" href="#/labs" data-route="labs">
-					<span class="nav-item__idx">04</span>
-					<span class="nav-item__body">
-						<span class="nav-item__label" i18n-key="nav.item.lab.label">Labs</span>
-						<span class="nav-item__desc" i18n-key="nav.item.lab.desc">Interactive physics simulations</span>
-					</span>
-					<span class="nav-item__key" aria-hidden="true">↵</span>
-				</a>
-
-				<a class="nav-item" href="#/games" data-route="games">
-					<span class="nav-item__idx">05</span>
-					<span class="nav-item__body">
-						<span class="nav-item__label" i18n-key="nav.item.games.label">Games</span>
-						<span class="nav-item__desc" i18n-key="nav.item.games.desc">Small games in the page</span>
-					</span>
-					<span class="nav-item__key" aria-hidden="true">↵</span>
-				</a>
-
-				<a class="nav-item" href="#/links" data-route="links">
-					<span class="nav-item__idx">06</span>
-					<span class="nav-item__body">
-						<span class="nav-item__label" i18n-key="nav.item.links.label">Friendly Links</span>
-						<span class="nav-item__desc" i18n-key="nav.item.links.desc">Sites I actually visit</span>
-					</span>
-					<span class="nav-item__key" aria-hidden="true">↵</span>
-				</a>
-
-				<div class="nav-meta">
-					<span class="nav-meta__hint" i18n-key="nav.meta.hint" i18n-html>Press <kbd>Ctrl</kbd>+<kbd>K</kbd> to toggle, <kbd>Esc</kbd> to close</span>
-					<span class="accent-switch" role="group" aria-label="Accent colour">
-						<button type="button" data-accent="red" title="red"></button>
-						<button type="button" data-accent="green" title="green"></button>
-						<button type="button" data-accent="blue" title="blue"></button>
-					</span>
-				</div>
-			</nav>
-		</div>
-	</header>
+	<!-- ===================== 纸张 / 墨 ===================== -->
+	<div class="board" aria-hidden="true"></div>
 
 	<!-- ===================== 主体 ===================== -->
 	<main class="site-main" id="main">
 		<div class="route-progress" id="route-progress" aria-hidden="true"><i></i></div>
 		<div class="page wrap" id="page" data-route="" data-state="idle" aria-live="polite">
-			<div class="page__loader"><span>LOADING</span></div>
+			<div class="page__loader"><span i18n-key="a11y.loading">Opening</span></div>
 		</div>
 	</main>
 
-	<!-- ===================== 页脚 ===================== -->
-	<footer class="site-footer">
-		<div class="site-footer__inner">
-			<span i18n-key="footer.text.0">© Hayneko. Created on Jan 10, 2026.</span>
-			<span i18n-key="footer.text.1">This site has been refactored 5 times.</span>
-			<span class="site-footer__status">
-				<a href="https://github.com/hayNeko" target="_blank" rel="noopener noreferrer">GitHub</a>
-				<span class="dot dot--green"></span><span i18n-key="footer.status">online</span>
-			</span>
+	<!-- ===================== 版权页 ===================== -->
+	<footer class="colophon">
+		<div class="colophon__inner wrap">
+			<span class="colophon__brand">Hayneko</span>
+			<span i18n-key="footer.text.0">© Hayneko. First published 10 January 2026.</span>
+			<span class="colophon__spacer"></span>
+			<a href="https://github.com/hayNeko" target="_blank" rel="noopener noreferrer">github.com/hayNeko</a>
+			<span class="colophon__dot" aria-hidden="true"></span>
+			<span i18n-key="footer.status">online</span>
 		</div>
 	</footer>
 
-	<!-- ===================== 启动屏 ===================== -->
+	<!-- ===================== 开机页 ===================== -->
 	<div class="boot" id="boot-screen">
 		<div class="boot__inner">
-			<pre class="boot__logo"><span class="l1">██╗  ██╗ █████╗ ██╗   ██╗███╗   ██╗███████╗██╗  ██╗ ██████╗</span>
-<span class="l2">██║  ██║██╔══██╗╚██╗ ██╔╝████╗  ██║██╔════╝██║ ██╔╝██╔═══██╗</span>
-<span class="l3">███████║███████║ ╚████╔╝ ██╔██╗ ██║█████╗  █████╔╝ ██║   ██║</span>
-<span class="l1">██╔══██║██╔══██║  ╚██╔╝  ██║╚██╗██║██╔══╝  ██╔═██╗ ██║   ██║</span>
-<span class="l2">██║  ██║██║  ██║   ██║   ██║ ╚████║███████╗██║  ██╗╚██████╔╝</span>
-<span class="l3">╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝ ╚═════╝ </span></pre>
+			<p class="boot__flag">HAYNEKO</p>
+			<p class="boot__sub" i18n-key="boot.sub">A personal magazine about code, physics and animation.</p>
 			<div class="boot__bar"><i></i></div>
 			<ul class="boot__log"></ul>
 		</div>
@@ -205,8 +92,8 @@
 
 	<noscript>
 		<div class="noscript">
-			<p><strong>This site needs JavaScript.</strong></p>
-			<p>页面切换、dock 菜单与 Canvas 背景都依赖 JavaScript。</p>
+			<p><strong>This issue needs JavaScript.</strong></p>
+			<p>页面切换、终端与 Canvas 都由 JavaScript 驱动。</p>
 		</div>
 	</noscript>
 

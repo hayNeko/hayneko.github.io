@@ -1,0 +1,525 @@
+{
+	"a11y": {
+		"skip": "Skip to content"
+	},
+	"dock": {
+		"album": "Album",
+		"aria": "Dock",
+		"avatar": {
+			"tip": "Hayneko"
+		},
+		"contact": "Contact",
+		"games": "Games",
+		"home": "Home",
+		"lab": "Labs",
+		"language": "Language",
+		"links": "Friendly links",
+		"menu": {
+			"contact": {
+				"title": "Contact"
+			},
+			"lab": {
+				"title": "Labs"
+			},
+			"language": {
+				"title": "Language"
+			},
+			"search": {
+				"empty": "No matching entry.",
+				"placeholder": "Search the whole site…",
+				"title": "Search"
+			}
+		},
+		"projects": "Projects",
+		"search": "Search",
+		"searchMenu": {
+			"count": "{count} results",
+			"group": {
+				"commands": "Terminal commands",
+				"files": "Downloads",
+				"games": "Mini games",
+				"links": "Links & contact",
+				"pages": "Pages",
+				"sims": "Physics simulations"
+			},
+			"hint": "Everything on this site — type to filter."
+		},
+		"storage": "Storage",
+		"terminal": "Terminal",
+		"theme": "Switch theme",
+		"toast": {
+			"soon": "The album is not open yet."
+		}
+	},
+	"footer": {
+		"status": "online",
+		"text": {
+			"0": "© Hayneko. Created on Jan 10, 2026.",
+			"1": "This site has been refactored 5 times."
+		}
+	},
+	"games": {
+		"bay": {
+			"sub": "Drag, tap, arrow keys, or the buttons under the screen. Leaving the page or the tab pauses the run.",
+			"title": "Cabinet"
+		},
+		"blockblast": {
+			"badge": "v1.0",
+			"boardAria": "Block Blast board",
+			"comboLegend": {
+				"title": "Combo colour",
+				"note": "The number in the HUD is the combo. It is wiped after 4 placements in a row with no clear, and every miss drains the colour one step:",
+				"off": "No combo, or the streak was broken",
+				"live": "Combo just triggered",
+				"miss1": "1st miss",
+				"miss2": "2nd miss",
+				"miss3": "3rd miss - one more and the combo is gone"
+			},
+			"desc": "An 8x8 board and three pieces at a time: drag them in, fill a row or a column to clear it. No timer - you lose only when nothing fits.",
+			"flag": {
+				"easy": "GENTLE",
+				"easyTip": "--easy-mode: more long bars and big squares",
+				"rollback": "UNDO",
+				"rollbackTip": "--with-roll-back: undo enabled"
+			},
+			"flagEasy": "Gentle pieces: only straight lines and squares (no corners) - and the long bars and big squares show up far more often, so filling a line and chaining combos is much easier.",
+			"flagRollback": "Adds the Undo button (key U, pad undo) that takes back the last placement, score included.",
+			"flagsTitle": "Command-line flags - click a switch below, same as adding it to play blockblast.",
+			"hud": {
+				"best": "Best",
+				"combo": "Combo",
+				"lines": "Lines",
+				"score": "Score"
+			},
+			"keys": {
+				"drag": "drag a piece from the tray",
+				"move": "move",
+				"pause": "pause",
+				"pick": "pick a piece",
+				"place": "place",
+				"restart": "hold to restart",
+				"undo": "undo"
+			},
+			"pad": {
+				"aria": "touch controls",
+				"down": "down",
+				"left": "left",
+				"next": "next piece",
+				"place": "place",
+				"right": "right",
+				"undo": "undo",
+				"up": "up"
+			},
+			"readyTitle": "BLOCK BLAST",
+			"title": "Block Blast"
+		},
+		"btn": {
+			"pause": "Pause",
+			"restart": "Restart",
+			"resume": "Resume",
+			"start": "Start",
+			"undo": "Undo"
+		},
+		"funcball": {
+			"againHint": "Press Start duel to run again with these settings - hold Restart to go back and edit them",
+			"badge": "v1.0",
+			"boardAria": "function ball duel arena",
+			"bounceAria": "bounce height",
+			"btn": {
+				"duel": "Start duel"
+			},
+			"chipHits": "{n} hits",
+			"chipX": "x = {x}",
+			"desc": "Two function balls, one brick wall. Set f(x) on each side - factorial, percent change, a power, Fibonacci or your own - and watch every bounce turn into damage.",
+			"exprError": "f(x) cannot be read",
+			"field": {
+				"bounce": "Bounce height",
+				"expr": "Damage of one bounce - f(x)",
+				"growth": "HP × per layer",
+				"hp": "Brick HP",
+				"layerHp": "Per-layer HP",
+				"layers": "Layers",
+				"perRow": "Bricks per layer",
+				"step": "x grows by",
+				"template": "Template",
+				"x0": "Start x"
+			},
+			"flag": {
+				"easy": "FLAT",
+				"easyTip": "--easy-mode: no per-layer HP growth",
+				"slow": "SLOW",
+				"slowTip": "--slow-motion: higher, slower bounces"
+			},
+			"flagEasy": "Flat wall: every layer keeps the same HP, with no per-layer multiplier.",
+			"flagSlow": "Doubles the bounce height, so every bounce is slower and the damage numbers are easier to read.",
+			"flagsTitle": "Command-line flags - click to switch them here, or pass them to play funcball.",
+			"hpCap": "capped at {max}",
+			"hud": {
+				"bricks": "Bricks left",
+				"dmgA": "A damage",
+				"dmgB": "B damage",
+				"time": "Time"
+			},
+			"keys": {
+				"pause": "pause",
+				"restart": "hold to restart",
+				"start": "start / pause"
+			},
+			"laneA": "Ball A",
+			"laneB": "Ball B",
+			"legend": {
+				"note": "Both balls always bounce to exactly the same height - the slider above changes it for both sides at once. Every bounce is one hit:",
+				"rule1": "The first hit uses the starting x, so x! deals 0! = 1 damage; after every hit x grows by the step you set.",
+				"rule2": "Every layer multiplies its HP, and a brick only disappears once its HP is below 0 - then the ball falls on to the next layer.",
+				"rule3": "The first ball to break through every layer and touch the floor wins. The duel stops the moment that happens.",
+				"title": "How a bounce becomes damage"
+			},
+			"overDamage": "A: {a} damage in {an} hits . B: {b} damage in {bn} hits",
+			"overTime": "Time {time}",
+			"overTitle": "Duel over",
+			"pausedHint": "Press P or Esc to resume - hold Restart to go back and edit the setup",
+			"readyHint": "Set both functions, then press Start duel",
+			"readyTitle": "FUNCTION BALL",
+			"title": "Function Ball Breaker",
+			"tpl": {
+				"custom": "Custom - f(x)",
+				"fact": "Factorial - x!",
+				"fib": "Fibonacci - Fₙ",
+				"percent": "Percent change - a·(1+r)ˣ",
+				"power": "Power - xⁿ"
+			},
+			"wallNote": "A brick breaks only when its HP drops below 0 - a hit that lands exactly on 0 leaves it standing. Overkill is not carried over.",
+			"wallTitle": "Brick wall - shared by both sides",
+			"win": {
+				"a": "Ball A wins!",
+				"b": "Ball B wins!"
+			}
+		},
+		"heading": "Games",
+		"hint": {
+			"restart": "Hold Restart to start over"
+		},
+		"overlay": {
+			"overHint": "score {score} . best {best}",
+			"overTitle": "GAME OVER",
+			"pausedHint": "P or Esc to resume",
+			"pausedTitle": "PAUSED",
+			"readyHint": "Press Start, or Space"
+		},
+		"play": "Play",
+		"state": {
+			"over": "game over",
+			"paused": "paused",
+			"ready": "ready",
+			"running": "running"
+		},
+		"subtitle": "Small games that run right in the page. No download, no plugin - and the terminal can start them too.",
+		"tetris": {
+			"badge": "v2.0",
+			"boardAria": "Tetris board",
+			"btnExport": "Export code",
+			"btnLoad": "Load browser save",
+			"btnRestore": "Load save code",
+			"btnSave": "Save to browser",
+			"desc": "Seven shapes, ten columns, and a level curve that speeds up every ten lines. Ghost piece and hold included.",
+			"flag": {
+				"easy": "EASY",
+				"easyTip": "--easy-mode: no speed-up",
+				"free": "FREE",
+				"freeTip": "--free-mode: the seed decides the piece sequence (same seed, same game)",
+				"hard": "HARD",
+				"hardTip": "--hard-mode: constant one-third speed + garbage layers, no easy mode, no undo",
+				"rollback": "UNDO",
+				"rollbackTip": "--with-roll-back: undo enabled"
+			},
+			"flagEasy": "No speed-up: the level stays at 1, the fall interval is a constant 800ms, and I / T pieces come up a bit more often.",
+			"flagFree": "Free mode: the seed decides the piece sequence — same seed, same game. Adds a seed box and shareable save codes.",
+			"flagHard": "Hard mode: garbage layers at the bottom (2-5 gaps per layer, placed at random and never on a column the layer below left empty), and blocks fall constantly at one third of the top speed. No easy mode, no undo.",
+			"flagRollback": "Adds the Undo button (key U, pad undo) that takes back the last piece.",
+			"flagsTitle": "Command-line flags - click a switch below, same as adding it to play tetris.",
+			"hardConflict": "Not available in hard mode",
+			"hardRows": "Starting garbage rows",
+			"hardRowsAria": "starting garbage rows",
+			"hardRowsHint": "Each layer keeps 2-5 gaps placed at random (they may sit next to each other), but never on a column the layer below already left empty — so one vertical piece cannot fill two layers at once. The count applies from the next board on.",
+			"hud": {
+				"best": "Best",
+				"hold": "Hold",
+				"level": "Level",
+				"lines": "Lines",
+				"next": "Next",
+				"score": "Score"
+			},
+			"keys": {
+				"hard": "hard drop",
+				"hold": "hold",
+				"move": "move",
+				"pause": "pause",
+				"restart": "hold to restart",
+				"rotate": "rotate",
+				"soft": "soft drop",
+				"undo": "undo"
+			},
+			"msgCopied": "Save code copied to the clipboard.",
+			"msgCopyFail": "Copy failed — the code is selected, press Ctrl/Cmd+C.",
+			"msgCopyHint": "The code is in the box — copy it by hand.",
+			"msgCodeBad": "That save code is not valid.",
+			"msgCodeEmpty": "Paste a save code first.",
+			"msgLoaded": "Browser save loaded — press Load save code to apply it.",
+			"msgNoSave": "No save in this browser yet.",
+			"msgRestored": "Loaded save code — seed {seed}",
+			"msgSaveFail": "This browser refused to keep it.",
+			"msgSaved": "Saved in this browser.",
+			"msgSeedBad": "The seed must be a whole number.",
+			"msgSeedClamped": "Out of range — clamped to {seed}",
+			"msgSeedEmpty": "Type a seed first (an integer).",
+			"msgSeedNew": "New seed: {seed}",
+			"pad": {
+				"aria": "touch controls",
+				"down": "soft drop",
+				"drop": "hard drop",
+				"hold": "hold",
+				"left": "left",
+				"right": "right",
+				"rotate": "rotate",
+				"undo": "undo"
+			},
+			"readyTitle": "TETRIS",
+			"saveAria": "save code",
+			"saveHint": "The code carries the seed, the board and every piece in play — copy it to share a run, or paste one here and press Load save code to carry on from it.",
+			"savePanelTitle": "Save code — copy it to share, or paste one and load it",
+			"seedAria": "seed",
+			"seedHint": "Any whole number from -2147483648 to 2147483647. Outside that range it is clamped to the nearest end; anything that is not a whole number is refused. Same seed → same piece sequence.",
+			"seedLabel": "Seed",
+			"seedRandom": "Random",
+			"title": "Tetris"
+		}
+	},
+	"header": {
+		"hint": "Click to expand"
+	},
+	"home": {
+		"card": {
+			"lab": {
+				"desc": "Three interactive simulations built while studying: force & motion, Newton's second law, and lenses. The Arch32S virtual machine lives here now too.",
+				"title": "Labs"
+			},
+			"links": {
+				"desc": "Still empty. If you have a site worth reading, say hello and I will add it here.",
+				"title": "Friendly links"
+			},
+			"storage": {
+				"desc": "Maps, libraries and manuals I keep around — with honest labels about what is still available.",
+				"title": "Storage"
+			}
+		},
+		"cta": {
+			"lab": "Labs",
+			"storage": "Open storage"
+		},
+		"eyebrow": "System online · all services nominal",
+		"quick": {
+			"sub": "Files, simulations and links.",
+			"title": "Jump in"
+		},
+		"subtitle": "Music, anime and programming — with a soft spot for Miku. I build small things on the web, and this is where I keep them.",
+		"title": "Hayneko"
+	},
+	"info": {
+		"email": "Email",
+		"games": "Games",
+		"games_content": "Minecraft, NTE",
+		"hobbies": "Hobbies",
+		"hobbies_content": "Music, Anime, Programming",
+		"name": "Name",
+		"projects": "Projects",
+		"role": "Student · Hobbyist developer",
+		"status": "Open to new things"
+	},
+	"lab": {
+		"docs": {
+			"i386": {
+				"desc": "The manual that explains why x86 looks the way it does.",
+				"title": "Intel 80386 Programmer's Reference Manual (1986)"
+			},
+			"sub": "Things I keep coming back to.",
+			"title": "Reference documents"
+		},
+		"heading": "Labs",
+		"open": "Open",
+		"sim": {
+			"default": {
+				"desc": "A block, a force, and a readout of velocity and acceleration in real time.",
+				"title": "Force & motion"
+			},
+			"lens": {
+				"desc": "Drag the object, move the focal point, and follow the ray diagram as the image forms.",
+				"title": "Lenses"
+			},
+			"ntlaw2": {
+				"desc": "Change mass and applied force, watch F = ma fall out of the numbers.",
+				"title": "Newton's second law"
+			}
+		},
+		"subtitle": "Interactive simulations I wrote while studying physics — plus the Hayneko_Arch32S virtual machine, running right here in the page.",
+		"vm": {
+			"heading": "Arch32S virtual machine",
+			"subtitle": "The Hayneko_Arch32S simulator from HaynekoArch32VM_python, ported to the page: create a VM from the terminal, upload ROM / disk / assembly files, and watch registers, memory and the current instruction update live.",
+			"vm": {
+				"label": "vm"
+			},
+			"new": "New VM",
+			"upload": "Upload file",
+			"saveRom": "Save ROM",
+			"saveDisk": "Save disk",
+			"demo": "sample",
+			"load": "Load",
+			"pause": "Pause",
+			"step": "Step",
+			"over": "Step over",
+			"out": "Step out",
+			"restart": "Restart (hold)",
+			"clearBp": "Clear breakpoints",
+			"panel": {
+				"disasm": "Disassembly",
+				"disasmHint": "click a row to toggle a breakpoint",
+				"regs": "Registers / flags",
+				"regsHint": "click a value to edit",
+				"fpr": "Floating point",
+				"stack": "Stack (SP)",
+				"mem": "Memory dump",
+				"out": "Output",
+				"outHint": "port 0x00 / 0x01 writes land here",
+				"mon": "Mini display 256×256"
+			},
+			"memBase": "base",
+			"memFollow": "follow",
+			"files": {
+				"title": "Uploaded files",
+				"hint": "ROM 1024 B · disk 256 KB · .asm source — or drop them on this panel"
+			},
+			"term": {
+				"tag": "arch32 vm"
+			},
+			"hints": {
+				"title": "Terminal commands",
+				"sub": "Everything the buttons do also has a command — and every command has a button. The global terminal uses the same vm shell."
+			},
+			"card": {
+				"title": "Arch32S virtual machine",
+				"desc": "Three interactive simulations built while studying: force & motion, Newton's second law, and lenses. The Arch32S virtual machine lives here now too.",
+				"open": "Open the debugger"
+			},
+			"menu": {
+				"title": "Arch32S vm",
+				"desc": "registers · memory · single step"
+			},
+			"quick": "quick",
+			"quickAria": "quick vm command input",
+			"autorun": "Auto-run",
+			"rateAria": "auto-run speed: instructions per second",
+			"ips": "ips",
+			"mon": {
+				"source": "display source",
+				"screen": "screen",
+				"buffer": "buffer",
+				"clear": "Clear",
+				"aria": "256 by 256 mini display"
+			},
+			"stackFollow": "follow SP"
+		}
+	},
+	"links": {
+		"empty": {
+			"badge": "empty",
+			"body": "If you run a site and want it listed here, send me an email or ping me on GitHub.",
+			"cta": "Say hello",
+			"title": "Nothing here yet"
+		},
+		"heading": "Friendly Links",
+		"self": {
+			"github": "Source for everything on this site, plus experiments that never made it here.",
+			"instagram": "Photos and the occasional drawing.",
+			"lab": {
+				"desc": "Not a link out, but the thing I am most likely to send you.",
+				"title": "Labs"
+			}
+		},
+		"subtitle": "Places worth your time. This list is short on purpose."
+	},
+	"nav": {
+		"aria": "Main navigation",
+		"item": {
+			"games": {
+				"desc": "Small games in the page",
+				"label": "Games"
+			},
+			"home": {
+				"desc": "Who I am, and what this site is",
+				"label": "Home"
+			},
+			"lab": {
+				"desc": "Simulations and the Arch32S virtual machine",
+				"label": "Labs"
+			},
+			"links": {
+				"desc": "Sites I actually visit",
+				"label": "Friendly Links"
+			},
+			"storage": {
+				"desc": "Files worth keeping around",
+				"label": "Storage"
+			},
+			"terminal": {
+				"desc": "A shell that actually works",
+				"label": "Terminal"
+			}
+		},
+		"meta": {
+			"hint": "Press <kbd>Ctrl</kbd>+<kbd>K</kbd> to toggle, <kbd>Esc</kbd> to close"
+		}
+	},
+	"storage": {
+		"file": {
+			"1": {
+				"meta": "zip · 1.8 MB · updated 2026-01-27 · no longer available"
+			},
+			"2": {
+				"meta": "zip · updated 2026-02-07 · no longer available"
+			}
+		},
+		"group": {
+			"docs": "Documents",
+			"games": "Game storage",
+			"more": "There should be no more files…",
+			"other": "Other storage"
+		},
+		"heading": "Storage",
+		"note": "If a link 404s, it means the file is really gone — not that the link is broken.",
+		"state": {
+			"available": "Download",
+			"dead": "Unavailable"
+		},
+		"subtitle": "Everything I have bothered to upload. Sizes are approximate; dead entries are kept for the record."
+	},
+	"tab": {
+		"away": "Miku! Come back soon to "
+	},
+	"terminal": {
+		"heading": "Terminal",
+		"subtitle": "Type help to see what this shell can do.",
+		"term": {
+			"input": "terminal input",
+			"tag": "interactive"
+		}
+	},
+	"title": {
+		"default": "Hayneko",
+		"games": "Games · Hayneko",
+		"home": "Home · Hayneko",
+		"lab": "Labs · Hayneko",
+		"links": "Friendly Links · Hayneko",
+		"storage": "Storage · Hayneko",
+		"terminal": "Terminal · Hayneko",
+		"vm": "Arch32S VM · Hayneko"
+	}
+}

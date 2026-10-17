@@ -503,16 +503,22 @@
 
 	/* ------------------------------------------------- 画布小工具(几款游戏共用) */
 
+	/*
+	 * 棋盘网格线。
+	 * ⚠️ 机台的井是**黑屏**(.cabinet__well 是深底, 与版次无关),
+	 * 所以网格线只能用亮色 —— 以前浅色版次给的是近黑的 rgba(12,18,26,.10),
+	 * 画在黑屏上等于没画。
+	 */
 	function gridColor() {
 		return doc.documentElement.getAttribute('data-theme') === 'light'
-			? 'rgba(12, 18, 26, 0.10)'
+			? 'rgba(226, 235, 244, 0.13)'
 			: 'rgba(230, 237, 243, 0.07)';
 	}
 
 	/* 棋盘/分区的外框线: 比网格线重一档, 用来把"棋盘"和"手牌条"这类不同区域分开 */
 	function gridEdgeColor() {
 		return doc.documentElement.getAttribute('data-theme') === 'light'
-			? 'rgba(12, 18, 26, 0.24)'
+			? 'rgba(226, 235, 244, 0.28)'
 			: 'rgba(230, 237, 243, 0.17)';
 	}
 

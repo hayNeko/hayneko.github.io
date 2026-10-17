@@ -1,0 +1,415 @@
+<!-- views/cs-range/index.html — CS:GO-inspired robot elimination range -->
+<div class="csr" data-cs-range data-state="boot">
+	<div class="csr__stage">
+		<canvas class="csr__canvas" data-csr-canvas aria-label="Dust Range 3D view"></canvas>
+
+		<div class="csr__fx csr__fx--vignette" aria-hidden="true"></div>
+		<div class="csr__fx csr__fx--grain" aria-hidden="true"></div>
+		<div class="csr__flash" data-csr-flash aria-hidden="true"></div>
+		<div class="csr__damage" data-csr-damage aria-hidden="true"></div>
+
+		<!-- ============================================================ loading -->
+		<div class="csr-loading" data-csr-loading>
+			<div class="csr-loading__mark" aria-hidden="true">
+				<span></span><span></span><span></span>
+			</div>
+			<p class="csr-loading__eyebrow">HAYNEKO OPERATIONS</p>
+			<h2 class="csr-loading__title">DUST RANGE</h2>
+			<div class="csr-loading__bar"><i></i></div>
+			<p class="csr-loading__hint" data-csr-loading-hint>INITIALISING RENDERER</p>
+		</div>
+
+		<!-- ============================================================ menu -->
+		<section class="csr-menu" data-csr-menu hidden aria-label="Dust Range main menu">
+			<header class="csr-menu__top">
+				<div class="csr-brand">
+					<span class="csr-brand__mark" aria-hidden="true"><i>H</i></span>
+					<span class="csr-brand__text"><b>HAYNEKO</b><i>OPERATIONS</i></span>
+				</div>
+				<div class="csr-menu__meta">
+					<span class="csr-chip csr-chip--live"><i></i>LOCAL / OFFLINE</span>
+					<span class="csr-chip">BUILD 01</span>
+					<button type="button" class="csr-xbtn" data-csr-menu-exit aria-label="Back to games">✕</button>
+				</div>
+			</header>
+
+			<div class="csr-menu__body">
+				<div class="csr-menu__main">
+					<p class="csr-kicker">TRAINING OPERATION <span>//</span> 01</p>
+					<h1 class="csr-title"><span>DUST</span><b>RANGE</b></h1>
+					<p class="csr-lede">
+						A de_dust-inspired killing floor. Randomised robot squads, real weapon handling,
+						one life per round. Clear every hostile before the clock runs out.
+					</p>
+
+					<div class="csr-mapcard">
+						<div class="csr-mapcard__screen">
+							<canvas data-csr-map-preview width="440" height="250"></canvas>
+							<span class="csr-mapcard__scan" aria-hidden="true"></span>
+							<span class="csr-mapcard__badge">DUST_RANGE</span>
+							<span class="csr-mapcard__grid" aria-hidden="true"></span>
+						</div>
+						<div class="csr-mapcard__meta">
+							<div><span>MAP</span><b>DUST_RANGE</b></div>
+							<div><span>MODE</span><b>ELIMINATION</b></div>
+							<div><span>FIRST TO</span><b>8 ROUNDS</b></div>
+							<div><span>HOSTILES</span><b data-csr-menu-hostiles>AUTO</b></div>
+						</div>
+					</div>
+
+					<div class="csr-menu__actions">
+						<button type="button" class="csr-btn csr-btn--primary csr-btn--deploy" data-csr-deploy>
+							<span class="csr-btn__label">DEPLOY</span>
+							<span class="csr-btn__key">↵</span>
+						</button>
+						<button type="button" class="csr-btn" data-csr-open-controls>CONTROLS</button>
+						<button type="button" class="csr-btn" data-csr-open-settings>SETTINGS</button>
+					</div>
+
+					<p class="csr-menu__note">
+						Mouse + keyboard recommended. All assets are generated in the browser — no downloads,
+						no external services. <span>Click DEPLOY, then the field to lock the mouse.</span>
+					</p>
+				</div>
+
+				<aside class="csr-menu__side">
+					<div class="csr-panel">
+						<div class="csr-panel__head"><span>MISSION BRIEF</span><i>01</i></div>
+						<p class="csr-panel__copy">
+							Robots have overrun the training site. Eliminate the whole squad to take the round.
+							Die and the round is lost. First side to eight rounds wins the operation.
+						</p>
+						<ul class="csr-brief">
+							<li><i>01</i><span>Every round spawns a random robot squad — scouts, troopers, heavies and snipers.</span></li>
+							<li><i>02</i><span>Earn cash for kills and rounds. Press <kbd>B</kbd> during buy time to shop.</span></li>
+							<li><i>03</i><span>Headshots do four times damage. Robot heads pop. Use cover.</span></li>
+							<li><i>04</i><span>Defeated robots drop their weapon. Press <kbd>E</kbd> on the field to pick it up.</span></li>
+						</ul>
+					</div>
+
+					<div class="csr-panel csr-panel--config" data-csr-settings-panel>
+						<div class="csr-panel__head"><span>OPERATION SETUP</span><i>SET</i></div>
+
+						<div class="csr-field">
+							<span class="csr-field__label">BOT DIFFICULTY</span>
+							<div class="csr-seg" data-csr-difficulty role="group" aria-label="Bot difficulty">
+								<button type="button" data-value="recruit">RECRUIT</button>
+								<button type="button" data-value="regular" class="is-active">REGULAR</button>
+								<button type="button" data-value="veteran">VETERAN</button>
+								<button type="button" data-value="elite">ELITE</button>
+							</div>
+						</div>
+
+						<div class="csr-field">
+							<span class="csr-field__label">SQUAD SIZE</span>
+							<div class="csr-seg" data-csr-squad role="group" aria-label="Squad size">
+								<button type="button" data-value="3">3</button>
+								<button type="button" data-value="5" class="is-active">5</button>
+								<button type="button" data-value="7">7</button>
+								<button type="button" data-value="auto">AUTO</button>
+							</div>
+						</div>
+
+						<div class="csr-field">
+							<span class="csr-field__label">GRAPHICS</span>
+							<div class="csr-seg" data-csr-quality role="group" aria-label="Graphics quality">
+								<button type="button" data-value="low">LOW</button>
+								<button type="button" data-value="balanced" class="is-active">BALANCED</button>
+								<button type="button" data-value="high">HIGH</button>
+							</div>
+						</div>
+
+						<label class="csr-range">
+							<span class="csr-field__label">MOUSE SENSITIVITY <b data-csr-sens-value>1.00</b></span>
+							<input type="range" min="0.35" max="2.5" step="0.05" value="1" data-csr-sens>
+						</label>
+
+						<label class="csr-range">
+							<span class="csr-field__label">VOLUME <b data-csr-vol-value>70%</b></span>
+							<input type="range" min="0" max="1" step="0.05" value="0.7" data-csr-vol>
+						</label>
+					</div>
+
+					<div class="csr-panel csr-panel--record">
+						<div class="csr-panel__head"><span>SERVICE RECORD</span><i>LOCAL</i></div>
+						<div class="csr-record">
+							<div><span>BEST MATCH</span><b data-csr-best>—</b></div>
+							<div><span>ROUNDS WON</span><b data-csr-best-rounds>0</b></div>
+							<div><span>MOST KILLS</span><b data-csr-best-kills>0</b></div>
+						</div>
+					</div>
+				</aside>
+			</div>
+
+			<footer class="csr-menu__foot">
+				<span><i class="csr-dot"></i> RENDERER READY</span>
+				<span>THREE.JS / PROCEDURAL ASSETS</span>
+				<span class="csr-menu__foot-hint">A fan-made tribute — not affiliated with Valve.</span>
+			</footer>
+		</section>
+
+		<!-- ============================================================ HUD -->
+		<section class="csr-hud" data-csr-hud hidden aria-label="Game HUD">
+			<div class="csr-hud__top">
+				<div class="csr-radar">
+					<div class="csr-radar__frame">
+						<canvas data-csr-radar width="360" height="360" aria-label="Tactical radar"></canvas>
+						<span class="csr-radar__map">DUST_RANGE</span>
+						<span class="csr-radar__north">N</span>
+					</div>
+					<div class="csr-radar__timer">
+						<b data-csr-round-timer>1:55</b>
+						<span>ROUND <i data-csr-round-no>1</i></span>
+					</div>
+				</div>
+
+				<div class="csr-score" aria-label="Match score">
+					<div class="csr-score__team csr-score__team--ct">
+						<span class="csr-score__tag">CT</span>
+						<b data-csr-score-ct>0</b>
+						<span class="csr-score__label">COUNTER-TERRORISTS</span>
+					</div>
+					<div class="csr-score__mid">
+						<span data-csr-phase-label>BUY TIME</span>
+						<b>FIRST TO 8</b>
+						<div class="csr-score__pips" data-csr-pips aria-hidden="true"></div>
+					</div>
+					<div class="csr-score__team csr-score__team--t">
+						<span class="csr-score__tag">T</span>
+						<b data-csr-score-t>0</b>
+						<span class="csr-score__label">ROBOT SQUAD</span>
+					</div>
+				</div>
+
+				<div class="csr-hud__right">
+					<div class="csr-hostiles">
+						<span>HOSTILES</span>
+						<b data-csr-hostiles>0</b>
+						<i data-csr-hostile-dots></i>
+					</div>
+					<div class="csr-killfeed" data-csr-killfeed aria-live="polite"></div>
+				</div>
+			</div>
+
+			<div class="csr-crosshair" data-csr-crosshair aria-hidden="true">
+				<i class="csr-crosshair__l"></i><i class="csr-crosshair__r"></i>
+				<i class="csr-crosshair__t"></i><i class="csr-crosshair__b"></i>
+				<i class="csr-crosshair__dot"></i>
+			</div>
+			<div class="csr-hitmarker" data-csr-hitmarker aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+			<div class="csr-dmgdir" data-csr-dmgdir aria-hidden="true"></div>
+
+			<div class="csr-scope" data-csr-scope hidden aria-hidden="true">
+				<div class="csr-scope__lens"></div>
+				<div class="csr-scope__cross"></div>
+				<span class="csr-scope__hint" data-csr-scope-label>OPTIC // SCOPED</span>
+			</div>
+
+			<div class="csr-hud__bottom">
+				<div class="csr-vitals">
+					<div class="csr-vital csr-vital--health">
+						<span class="csr-vital__icon" aria-hidden="true">✚</span>
+						<b data-csr-health>100</b>
+						<i class="csr-vital__bar" data-csr-healthbar><em></em></i>
+					</div>
+					<div class="csr-vital csr-vital--armor">
+						<span class="csr-vital__icon" aria-hidden="true">◈</span>
+						<b data-csr-armor>0</b>
+					</div>
+					<div class="csr-money">
+						<span>$</span><b data-csr-money>800</b>
+					</div>
+				</div>
+
+				<div class="csr-ammo">
+					<div class="csr-ammo__meta">
+						<span class="csr-ammo__slot" data-csr-slot>SECONDARY</span>
+						<b data-csr-weapon>USP-S</b>
+					</div>
+					<div class="csr-ammo__counts">
+						<b data-csr-ammo>12</b>
+						<span>/</span>
+						<i data-csr-reserve>36</i>
+					</div>
+					<div class="csr-ammo__slots" aria-hidden="true">
+						<span data-csr-slot-ind="1">1</span>
+						<span data-csr-slot-ind="2" class="is-empty">2</span>
+						<span data-csr-slot-ind="3">3</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="csr-announce" data-csr-announce aria-live="assertive"></div>
+			<div class="csr-hintbar" data-csr-hintbar>
+				<span><kbd>WASD</kbd> MOVE</span>
+				<span><kbd>SHIFT</kbd> WALK</span>
+				<span><kbd>CTRL</kbd> CROUCH</span>
+				<span><kbd>SPACE</kbd> JUMP</span>
+				<span><kbd>R</kbd> RELOAD</span>
+				<span><kbd>B</kbd> BUY</span>
+				<span><kbd>E</kbd> PICK UP</span>
+				<span><kbd>TAB</kbd> SCORE</span>
+			</div>
+			<button type="button" class="csr-buyhint" data-csr-buyhint aria-label="Open buy menu"><span>BUY PHASE</span><b><kbd>B</kbd> OPEN BUY MENU</b></button>
+			<button type="button" class="csr-pickup" data-csr-pickup hidden>
+				<span class="csr-pickup__tag">WEAPON DROP</span>
+				<b class="csr-pickup__name" data-csr-pickup-name>AK-47</b>
+				<span class="csr-pickup__ammo" data-csr-pickup-ammo>30 / 90</span>
+				<span class="csr-pickup__hint" data-csr-pickup-hint>PRESS <kbd>E</kbd> TO PICK UP</span>
+			</button>
+			<div class="csr-hud__corner" data-csr-debug aria-hidden="true"></div>
+			<div class="csr-touch" data-csr-touch hidden>
+				<div class="csr-touch__top">
+					<button type="button" data-csr-touch-score aria-label="Scoreboard">≡</button>
+					<button type="button" data-csr-touch-pause aria-label="Pause">II</button>
+				</div>
+				<div class="csr-touch__stick" data-csr-stick><i></i><span></span></div>
+				<div class="csr-touch__fire">
+					<button type="button" data-csr-touch-fire aria-label="Fire">FIRE</button>
+					<button type="button" data-csr-touch-reload aria-label="Reload">R</button>
+					<button type="button" data-csr-touch-jump aria-label="Jump">↑</button>
+					<button type="button" data-csr-touch-crouch aria-label="Crouch">↓</button>
+					<button type="button" data-csr-touch-scope aria-label="Scope">◎</button>
+				</div>
+			</div>
+		</section>
+
+		<!-- ============================================================ buy -->
+		<section class="csr-overlay csr-buy" data-csr-buy hidden aria-label="Buy menu">
+			<div class="csr-overlay__backdrop"></div>
+			<div class="csr-buy__panel">
+				<header class="csr-overlay__head">
+					<div>
+						<p>ARMORY // BUY PHASE</p>
+						<h2>BUY MENU</h2>
+					</div>
+					<div class="csr-overlay__cash"><span>AVAILABLE</span><b data-csr-buy-money>$800</b></div>
+					<button type="button" class="csr-xbtn" data-csr-buy-close aria-label="Close buy menu">✕</button>
+				</header>
+				<div class="csr-buy__grid" data-csr-buy-grid></div>
+				<footer class="csr-overlay__foot">
+					<span>NUMBER KEYS 1–9 · CLICK FOR SIDEARMS / GEAR</span>
+					<span>PURCHASES ARE FINAL FOR THIS ROUND</span>
+					<button type="button" class="csr-btn csr-btn--sm" data-csr-buy-close>CLOSE <kbd>B</kbd></button>
+				</footer>
+			</div>
+		</section>
+
+		<!-- ============================================================ pause -->
+		<section class="csr-overlay csr-pause" data-csr-pause hidden aria-label="Pause menu">
+			<div class="csr-overlay__backdrop"></div>
+			<div class="csr-pause__panel">
+				<p class="csr-kicker">OPERATION SUSPENDED</p>
+				<h2 class="csr-pause__title">PAUSED</h2>
+				<p class="csr-pause__copy">Mouse control is released. Your round is frozen — nothing moves until you resume.</p>
+				<div class="csr-pause__actions">
+					<button type="button" class="csr-btn csr-btn--primary" data-csr-resume><span>RESUME</span><i>↵</i></button>
+					<button type="button" class="csr-btn" data-csr-pause-controls>CONTROLS</button>
+					<button type="button" class="csr-btn" data-csr-pause-mute>SOUND: ON</button>
+					<button type="button" class="csr-btn csr-btn--ghost" data-csr-exit>EXIT TO GAMES</button>
+				</div>
+				<div class="csr-pause__stats">
+					<span>ROUND <b data-csr-pause-round>1</b></span>
+					<span>KILLS <b data-csr-pause-kills>0</b></span>
+					<span>SCORE <b data-csr-pause-score>0 — 0</b></span>
+				</div>
+			</div>
+		</section>
+
+		<!-- ============================================================ result -->
+		<section class="csr-overlay csr-result" data-csr-result hidden aria-label="Round result">
+			<div class="csr-overlay__backdrop"></div>
+			<div class="csr-result__panel" data-csr-result-panel data-outcome="win">
+				<p class="csr-result__kicker" data-csr-result-kicker>ROUND 1</p>
+				<h2 class="csr-result__title" data-csr-result-title>COUNTER-TERRORISTS WIN</h2>
+				<p class="csr-result__reason" data-csr-result-reason>All hostiles eliminated.</p>
+				<div class="csr-result__rule"><i></i><span data-csr-result-score>CT 1 — 0 T</span><i></i></div>
+				<div class="csr-result__stats">
+					<div><span>KILLS</span><b data-csr-result-kills>0</b></div>
+					<div><span>HEADSHOTS</span><b data-csr-result-hs>0</b></div>
+					<div><span>ACCURACY</span><b data-csr-result-acc>0%</b></div>
+					<div><span>REWARD</span><b data-csr-result-reward>+$3,250</b></div>
+				</div>
+				<p class="csr-result__next" data-csr-result-next>NEXT ROUND IN 5</p>
+				<button type="button" class="csr-btn csr-btn--sm csr-result__skip" data-csr-result-skip>NEXT ROUND <kbd>SPACE</kbd></button>
+			</div>
+		</section>
+
+		<!-- ============================================================ scoreboard -->
+		<section class="csr-overlay csr-scoreboard" data-csr-scoreboard hidden aria-label="Scoreboard">
+			<div class="csr-overlay__backdrop"></div>
+			<div class="csr-board">
+				<header class="csr-overlay__head">
+					<div><p>DUST_RANGE // ELIMINATION</p><h2>SCOREBOARD</h2></div>
+					<div class="csr-overlay__cash"><span>ROUND</span><b data-csr-board-round>1</b></div>
+					<button type="button" class="csr-xbtn" data-csr-score-close aria-label="Close scoreboard">✕</button>
+				</header>
+				<div class="csr-board__teams">
+					<div class="csr-board__team csr-board__team--ct">
+						<div class="csr-board__teamhead"><span>COUNTER-TERRORISTS</span><b data-csr-board-ct>0</b></div>
+						<div class="csr-board__rows" data-csr-board-ct-rows></div>
+					</div>
+					<div class="csr-board__team csr-board__team--t">
+						<div class="csr-board__teamhead"><span>ROBOT SQUAD</span><b data-csr-board-t>0</b></div>
+						<div class="csr-board__rows" data-csr-board-t-rows></div>
+					</div>
+				</div>
+				<footer class="csr-overlay__foot"><span>RELEASE TAB TO CLOSE</span><span>K / D / HS / PING</span></footer>
+			</div>
+		</section>
+
+		<!-- ============================================================ controls -->
+		<section class="csr-overlay csr-controls" data-csr-controls hidden aria-label="Controls">
+			<div class="csr-overlay__backdrop"></div>
+			<div class="csr-controls__panel">
+				<header class="csr-overlay__head">
+					<div><p>OPERATOR MANUAL</p><h2>CONTROLS</h2></div>
+					<button type="button" class="csr-xbtn" data-csr-controls-close aria-label="Close controls">✕</button>
+				</header>
+				<div class="csr-controls__grid">
+					<div class="csr-keyrow"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move</span></div>
+					<div class="csr-keyrow"><kbd>MOUSE</kbd><span>Aim</span></div>
+					<div class="csr-keyrow"><kbd>LMB</kbd><span>Fire</span></div>
+					<div class="csr-keyrow"><kbd>RMB</kbd><span>AWP scope</span></div>
+					<div class="csr-keyrow"><kbd>R</kbd><span>Reload</span></div>
+					<div class="csr-keyrow"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>Pistol / primary / knife</span></div>
+					<div class="csr-keyrow"><kbd>SHIFT</kbd><span>Walk (quieter, steadier)</span></div>
+					<div class="csr-keyrow"><kbd>CTRL</kbd><span>Crouch</span></div>
+					<div class="csr-keyrow"><kbd>SPACE</kbd><span>Jump</span></div>
+					<div class="csr-keyrow"><kbd>B</kbd><span>Buy menu</span></div>
+					<div class="csr-keyrow"><kbd>E</kbd><span>Pick up dropped weapon</span></div>
+					<div class="csr-keyrow"><kbd>TAB</kbd><span>Scoreboard</span></div>
+					<div class="csr-keyrow"><kbd>M</kbd><span>Mute audio</span></div>
+					<div class="csr-keyrow"><kbd>ESC</kbd><span>Pause / release mouse</span></div>
+					<div class="csr-keyrow"><kbd>H</kbd><span>Toggle this manual</span></div>
+				</div>
+				<p class="csr-controls__note">Robots use line-of-sight, flanking paths and randomised accuracy. Cover works both ways. Aim for the head — it does four times damage.</p>
+				<footer class="csr-overlay__foot"><span>CLICK THE FIELD TO LOCK THE MOUSE</span><button type="button" class="csr-btn csr-btn--sm" data-csr-controls-close>BACK</button></footer>
+			</div>
+		</section>
+
+		<!-- ============================================================ match over -->
+		<section class="csr-overlay csr-match" data-csr-match hidden aria-label="Match result">
+			<div class="csr-overlay__backdrop"></div>
+			<div class="csr-match__panel" data-csr-match-panel data-outcome="won">
+				<p class="csr-kicker">OPERATION COMPLETE</p>
+				<h2 class="csr-match__title" data-csr-match-title>VICTORY</h2>
+				<p class="csr-match__copy" data-csr-match-copy>The training site is clear.</p>
+				<div class="csr-match__score"><span>CT</span><b data-csr-match-ct>8</b><i>—</i><b data-csr-match-t>0</b><span>T</span></div>
+				<div class="csr-match__stats">
+					<div><span>ROUNDS</span><b data-csr-match-rounds>8</b></div>
+					<div><span>KILLS</span><b data-csr-match-kills>0</b></div>
+					<div><span>HEADSHOTS</span><b data-csr-match-hs>0</b></div>
+					<div><span>ACCURACY</span><b data-csr-match-acc>0%</b></div>
+				</div>
+				<div class="csr-match__actions">
+					<button type="button" class="csr-btn csr-btn--primary" data-csr-again><span>PLAY AGAIN</span><i>↵</i></button>
+					<button type="button" class="csr-btn" data-csr-exit-match>EXIT TO GAMES</button>
+				</div>
+			</div>
+		</section>
+
+		<div class="csr-toast" data-csr-toast role="status" aria-live="polite"></div>
+		<div class="csr-rotate" data-csr-rotate aria-hidden="true">TURN THE DEVICE<br><span>LANDSCAPE RECOMMENDED</span></div>
+	</div>
+</div>

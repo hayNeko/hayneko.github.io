@@ -1,443 +1,355 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="color-scheme" content="dark">
-	<title>牛頓第二定律模擬器 · Hayneko Labs</title>
+	<meta name="color-scheme" content="light dark">
+	<title>牛頓第二定律 · Hayneko Labs</title>
 
 	<link rel="icon" href="../../../medias/pictures/miku.JPG" sizes="32x32">
-
-	<!-- 新站样式层; 旧的 /medias/css/*、root-theme-colors.css 与那层 404 的 dock 菜单都不再引用。
-	     页面原有的 #main-container / #left-panel / .graph-container 结构保持不变, 改由 styles/lab.css 接管外观。 -->
 	<link rel="stylesheet" href="../../../styles/tokens.css">
 	<link rel="stylesheet" href="../../../styles/lab.css">
 </head>
 <body>
 <div class="lab-page">
-<header class="lab-head">
-	<span class="lab-head__glyph" aria-hidden="true">▚</span>
-	<span class="lab-head__prompt">hayneko@blog</span><span>:</span><span class="lab-head__path">~/labs/newton2</span>
-	<span class="lab-head__caret" aria-hidden="true"></span>
-	<span class="lab-head__spacer"></span>
-	<span class="lab-head__tag">labs · v1.0</span>
-	<a class="lab-back" href="../../../index.html#/labs">← labs</a>
-</header>
+	<header class="lab-head">
+		<span class="lab-head__prompt">hayneko</span><span>:</span><span class="lab-head__path">~/labs/newton2</span>
+		<span class="lab-head__spacer"></span>
+		<span class="lab-head__tag">labs · v1.1</span>
+		<a class="lab-back" href="../../../index.html#/labs">← 返回實驗室</a>
+	</header>
 
-	<h1 class="lab-title">牛頓第二定律：<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><msub><mi>F</mi><mrow><mi>n</mi><mi>e</mi><mi>t</mi></mrow></msub><mo>=</mo><mi>m</mi><mi>a</mi></math> 動態模擬</h1>
-	
+	<h1 class="lab-title">牛頓第二定律：F<sub>net</sub> = ma 動態模擬</h1>
+	<p class="lab-sub">拖動搖桿施加外力，放手歸零。左邊是即時畫面，右邊是速度與位移曲線。</p>
+
 	<div id="main-container">
 		<div id="left-panel">
 			<div id="info" class="info">
-				質量 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mi>m</mi></math>: <span id="mass-display">1.0</span> kg | 
-				摩擦係數 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mi>μ</mi></math>: <span id="friction-display">0.00</span><br>
-				淨力 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><msub><mi>F</mi><mrow><mi>n</mi><mi>e</mi><mi>t</mi></mrow></msub></math>: <span id="force-display">0.00</span> N | 
-				加速度 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mi>a</mi></math>: <span id="accel-display">0.00</span> m/s²<br>
-				速度 <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mi>v</mi></math>: <span id="vel-display">0.00</span> m/s
+				質量 m: <span id="mass-display">1.0</span> kg　|　摩擦係數 μ: <span id="friction-display">0.13</span><br>
+				淨力 F<sub>net</sub>: <span id="force-display">0.00</span> N　|　加速度 a: <span id="accel-display">0.00</span> m/s²<br>
+				速度 v: <span id="vel-display">0.00</span> m/s
 			</div>
-			
+
 			<div class="control-group">
-				<label for="mass-input">質量 (kg): </label>
+				<label for="mass-input">質量 (kg)</label>
 				<input type="range" id="mass-input" min="0.1" max="10" step="0.1" value="1.0">
 			</div>
-			
 			<div class="control-group">
-				<label for="friction-input">摩擦係數: </label>
+				<label for="friction-input">摩擦係數</label>
 				<input type="range" id="friction-input" min="0" max="1.0" step="0.01" value="0.125">
 			</div>
 
 			<canvas id="mechanicsCanvas" width="500" height="150"></canvas>
-			
-			<div id="joystick-container">
+
+			<div id="joystick-container" role="slider" tabindex="0" aria-label="施力搖桿"
+				aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0" aria-valuetext="外力 0 N">
 				<div id="joystick-handle"></div>
 			</div>
-			<div id="joystick-text">拖動搖桿施加外力 <br>(放手歸零)</div>
-			
-			<button id="export-btn">下載數據 (.csv)</button>
+			<div id="joystick-text">拖動搖桿施加外力（放手歸零）　當前 <b id="force-ext">0.0 N</b></div>
+
+			<button id="export-btn" type="button">下載數據 (.csv)</button>
 		</div>
 
 		<div id="right-panel">
 			<div class="graph-container">
-				<h2>速度 - 時間 (v-t)</h2>
+				<h2>速度 — 時間 (v-t)</h2>
 				<canvas id="vtGraph" width="550" height="220"></canvas>
 			</div>
-
 			<div class="graph-container">
-				<h2>累積位移 - 時間 (s-t)</h2>
+				<h2>累積位移 — 時間 (s-t)</h2>
 				<canvas id="stGraph" width="550" height="220"></canvas>
 			</div>
 		</div>
 	</div>
-
-	
 </div>
 
-</body>
 <script>
-	// ================= 全局變量 =================
-	const canvas = document.getElementById('mechanicsCanvas');
-	const ctx = canvas.getContext('2d');
-	const joystickContainer = document.getElementById('joystick-container');
-	const joystickHandle = document.getElementById('joystick-handle');
-	
-	// 畫布引用
-	const vtCtx = document.getElementById('vtGraph').getContext('2d');
-	const stCtx = document.getElementById('stGraph').getContext('2d');
+	var canvas = document.getElementById("mechanicsCanvas");
+	var ctx = canvas.getContext("2d");
+	var joystickContainer = document.getElementById("joystick-container");
+	var joystickHandle = document.getElementById("joystick-handle");
+	var forceExtOut = document.getElementById("force-ext");
+	var vtCtx = document.getElementById("vtGraph").getContext("2d");
+	var stCtx = document.getElementById("stGraph").getContext("2d");
 
-	// 物理參數
-	let mass = 1.0;
-	let frictionCoeff = 1.0;
-	let F_ext = 0;       // 搖桿施加的力
-	let F_net = 0;       // 淨力
-	let acceleration = 0;
-	let velocity = 0;
-	
-	// 顯示參數
-	let displayPos = 250; // 畫布上的位置 (循環用)
-	let accumulatedPos = 0; // 物理上的真實累積位移
-	
-	// 模擬常數
-	const MAX_FORCE = 50; // 最大外力 (N)
-	const PIXELS_PER_METER = 20; // 1米等於多少像素 (用於顯示)
-	
-	// 數據記錄
-	let timeData = [];
-	let velData = [];
-	let posData = []; // 記錄累積位移
-	let globalTime = 0;
+	var mass = 1.0;
+	var frictionCoeff = 0.125;
+	var F_ext = 0, F_net = 0, acceleration = 0, velocity = 0;
+	var displayPos = 250, accumulatedPos = 0;
+	var MAX_FORCE = 50, PIXELS_PER_METER = 20;
+	var timeData = [], velData = [], posData = [], globalTime = 0;
 
-	// ================= 初始化輸入監聽 =================
-	document.getElementById('mass-input').addEventListener('input', (e) => {
-		mass = parseFloat(e.target.value);
-		document.getElementById('mass-display').textContent = mass.toFixed(1);
-	});
-
-	document.getElementById('friction-input').addEventListener('input', (e) => {
-		frictionCoeff = parseFloat(e.target.value);
-		document.getElementById('friction-display').textContent = frictionCoeff.toFixed(2);
-	});
-
-	document.getElementById('export-btn').addEventListener('click', exportCSV);
-
-	// ================= 搖桿邏輯 (修復版) =================
-	let isDragging = false;
-	const jsRect = joystickContainer.getBoundingClientRect();
-	const jsCenterX = jsRect.width / 2;
-	const maxDragDist = jsRect.width / 2 - 15; // 減去手柄半徑
-
-	// 通用開始拖動
-	function startDrag(e) {
-		e.preventDefault(); // 防止手機滾動
-		isDragging = true;
-		joystickContainer.style.cursor = 'grabbing';
-		updateJoystick(e);
+	/* 画布：按 CSS 宽度 × DPR 重设一次，300 宽的屏也不糊 */
+	function sizeCanvas(cv, cssH) {
+		var dpr = window.devicePixelRatio || 1;
+		var w = cv.clientWidth || cv.width;
+		cv.width = Math.round(w * dpr);
+		cv.height = Math.round(cssH * dpr);
+		cv.style.height = cssH + "px";
+		cv.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+	}
+	function fitAll() {
+		sizeCanvas(canvas, 150);
+		sizeCanvas(document.getElementById("vtGraph"), 200);
+		sizeCanvas(document.getElementById("stGraph"), 200);
 	}
 
-	// 通用拖動中
+	document.getElementById("mass-input").addEventListener("input", function (e) {
+		mass = parseFloat(e.target.value);
+		document.getElementById("mass-display").textContent = mass.toFixed(1);
+	});
+	document.getElementById("friction-input").addEventListener("input", function (e) {
+		frictionCoeff = parseFloat(e.target.value);
+		document.getElementById("friction-display").textContent = frictionCoeff.toFixed(2);
+	});
+	document.getElementById("export-btn").addEventListener("click", exportCSV);
+
+	/* ---------------------------------------------------------------- 摇杆 */
+	var isDragging = false;
+	var dragDist = 0;   /* 实时量, 不再在加载时缓存 rect(那时布局还没定) */
+
+	function jsMetrics() {
+		var rect = joystickContainer.getBoundingClientRect();
+		return {
+			w: rect.width,
+			cx: rect.left + rect.width / 2,
+			max: Math.max(20, rect.width / 2 - 18)
+		};
+	}
+
+	function setHandle(delta) {
+		joystickHandle.style.left = (joystickContainer.getBoundingClientRect().width / 2 + delta) + "px";
+		joystickHandle.style.transform = "translate(-50%, -50%)";
+	}
+
+	function applyDelta(delta) {
+		var m = jsMetrics();
+		var d = Math.max(-m.max, Math.min(delta, m.max));
+		setHandle(d);
+		F_ext = (d / m.max) * MAX_FORCE;
+		forceExtOut.textContent = F_ext.toFixed(1) + " N";
+		joystickContainer.setAttribute("aria-valuenow", Math.round(F_ext));
+		joystickContainer.setAttribute("aria-valuetext", "外力 " + F_ext.toFixed(1) + " N");
+	}
+
+	function pointerDelta(e) {
+		var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+		return clientX - jsMetrics().cx;
+	}
+
+	function startDrag(e) {
+		if (e.button !== undefined && e.button !== 0) return;
+		e.preventDefault();
+		isDragging = true;
+		joystickContainer.style.cursor = "grabbing";
+		applyDelta(pointerDelta(e));
+	}
 	function moveDrag(e) {
 		if (!isDragging) return;
 		e.preventDefault();
-		updateJoystick(e);
+		applyDelta(pointerDelta(e));
 	}
-
-	// 通用結束拖動
-	function stopDrag(e) {
+	function stopDrag() {
+		if (!isDragging) return;
 		isDragging = false;
-		joystickContainer.style.cursor = 'grab';
-		// 歸零
-		joystickHandle.style.left = '50%';
-		joystickHandle.style.transform = 'translate(-50%, -50%)';
-		F_ext = 0;
+		joystickContainer.style.cursor = "grab";
+		applyDelta(0);
 	}
 
-	function updateJoystick(e) {
-		// 獲取觸控或滑鼠座標
-		let clientX;
-		if (e.touches) {
-			clientX = e.touches[0].clientX;
-		} else {
-			clientX = e.clientX;
+	joystickContainer.addEventListener("mousedown", startDrag);
+	window.addEventListener("mousemove", moveDrag);
+	window.addEventListener("mouseup", stopDrag);
+	joystickContainer.addEventListener("touchstart", startDrag, { passive: false });
+	window.addEventListener("touchmove", moveDrag, { passive: false });
+	window.addEventListener("touchend", stopDrag);
+	window.addEventListener("touchcancel", stopDrag);
+
+	/* 键盘也能推摇杆(可聚焦, 不鼠标也行) */
+	joystickContainer.addEventListener("keydown", function (e) {
+		var step = e.shiftKey ? 10 : 2;
+		if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+			e.preventDefault();
+			var m = jsMetrics();
+			var d = (F_ext / MAX_FORCE) * m.max + (e.key === "ArrowRight" ? step : -step);
+			applyDelta(d);
+			clearTimeout(joystickContainer._t);
+			joystickContainer._t = setTimeout(function () { applyDelta(0); }, 900);
+		} else if (e.key === "Escape" || e.key === " ") {
+			e.preventDefault();
+			applyDelta(0);
 		}
+	});
 
-		// 計算相對於搖桿中心的偏移
-		const rect = joystickContainer.getBoundingClientRect();
-		const centerX = rect.left + rect.width / 2;
-		let deltaX = clientX - centerX;
-
-		// 限制範圍
-		deltaX = Math.max(-maxDragDist, Math.min(deltaX, maxDragDist));
-
-		// 更新手柄位置 (CSS left 是百分比或 px，這裡用 px 比較準)
-		joystickHandle.style.left = (jsCenterX + deltaX) + 'px';
-		
-		// 計算外力
-		F_ext = (deltaX / maxDragDist) * MAX_FORCE;
-	}
-
-	// 綁定搖桿事件
-	joystickContainer.addEventListener('mousedown', startDrag);
-	window.addEventListener('mousemove', moveDrag); // 綁定到 window 防止拖出範圍失效
-	window.addEventListener('mouseup', stopDrag);
-
-	joystickContainer.addEventListener('touchstart', startDrag, {passive: false});
-	window.addEventListener('touchmove', moveDrag, {passive: false});
-	window.addEventListener('touchend', stopDrag);
-
-
-	// ================= 物理核心引擎 =================
-	let lastTime = 0;
+	/* ---------------------------------------------------------------- 物理 */
+	var lastTime = 0;
 
 	function gameLoop(timestamp) {
 		if (!lastTime) lastTime = timestamp;
-		let dt = (timestamp - lastTime) / 1000;
+		var dt = (timestamp - lastTime) / 1000;
 		lastTime = timestamp;
-
-		// [關鍵修復]: 防止切換分頁時 dt 過大導致物理爆炸
 		if (dt > 0.1) dt = 0.1;
 
 		updatePhysics(dt);
 		drawSimulation();
 		recordData(dt);
-		
-		// 繪製圖表
 		drawGraph(vtCtx, velData, "v", "m/s", false);
 		drawGraph(stCtx, posData, "s", "m", true);
-
 		requestAnimationFrame(gameLoop);
 	}
 
 	function updatePhysics(dt) {
-		// 摩擦力方向與速度相反: F_f = -mu * v (這裡簡化為與速度成正比的阻力，模擬空氣阻力/黏滯力效果)
-		// 若要模擬滑動摩擦，應為 -mu * N * sign(v)。但在這個演示中，線性阻力圖形較好理解終端速度。
-		let F_f = -frictionCoeff * velocity * 5; // *5 讓效果更明顯
-
+		var F_f = -frictionCoeff * velocity * 5;
 		F_net = F_ext + F_f;
 		acceleration = F_net / mass;
-
-		// 歐拉積分法
 		velocity += acceleration * dt;
-		
-		// 防止極小速度抖動
-		if (Math.abs(velocity) < 0.01 && Math.abs(F_ext) < 0.1) {
-			velocity = 0;
-		}
+		if (Math.abs(velocity) < 0.01 && Math.abs(F_ext) < 0.1) velocity = 0;
 
-		let deltaS = velocity * dt;
+		var deltaS = velocity * dt;
 		accumulatedPos += deltaS;
-		
-		// 顯示位置循環 (0 ~ 500)
 		displayPos += deltaS * PIXELS_PER_METER;
 		if (displayPos > 500) displayPos -= 500;
 		if (displayPos < 0) displayPos += 500;
 
-		// 更新 DOM 數值
-		document.getElementById('force-display').textContent = F_net.toFixed(2);
-		document.getElementById('accel-display').textContent = acceleration.toFixed(2);
-		document.getElementById('vel-display').textContent = velocity.toFixed(2);
+		document.getElementById("force-display").textContent = F_net.toFixed(2);
+		document.getElementById("accel-display").textContent = acceleration.toFixed(2);
+		document.getElementById("vel-display").textContent = velocity.toFixed(2);
 	}
 
 	function drawSimulation() {
-		// 清空畫布
-		ctx.clearRect(0, 0, 500, 150);
+		var w = canvas.clientWidth, h = 150;
+		ctx.clearRect(0, 0, w, h);
+		var groundY = h - 62;
 
-		// 地面
-		ctx.fillStyle = "#ddd";
-		ctx.fillRect(0, 74, 500, 2);
+		/* 画布是黑底: 笔画与文字用亮色, 不用深墨色 */
+		ctx.strokeStyle = "rgba(226, 235, 244, 0.45)";
+		ctx.lineWidth = 1;
+		ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
 
-		// 刻度
-		ctx.fillStyle = "#999";
-		for(let i=0; i<500; i+=50) {
-			ctx.fillRect(i, 70, 1, 10);
-		}
+		ctx.fillStyle = "rgba(226, 235, 244, 0.4)";
+		for (var i = 0; i <= w; i += 50) { ctx.fillRect(i, groundY - 4, 1, 8); }
 
-		// 物體
-		let size = 30 + mass * 2; // 質量越大體積越大
-		let yPos = 75 - size;
-		ctx.fillStyle = "#2196F3"; // 藍色方塊
-		ctx.strokeStyle = "#1565C0";
-		ctx.lineWidth = 2;
-		ctx.fillRect(displayPos - size/2, yPos, size, size);
-		ctx.strokeRect(displayPos - size/2, yPos, size, size);
+		var size = 26 + mass * 2;
+		var yPos = groundY - size;
+		var x = displayPos * (w / 500) - size / 2;
+		ctx.fillStyle = "#79a7cf";
+		ctx.fillRect(x, yPos, size, size);
+		ctx.strokeStyle = "rgba(226, 235, 244, 0.55)";
+		ctx.lineWidth = 1;
+		ctx.strokeRect(x + 0.5, yPos + 0.5, size - 1, size - 1);
 
-		// 力箭頭 (外力) - 紅色
-		if (Math.abs(F_ext) > 0.5) {
-			drawArrow(displayPos, yPos + size/2, F_ext * 1.5, "red", "F_ext");
-		}
-		// 摩擦力 - 綠色
-		let F_f = -frictionCoeff * velocity * 5;
-		if (Math.abs(F_f) > 0.5) {
-			drawArrow(displayPos, yPos + size + 10, F_f * 1.5, "green", "f");
-		}
+		if (Math.abs(F_ext) > 0.5) drawArrow(x + size / 2, yPos + size / 2, F_ext * (w / 500) * 1.5, "#d9968c", "F");
+		var F_f = -frictionCoeff * velocity * 5;
+		if (Math.abs(F_f) > 0.5) drawArrow(x + size / 2, groundY + 12, F_f * (w / 500) * 1.5, "#9dc2a4", "f");
 	}
 
 	function drawArrow(x, y, length, color, label) {
-		ctx.beginPath();
 		ctx.strokeStyle = color;
 		ctx.fillStyle = color;
-		ctx.lineWidth = 3;
-		ctx.moveTo(x, y);
-		ctx.lineTo(x + length, y);
-		ctx.stroke();
-
-		// 箭頭頭部
-		let dir = length > 0 ? 1 : -1;
+		ctx.lineWidth = 2;
+		ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + length, y); ctx.stroke();
+		var dir = length > 0 ? 1 : -1;
 		ctx.beginPath();
 		ctx.moveTo(x + length, y);
-		ctx.lineTo(x + length - 5 * dir, y - 5);
-		ctx.lineTo(x + length - 5 * dir, y + 5);
+		ctx.lineTo(x + length - 6 * dir, y - 4);
+		ctx.lineTo(x + length - 6 * dir, y + 4);
 		ctx.fill();
-		
-		// 標籤
-		ctx.font = "12px Arial";
-		ctx.fillText(label, x + length/2, y - 5);
+		ctx.font = "11px ui-monospace, monospace";
+		ctx.fillText(label, x + length / 2, y - 6);
 	}
 
-	// ================= 數據與圖表 (關鍵修復) =================
 	function recordData(dt) {
 		globalTime += dt;
-		// 每 0.05秒 記錄一次，避免數據過多
-		if (timeData.length === 0 || globalTime - timeData[timeData.length-1] > 0.05) {
+		if (!timeData.length || globalTime - timeData[timeData.length - 1] > 0.05) {
 			timeData.push(globalTime);
 			velData.push(velocity);
 			posData.push(accumulatedPos);
-
-			// 保持最近 20 秒數據
-			if (timeData[timeData.length-1] - timeData[0] > 20) {
-				timeData.shift();
-				velData.shift();
-				posData.shift();
+			if (timeData[timeData.length - 1] - timeData[0] > 20) {
+				timeData.shift(); velData.shift(); posData.shift();
 			}
 		}
 	}
 
 	function drawGraph(gCtx, data, label, unit, isPos) {
-		let w = gCtx.canvas.width;
-		let h = gCtx.canvas.height;
+		var cv = gCtx.canvas;
+		var w = cv.clientWidth, h = 200;
 		gCtx.clearRect(0, 0, w, h);
-
 		if (data.length < 2) return;
 
-		// 1. 自動縮放 Y 軸
-		let maxVal = Math.max(...data.map(Math.abs));
-		
-		// 特殊處理位移圖：因為它不是以0為中心，而是看範圍
-		let minD = Math.min(...data);
-		let maxD = Math.max(...data);
-		let range = maxD - minD;
-		
-		let scaleY, zeroY;
-
+		var maxVal = Math.max.apply(null, data.map(Math.abs));
+		var minD = Math.min.apply(null, data);
+		var maxD = Math.max.apply(null, data);
+		var range = Math.max(maxD - minD, 1);
+		var scaleY, zeroY;
 		if (isPos) {
-			// 位移圖：動態範圍
-			if (range < 1) range = 1;
-			scaleY = (h - 40) / range; 
-			// 將最新的點置於垂直中間，或者讓整個範圍居中
-			// 這裡選擇讓 (max+min)/2 居中
-			let mid = (maxD + minD) / 2;
-			zeroY = h/2 + mid * scaleY; // 這只是相對偏移的參考
+			scaleY = (h - 44) / range;
+			zeroY = h / 2;
 		} else {
-			// 速度圖：0 在中間
-			if (maxVal < 1) maxVal = 1; // 最小顯示範圍
-			scaleY = (h / 2 - 20) / maxVal;
+			if (maxVal < 1) maxVal = 1;
+			scaleY = (h / 2 - 22) / maxVal;
 			zeroY = h / 2;
 		}
 
-		// X 軸縮放 (固定顯示 20秒)
-		let timeRange = 20; 
-		let scaleX = w / timeRange;
-		let now = timeData[timeData.length-1];
+		var scaleX = w / 20;
+		var now = timeData[timeData.length - 1];
 
-		// 繪製網格零線
-		gCtx.strokeStyle = "#ccc";
+		gCtx.strokeStyle = "rgba(226, 235, 244, 0.22)";
 		gCtx.lineWidth = 1;
-		gCtx.beginPath();
-		if (isPos) {
-			// 位移圖不畫0線，畫邊框
-		} else {
-			gCtx.moveTo(0, zeroY);
-			gCtx.lineTo(w, zeroY);
-		}
-		gCtx.stroke();
-
-		// 繪製數據線
-		gCtx.strokeStyle = isPos ? "#9C27B0" : "#009688";
-		gCtx.lineWidth = 2;
-		gCtx.beginPath();
-
-		let started = false;
-
-		for (let i = 0; i < data.length; i++) {
-			let t = timeData[i];
-			let val = data[i];
-
-			let x = w - (now - t) * scaleX;
-			let y;
-
-			if (isPos) {
-				// map minD -> h-20, maxD -> 20
-				y = h - 20 - (val - minD) * scaleY;
-			} else {
-				y = zeroY - val * scaleY;
-			}
-
-			if (i === 0) {
-				gCtx.moveTo(x, y);
-			} else {
-				gCtx.lineTo(x, y);
-			}
-		}
-		gCtx.stroke();
-
-		// 顯示當前數值標籤
-		gCtx.fillStyle = "#333";
-		gCtx.font = "12px Arial";
-		gCtx.textAlign = "right";
-		gCtx.fillText(`當前: ${data[data.length-1].toFixed(2)} ${unit}`, w - 10, 20);
-		
 		if (!isPos) {
-			gCtx.fillText(`+${maxVal.toFixed(1)}`, w-10, zeroY - maxVal*scaleY);
-			gCtx.fillText(`-${maxVal.toFixed(1)}`, w-10, zeroY + maxVal*scaleY);
+			gCtx.beginPath(); gCtx.moveTo(0, zeroY); gCtx.lineTo(w, zeroY); gCtx.stroke();
 		} else {
-			gCtx.fillText(`Max: ${maxD.toFixed(1)}`, w-10, 35);
-			gCtx.fillText(`Min: ${minD.toFixed(1)}`, w-10, h-10);
+			gCtx.strokeRect(0.5, 0.5, w - 1, h - 1);
 		}
+
+		gCtx.strokeStyle = isPos ? "#9dc2a4" : "#8fb2d6";
+		gCtx.lineWidth = 1.8;
+		gCtx.beginPath();
+		for (var i = 0; i < data.length; i++) {
+			var x = w - (now - timeData[i]) * scaleX;
+			var val = data[i];
+			var y = isPos ? (h - 22 - (val - minD) * scaleY) : (zeroY - val * scaleY);
+			if (i === 0) gCtx.moveTo(x, y); else gCtx.lineTo(x, y);
+		}
+		gCtx.stroke();
+
+		/* 读数固定放左上, 刻度放右上/右下 —— 之前两边都靠右, 数值一贴上去就叠在一起 */
+		gCtx.fillStyle = "rgba(226, 235, 244, 0.82)";
+		gCtx.font = "11px ui-monospace, monospace";
+		gCtx.textAlign = "left";
+		gCtx.fillText("當前 " + data[data.length - 1].toFixed(2) + " " + unit, 8, 16);
+		gCtx.fillStyle = "rgba(226, 235, 244, 0.5)";
+		gCtx.fillText("20 s", 8, h - 8);
+		gCtx.textAlign = "right";
+		if (isPos) {
+			gCtx.fillText("Max " + maxD.toFixed(1), w - 8, 16);
+			gCtx.fillText("Min " + minD.toFixed(1), w - 8, h - 8);
+		} else {
+			gCtx.fillText("+" + maxVal.toFixed(1), w - 8, Math.max(14, zeroY - maxVal * scaleY));
+			gCtx.fillText("-" + maxVal.toFixed(1), w - 8, Math.min(h - 6, zeroY + maxVal * scaleY + 12));
+		}
+		gCtx.textAlign = "left";
 	}
 
-	// ================= 導出 CSV =================
 	function exportCSV() {
-		let csv = "Time(s),Velocity(m/s),Displacement(m)\n";
-		for(let i=0; i<timeData.length; i++) {
-			csv += `${timeData[i].toFixed(3)},${velData[i].toFixed(3)},${posData[i].toFixed(3)}\n`;
+		var csv = "Time(s),Velocity(m/s),Displacement(m)\n";
+		for (var i = 0; i < timeData.length; i++) {
+			csv += timeData[i].toFixed(3) + "," + velData[i].toFixed(3) + "," + posData[i].toFixed(3) + "\n";
 		}
-		
-		let blob = new Blob([csv], {type: "text/csv"});
-		let url = URL.createObjectURL(blob);
-		let a = document.createElement('a');
+		var blob = new Blob([csv], { type: "text/csv" });
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement("a");
 		a.href = url;
 		a.download = "physics_data.csv";
 		a.click();
+		URL.revokeObjectURL(url);
 	}
 
-	// 啟動循環
-	requestAnimationFrame(gameLoop);
-
-</script>
-
-<!-- dock menu scripts -->
-<!-- end dock menu scripts -->
-
-<!-- change html title when visibility changes -->
-<script>
-
-	let originalTitle = document.title;
-
-	document.addEventListener('visibilitychange', function () {
-		if (document.hidden) {
-			document.title = ' (>_<) Miku! ' + originalTitle;
-		} else {
-			document.title = originalTitle;
-		}
+	setHandle(0);
+	window.addEventListener("resize", function () {
+		fitAll();
+		if (!isDragging) applyDelta(0);
 	});
-
+	fitAll();
+	requestAnimationFrame(gameLoop);
 </script>
+</body>
 </html>

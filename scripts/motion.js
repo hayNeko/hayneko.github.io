@@ -140,11 +140,13 @@
 
 		var mode = el.getAttribute('data-smear') || 'pop';
 
-		/* 入场**不生成克隆残影**(ghosts: 0)。
-		   克隆残影的本质就是"同一份内容的另一个 DOM 节点", 只要它和主体拉开几像素,
-		   看着就是"复制了一份元素/有虚影" —— 调模糊和不透明度只能减轻, 治不了根。
-		   运动模糊改由 keyframes 里的 filter: blur() 提供: 速度快时糊、落位清晰。
-		   克隆拖影只留给 header 的菜单和开机屏(那里本来就想要"残影"的味道)。 */
+		/*
+		 * 入场**不生成克隆残影**(ghosts: 0)。
+		 * 克隆残影的本质就是"同一份内容的另一个 DOM 节点", 只要它和主体拉开几像素,
+		 * 看着就是"复制了一份元素/有虚影" —— 调模糊和不透明度只能减轻, 治不了根。
+		 * 运动模糊改由 keyframes 里的 filter: blur() 提供: 速度快时糊、落位清晰。
+		 * 克隆拖影只留给索引条的菜单和开机屏(那里本来就想要"残影"的味道)。
+		 */
 		var base = { duration: 500, delay: delay, ghosts: 0 };
 		var handle = null;
 		var total = 0;
@@ -211,7 +213,7 @@
 			else later.push(el);
 		});
 
-		inView.forEach(function (el, i) { revealNow(el, Math.min(i * 62, 400)); });
+		inView.forEach(function (el, i) { revealNow(el, Math.min(i * 56, 360)); });
 
 		if (later.length && 'IntersectionObserver' in global) {
 			revealObserver = new IntersectionObserver(function (entries) {
@@ -272,7 +274,7 @@
 	/* 模糊量跟着**速度**走, 不再是个定值:
 	   悬停放大只有 2%(卡片) 到 14%(坞图标), 一律糊 0.9px 的话,
 	   小位移元素的文字就先糊了 —— 明明几乎没动。改成按实际位移速度给模糊。 */
-	var MOVE_BLUR_PER_SPEED = 3.2;   /* 模糊(px) = 速度(px/ms) × 这个系数 */
+	var MOVE_BLUR_PER_SPEED = 5.2;   /* 模糊(px) = 速度(px/ms) × 这个系数 */
 	var MOVE_BLUR_MIN_SPEED = 0.02;  /* 慢于这个当没动, 直接清晰, 免得挂着一层噪声级模糊 */
 
 	function moveBlurCap(el) {

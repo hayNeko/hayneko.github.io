@@ -1,13 +1,10 @@
 {
 	"a11y": {
-		"skip": "跳到主內容"
+		"skip": "跳到正文",
+		"loading": "正在開啟"
 	},
 	"dock": {
-		"album": "相簿",
 		"aria": "程式塢",
-		"avatar": {
-			"tip": "Hayneko"
-		},
 		"contact": "聯絡",
 		"games": "小遊戲",
 		"home": "首页",
@@ -30,7 +27,6 @@
 				"title": "搜尋"
 			}
 		},
-		"projects": "專案",
 		"search": "搜索",
 		"searchMenu": {
 			"count": "{count} 個結果",
@@ -49,16 +45,44 @@
 		"theme": "切換主題",
 		"toast": {
 			"soon": "相簿尚未開放。"
+		},
+		"index": {
+			"label": "目錄",
+			"tip": "目錄頁",
+			"toggle": "收合",
+			"issue": "第一號 · 2026",
+			"hint": "Ctrl+K 開啟 · Esc 關閉",
+			"aria": "目錄",
+			"edition": "版次",
+			"close": "關閉",
+			"theme": "主題",
+			"language": "語言"
+		},
+		"index.tip": "目錄頁",
+		"toggle": "收合",
+		"index.issue": "第一號 · 2026",
+		"index.hint": "Ctrl+K 開啟 · Esc 關閉",
+		"index.aria": "目錄",
+		"index.edition": "版次",
+		"index.close": "關閉",
+		"index.label": "目錄",
+		"avatar": {
+			"tip": "Hayneko"
 		}
 	},
 	"footer": {
-		"status": "在線",
+		"status": "線上",
 		"text": {
-			"0": "© Hayneko. 建立於 2026 年 1 月 10 日。",
-			"1": "本站已重構 5 次。"
+			"0": "© Hayneko. 首刊於 2026 年 1 月 10 日。",
+			"1": "襯線排版，印在網頁上。"
 		}
 	},
 	"games": {
+		"range": {
+			"title": "Dust Range",
+			"desc": "一款 CS:GO 風格的 3D 射擊靶場：程序生成的 de_dust 地圖、隨機機器人小隊、購買選單和即時雷達。需要滑鼠與鍵盤。",
+			"badge": "3D"
+		},
 		"bay": {
 			"sub": "拖動 / 點擊、方向鍵, 或者螢幕下方的按鈕。離開頁面或切走分頁會自動暫停。",
 			"title": "機台"
@@ -295,51 +319,74 @@
 		}
 	},
 	"header": {
-		"hint": "點擊展開"
+		"hint": "目录"
 	},
 	"home": {
 		"card": {
+			"cabin": {
+				"desc": "松林深處一間點著爐火的木屋。拖動環視，切換暮色、夜晚與清晨，走近門廊看看室內。",
+				"title": "林間小屋"
+			},
 			"lab": {
-				"desc": "學習時寫的三個模擬：力與運動、牛頓第二定律、透鏡。Arch32S 虛擬機器也放在這裡。",
-				"title": "實驗室"
+				"desc": "力与运动、牛顿第二定律、透镜成像，都是学习时写的；Arch32S 虚拟机也在里面。",
+				"title": "实验室"
 			},
 			"links": {
-				"desc": "還是空的。如果你有值得一看的站點, 來找我, 我把它加在這裡。",
-				"title": "友情連結"
+				"desc": "故意很短。若有值得一读的站点，来信告诉我。",
+				"title": "友情链接"
 			},
 			"storage": {
-				"desc": "我留著的地圖、函式庫和手冊 —— 並如實標註哪些還能下載。",
-				"title": "資源下載"
+				"desc": "我留着的地图、库和手册——并如实标注哪些还能下载。",
+				"title": "资源下载"
+			},
+			"terminal": {
+				"title": "终端",
+				"desc": "一個真能用的 shell：計算機、雜湊、編解碼、密碼產生、cron 解析。輸入 <code>help</code>。"
 			}
 		},
-		"cta": {
-			"lab": "實驗室",
-			"storage": "打開資源下載"
-		},
-		"eyebrow": "系統在線 · 全部服務正常",
 		"quick": {
-			"sub": "檔案、模擬和連結。",
-			"title": "隨便逛逛"
+			"sub": "五個入口。",
+			"title": "本期目錄"
 		},
-		"subtitle": "音樂、動漫與程式編寫, 還有一點對 Miku 的偏愛。平時寫點小東西, 都放在這裡。",
-		"title": "Hayneko"
+		"title": "Hayneko",
+		"cover": {
+			"kicker": "Hayneko",
+			"issue": "第一號",
+			"cjk": "關於程式 · 物理 · 動畫",
+			"lede": "一個學生，一副鍵盤，和物理之間一場沒完的爭論。結果都留在這裡。",
+			"contents": "本期目錄",
+			"credit": "封面作品"
+		},
+		"statement": {
+			"eyebrow": "卷首",
+			"date": "二〇二六年一月",
+			"lede": "我寫很小的程式，把物理拆開看它怎麼運轉，活下來的那部分就留下。",
+			"body": "這裡沒有展示品。終端裡跑的是真的 shell，模擬的每一步都在解自己的方程式，資源下載裡的檔案是我確實在留檔的那些。"
+		},
+		"archive": {
+			"eyebrow": "檔案",
+			"meta": "圖版 01",
+			"quote": "這裡的東西都是夜裡寫完作業之後做的。",
+			"credit": "圖版 01 · 夜"
+		}
 	},
 	"info": {
-		"email": "電子郵件",
+		"email": "信箱",
 		"games": "遊戲",
-		"games_content": "Minecraft、異環",
+		"games_content": "Minecraft、异环",
 		"hobbies": "興趣",
-		"hobbies_content": "音樂、動漫、程式編寫",
+		"hobbies_content": "音樂、動漫、程式設計",
 		"name": "名字",
-		"projects": "專案",
-		"role": "學生 · 業餘開發者",
-		"status": "樂於嘗試新東西"
+		"projects": "项目",
+		"role": "身分",
+		"status": "樂於嘗試新東西",
+		"role_value": "學生 · 業餘開發者"
 	},
 	"lab": {
 		"docs": {
 			"i386": {
-				"desc": "解釋 x86 為什麼長成這樣的那些手冊。",
-				"title": "Intel 80386 程式設計參考手冊 (1986)"
+				"desc": "解釋 x86 為什麼長成這樣的這本手冊。",
+				"title": "Intel 80386 程式設計參考手冊（1986）"
 			},
 			"sub": "我經常回頭翻的東西。",
 			"title": "參考文件"
@@ -347,20 +394,28 @@
 		"heading": "實驗室",
 		"open": "開啟",
 		"sim": {
+			"cabin": {
+				"desc": "用手搭起來的小型 3D 場景：木屋裡的爐火與燈光、林間薄霧和螢火，還有暮色、夜晚、清晨三個時刻。",
+				"title": "林間小屋"
+			},
 			"default": {
-				"desc": "一個物塊、一個外力, 即時輸出速度與加速度。",
+				"desc": "一個物塊、一個外力，即時輸出速度與加速度。",
 				"title": "力與運動"
 			},
 			"lens": {
-				"desc": "拖動物體、移動焦點, 跟著光路圖看像如何形成。",
+				"desc": "拖動物體、移動焦點，跟著光路圖看像如何形成。",
 				"title": "透鏡成像"
 			},
 			"ntlaw2": {
-				"desc": "改變質量與外力, 看 F = ma 從數字裡自然浮現。",
+				"desc": "改變質量與外力，看 F = ma 從數字裡浮現。",
 				"title": "牛頓第二定律"
+			},
+			"wave": {
+				"title": "水波實驗",
+				"desc": "正方形水槽裡放點狀或條狀波源：波會發生干涉、穿過單縫繞射、進入較慢介質時折射；讀數給出波長 λ、頻率 f 與波速 v。"
 			}
 		},
-		"subtitle": "學習物理時寫的互動模擬 —— 以及 Hayneko_Arch32S 虛擬機器，直接在頁面裡跑。",
+		"subtitle": "學習物理時寫的模擬，以及就在這個頁面裡跑著的 Hayneko_Arch32S 虛擬機。",
 		"vm": {
 			"heading": "Arch32S 虛擬機器",
 			"subtitle": "把 HaynekoArch32VM_python 裡的模擬器搬進網頁：在終端機建立虛擬機器、上傳 ROM / 磁碟 / 組譯檔，暫存器、記憶體與目前指令即時更新。",
@@ -411,7 +466,8 @@
 			},
 			"menu": {
 				"title": "Arch32S 虛擬機器",
-				"desc": "暫存器 · 記憶體 · 單步"
+				"desc": "暫存器 · 記憶體 · 單步",
+				"wave": "水槽 · λ f v"
 			},
 			"quick": "快捷",
 			"quickAria": "快捷虛擬機器命令輸入框",
@@ -426,100 +482,112 @@
 				"aria": "256×256 小型顯示器"
 			},
 			"stackFollow": "跟隨 SP"
+		},
+		"banner": {
+			"label": "圖版 02",
+			"cap": "秋天的寺院庭園——和這些模擬解的是同一道題，只是更慢。"
 		}
 	},
 	"links": {
 		"empty": {
 			"badge": "空",
-			"body": "如果你有站點想加進來, 寄信或到 GitHub 找我。",
+			"body": "如果你有值得一讀的站點，寄信或到 GitHub 找我。",
 			"cta": "打個招呼",
-			"title": "這裡還什麼都沒有"
+			"title": "暫時還沒有收錄"
 		},
 		"heading": "友情連結",
 		"self": {
-			"github": "本站全部原始碼, 以及一些沒搬上來的實驗。",
-			"instagram": "照片, 偶爾有畫。",
+			"github": "本站全部原始碼，以及一些沒搬上來的實驗。",
+			"instagram": "照片，偶爾有畫。",
 			"lab": {
-				"desc": "不是外部連結, 但這是我最可能傳給你的東西。",
-				"title": "實驗室"
+				"desc": "不是外連，但這是我最可能寄給你的東西。",
+				"title": "物理實驗室"
 			}
 		},
-		"subtitle": "值得花時間的地方。這個列表故意很短。"
+		"subtitle": "值得花時間的地方。這份名單故意很短。",
+		"elsewhere": "別處",
+		"elsewhereMeta": "我的另外三個"
 	},
 	"nav": {
-		"aria": "主導覽",
+		"aria": "主导航",
 		"item": {
 			"games": {
-				"desc": "頁面裡就能玩的小遊戲",
+				"desc": "開箱即玩",
 				"label": "小遊戲"
 			},
 			"home": {
-				"desc": "我是誰, 這個站點在做什麼",
+				"desc": "本期目錄",
 				"label": "首頁"
 			},
 			"lab": {
-				"desc": "模擬實驗，以及 Arch32S 虛擬機器",
+				"desc": "模擬與虛擬機",
 				"label": "實驗室"
 			},
 			"links": {
-				"desc": "我真正會去看的網站",
+				"desc": "別處",
 				"label": "友情連結"
 			},
 			"storage": {
-				"desc": "值得留著的檔案",
+				"desc": "檔案館",
 				"label": "資源下載"
 			},
 			"terminal": {
-				"desc": "一個真的能用的 shell",
-				"label": "終端機"
+				"desc": "真能用的 shell",
+				"label": "終端"
 			}
 		},
 		"meta": {
-			"hint": "快速鍵 <kbd>Ctrl</kbd>+<kbd>K</kbd> 開關導覽, <kbd>Esc</kbd> 關閉"
+			"hint": "按 <kbd>Ctrl</kbd>+<kbd>K</kbd> 開啟目錄頁"
 		}
 	},
 	"storage": {
 		"file": {
 			"1": {
-				"meta": "zip · 1.8 MB · 更新於 2026-01-27 · 已失效"
+				"meta": "zip · 1.8 MB · 更新於 2026-01-27 · 已下架"
 			},
 			"2": {
-				"meta": "zip · 更新於 2026-02-07 · 已失效"
+				"meta": "zip · 更新於 2026-02-07 · 已下架"
 			}
 		},
 		"group": {
 			"docs": "文件",
 			"games": "遊戲存檔",
-			"more": "應該沒有更多檔案了…",
-			"other": "其它資源"
+			"more": "沒有更多檔案了",
+			"other": "檔案"
 		},
 		"heading": "資源下載",
-		"note": "如果連結 404, 代表檔案真的沒了 —— 不是連結壞了。",
+		"note": "這裡 404 就是檔案真的沒了，不是連結壞了。",
 		"state": {
 			"available": "下載",
 			"dead": "已失效"
 		},
-		"subtitle": "我願意上傳的東西都在這裡。體積是約數; 失效的條目保留下來作為紀錄。"
+		"subtitle": "我願意上傳的東西都在這裡。體積是約數；失效的條目留存作紀錄。"
 	},
 	"tab": {
 		"away": "Miku! 快回來看看 "
 	},
 	"terminal": {
-		"heading": "終端機",
-		"subtitle": "輸入 help 看看這個 shell 能做什麼。",
+		"heading": "終端",
+		"subtitle": "輸入 <code>help</code> 看看這個 shell 能做什麼。",
 		"term": {
-			"input": "終端機輸入",
+			"input": "終端輸入",
 			"tag": "互動式"
-		}
+		},
+		"index": "指令索引",
+		"indexHint": "Tab 補全，↑ 翻歷史"
 	},
 	"title": {
-		"default": "Hayneko",
+		"range": "Dust Range · Hayneko",
+		"default": "Hayneko — 第一號",
 		"games": "小遊戲 · Hayneko",
-		"home": "首頁 · Hayneko",
+		"home": "Hayneko — 第一號",
 		"lab": "實驗室 · Hayneko",
 		"links": "友情連結 · Hayneko",
 		"storage": "資源下載 · Hayneko",
-		"terminal": "終端機 · Hayneko",
-		"vm": "Arch32S 虛擬機器 · Hayneko"
+		"terminal": "終端 · Hayneko",
+		"vm": "Arch32S 虛擬機 · Hayneko"
+	},
+	"boot": {
+		"sub": "一份關於程式、物理與動畫的個人刊物。"
 	}
 }

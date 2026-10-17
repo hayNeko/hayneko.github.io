@@ -1,10 +1,24 @@
 <!-- views/labs.html -->
 <header class="page-head">
+	<div class="folio">
+		<span class="folio__no">04</span>
+		<span i18n-key="nav.item.lab.label">Labs</span>
+		<span class="folio__rule" aria-hidden="true"></span>
+		<span>~/labs</span>
+	</div>
 	<h1 class="page-head__title" data-smear="drop" data-fx-split><span data-fx-text i18n-key="lab.heading">Labs</span></h1>
 	<p class="page-head__sub" data-smear i18n-key="lab.subtitle">
 		Interactive simulations I wrote while studying physics — plus the Hayneko_Arch32S virtual machine, running right here in the page.
 	</p>
 </header>
+
+<figure class="banner" data-smear>
+	<img class="protected-media" src="medias/pictures/3098338858_4u5we98gbluwxjrxclaegzfsyng599k_after.png" alt="" draggable="false">
+	<figcaption class="banner__cap wrap">
+		<b i18n-key="lab.banner.label">Plate 02</b>
+		<span i18n-key="lab.banner.cap">Autumn, a temple garden, and water that keeps moving — the same thing the simulations do, only slower.</span>
+	</figcaption>
+</figure>
 
 <section class="section" style="margin-top:0">
 	<div class="sim-grid">
@@ -89,6 +103,58 @@
 					<span i18n-key="lab.open">Open</span><span class="btn__arrow" aria-hidden="true">↗</span>
 				</a>
 				<span class="badge badge--red">v1.0</span>
+			</div>
+		</article>
+
+		<article class="sim-card" data-smear>
+			<div class="sim-card__preview" aria-hidden="true">
+				<svg viewBox="0 0 200 80" preserveAspectRatio="none">
+					<rect x="8" y="6" width="184" height="68" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1"/>
+					<circle cx="54" cy="40" r="4" fill="none" stroke="currentColor" stroke-opacity=".9" stroke-width="1.6"/>
+					<circle cx="54" cy="40" r="13" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="1.2"/>
+					<circle cx="54" cy="40" r="24" fill="none" stroke="currentColor" stroke-opacity=".42" stroke-width="1.1"/>
+					<circle cx="54" cy="40" r="35" fill="none" stroke="currentColor" stroke-opacity=".26" stroke-width="1"/>
+					<path d="M118 16v48" stroke="currentColor" stroke-opacity=".55" stroke-width="2"/>
+					<path d="M104 16h14M104 64h14" stroke="currentColor" stroke-opacity=".55" stroke-width="2"/>
+					<circle cx="160" cy="40" r="16" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="1.1" stroke-dasharray="4 3"/>
+				</svg>
+			</div>
+			<span class="sim-card__idx">05 / WAVES</span>
+			<h3 class="sim-card__title" i18n-key="lab.sim.wave.title">Water waves</h3>
+			<p class="sim-card__body" i18n-key="lab.sim.wave.desc">A square tank, a point source, a bar source. Watch waves interfere, diffract through a slit and bend through a slower medium — with λ, f and v on the readout.</p>
+			<div class="sim-card__foot">
+				<a class="btn btn--sm" href="pages/labs/phy-wave/" target="_blank" rel="noopener noreferrer">
+					<span i18n-key="lab.open">Open</span><span class="btn__arrow" aria-hidden="true">↗</span>
+				</a>
+				<span class="badge badge--green">v1.0</span>
+			</div>
+		</article>
+
+		<article class="sim-card" data-smear>
+			<div class="sim-card__preview" aria-hidden="true">
+				<svg viewBox="0 0 200 80" preserveAspectRatio="none">
+					<line x1="8" y1="70" x2="192" y2="70" stroke="currentColor" stroke-opacity=".3" stroke-width="1"/>
+					<path d="M32 68V43l26-16 26 16v25" fill="none" stroke="currentColor" stroke-opacity=".75" stroke-width="1.4"/>
+					<path d="M25 44L58 24l33 20" fill="none" stroke="currentColor" stroke-opacity=".9" stroke-width="1.5"/>
+					<path d="M38 68V48h17v20M64 68V48h17v20" fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="1.2"/>
+					<rect x="40" y="50" width="13" height="9" fill="currentColor" fill-opacity=".22" stroke="currentColor" stroke-opacity=".65" stroke-width="1"/>
+					<rect x="66" y="50" width="13" height="9" fill="currentColor" fill-opacity=".22" stroke="currentColor" stroke-opacity=".65" stroke-width="1"/>
+					<path d="M58 68V53h5v15" fill="none" stroke="currentColor" stroke-opacity=".9" stroke-width="1.3"/>
+					<path d="M124 68V22M114 39l10-11 10 11M114 54l10-11 10 11M114 68l10-11 10 11" fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="1.2"/>
+					<path d="M156 68V35l9-7 9 7v33" fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="1.2"/>
+					<rect x="163" y="48" width="7" height="7" fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-opacity=".6" stroke-width="1"/>
+					<circle cx="174" cy="18" r="7" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="1.2"/>
+					<path d="M60 14h14M60 18h8" stroke="currentColor" stroke-opacity=".25" stroke-width="1"/>
+				</svg>
+			</div>
+			<span class="sim-card__idx">06 / SCENE</span>
+			<h3 class="sim-card__title" i18n-key="lab.sim.cabin.title">Forest cabin</h3>
+			<p class="sim-card__body" i18n-key="lab.sim.cabin.desc">A small 3D scene built by hand: a timber cabin with a lit interior, drifting mist, fireflies and three different hours. Drag to orbit.</p>
+			<div class="sim-card__foot">
+				<a class="btn btn--sm" href="pages/forest-cabin.html" target="_blank" rel="noopener noreferrer">
+					<span i18n-key="lab.open">Open</span><span class="btn__arrow" aria-hidden="true">↗</span>
+				</a>
+				<span class="badge badge--blue">3D</span>
 			</div>
 		</article>
 	</div>

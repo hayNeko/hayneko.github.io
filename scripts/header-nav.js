@@ -32,8 +32,8 @@
 	var meta = nav ? nav.querySelector('.nav-meta') : null;
 
 	/* ---- 时序: 与 CSS 共用同一组值, 保证拖影贴合主元素 ---- */
-	var NAV_DUR = 480;
-	var NAV_STAGGER = 42;
+	var NAV_DUR = 420;
+	var NAV_STAGGER = 36;
 	var NAV_EASE = 'cubic-bezier(0.15, 1, 0, 1)';
 
 	/* 收起态与展开态的形态, CSS 里的 .nav-item 必须与此一致 */
@@ -97,11 +97,11 @@
 				duration: NAV_DUR,
 				easing: NAV_EASE,
 				delay: i * NAV_STAGGER,
-				ghosts: 6,
-				lag: 26,
-				blur: 1.9,
-				fade: 0.5,
-				blend: 'screen'
+				ghosts: 7,
+				lag: 8,
+				blur: 3.6,
+				fade: 0.34,
+				blend: 'normal'
 			}));
 		});
 
@@ -201,7 +201,20 @@
 
 	/* ------------------------------------------------------------ 就绪 */
 
+	function measurePanel() {
+		var panel = doc.getElementById('site-nav-panel');
+		if (!panel) return;
+		var prevH = panel.style.height;
+		panel.style.height = 'auto';
+		var h = panel.scrollHeight;
+		panel.style.height = prevH;
+		if (h > 0) doc.documentElement.style.setProperty('--panel-h', h + 'px');
+	}
+
 	applyTimingVars();
+	measurePanel();
+	doc.addEventListener('i18n:applied', measurePanel);
+	global.addEventListener('resize', measurePanel);
 	if (header.classList.contains('is-open')) { isOpen = true; setStatus('[ nav ]', 'busy'); }
 
 	global.addEventListener('load', function () { setTimeout(function () { ready = true; }, 240); });

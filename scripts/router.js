@@ -18,6 +18,7 @@
 		labs:    { id: 'labs',    path: '~/labs',    partial: 'views/labs.html',    titleKey: 'title.lab',    accent: 'red' },
 		'labs-vm': { id: 'labs-vm', path: '~/labs/vm', partial: 'views/labs-vm.html', titleKey: 'title.vm', accent: 'blue' },
 		games:   { id: 'games',   path: '~/games',   partial: 'views/games.html',   titleKey: 'title.games',   accent: 'green' },
+		range:   { id: 'range',   path: '~/range',   partial: 'views/cs-range/index.html', titleKey: 'title.range', accent: 'red' },
 		links:   { id: 'links',   path: '~/links',   partial: 'views/links.html',   titleKey: 'title.links',   accent: 'white' }
 	};
 	var FALLBACK = 'home';
@@ -30,6 +31,17 @@
 
 	var progressEl = null;
 	var progressFill = null;
+	/* 开机屏收起后会派 boot:done: 首屏入场等它再补播, 免得动画被开机屏整个挡掉 */
+	var bootDone = false;
+	var pendingEntrance = null;
+
+	doc.addEventListener('boot:done', function () {
+		bootDone = true;
+		if (!pendingEntrance) return;
+		var page = pendingEntrance;
+		pendingEntrance = null;
+		runEntrance(page);
+	});
 
 	function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
@@ -175,11 +187,16 @@
 
 		// 3) 入场
 		page.dataset.state = 'entering';
-		runEntrance(page);
+		/* 开机屏还盖在上面时先不播 —— 那时候播等于让用户白等。
+		   等 app.js 收掉开机屏并派 boot:done 之后再补播。 */
+		if (bootDone) runEntrance(page);
+		else pendingEntrance = page;
 
 		if (global.Terminal && global.Terminal.mountAll) global.Terminal.mountAll(page);
 		/* 小游戏机台也挂在页面片段上, 机制与终端相同 */
 		if (global.Games && global.Games.mountAll) global.Games.mountAll(page);
+		/* 3D 靶场: 页面片段挂载后由懒加载器拉 Three.js + 游戏资源 */
+		if (global.CSRange && global.CSRange.mountAll) global.CSRange.mountAll(page);
 		/* Arch32S 调试器页面 (~/labs/vm) 的挂载时机与机台相同 */
 		if (global.LabsVM && global.LabsVM.mountAll) global.LabsVM.mountAll(page);
 		if (global.GeometryBG && global.GeometryBG.pulse) global.GeometryBG.pulse(route.accent === 'white' ? 'blue' : route.accent);

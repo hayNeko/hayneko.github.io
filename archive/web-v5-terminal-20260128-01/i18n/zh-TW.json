@@ -1,0 +1,525 @@
+{
+	"a11y": {
+		"skip": "跳到主內容"
+	},
+	"dock": {
+		"album": "相簿",
+		"aria": "程式塢",
+		"avatar": {
+			"tip": "Hayneko"
+		},
+		"contact": "聯絡",
+		"games": "小遊戲",
+		"home": "首页",
+		"lab": "實驗室",
+		"language": "語言",
+		"links": "友情連結",
+		"menu": {
+			"contact": {
+				"title": "聯絡"
+			},
+			"lab": {
+				"title": "實驗室"
+			},
+			"language": {
+				"title": "語言"
+			},
+			"search": {
+				"empty": "沒有符合的條目。",
+				"placeholder": "搜尋整個站點…",
+				"title": "搜尋"
+			}
+		},
+		"projects": "專案",
+		"search": "搜索",
+		"searchMenu": {
+			"count": "{count} 個結果",
+			"group": {
+				"commands": "終端機指令",
+				"files": "資源下載",
+				"games": "小遊戲",
+				"links": "連結與聯絡",
+				"pages": "頁面",
+				"sims": "物理模擬"
+			},
+			"hint": "站內全部內容 —— 輸入即可過濾。"
+		},
+		"storage": "資源下載",
+		"terminal": "終端機",
+		"theme": "切換主題",
+		"toast": {
+			"soon": "相簿尚未開放。"
+		}
+	},
+	"footer": {
+		"status": "在線",
+		"text": {
+			"0": "© Hayneko. 建立於 2026 年 1 月 10 日。",
+			"1": "本站已重構 5 次。"
+		}
+	},
+	"games": {
+		"bay": {
+			"sub": "拖動 / 點擊、方向鍵, 或者螢幕下方的按鈕。離開頁面或切走分頁會自動暫停。",
+			"title": "機台"
+		},
+		"blockblast": {
+			"badge": "v1.0",
+			"boardAria": "Block Blast 棋盤",
+			"comboLegend": {
+				"title": "連擊顏色",
+				"note": "HUD 上的數字就是連擊數。連續 4 次沒有消除, 連擊歸零; 中間每空放一次, 顏色就往下掉一階:",
+				"off": "沒有連擊, 或連擊已中斷",
+				"live": "剛觸發連擊",
+				"miss1": "第 1 次空放",
+				"miss2": "第 2 次空放",
+				"miss3": "第 3 次空放 —— 再空放一次就斷"
+			},
+			"desc": "8x8 的棋盤, 一次三塊: 把方塊拖進去, 填滿整行或整列就消掉。沒有倒數 —— 三塊都放不下時才結束。",
+			"flag": {
+				"easy": "溫和",
+				"easyTip": "--easy-mode: 長條與大方塊更多",
+				"rollback": "可撤回",
+				"rollbackTip": "--with-roll-back: 可以撤回上一步"
+			},
+			"flagEasy": "溫和出牌: 只出直線與方塊(沒有轉角), 而且長條與大方塊的權重高得多 —— 更容易湊滿整行整列, 連擊也更好拿。",
+			"flagRollback": "多一個撤回按鈕(鍵盤 U / 觸控 ↶), 可以退回上一次放置之前, 分數一起還回來。",
+			"flagsTitle": "命令列旗標 —— 直接點下面的開關即可, 效果與 play blockblast 後面加參數一樣。",
+			"hud": {
+				"best": "最高分",
+				"combo": "連擊",
+				"lines": "消線",
+				"score": "得分"
+			},
+			"keys": {
+				"drag": "從手牌列把方塊拖到棋盤上",
+				"move": "移動",
+				"pause": "暫停",
+				"pick": "選塊",
+				"place": "放下",
+				"restart": "長按重開",
+				"undo": "撤回"
+			},
+			"pad": {
+				"aria": "觸控操作",
+				"down": "下移",
+				"left": "左移",
+				"next": "換一塊",
+				"place": "放下",
+				"right": "右移",
+				"undo": "撤回",
+				"up": "上移"
+			},
+			"readyTitle": "Block Blast",
+			"title": "Block Blast"
+		},
+		"btn": {
+			"pause": "暫停",
+			"restart": "重開",
+			"resume": "繼續",
+			"start": "開始",
+			"undo": "撤回"
+		},
+		"funcball": {
+			"againHint": "按「開始對決」用現在的參數再來一局; 想改參數就長按「重開」回到設定面板",
+			"badge": "v1.0",
+			"boardAria": "函數球對決場地",
+			"bounceAria": "彈跳高度",
+			"btn": {
+				"duel": "開始對決"
+			},
+			"chipHits": "命中 {n} 次",
+			"chipX": "x = {x}",
+			"desc": "兩顆函數球, 一堵磚牆。兩邊各設一個 f(x) —— 階乘、百分比變化、冪函數、費波那契, 或者自己寫 —— 每一次彈跳都變成傷害。",
+			"exprError": "f(x) 讀不出來",
+			"field": {
+				"bounce": "彈跳高度",
+				"expr": "每次彈跳的傷害 · f(x)",
+				"growth": "每層生命值倍數",
+				"hp": "每塊磚生命值",
+				"layerHp": "每層生命值",
+				"layers": "層數",
+				"perRow": "每層磚塊數量",
+				"step": "每跳 x 增加",
+				"template": "函數範本",
+				"x0": "初始 x"
+			},
+			"flag": {
+				"easy": "平坦",
+				"easyTip": "--easy-mode: 每層生命值不翻倍",
+				"slow": "慢放",
+				"slowTip": "--slow-motion: 彈得更高更慢"
+			},
+			"flagEasy": "平坦磚牆: 每層生命值都一樣, 不逐層翻倍。",
+			"flagSlow": "彈跳高度翻倍: 每一跳更慢, 傷害數字看得更清楚。",
+			"flagsTitle": "命令列旗標 —— 直接點下面的開關就行, 效果與 play funcball 後面加參數一樣。",
+			"hpCap": "已到上限 {max}",
+			"hud": {
+				"bricks": "剩餘磚塊",
+				"dmgA": "A 方傷害",
+				"dmgB": "B 方傷害",
+				"time": "用時"
+			},
+			"keys": {
+				"pause": "暫停",
+				"restart": "長按重開",
+				"start": "開始 / 暫停"
+			},
+			"laneA": "A 方球",
+			"laneB": "B 方球",
+			"legend": {
+				"note": "兩顆球每次都彈到完全相同的高度(上面那根滑桿兩邊一起改)。每彈一次算一次命中:",
+				"rule1": "第一下用的是初始 x, 所以 x! 的第一下是 0! = 1 點傷害; 之後每命中一次, x 按你設的增量往上漲。",
+				"rule2": "每往下一層生命值就乘一次倍數; 磚塊要掉到 0 以下才消失, 消失了球才落到下一層。",
+				"rule3": "先把整堵牆打穿、落到地面的那方獲勝 —— 誰先落地, 對決立刻結束。",
+				"title": "一次彈跳怎麼變成傷害"
+			},
+			"overDamage": "A 方 {a} 傷害 / {an} 次命中 · B 方 {b} 傷害 / {bn} 次命中",
+			"overTime": "用時 {time}",
+			"overTitle": "對決結束",
+			"pausedHint": "P 或 Esc 繼續 —— 想改參數就長按「重開」回到設定",
+			"readyHint": "兩邊各設一個函數, 然後按「開始對決」",
+			"readyTitle": "函數球打磚塊",
+			"title": "函數球打磚塊",
+			"tpl": {
+				"custom": "自訂 · f(x)",
+				"fact": "階乘 · x!",
+				"fib": "費波那契 · Fₙ",
+				"percent": "百分比變化 · a·(1+r)ˣ",
+				"power": "冪函數 · xⁿ"
+			},
+			"wallNote": "磚塊生命值掉到 0 以下才算碎 —— 正好打到 0 還得再來一下; 溢出傷害不結轉給下一塊。",
+			"wallTitle": "磚牆(兩邊完全相同)",
+			"win": {
+				"a": "A 方獲勝!",
+				"b": "B 方獲勝!"
+			}
+		},
+		"heading": "小遊戲",
+		"hint": {
+			"restart": "長按「重開」重新開始"
+		},
+		"overlay": {
+			"overHint": "得分 {score} · 最高 {best}",
+			"overTitle": "遊戲結束",
+			"pausedHint": "P 或 Esc 繼續",
+			"pausedTitle": "已暫停",
+			"readyHint": "按開始, 或空白鍵"
+		},
+		"play": "開始玩",
+		"state": {
+			"over": "結束",
+			"paused": "已暫停",
+			"ready": "就緒",
+			"running": "進行中"
+		},
+		"subtitle": "直接在頁面裡跑的小遊戲。不用下載、不用外掛 —— 終端裡也能開局。",
+		"tetris": {
+			"badge": "v2.0",
+			"boardAria": "俄羅斯方塊棋盤",
+			"btnExport": "匯出存檔碼",
+			"btnLoad": "讀取本機存檔",
+			"btnRestore": "讀取存檔碼",
+			"btnSave": "存到本機",
+			"desc": "七種方塊、十列場地, 每消十行快一檔。附幽靈落點與暫存。",
+			"flag": {
+				"easy": "不加速",
+				"easyTip": "--easy-mode: 不加速模式",
+				"free": "自由",
+				"freeTip": "--free-mode: 種子決定方塊序列(同種子 = 同一局)",
+				"hard": "困難",
+				"hardTip": "--hard-mode: 恆定三分之一速度 + 散亂方塊, 且不能開簡單模式 / 撤回",
+				"rollback": "可撤回",
+				"rollbackTip": "--with-roll-back: 可以撤回上一步"
+			},
+			"flagEasy": "不加速：等級固定 1、下落間隔恆為 800ms，而且長條 (I) 與 T 型出現得比其他五種略勤。",
+			"flagFree": "自由模式: 種子決定方塊序列 —— 同一個種子給出同一局。面板上會多出種子欄與存檔碼, 存檔碼可以直接分享。",
+			"flagHard": "困難模式: 開局時底下先鋪好幾層散亂方塊(每層 2~5 個孔, 位置完全隨機, 且與下一層錯開), 方塊按「最高速度的三分之一」恆定下落; 不能開簡單模式、也不能撤回。",
+			"flagRollback": "多一個撤回按鈕(鍵盤 U / 觸控 ↶), 可以退回上一塊落子之前。",
+			"flagsTitle": "命令列旗標 —— 直接點下面的開關即可, 效果與 play tetris 後面加參數一樣。",
+			"hardConflict": "困難模式下不可用",
+			"hardRows": "初始散亂層數",
+			"hardRowsAria": "初始散亂層數",
+			"hardRowsHint": "每層留 2~5 個孔, 位置完全隨機(挨著也可能); 但不會落在下一層已經空掉的列上, 所以一根豎條填不了兩層的孔。改層數從下一局開始生效。",
+			"hud": {
+				"best": "最高分",
+				"hold": "暫存",
+				"level": "等級",
+				"lines": "消行",
+				"next": "下一個",
+				"score": "得分"
+			},
+			"keys": {
+				"hard": "硬降",
+				"hold": "暫存",
+				"move": "移動",
+				"pause": "暫停",
+				"restart": "長按重開",
+				"rotate": "旋轉",
+				"soft": "軟降",
+				"undo": "撤回"
+			},
+			"msgCopied": "存檔碼已複製到剪貼簿。",
+			"msgCopyFail": "複製失敗 —— 碼已選取, 按 Ctrl/Cmd+C。",
+			"msgCopyHint": "存檔碼已在框裡, 請手動複製。",
+			"msgCodeBad": "存檔碼無效。",
+			"msgCodeEmpty": "先貼一個存檔碼。",
+			"msgLoaded": "已讀取本機存檔 —— 按「讀取存檔碼」套用。",
+			"msgNoSave": "本機還沒有存檔。",
+			"msgRestored": "已讀取存檔碼 —— 種子 {seed}",
+			"msgSaveFail": "本機瀏覽器不讓存。",
+			"msgSaved": "已存到本機瀏覽器。",
+			"msgSeedBad": "種子必須是整數。",
+			"msgSeedClamped": "超出範圍, 已夾到 {seed}",
+			"msgSeedEmpty": "先填一個種子(整數)。",
+			"msgSeedNew": "新種子: {seed}",
+			"pad": {
+				"aria": "觸控操作",
+				"down": "軟降",
+				"drop": "硬降",
+				"hold": "暫存",
+				"left": "左移",
+				"right": "右移",
+				"rotate": "旋轉",
+				"undo": "撤回"
+			},
+			"readyTitle": "俄羅斯方塊",
+			"saveAria": "存檔碼",
+			"saveHint": "碼裡帶著種子、板面與所有在手的方塊 —— 複製出去就能分享這一局; 貼一份進來按「讀取存檔碼」就能接著玩。",
+			"savePanelTitle": "存檔碼 —— 複製分享, 或貼一份進來讀取",
+			"seedAria": "種子",
+			"seedHint": "範圍 -2147483648 ~ 2147483647 的整數; 超出就夾到最近的邊界, 不是整數直接報錯。同一個種子 → 同一串方塊。",
+			"seedLabel": "種子",
+			"seedRandom": "隨機",
+			"title": "俄羅斯方塊"
+		}
+	},
+	"header": {
+		"hint": "點擊展開"
+	},
+	"home": {
+		"card": {
+			"lab": {
+				"desc": "學習時寫的三個模擬：力與運動、牛頓第二定律、透鏡。Arch32S 虛擬機器也放在這裡。",
+				"title": "實驗室"
+			},
+			"links": {
+				"desc": "還是空的。如果你有值得一看的站點, 來找我, 我把它加在這裡。",
+				"title": "友情連結"
+			},
+			"storage": {
+				"desc": "我留著的地圖、函式庫和手冊 —— 並如實標註哪些還能下載。",
+				"title": "資源下載"
+			}
+		},
+		"cta": {
+			"lab": "實驗室",
+			"storage": "打開資源下載"
+		},
+		"eyebrow": "系統在線 · 全部服務正常",
+		"quick": {
+			"sub": "檔案、模擬和連結。",
+			"title": "隨便逛逛"
+		},
+		"subtitle": "音樂、動漫與程式編寫, 還有一點對 Miku 的偏愛。平時寫點小東西, 都放在這裡。",
+		"title": "Hayneko"
+	},
+	"info": {
+		"email": "電子郵件",
+		"games": "遊戲",
+		"games_content": "Minecraft、異環",
+		"hobbies": "興趣",
+		"hobbies_content": "音樂、動漫、程式編寫",
+		"name": "名字",
+		"projects": "專案",
+		"role": "學生 · 業餘開發者",
+		"status": "樂於嘗試新東西"
+	},
+	"lab": {
+		"docs": {
+			"i386": {
+				"desc": "解釋 x86 為什麼長成這樣的那些手冊。",
+				"title": "Intel 80386 程式設計參考手冊 (1986)"
+			},
+			"sub": "我經常回頭翻的東西。",
+			"title": "參考文件"
+		},
+		"heading": "實驗室",
+		"open": "開啟",
+		"sim": {
+			"default": {
+				"desc": "一個物塊、一個外力, 即時輸出速度與加速度。",
+				"title": "力與運動"
+			},
+			"lens": {
+				"desc": "拖動物體、移動焦點, 跟著光路圖看像如何形成。",
+				"title": "透鏡成像"
+			},
+			"ntlaw2": {
+				"desc": "改變質量與外力, 看 F = ma 從數字裡自然浮現。",
+				"title": "牛頓第二定律"
+			}
+		},
+		"subtitle": "學習物理時寫的互動模擬 —— 以及 Hayneko_Arch32S 虛擬機器，直接在頁面裡跑。",
+		"vm": {
+			"heading": "Arch32S 虛擬機器",
+			"subtitle": "把 HaynekoArch32VM_python 裡的模擬器搬進網頁：在終端機建立虛擬機器、上傳 ROM / 磁碟 / 組譯檔，暫存器、記憶體與目前指令即時更新。",
+			"vm": {
+				"label": "虛擬機器"
+			},
+			"new": "新增虛擬機器",
+			"upload": "上傳檔案",
+			"saveRom": "匯出 ROM",
+			"saveDisk": "匯出磁碟",
+			"demo": "範例",
+			"load": "載入",
+			"pause": "暫停",
+			"step": "單步",
+			"over": "跳過呼叫",
+			"out": "跳出",
+			"restart": "重啟（長按）",
+			"clearBp": "清除中斷點",
+			"panel": {
+				"disasm": "反組譯",
+				"disasmHint": "點一列即可設中斷點",
+				"regs": "暫存器 / 旗標",
+				"regsHint": "點數值可直接修改",
+				"fpr": "浮點暫存器",
+				"stack": "堆疊 (SP)",
+				"mem": "記憶體傾印",
+				"out": "輸出",
+				"outHint": "埠 0x00 / 0x01 的輸出顯示在這裡",
+				"mon": "小型顯示器 256×256"
+			},
+			"memBase": "基底",
+			"memFollow": "跟隨",
+			"files": {
+				"title": "已上傳的檔案",
+				"hint": "ROM 1024 B · 磁碟 256 KB · .asm 原始碼 —— 也可以直接把檔案拖到這塊面板上"
+			},
+			"term": {
+				"tag": "arch32 虛擬機器"
+			},
+			"hints": {
+				"title": "終端機命令",
+				"sub": "按鈕能做的，終端機裡都有對應命令；命令也都有按鈕。全域終端機裡是同一套 vm 命令。"
+			},
+			"card": {
+				"title": "Arch32S 虛擬機器",
+				"desc": "學習時寫的三個模擬：力與運動、牛頓第二定律、透鏡。Arch32S 虛擬機器也放在這裡。",
+				"open": "開啟偵錯器"
+			},
+			"menu": {
+				"title": "Arch32S 虛擬機器",
+				"desc": "暫存器 · 記憶體 · 單步"
+			},
+			"quick": "快捷",
+			"quickAria": "快捷虛擬機器命令輸入框",
+			"autorun": "自動執行",
+			"rateAria": "自動執行速度：每秒指令數",
+			"ips": "指令/秒",
+			"mon": {
+				"source": "顯示來源",
+				"screen": "螢幕",
+				"buffer": "緩衝區",
+				"clear": "清除畫面",
+				"aria": "256×256 小型顯示器"
+			},
+			"stackFollow": "跟隨 SP"
+		}
+	},
+	"links": {
+		"empty": {
+			"badge": "空",
+			"body": "如果你有站點想加進來, 寄信或到 GitHub 找我。",
+			"cta": "打個招呼",
+			"title": "這裡還什麼都沒有"
+		},
+		"heading": "友情連結",
+		"self": {
+			"github": "本站全部原始碼, 以及一些沒搬上來的實驗。",
+			"instagram": "照片, 偶爾有畫。",
+			"lab": {
+				"desc": "不是外部連結, 但這是我最可能傳給你的東西。",
+				"title": "實驗室"
+			}
+		},
+		"subtitle": "值得花時間的地方。這個列表故意很短。"
+	},
+	"nav": {
+		"aria": "主導覽",
+		"item": {
+			"games": {
+				"desc": "頁面裡就能玩的小遊戲",
+				"label": "小遊戲"
+			},
+			"home": {
+				"desc": "我是誰, 這個站點在做什麼",
+				"label": "首頁"
+			},
+			"lab": {
+				"desc": "模擬實驗，以及 Arch32S 虛擬機器",
+				"label": "實驗室"
+			},
+			"links": {
+				"desc": "我真正會去看的網站",
+				"label": "友情連結"
+			},
+			"storage": {
+				"desc": "值得留著的檔案",
+				"label": "資源下載"
+			},
+			"terminal": {
+				"desc": "一個真的能用的 shell",
+				"label": "終端機"
+			}
+		},
+		"meta": {
+			"hint": "快速鍵 <kbd>Ctrl</kbd>+<kbd>K</kbd> 開關導覽, <kbd>Esc</kbd> 關閉"
+		}
+	},
+	"storage": {
+		"file": {
+			"1": {
+				"meta": "zip · 1.8 MB · 更新於 2026-01-27 · 已失效"
+			},
+			"2": {
+				"meta": "zip · 更新於 2026-02-07 · 已失效"
+			}
+		},
+		"group": {
+			"docs": "文件",
+			"games": "遊戲存檔",
+			"more": "應該沒有更多檔案了…",
+			"other": "其它資源"
+		},
+		"heading": "資源下載",
+		"note": "如果連結 404, 代表檔案真的沒了 —— 不是連結壞了。",
+		"state": {
+			"available": "下載",
+			"dead": "已失效"
+		},
+		"subtitle": "我願意上傳的東西都在這裡。體積是約數; 失效的條目保留下來作為紀錄。"
+	},
+	"tab": {
+		"away": "Miku! 快回來看看 "
+	},
+	"terminal": {
+		"heading": "終端機",
+		"subtitle": "輸入 help 看看這個 shell 能做什麼。",
+		"term": {
+			"input": "終端機輸入",
+			"tag": "互動式"
+		}
+	},
+	"title": {
+		"default": "Hayneko",
+		"games": "小遊戲 · Hayneko",
+		"home": "首頁 · Hayneko",
+		"lab": "實驗室 · Hayneko",
+		"links": "友情連結 · Hayneko",
+		"storage": "資源下載 · Hayneko",
+		"terminal": "終端機 · Hayneko",
+		"vm": "Arch32S 虛擬機器 · Hayneko"
+	}
+}
