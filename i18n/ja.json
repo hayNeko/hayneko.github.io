@@ -78,6 +78,11 @@
 		}
 	},
 	"games": {
+		"horizon": {
+			"title": "Hayneko Horizon",
+			"desc": "黄昏のオープンワールド・レーサー。海岸スプリント、峠のヒルクライム、ドリフトが得意なクーペが、自動生成の日本海岸線を走る。",
+			"badge": "3D"
+		},
 		"range": {
 			"title": "Dust Range",
 			"desc": "CS:GO 風の 3D 射撃訓練場。手続き生成の de_dust マップ、ランダムなロボット部隊、購入メニュー、レーダーを搭載。マウスとキーボード推奨。",
@@ -577,6 +582,7 @@
 		"indexHint": "Tab で補完、↑ で履歴"
 	},
 	"title": {
+		"horizon": "ヘイネコ ホライズン · Hayneko",
 		"range": "Dust Range · Hayneko",
 		"default": "Hayneko — 第一号",
 		"games": "ゲーム · Hayneko",

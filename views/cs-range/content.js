@@ -182,7 +182,22 @@
 		}
 	};
 
-		var DIFFICULTY = {
+		var BOT_LOADOUTS = {
+		scout: [
+			['mp9', 'p250'], ['ump45', 'p250'], ['galil', 'deagle'], ['mp9', 'deagle']
+		],
+		trooper: [
+			['ak47', 'mp9'], ['m4a4', 'ump45'], ['galil', 'p250'], ['sg553', 'deagle']
+		],
+		heavy: [
+			['ak47', 'nova'], ['m4a4', 'ump45'], ['galil', 'nova'], ['sg553', 'p250']
+		],
+		sniper: [
+			['awp', 'p250'], ['ssg08', 'deagle'], ['awp', 'p250'], ['ssg08', 'mp9']
+		]
+	};
+
+	var DIFFICULTY = {
 		recruit: { label: 'RECRUIT', accuracy: 0.55, reaction: 1.25, damage: 0.65, fire: 1.25, speed: 0.9, missChance: 0.34 },
 		regular: { label: 'REGULAR', accuracy: 0.78, reaction: 1.0, damage: 1.0, fire: 1.0, speed: 1.0, missChance: 0.22 },
 		veteran: { label: 'VETERAN', accuracy: 0.92, reaction: 0.76, damage: 1.2, fire: 0.85, speed: 1.08, missChance: 0.12 },
@@ -204,6 +219,30 @@
 	];
 
 	var PLAYER_SPAWN = { x: 0, z: 31 };
+	var PRACTICE_SPAWN = { x: 0, z: 34.5 };
+
+	/* Practice boards face the shooting line at the CT end of the map. */
+	var PRACTICE_TARGETS = [
+		{ x: 0, z: 24.0, type: 'paper', scale: 1.10, move: 0 },
+		{ x: -5.4, z: 23.5, type: 'paper', scale: 1.00, move: 0 },
+		{ x: 4.8, z: 22.0, type: 'steel', scale: 0.98, move: 0 },
+		{ x: -8.5, z: 25.0, type: 'paper', scale: 0.94, move: 0 },
+		{ x: 9.2, z: 24.4, type: 'steel', scale: 0.92, move: 0 },
+		{ x: 0, z: 18.4, type: 'steel', scale: 0.90, move: 0 },
+		{ x: -12.8, z: 15.5, type: 'paper', scale: 0.96, move: 0 },
+		{ x: 12.8, z: 14.5, type: 'paper', scale: 0.96, move: 0 },
+		{ x: -16.8, z: 7.5, type: 'steel', scale: 0.90, move: 0 },
+		{ x: 18.0, z: 8.0, type: 'steel', scale: 0.90, move: 0 },
+		{ x: -3.2, z: 27.5, type: 'paper', scale: 0.84, move: 1.5 },
+		{ x: 4.1, z: 27.0, type: 'steel', scale: 0.80, move: 1.1 }
+	];
+
+	var CHICKEN_SPAWNS = [
+		{ x: -4.0, z: 30.0 }, { x: 5.2, z: 26.0 }, { x: -9.0, z: 21.0 },
+		{ x: 10.5, z: 19.0 }, { x: -14.0, z: 5.0 }, { x: 14.5, z: 2.5 },
+		{ x: -6.0, z: -2.0 }, { x: 7.5, z: -11.0 }, { x: -20.0, z: 19.0 },
+		{ x: 20.0, z: -4.0 }
+	];
 
 	/* ======================================================================
 	   procedural textures
@@ -342,6 +381,50 @@
 		var g = clamp(((n >> 8) & 255) + amount, 0, 255);
 		var b = clamp((n & 255) + amount, 0, 255);
 		return 'rgb(' + r + ',' + g + ',' + b + ')';
+	}
+
+	function makePlywoodTexture() {
+		var c = makeCanvas(512, 512);
+		var ctx = c.getContext('2d');
+		ctx.fillStyle = '#8e6a44';
+		ctx.fillRect(0, 0, 512, 512);
+		/* vertical plywood panels with dark seams */
+		for (var x = 0; x < 512; x += 128) {
+			ctx.fillStyle = shadeColor('#8e6a44', rand(-14, 12));
+			ctx.fillRect(x + 3, 0, 122, 512);
+			ctx.fillStyle = 'rgba(42,28,16,0.62)';
+			ctx.fillRect(x, 0, 5, 512);
+			ctx.fillStyle = 'rgba(226,190,142,0.13)';
+			ctx.fillRect(x + 7, 0, 2, 512);
+			for (var g = 0; g < 16; g++) {
+				ctx.strokeStyle = g % 2 ? 'rgba(54,36,20,0.38)' : 'rgba(218,178,126,0.22)';
+				ctx.lineWidth = rand(0.5, 1.4);
+				ctx.beginPath();
+				var gx = x + rand(8, 118);
+				ctx.moveTo(gx, 0);
+				for (var y = 0; y <= 512; y += 32) ctx.lineTo(gx + Math.sin(y * 0.025 + g) * 2.5, y);
+				ctx.stroke();
+			}
+			/* knots */
+			for (var k = 0; k < 2; k++) {
+				var kx = x + rand(18, 108), ky = rand(40, 470);
+				ctx.strokeStyle = 'rgba(50,32,17,0.36)';
+				ctx.lineWidth = 1.4;
+				ctx.beginPath();
+				ctx.ellipse(kx, ky, rand(5, 12), rand(2, 5), rand(-0.4, 0.4), 0, Math.PI * 2);
+				ctx.stroke();
+			}
+		}
+		/* top/bottom metal edge + scuffs */
+		ctx.fillStyle = 'rgba(56,54,49,0.6)';
+		ctx.fillRect(0, 0, 512, 10);
+		ctx.fillRect(0, 502, 512, 10);
+		for (var s = 0; s < 30; s++) {
+			ctx.fillStyle = 'rgba(42,28,16,' + rand(0.06, 0.18).toFixed(2) + ')';
+			ctx.fillRect(rand(0, 500), rand(20, 490), rand(4, 30), rand(1, 2));
+		}
+		noise(ctx, 512, 512, 2400, 0.12, true);
+		return canvasTexture(c, { anisotropy: 8 });
 	}
 
 	function makeCrateTexture() {
@@ -611,6 +694,7 @@
 			brick: makeBrickTexture('#c2aa84', '#9c8662', '#c5ae87'),
 			brickDark: makeBrickTexture('#9e8a6a', '#78664d', '#a59070'),
 			crate: makeCrateTexture(),
+			plywood: makePlywoodTexture(),
 			container: makeContainerTexture('#36586a', 'rgba(230,206,146,0.7)'),
 			containerRust: makeContainerTexture('#6d4432', 'rgba(236,192,112,0.65)'),
 			metal: makeMetalTexture('#4e5254'),
@@ -677,6 +761,8 @@
 			brick: new THREE.MeshStandardMaterial({ map: tex.brick, color: 0xffffff, roughness: 0.94, metalness: 0 }),
 			brickDark: new THREE.MeshStandardMaterial({ map: tex.brickDark, color: 0xffffff, roughness: 0.95, metalness: 0 }),
 			crate: new THREE.MeshStandardMaterial({ map: tex.crate, color: 0xffffff, roughness: 0.82, metalness: 0.02 }),
+			plywood: new THREE.MeshStandardMaterial({ map: tex.plywood, color: 0xffffff, roughness: 0.9, metalness: 0.01 }),
+			gold: new THREE.MeshStandardMaterial({ color: 0xd7a24a, roughness: 0.56, metalness: 0.28 }),
 			container: new THREE.MeshStandardMaterial({ map: tex.container, color: 0xffffff, roughness: 0.56, metalness: 0.34 }),
 			containerRust: new THREE.MeshStandardMaterial({ map: tex.containerRust, color: 0xffffff, roughness: 0.62, metalness: 0.3 }),
 			metal: new THREE.MeshStandardMaterial({ map: tex.metal, color: 0xffffff, roughness: 0.52, metalness: 0.55 }),
@@ -774,6 +860,21 @@
 			scene.add(m);
 			world.deco.push(m);
 			return m;
+		}
+
+		function addThinPanel(w, h, d, x, z) {
+			addBox(w, h, d, x, z, mats.plywood, { unit: 2.4 });
+			addBox(w + 0.12, 0.08, d + 0.08, x, z, mats.metal, { y: h - 0.02, collide: false });
+			var alongX = w >= d;
+			if (alongX) {
+				addBox(0.1, h, d + 0.08, x - w / 2, z, mats.metal, { collide: false });
+				addBox(0.1, h, d + 0.08, x + w / 2, z, mats.metal, { collide: false });
+				addBox(w - 0.12, 0.07, 0.02, x, z + d / 2 + 0.011, mats.gold, { y: h * 0.53, collide: false });
+			} else {
+				addBox(w + 0.08, h, 0.1, x, z - d / 2, mats.metal, { collide: false });
+				addBox(w + 0.08, h, 0.1, x, z + d / 2, mats.metal, { collide: false });
+				addBox(0.02, 0.07, d - 0.12, x + w / 2 + 0.011, z, mats.gold, { y: h * 0.53, collide: false });
+			}
 		}
 
 		var B = world.bounds;
@@ -909,6 +1010,81 @@
 		addBox(6.2, 2.65, 2.7, -14, -2, mats.containerRust, { unit: 2.7 });
 		addBox(6.2, 2.65, 2.7, 27.5, 3, mats.container, { unit: 2.7, rotY: -0.03 });
 		addBox(4.3, 2.3, 2.4, -18.5, 25.5, mats.containerRust, { unit: 2.4 });
+
+		/* ---- extra high cover: stacked containers and tall concrete walls ---- */
+		addBox(6.2, 3.35, 2.7, -17.5, 12.5, mats.containerRust, { unit: 2.7, rotY: -0.04 });
+		addBox(6.2, 3.35, 2.7, 17.5, 15.5, mats.container, { unit: 2.7, rotY: 0.04 });
+		addBox(5.4, 3.15, 1.15, 0, -5.6, mats.concrete, { rotY: 0.02 });
+		addBox(1.2, 3.8, 6.4, 16.5, -15.5, mats.brickDark);
+		addBox(1.2, 3.8, 6.4, -16.5, -15.5, mats.brickDark);
+		addBox(3.8, 3.0, 1.1, -11.5, 26.5, mats.concrete, { rotY: -0.06 });
+		addBox(3.8, 3.0, 1.1, 11.5, 26.5, mats.concrete, { rotY: 0.06 });
+
+		/* ---- thin penetrable partitions (pass through; thicker walls stop bullets) ---- */
+		addThinPanel(4.2, 2.2, 0.24, 8.5, 6.5);
+		addThinPanel(0.24, 2.2, 4.0, -11.5, 18.5);
+		addThinPanel(3.6, 2.2, 0.24, 24.0, -8.0);
+
+		/* ---- jumpable low blocks / pallets ---- */
+		addBox(2.2, 0.55, 1.4, 19.0, 24.5, mats.crate, { unit: 1.4 });
+		addBox(2.2, 0.55, 1.4, -19.0, 9.5, mats.crate, { unit: 1.4 });
+		addBox(2.0, 0.55, 1.4, 8.0, 1.5, mats.wood, { unit: 1.4 });
+
+		/* ---- high overlooks with walkable staircases ---- */
+		function addOverlook(cx, cz, w, d, top, stairSide) {
+			var slab = 0.25;
+			addBox(w, slab, d, cx, cz, mats.metal, { y: top - slab, unit: 2.7 });
+			/* support posts (visual + collision under the slab) */
+			var px = w / 2 - 0.35, pz = d / 2 - 0.35;
+			[[-px, -pz], [px, -pz], [-px, pz], [px, pz]].forEach(function (o) {
+				addBox(0.35, top - slab, 0.35, cx + o[0], cz + o[1], mats.metal, { unit: 1.2 });
+			});
+			/* airy post-and-rail edges; decorative only */
+			var railMat = mats.metal;
+			function railAlongX(rx, rz, len) {
+				addBox(len, 0.06, 0.06, rx, rz, railMat, { y: top + 0.7, collide: false });
+				for (var rp = 0; rp < 4; rp++) {
+					addBox(0.075, 0.72, 0.075, rx - len / 2 + 0.18 + rp * (len - 0.36) / 3, rz, railMat, { y: top, collide: false });
+				}
+			}
+			function railAlongZ(rx, rz, len) {
+				addBox(0.06, 0.06, len, rx, rz, railMat, { y: top + 0.7, collide: false });
+				for (var rp2 = 0; rp2 < 4; rp2++) {
+					addBox(0.075, 0.72, 0.075, rx, rz - len / 2 + 0.18 + rp2 * (len - 0.36) / 3, railMat, { y: top, collide: false });
+				}
+			}
+			if (stairSide === 'south') {
+				railAlongX(cx, cz - d / 2 + 0.08, w);
+				railAlongZ(cx - w / 2 + 0.08, cz, d);
+				railAlongZ(cx + w / 2 - 0.08, cz, d);
+			} else {
+				railAlongZ(cx - w / 2 + 0.08, cz, d);
+				railAlongX(cx, cz + d / 2 - 0.08, w);
+				railAlongX(cx, cz - d / 2 + 0.08, w);
+			}
+			var stepCount = 6;
+			var stepDepth = 0.5;
+			var stepHeight = top / stepCount;
+			for (var s = 0; s < stepCount; s++) {
+				if (stairSide === 'south') {
+					addBox(2.4, stepHeight * (s + 1), stepDepth, cx, 36.0 - s * stepDepth, mats.concrete, { unit: 1.2 });
+				} else {
+					addBox(stepDepth, stepHeight * (s + 1), 2.4, 22.5 - s * stepDepth, cz, mats.concrete, { unit: 1.2 });
+				}
+			}
+			/* low side rails on the staircase, visual only */
+			for (var r = 0; r < stepCount; r += 2) {
+				if (stairSide === 'south') {
+					addBox(0.08, 0.65, stepDepth, cx - 1.22, 36.0 - r * stepDepth, railMat, { y: stepHeight * (r + 1), collide: false });
+					addBox(0.08, 0.65, stepDepth, cx + 1.22, 36.0 - r * stepDepth, railMat, { y: stepHeight * (r + 1), collide: false });
+				} else {
+					addBox(stepDepth, 0.65, 0.08, 22.5 - r * stepDepth, cz - 1.22, railMat, { y: stepHeight * (r + 1), collide: false });
+					addBox(stepDepth, 0.65, 0.08, 22.5 - r * stepDepth, cz + 1.22, railMat, { y: stepHeight * (r + 1), collide: false });
+				}
+			}
+		}
+		addOverlook(-16, 31, 6, 5, 2.4, 'south');
+		addOverlook(17, 31, 6, 5, 2.25, 'east');
 
 		/* ---- low concrete barriers ---- */
 		addBox(3.2, 1.15, 0.65, 9, -7, mats.concrete, { rotY: 0.2 });
@@ -1959,6 +2135,239 @@
 	}
 
 	/* ======================================================================
+	   practice target / chicken / player body
+	   ====================================================================== */
+	function makeTargetTexture(kind) {
+		var w = 512, h = 640;
+		var canvas = makeCanvas(w, h);
+		var ctx = canvas.getContext('2d');
+		var steel = kind === 'steel';
+		ctx.fillStyle = steel ? '#33393a' : '#e7dcc2';
+		ctx.fillRect(0, 0, w, h);
+		ctx.strokeStyle = steel ? '#171c1d' : '#3a3025';
+		ctx.lineWidth = 18;
+		ctx.strokeRect(9, 9, w - 18, h - 18);
+		ctx.fillStyle = steel ? '#242a2b' : '#f4ecda';
+		ctx.fillRect(26, 26, w - 52, h - 52);
+		var cx = w / 2, cy = 312, rings = [
+			[168, steel ? '#ddd6c2' : '#c84534'],
+			[128, steel ? '#c84534' : '#f2e7ce'],
+			[92, steel ? '#ddd6c2' : '#c84534'],
+			[56, steel ? '#c84534' : '#f2e7ce'],
+			[24, '#d7a24a']
+		];
+		for (var i = 0; i < rings.length; i++) {
+			ctx.fillStyle = rings[i][1];
+			ctx.beginPath();
+			ctx.arc(cx, cy, rings[i][0], 0, Math.PI * 2);
+			ctx.fill();
+		}
+		ctx.strokeStyle = steel ? 'rgba(0,0,0,.4)' : 'rgba(45,35,24,.35)';
+		ctx.lineWidth = 3;
+		for (var t = -1; t <= 1; t += 2) {
+			ctx.beginPath();
+			ctx.moveTo(cx + t * 220, cy - 210);
+			ctx.lineTo(cx + t * 220, cy + 210);
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.moveTo(cx - 210, cy + t * 220);
+			ctx.lineTo(cx + 210, cy + t * 220);
+			ctx.stroke();
+		}
+		ctx.fillStyle = steel ? '#e8dfc9' : '#4a3b2c';
+		ctx.font = '700 30px Bahnschrift, Arial Narrow, sans-serif';
+		ctx.textAlign = 'center';
+		ctx.letterSpacing = '8px';
+		ctx.fillText('PRACTICE', cx, 66);
+		ctx.font = '400 19px Consolas, monospace';
+		ctx.fillStyle = steel ? 'rgba(232,223,201,.6)' : 'rgba(74,59,44,.65)';
+		ctx.fillText('DUST RANGE // TARGET', cx, 592);
+		var tex = new THREE.CanvasTexture(canvas);
+		tex.colorSpace = THREE.SRGBColorSpace;
+		tex.anisotropy = 4;
+		return tex;
+	}
+
+	function buildPracticeTarget(kind, scale) {
+		scale = scale || 1;
+		var root = new THREE.Group();
+		var pivot = new THREE.Group();
+		pivot.position.y = 0.62;
+		root.add(pivot);
+		var frameMat = new THREE.MeshStandardMaterial({ color: 0x252b2c, roughness: 0.66, metalness: 0.35 });
+		var postMat = new THREE.MeshStandardMaterial({ color: 0x555d5d, roughness: 0.5, metalness: 0.55 });
+		var standMat = new THREE.MeshStandardMaterial({ color: 0x2d3334, roughness: 0.75, metalness: 0.3 });
+		var boardMat = new THREE.MeshStandardMaterial({ map: makeTargetTexture(kind), roughness: kind === 'steel' ? 0.5 : 0.9, metalness: kind === 'steel' ? 0.35 : 0.02 });
+		function box(mat, w, h, d, x, y, z, parent) {
+			var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+			m.position.set(x, y, z);
+			m.castShadow = true;
+			m.receiveShadow = true;
+			(parent || root).add(m);
+			return m;
+		}
+		/* A-frame feet and post */
+		box(standMat, 1.12, 0.1, 0.52, 0, 0.05, 0.09);
+		box(standMat, 0.14, 0.08, 0.7, -0.38, 0.03, 0.13);
+		box(standMat, 0.14, 0.08, 0.7, 0.38, 0.03, 0.13);
+		var post = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.62, 8), postMat);
+		post.position.set(0, 0.31, 0.04);
+		post.castShadow = true;
+		root.add(post);
+		/* board frame and face */
+		box(frameMat, 1.2, 1.5, 0.1, 0, 0.73, 0, pivot);
+		var face = new THREE.Mesh(new THREE.PlaneGeometry(1.08, 1.38), boardMat);
+		face.position.set(0, 0.73, 0.056);
+		face.castShadow = false;
+		pivot.add(face);
+		var brace = box(postMat, 0.08, 0.62, 0.06, 0, 0.29, 0.12, pivot);
+		brace.rotation.x = -0.18;
+		/* little service lamp */
+		var lampMat = new THREE.MeshBasicMaterial({ color: 0xffb54a });
+		var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), lampMat);
+		lamp.position.set(0.48, 1.56, 0.07);
+		pivot.add(lamp);
+		root.scale.setScalar(scale);
+		root.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+		return {
+			root: root,
+			pivot: pivot,
+			face: face,
+			board: face,
+			materials: [frameMat, postMat, standMat, boardMat, lampMat],
+			kind: kind || 'paper',
+			scale: scale
+		};
+	}
+
+	function buildChicken(opts) {
+		opts = opts || {};
+		var root = new THREE.Group();
+		var feather = new THREE.MeshStandardMaterial({ color: opts.color || 0xe8dfca, roughness: 0.92, metalness: 0 });
+		var featherDark = new THREE.MeshStandardMaterial({ color: opts.dark || 0xb9a886, roughness: 0.95, metalness: 0 });
+		var beakMat = new THREE.MeshStandardMaterial({ color: 0xd99532, roughness: 0.7, metalness: 0.05 });
+		var combMat = new THREE.MeshStandardMaterial({ color: 0xb23c30, roughness: 0.8, metalness: 0.03 });
+		var legMat = new THREE.MeshStandardMaterial({ color: 0xb68b48, roughness: 0.8, metalness: 0 });
+		var eyeMat = new THREE.MeshBasicMaterial({ color: 0x141311 });
+		function add(mesh, parent) { (parent || root).add(mesh); return mesh; }
+		function sphere(mat, r, x, y, z, sx, sy, sz, parent) {
+			var m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), mat);
+			m.position.set(x, y, z);
+			m.scale.set(sx || 1, sy || 1, sz || 1);
+			m.castShadow = true;
+			m.receiveShadow = true;
+			add(m, parent);
+			return m;
+		}
+		function box(mat, w, h, d, x, y, z, parent) {
+			var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+			m.position.set(x, y, z);
+			m.castShadow = true;
+			m.receiveShadow = true;
+			add(m, parent);
+			return m;
+		}
+		var body = sphere(feather, 0.29, 0, 0.34, 0, 1.05, 0.9, 1.3);
+		sphere(featherDark, 0.16, 0, 0.29, 0.19, 1.0, 1.0, 0.9);
+		var neck = sphere(feather, 0.12, 0, 0.5, -0.19, 0.85, 1.1, 0.85);
+		var head = sphere(feather, 0.145, 0, 0.59, -0.24, 1.0, 1.0, 1.0);
+		var beak = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.17, 5), beakMat);
+		beak.rotation.x = Math.PI / 2;
+		beak.position.set(0, 0.57, -0.39);
+		beak.castShadow = true;
+		root.add(beak);
+		box(combMat, 0.055, 0.12, 0.13, 0, 0.745, -0.24);
+		box(combMat, 0.12, 0.04, 0.06, 0, 0.805, -0.23);
+		box(combMat, 0.045, 0.09, 0.045, 0, 0.52, -0.35);
+		sphere(eyeMat, 0.018, -0.065, 0.615, -0.36);
+		sphere(eyeMat, 0.018, 0.065, 0.615, -0.36);
+		/* wings */
+		var wingL = new THREE.Group();
+		wingL.position.set(-0.27, 0.42, 0.0);
+		root.add(wingL);
+		box(featherDark, 0.05, 0.22, 0.32, -0.02, -0.06, 0.02, wingL);
+		var wingR = new THREE.Group();
+		wingR.position.set(0.27, 0.42, 0.0);
+		root.add(wingR);
+		box(featherDark, 0.05, 0.22, 0.32, 0.02, -0.06, 0.02, wingR);
+		/* tail feathers */
+		for (var i = 0; i < 3; i++) {
+			var tf = box(featherDark, 0.045, 0.1, 0.25, (i - 1) * 0.08, 0.43 + Math.abs(i - 1) * 0.02, 0.32);
+			tf.rotation.x = -0.45 + (i - 1) * 0.05;
+			tf.rotation.y = (i - 1) * 0.12;
+		}
+		/* legs */
+		function leg(side) {
+			var g = new THREE.Group();
+			g.position.set(side * 0.1, 0.2, 0.02);
+			root.add(g);
+			box(legMat, 0.035, 0.22, 0.035, 0, -0.1, 0, g);
+			box(legMat, 0.13, 0.03, 0.08, side * 0.02, -0.21, -0.025, g);
+			return g;
+		}
+		var legL = leg(-1), legR = leg(1);
+		root.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+		return {
+			root: root, body: body, head: head, neck: neck,
+			wingL: wingL, wingR: wingR, legL: legL, legR: legR,
+			materials: [feather, featherDark, beakMat, combMat, legMat, eyeMat]
+		};
+	}
+
+	function buildPlayerBody() {
+		var root = new THREE.Group();
+		var uniform = new THREE.MeshStandardMaterial({ color: 0x34434f, roughness: 0.82, metalness: 0.05 });
+		var uniformDark = new THREE.MeshStandardMaterial({ color: 0x232d35, roughness: 0.88, metalness: 0.04 });
+		var vest = new THREE.MeshStandardMaterial({ color: 0x5c6c58, roughness: 0.86, metalness: 0.05 });
+		var helmet = new THREE.MeshStandardMaterial({ color: 0x3b4c45, roughness: 0.7, metalness: 0.16 });
+		var skin = new THREE.MeshStandardMaterial({ color: 0xb98d6d, roughness: 0.92, metalness: 0 });
+		var visor = new THREE.MeshStandardMaterial({ color: 0x1e2a2f, roughness: 0.26, metalness: 0.42 });
+		var boot = new THREE.MeshStandardMaterial({ color: 0x1c2224, roughness: 0.92, metalness: 0.04 });
+		var gunMat = new THREE.MeshStandardMaterial({ color: 0x2d3334, roughness: 0.5, metalness: 0.4 });
+		var patchMat = new THREE.MeshBasicMaterial({ color: 0xd7a24a });
+		function box(mat, w, h, d, x, y, z, parent) {
+			var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+			m.position.set(x, y, z);
+			m.castShadow = true;
+			m.receiveShadow = true;
+			(parent || root).add(m);
+			return m;
+		}
+		/* legs */
+		box(uniform, 0.19, 0.6, 0.21, -0.16, 0.68, 0);
+		box(uniform, 0.19, 0.6, 0.21, 0.16, 0.68, 0);
+		box(uniformDark, 0.2, 0.22, 0.23, -0.16, 0.27, 0);
+		box(uniformDark, 0.2, 0.22, 0.23, 0.16, 0.27, 0);
+		box(boot, 0.21, 0.16, 0.34, -0.16, 0.09, -0.06);
+		box(boot, 0.21, 0.16, 0.34, 0.16, 0.09, -0.06);
+		/* hips and torso */
+		box(uniformDark, 0.5, 0.22, 0.28, 0, 0.99, 0);
+		box(uniform, 0.54, 0.56, 0.31, 0, 1.33, 0);
+		box(vest, 0.58, 0.45, 0.36, 0, 1.36, 0.01);
+		box(uniformDark, 0.56, 0.1, 0.34, 0, 1.09, 0);
+		box(patchMat, 0.15, 0.08, 0.015, -0.18, 1.33, -0.19);
+		/* arms */
+		box(uniform, 0.15, 0.5, 0.17, -0.36, 1.34, -0.01);
+		box(uniform, 0.15, 0.5, 0.17, 0.36, 1.34, -0.01);
+		box(skin, 0.12, 0.14, 0.14, -0.37, 1.02, -0.11);
+		box(skin, 0.12, 0.14, 0.14, 0.37, 1.02, -0.11);
+		/* head / helmet / visor */
+		box(skin, 0.24, 0.26, 0.23, 0, 1.77, -0.01);
+		box(helmet, 0.32, 0.15, 0.31, 0, 1.92, 0);
+		box(helmet, 0.3, 0.1, 0.08, 0, 1.83, -0.16);
+		box(visor, 0.26, 0.09, 0.03, 0, 1.81, -0.19);
+		box(uniformDark, 0.17, 0.18, 0.15, 0, 1.55, -0.02);
+		/* rifle across the chest */
+		var rifle = box(gunMat, 0.09, 0.12, 0.78, 0.05, 1.32, -0.26);
+		rifle.rotation.x = -0.08;
+		box(gunMat, 0.06, 0.22, 0.1, 0.05, 1.18, -0.06);
+		box(patchMat, 0.02, 0.03, 0.14, 0.05, 1.39, -0.42);
+		root.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+		root.visible = false;
+		return root;
+	}
+
+	/* ======================================================================
 	   weapon silhouette icons for the buy menu
 	   ====================================================================== */
 	function weaponIcon(kind) {
@@ -2184,9 +2593,26 @@
 		if (head) {
 			this.tone({ freq: 1900, to: 2400, dur: 0.05, gain: 0.18, type: 'square' });
 			this.tone({ freq: 2600, to: 3100, dur: 0.05, gain: 0.1, type: 'sine', delay: 0.02 });
+			this.tone({ freq: 160, to: 90, dur: 0.08, gain: 0.12, type: 'triangle' });
 		} else {
 			this.tone({ freq: 1350, to: 1000, dur: 0.035, gain: 0.14, type: 'square' });
 		}
+	};
+	SoundEngine.prototype.target = function (center) {
+		if (center) {
+			this.tone({ freq: 1500, to: 2100, dur: 0.1, gain: 0.18, type: 'sine' });
+			this.tone({ freq: 2300, dur: 0.08, gain: 0.08, type: 'triangle', delay: 0.06 });
+		} else {
+			this.tone({ freq: 420, to: 260, dur: 0.07, gain: 0.1, type: 'square' });
+		}
+	};
+	SoundEngine.prototype.cluck = function (pan) {
+		this.tone({ freq: 620, to: 760, dur: 0.055, gain: 0.045, type: 'square', pan: pan || 0 });
+		this.tone({ freq: 820, to: 640, dur: 0.05, gain: 0.035, type: 'triangle', pan: pan || 0, delay: 0.07 });
+	};
+	SoundEngine.prototype.squawk = function (pan) {
+		this.burst({ dur: 0.08, type: 'bandpass', freq: 1200, q: 1.8, gain: 0.12, pan: pan || 0 });
+		this.tone({ freq: 900, to: 340, dur: 0.22, gain: 0.13, type: 'sawtooth', pan: pan || 0 });
 	};
 	SoundEngine.prototype.hurt = function () {
 		this.burst({ dur: 0.18, type: 'lowpass', freq: 500, gain: 0.3, wet: 0.18 });
@@ -2252,8 +2678,9 @@
 		clamp: clamp, lerp: lerp, damp: damp, rand: rand, randi: randi,
 		choice: choice, shuffle: shuffle, angleDelta: angleDelta,
 		WEAPONS: WEAPONS, BUY_ITEMS: BUY_ITEMS, BOT_TYPES: BOT_TYPES,
-		DIFFICULTY: DIFFICULTY, BOT_NAMES: BOT_NAMES, BOT_SPAWNS: BOT_SPAWNS,
-		PLAYER_SPAWN: PLAYER_SPAWN,
+		DIFFICULTY: DIFFICULTY, BOT_LOADOUTS: BOT_LOADOUTS, BOT_NAMES: BOT_NAMES, BOT_SPAWNS: BOT_SPAWNS,
+		PLAYER_SPAWN: PLAYER_SPAWN, PRACTICE_SPAWN: PRACTICE_SPAWN,
+		PRACTICE_TARGETS: PRACTICE_TARGETS, CHICKEN_SPAWNS: CHICKEN_SPAWNS,
 		makeTextures: makeTextures,
 		createMap: createMap,
 		buildNav: buildNav,
@@ -2267,6 +2694,9 @@
 		robotName: robotName,
 		buildViewWeapons: buildViewWeapons,
 		buildWeaponPickup: buildWeaponPickup,
+		buildPracticeTarget: buildPracticeTarget,
+		buildChicken: buildChicken,
+		buildPlayerBody: buildPlayerBody,
 		weaponIcon: weaponIcon,
 		SoundEngine: SoundEngine
 	};

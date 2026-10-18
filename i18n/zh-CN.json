@@ -78,6 +78,11 @@
 		}
 	},
 	"games": {
+		"horizon": {
+			"title": "Hayneko Horizon",
+			"desc": "黄昏时分的开放世界赛车：海岸冲刺、峠道爬坡，还有一辆爱漂移的双门跑车，全部跑在程序化生成的日本海岸线上。",
+			"badge": "3D"
+		},
 		"range": {
 			"title": "Dust Range",
 			"desc": "一款 CS:GO 风格的 3D 射击靶场：程序生成的 de_dust 地图、随机机器人小队、购买菜单和实时雷达。需要鼠标与键盘。",
@@ -577,6 +582,7 @@
 		"indexHint": "Tab 补全，↑ 翻历史"
 	},
 	"title": {
+		"horizon": "Hayneko Horizon · Hayneko",
 		"range": "Dust Range · Hayneko",
 		"default": "Hayneko — 第一号",
 		"games": "小游戏 · Hayneko",

@@ -78,6 +78,94 @@
 			</div>
 		</article>
 
+		<article class="game-card game-card--horizon" data-smear>
+			<div class="game-card__preview game-card__preview--horizon" aria-hidden="true">
+				<svg viewBox="0 0 320 160" preserveAspectRatio="xMidYMid slice">
+					<defs>
+						<linearGradient id="hz-card-sky" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0" stop-color="#203650"/>
+							<stop offset="0.55" stop-color="#7d6c7c"/>
+							<stop offset="1" stop-color="#ff9d5c"/>
+						</linearGradient>
+						<linearGradient id="hz-card-sea" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0" stop-color="#355d70"/>
+							<stop offset="1" stop-color="#12242e"/>
+						</linearGradient>
+						<linearGradient id="hz-card-road" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0" stop-color="#3c3d43"/>
+							<stop offset="1" stop-color="#15171b"/>
+						</linearGradient>
+					</defs>
+					<rect width="320" height="160" fill="#0a0e13"/>
+					<rect width="320" height="94" fill="url(#hz-card-sky)"/>
+					<circle cx="236" cy="66" r="30" fill="#ffe3ad" opacity=".92"/>
+					<circle cx="236" cy="66" r="46" fill="#ffbe74" opacity=".16"/>
+					<path d="M0 88l26-22 18 8 22-23 22 27 18-10 20 20 20-13 26 17 24-8 26 14 20-9 20 18v38H0z" fill="#243040" opacity=".9"/>
+					<path d="M0 98l24-8 22 5 20-12 24 10 22-5 26 11 22-8 22 7 20-5 24 8 20-4 22 6 12-3v54H0z" fill="#1a2533" opacity=".85"/>
+					<rect y="100" width="320" height="60" fill="url(#hz-card-sea)"/>
+					<g fill="#ffd9a0" opacity=".5">
+						<rect x="212" y="108" width="56" height="1.4"/>
+						<rect x="224" y="116" width="38" height="1.2"/>
+						<rect x="204" y="124" width="70" height="1"/>
+						<rect x="228" y="132" width="32" height="1"/>
+					</g>
+					<!-- grass shoulders -->
+					<path d="M0 160L92 160L146 100L0 100Z" fill="#26392b" opacity=".36"/>
+					<path d="M228 160L320 160L320 100L190 99Z" fill="#26392b" opacity=".36"/>
+					<!-- straight asphalt trapezoid into the sunset -->
+					<path d="M92 160L146 100L190 99L228 160Z" fill="url(#hz-card-road)"/>
+					<path d="M92 160L146 100" fill="none" stroke="#f1e6cc" stroke-opacity=".78" stroke-width="1.4"/>
+					<path d="M228 160L190 99" fill="none" stroke="#f1e6cc" stroke-opacity=".78" stroke-width="1.4"/>
+					<path d="M160 160L168 101" fill="none" stroke="#ffd9a0" stroke-opacity=".75" stroke-width="1.5" stroke-dasharray="7 8"/>
+					<!-- right-side guard rail -->
+					<g stroke="#d8c9a8" stroke-opacity=".62" stroke-width="1.2">
+						<path d="M223 152v4M218 143v4M213 134v4M208 125v4M203 116v4M198 107v4"/>
+					</g>
+					<path d="M228 160L190 99" fill="none" stroke="#b7aa8d" stroke-opacity=".45" stroke-width=".8"/>
+					<!-- distant traffic headlights -->
+					<g transform="translate(172 105)" opacity=".85">
+						<rect x="-6" y="-2" width="12" height="4.5" rx="1.4" fill="#19232b"/>
+						<circle cx="-3.5" cy="1" r="1" fill="#ffe6ad"/>
+						<circle cx="3.5" cy="1" r="1" fill="#ffe6ad"/>
+					</g>
+					<!-- player car, centred rear view -->
+					<g transform="translate(164 134)">
+						<ellipse cx="0" cy="14" rx="31" ry="6.5" fill="#0b0e12" opacity=".35"/>
+						<path d="M-24 11L-22 -6C-21 -9 -16 -12 -8 -13L8 -13C16 -12 21 -9 22 -6L24 11Z" fill="#e94b2c"/>
+						<path d="M-15 -7C-11 -13 -5 -15 0 -15C5 -15 11 -13 15 -7Z" fill="#0d1c26"/>
+						<rect x="-21" y="-1" width="42" height="3.4" rx="1" fill="#ff5a38"/>
+						<rect x="-23" y="6" width="8" height="5" rx="1" fill="#0b0d10"/>
+						<rect x="15" y="6" width="8" height="5" rx="1" fill="#0b0d10"/>
+						<rect x="-19" y="-16" width="38" height="2" fill="#11161b"/>
+						<rect x="-15" y="-14" width="2" height="3" fill="#11161b"/>
+						<rect x="13" y="-14" width="2" height="3" fill="#11161b"/>
+						<rect x="-15" y="12" width="30" height="2" rx="1" fill="#14181c"/>
+						<circle cx="-17" cy="12" r="1.1" fill="#cfd6db"/>
+						<circle cx="17" cy="12" r="1.1" fill="#cfd6db"/>
+					</g>
+					<g fill="none" stroke="#ffd9a0" stroke-opacity=".55" stroke-width="1">
+						<path d="M252 61l10-8 10 8M257 72l5-5 5 5"/>
+					</g>
+					<g fill="currentColor" fill-opacity=".7" font-family="monospace" font-size="6.4">
+						<text x="12" y="150">NAGISA COAST</text>
+						<text x="308" y="150" text-anchor="end">HH / 01</text>
+					</g>
+				</svg>
+			</div>
+			<span class="game-card__idx">01 / RACING · 3D</span>
+			<h3 class="game-card__title" i18n-key="games.horizon.title">Hayneko Horizon</h3>
+			<p class="game-card__body" i18n-key="games.horizon.desc">
+				An open-world golden-hour racer: coastal sprints, a touge climb and a drift-happy coupe on a procedural Japanese shoreline.
+			</p>
+			<div class="game-card__foot">
+				<a class="btn btn--sm" href="#/horizon" data-route="horizon">
+					<span i18n-key="games.play">Play</span>
+					<span class="btn__arrow" aria-hidden="true">↗</span>
+				</a>
+				<span class="badge badge--red" i18n-key="games.horizon.badge">3D</span>
+			</div>
+		</article>
+
 		<article class="game-card is-active" data-game-card="tetris" data-smear>
 			<div class="game-card__preview" aria-hidden="true">
 				<svg viewBox="0 0 200 80" preserveAspectRatio="xMidYMid meet">
@@ -111,7 +199,7 @@
 					</g>
 				</svg>
 			</div>
-			<span class="game-card__idx">01 / PUZZLE</span>
+			<span class="game-card__idx">02 / PUZZLE</span>
 			<h3 class="game-card__title" i18n-key="games.tetris.title">Tetris</h3>
 			<p class="game-card__body" i18n-key="games.tetris.desc">
 				Seven shapes, ten columns, and a level curve that speeds up every ten lines. Ghost piece and hold included.
@@ -156,7 +244,7 @@
 					</g>
 				</svg>
 			</div>
-			<span class="game-card__idx">02 / PUZZLE</span>
+			<span class="game-card__idx">03 / PUZZLE</span>
 			<h3 class="game-card__title" i18n-key="games.blockblast.title">Block Blast</h3>
 			<p class="game-card__body" i18n-key="games.blockblast.desc">
 				An 8×8 board and three pieces at a time: drag them in, fill a row or a column to clear it. No timer — you lose only when nothing fits.
@@ -208,7 +296,7 @@
 					</g>
 				</svg>
 			</div>
-			<span class="game-card__idx">03 / MATH</span>
+			<span class="game-card__idx">04 / MATH</span>
 			<h3 class="game-card__title" i18n-key="games.funcball.title">Function Ball Breaker</h3>
 			<p class="game-card__body" i18n-key="games.funcball.desc">
 				Two function balls, one brick wall. Set f(x) on each side — factorial, percent change, a power, Fibonacci or your own — and watch every bounce turn into damage.

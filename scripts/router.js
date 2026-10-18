@@ -19,6 +19,7 @@
 		'labs-vm': { id: 'labs-vm', path: '~/labs/vm', partial: 'views/labs-vm.html', titleKey: 'title.vm', accent: 'blue' },
 		games:   { id: 'games',   path: '~/games',   partial: 'views/games.html',   titleKey: 'title.games',   accent: 'green' },
 		range:   { id: 'range',   path: '~/range',   partial: 'views/cs-range/index.html', titleKey: 'title.range', accent: 'red' },
+		horizon: { id: 'horizon', path: '~/horizon', partial: 'views/horizon/index.html', titleKey: 'title.horizon', accent: 'red' },
 		links:   { id: 'links',   path: '~/links',   partial: 'views/links.html',   titleKey: 'title.links',   accent: 'white' }
 	};
 	var FALLBACK = 'home';
@@ -197,6 +198,8 @@
 		if (global.Games && global.Games.mountAll) global.Games.mountAll(page);
 		/* 3D 靶场: 页面片段挂载后由懒加载器拉 Three.js + 游戏资源 */
 		if (global.CSRange && global.CSRange.mountAll) global.CSRange.mountAll(page);
+		/* 开放世界赛车: 与靶场相同的懒加载挂载机制 */
+		if (global.Horizon && global.Horizon.mountAll) global.Horizon.mountAll(page);
 		/* Arch32S 调试器页面 (~/labs/vm) 的挂载时机与机台相同 */
 		if (global.LabsVM && global.LabsVM.mountAll) global.LabsVM.mountAll(page);
 		if (global.GeometryBG && global.GeometryBG.pulse) global.GeometryBG.pulse(route.accent === 'white' ? 'blue' : route.accent);

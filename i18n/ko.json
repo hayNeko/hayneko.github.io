@@ -78,6 +78,11 @@
 		}
 	},
 	"games": {
+		"horizon": {
+			"title": "Hayneko Horizon",
+			"desc": "황혼의 오픈 월드 레이서. 해안 스프린트, 도게 힐클라임, 드리프트를 즐기는 쿠페가 절차적으로 생성된 일본 해안선을 달립니다.",
+			"badge": "3D"
+		},
 		"range": {
 			"title": "Dust Range",
 			"desc": "CS:GO 스타일의 3D 사격 훈련장. 절차적으로 생성된 de_dust 맵, 무작위 로봇 부대, 구매 메뉴와 레이더를 갖췄습니다. 마우스와 키보드 권장.",
@@ -577,6 +582,7 @@
 		"indexHint": "Tab 자동완성, ↑ 이전 명령"
 	},
 	"title": {
+		"horizon": "하이네코 호라이즌 · Hayneko",
 		"range": "Dust Range · Hayneko",
 		"default": "Hayneko — 제1호",
 		"games": "게임 · Hayneko",

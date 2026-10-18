@@ -12,6 +12,7 @@
 	var ASSETS = [
 		'views/cs-range/vendor/three.min.js',
 		'views/cs-range/content.js',
+		'views/cs-range/i18n.js',
 		'views/cs-range/game.js'
 	];
 	var loading = false;

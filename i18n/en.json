@@ -78,6 +78,11 @@
 		}
 	},
 	"games": {
+		"horizon": {
+			"title": "Hayneko Horizon",
+			"desc": "An open-world golden-hour racer: coastal sprints, a touge climb and a drift-happy coupe on a procedural Japanese shoreline.",
+			"badge": "3D"
+		},
 		"range": {
 			"title": "Dust Range",
 			"desc": "A CS:GO-flavoured 3D shooting range: a procedural de_dust map, randomised robot squads, a buy menu and a working radar. Mouse and keyboard.",
@@ -577,6 +582,7 @@
 		"indexHint": "Tab completes, ↑ recalls"
 	},
 	"title": {
+		"horizon": "Hayneko Horizon · Hayneko",
 		"range": "Dust Range · Hayneko",
 		"default": "Hayneko — No. 01",
 		"games": "Games · Hayneko",

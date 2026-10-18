@@ -42,6 +42,32 @@ python -m http.server 8125 --directory archive/dsh-terminal
 
 ---
 
+## 部署
+
+线上地址 **http://SERVER_ADDRESS/**（Arch Linux + nginx，站点根目录 `/usr/share/nginx/html`）。
+
+更新只需在仓库根目录执行：
+
+```bat
+deploy.cmd
+:: 或
+python deploy.py
+```
+
+脚本流程：打包当前工作树（自动排除 `archive/`、`prism-1.30.0/`、`.git/`、`README.md` 等）→ SFTP 上传并校验 SHA256 → 服务端解包到 `html.new` → 备份旧站到 `/var/backups/` → 目录切换（旧版保留在 `html.prev`）→ `nginx -t` + reload → 双端 HTTP 校验关键资源；任一步失败自动回滚。
+
+常用参数：
+
+```bat
+python deploy.py --dry-run    :: 只打包并显示清单，不连接服务器
+python deploy.py --rollback   :: 回滚到上一次部署（html.prev）
+python deploy.py --yes        :: 跳过确认提示
+```
+
+密码默认交互输入，也可用环境变量 `DEPLOY_PASS`。依赖 Python 3 + `paramiko`（`python -m pip install paramiko`）。
+
+---
+
 ## 目录结构
 
 ```
@@ -76,6 +102,10 @@ scripts/
   check-i18n.mjs          语言包校验(含 JS 引用扫描与运行时解析校验)
 views/                  NEW  路由片段
   home.html  terminal.html  storage.html  labs.html  labs-vm.html  games.html  links.html
+  cs-range/               Dust Range 3D 射击靶场(#/range)
+  horizon/                HAYNEKO HORIZON 3D 开放世界赛车(#/horizon, 见下)
+    index.html horizon.css bootstrap.js core.js world.js car.js audio.js i18n.js game.js
+    vendor/three.min.js   Three.js r158 (MIT)
 i18n/                   NEW  en / zh-CN / zh-TW / ja / ko (key 集合完全一致)
 
 pages/labs/             三个物理学学习页面(原 pages/physics-sim), 已并入新样式层
@@ -115,6 +145,8 @@ medias/                 图片 / 字体 / 文件 / 旧 CSS 与脚本 —— 只�
 | `#/labs` | 三个物理模拟的入口 + 参考文档 + Arch32S 虚拟机卡片 |
 | `#/labs-vm` | Hayneko_Arch32S 虚拟机调试器（见下） |
 | `#/games` | 小游戏（俄罗斯方块 / Block Blast / 函数球打砖块, 见下） |
+| `#/range` | Dust Range 3D 射击靶场 |
+| `#/horizon` | HAYNEKO HORIZON 3D 开放世界赛车（见下） |
 | `#/links` | 友情链接（目前为空） |
 
 `pages/storage-list.html` 保留为旧地址的重定向，老链接不会失效。
@@ -877,6 +909,20 @@ HUD 侧栏只放「用时 / 双方总伤害 / 剩余砖块」。侧栏窄，总�
 > （`dt` 9px / `dd` 12px），开始 / 暂停 / 重开竖着排 —— 主操作区仍然是底下那两块。
 
 ---
+
+## HAYNEKO HORIZON（`#/horizon`）
+
+从 `#/games` 的第二张卡进入的开放世界赛车。程序化生成 3.0 km 海岸地形、约 11 km 柏油路网
+（3.4 km 海岸环线、2.0 km 峠道、2.3 km 南环、2.6 km 北岭与 0.7 km 港町街道），
+港町、山顶神社与海边嘉年华；第三人称追车相机、六速街机物理、可腾空落地的跳跃坡、漂移烟雾与胎痕、
+程序化双门跑车与两辆对手车、测速点 / 漂移区 / 擦身而过组成的技巧分、三条计时赛事与
+金银铜目标。全部资产（车、地形、贴图、引擎声与 HAYNEKO FM）在浏览器里生成，只把
+Three.js r158 作为第三方依赖放在 `views/horizon/vendor/three.min.js`。
+
+- 入口：`#/horizon`；`scripts/router.js` 里注册 `horizon` 路由，`views/horizon/bootstrap.js` 懒加载。
+- 操作：WASD / 方向键驾驶，Space 手刹，C 切视角，R 复位，E 进入赛事拱门，H 车手手册，Esc 暂停。
+- 集成：游戏锁滚动并隐藏 Dock，离开路由时销毁渲染器、场景和音频；五语文本与站点语言同步。
+- 详细说明见 `views/horizon/README.md`。
 
 ## Arch32S 虚拟机（`#/labs-vm`）
 

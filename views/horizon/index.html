@@ -1,0 +1,313 @@
+<!-- views/horizon/index.html — HAYNEKO HORIZON: NAGISA COAST -->
+<div class="hz" data-hz data-state="boot">
+	<div class="hz-stage">
+		<canvas class="hz-canvas" data-hz-canvas aria-label="Hayneko Horizon driving view"></canvas>
+		<div class="hz-vignette" aria-hidden="true"></div>
+		<div class="hz-grade" aria-hidden="true"></div>
+		<div class="hz-grain" aria-hidden="true"></div>
+		<div class="hz-speedfx" data-hz-speedfx aria-hidden="true"></div>
+		<div class="hz-flash" data-hz-flash aria-hidden="true"></div>
+		<div class="hz-fade" data-hz-fade aria-hidden="true"></div>
+	</div>
+
+	<!-- ============================================================ loading -->
+	<section class="hz-loading" data-hz-loading aria-label="Loading Hayneko Horizon">
+		<div class="hz-loading__top">
+			<div class="hz-logo"><span>HH</span><i>HAYNEKO HORIZON</i></div>
+			<span class="hz-loading__build">BUILD 01 / NAGISA</span>
+		</div>
+		<div class="hz-loading__center">
+			<p class="hz-loading__eyebrow">WELCOME TO THE FESTIVAL</p>
+			<h1 class="hz-loading__title">NAGISA</h1>
+			<p class="hz-loading__sub">渚 ・ COASTAL HORIZON</p>
+			<div class="hz-loading__bar"><i data-hz-loading-bar></i></div>
+			<p class="hz-loading__hint" data-hz-loading-hint>WARMING THE TARMAC</p>
+		</div>
+		<div class="hz-loading__foot">
+			<span>PROCEDURAL WORLD / THREE.JS</span>
+			<span>NO DOWNLOADS / NO PLUGINS</span>
+		</div>
+	</section>
+
+	<!-- ============================================================ menu -->
+	<section class="hz-menu" data-hz-menu hidden aria-label="Hayneko Horizon main menu">
+		<header class="hz-menu__top">
+			<div class="hz-brand">
+				<span class="hz-brand__mark">HH</span>
+				<span class="hz-brand__text"><b>HAYNEKO</b><i>HORIZON</i></span>
+			</div>
+			<div class="hz-menu__meta">
+				<span class="hz-chip hz-chip--live"><i></i>NAGISA COAST</span>
+				<span class="hz-chip hz-chip--time">GOLDEN HOUR 18:24</span>
+				<label class="hz-lang"><span>LANG</span>
+					<select data-hz-lang aria-label="Language">
+						<option value="en">EN</option>
+						<option value="zh-CN">简中</option>
+						<option value="zh-TW">繁中</option>
+						<option value="ja">日本語</option>
+						<option value="ko">한국어</option>
+					</select>
+				</label>
+				<button type="button" class="hz-iconbtn" data-hz-exit aria-label="Back to games">✕</button>
+			</div>
+		</header>
+
+		<div class="hz-menu__body">
+			<div class="hz-hero">
+				<p class="hz-kicker">THE FESTIVAL IS OPEN <span>//</span> SEASON 01</p>
+				<h1 class="hz-title"><span>HAYNEKO</span><b>HORIZON</b></h1>
+				<p class="hz-jp">渚の海岸線を、風になるまで。</p>
+				<p class="hz-lede" data-hz-i18n="menu.lede">Sun, sea and a road with no end. Welcome to the Nagisa coast festival — a fictional Japanese shoreline of harbour lights, touge switchbacks and one very loud coupe.</p>
+
+				<div class="hz-hero__actions">
+					<button type="button" class="hz-btn hz-btn--primary" data-hz-drive>
+						<span class="hz-btn__label" data-hz-i18n="menu.drive">DRIVE</span>
+						<em data-hz-i18n="menu.freeRoam">FREE ROAM</em>
+						<kbd>↵</kbd>
+					</button>
+					<button type="button" class="hz-btn" data-hz-events>
+						<span class="hz-btn__label" data-hz-i18n="menu.events">EVENTS</span>
+						<em>03 ROUTES</em>
+					</button>
+					<button type="button" class="hz-btn" data-hz-garage>
+						<span class="hz-btn__label" data-hz-i18n="menu.garage">GARAGE</span>
+						<em>HH-01</em>
+					</button>
+					<button type="button" class="hz-btn" data-hz-settings>
+						<span class="hz-btn__label" data-hz-i18n="menu.settings">SETTINGS</span>
+						<em>OPTIONS</em>
+					</button>
+				</div>
+
+				<ul class="hz-feats">
+					<li><b>01</b><span data-hz-i18n="menu.feat1">A 3 km open coast: harbour streets, cliff road, touge pass, shrine and two new asphalt loops.</span></li>
+					<li><b>02</b><span data-hz-i18n="menu.feat2">Three timed routes with two rivals, checkpoints, medals and personal bests.</span></li>
+					<li><b>03</b><span data-hz-i18n="menu.feat3">Drift chains, speed traps and near misses build your skill bank.</span></li>
+				</ul>
+			</div>
+
+			<aside class="hz-panel" data-hz-panel>
+				<div class="hz-panel__view" data-hz-view="events">
+					<div class="hz-panel__head"><span data-hz-i18n="menu.eventBoard">EVENT BOARD</span><b data-hz-event-count>03</b></div>
+					<div class="hz-events" data-hz-event-list></div>
+					<p class="hz-panel__note" data-hz-i18n="menu.eventNote">Start any route from here, or drive into a glowing gate out on the coast.</p>
+				</div>
+
+				<div class="hz-panel__view" data-hz-view="garage" hidden>
+					<div class="hz-panel__head"><span data-hz-i18n="menu.garage">GARAGE</span><b>HH-01</b></div>
+					<div class="hz-car">
+						<p class="hz-car__make">HAYNEKO MOTORWORKS</p>
+						<h3 class="hz-car__name">KŌGEKI <b>GT</b></h3>
+						<p class="hz-car__sub">A 3.9-litre flat-six, rear-wheel drive, and just enough downforce to be dangerous.</p>
+					</div>
+					<div class="hz-field">
+						<span class="hz-field__label" data-hz-i18n="menu.paint">PAINT</span>
+						<div class="hz-paint" data-hz-paint></div>
+					</div>
+					<div class="hz-specs">
+						<div><span data-hz-i18n="menu.specEngine">ENGINE</span><b>3.9L F6</b></div>
+						<div><span data-hz-i18n="menu.specPower">POWER</span><b>512 HP</b></div>
+						<div><span data-hz-i18n="menu.specDrive">DRIVE</span><b>RWD</b></div>
+						<div><span data-hz-i18n="menu.specTop">TOP SPEED</span><b>302 KM/H</b></div>
+					</div>
+					<p class="hz-panel__note" data-hz-i18n="menu.garageNote">Paint changes are saved in this browser. The radio is always set to HAYNEKO FM 88.3.</p>
+				</div>
+
+				<div class="hz-panel__view" data-hz-view="settings" hidden>
+					<div class="hz-panel__head"><span data-hz-i18n="menu.settings">SETTINGS</span><b>OPT</b></div>
+					<div class="hz-field">
+						<span class="hz-field__label" data-hz-i18n="settings.quality">GRAPHICS</span>
+						<div class="hz-seg" data-hz-quality role="group" aria-label="Graphics quality">
+							<button type="button" data-value="low" data-hz-i18n="settings.low">LOW</button>
+							<button type="button" data-value="balanced" data-hz-i18n="settings.balanced">BALANCED</button>
+							<button type="button" data-value="high" data-hz-i18n="settings.high">HIGH</button>
+						</div>
+					</div>
+					<div class="hz-field">
+						<span class="hz-field__label" data-hz-i18n="settings.camera">CAMERA</span>
+						<div class="hz-seg" data-hz-camera role="group" aria-label="Camera">
+							<button type="button" data-value="0" data-hz-i18n="settings.chase">CHASE</button>
+							<button type="button" data-value="1" data-hz-i18n="settings.hood">HOOD</button>
+							<button type="button" data-value="2" data-hz-i18n="settings.bumper">BUMPER</button>
+						</div>
+					</div>
+					<div class="hz-field">
+						<span class="hz-field__label" data-hz-i18n="settings.units">UNITS</span>
+						<div class="hz-seg" data-hz-units-seg role="group" aria-label="Speed units">
+							<button type="button" data-value="metric">KM/H</button>
+							<button type="button" data-value="imperial">MPH</button>
+						</div>
+					</div>
+					<div class="hz-field">
+						<div class="hz-field__row">
+							<span class="hz-field__label" data-hz-i18n="settings.volume">VOLUME</span>
+							<b class="hz-field__value" data-hz-volume-value>70%</b>
+						</div>
+						<input class="hz-range" type="range" min="0" max="100" step="1" value="70" data-hz-volume aria-label="Volume">
+					</div>
+					<div class="hz-field hz-field--row">
+						<span class="hz-field__label" data-hz-i18n="settings.music">HAYNEKO FM</span>
+						<button type="button" class="hz-toggle is-on" data-hz-music aria-pressed="true"><i></i><span>ON</span></button>
+					</div>
+					<div class="hz-field hz-field--row">
+						<span class="hz-field__label" data-hz-i18n="settings.motion">MOTION FX</span>
+						<button type="button" class="hz-toggle is-on" data-hz-motion aria-pressed="true"><i></i><span>ON</span></button>
+					</div>
+					<div class="hz-field">
+						<span class="hz-field__label" data-hz-i18n="settings.language">LANGUAGE</span>
+						<select class="hz-select" data-hz-lang2 aria-label="Language">
+							<option value="en">English</option>
+							<option value="zh-CN">简体中文</option>
+							<option value="zh-TW">繁體中文</option>
+							<option value="ja">日本語</option>
+							<option value="ko">한국어</option>
+						</select>
+					</div>
+					<p class="hz-panel__note" data-hz-i18n="settings.note">Graphics quality changes resolution and shadows. Audio starts the first time you drive.</p>
+				</div>
+			</aside>
+		</div>
+
+		<footer class="hz-menu__foot">
+			<span><kbd>WASD</kbd> DRIVE</span>
+			<span><kbd>SPACE</kbd> HANDBRAKE</span>
+			<span><kbd>C</kbd> CAMERA</span>
+			<span><kbd>R</kbd> RESET</span>
+			<span><kbd>ESC</kbd> PAUSE</span>
+			<span class="hz-menu__footspacer"></span>
+			<span class="hz-menu__tip" data-hz-i18n="menu.tip">GAMEPAD SUPPORTED · RACE THE GHOSTS OF YOUR OWN BEST LAPS</span>
+		</footer>
+	</section>
+
+	<!-- ============================================================ HUD -->
+	<section class="hz-hud" data-hz-hud hidden aria-label="Driving HUD">
+		<div class="hz-hud__brand"><b>HAYNEKO</b> HORIZON<span>NAGISA COAST</span></div>
+
+		<div class="hz-skill" data-hz-skill>
+			<div class="hz-skill__head"><span data-hz-i18n="hud.skill">SKILL CHAIN</span><b data-hz-skill-mult>×1</b></div>
+			<div class="hz-skill__points" data-hz-skill-points>0</div>
+			<div class="hz-skill__bar"><i data-hz-skill-bar></i></div>
+			<div class="hz-skill__foot"><span data-hz-i18n="hud.banked">BANKED</span><b data-hz-skill-bank>0</b></div>
+		</div>
+
+		<div class="hz-race" data-hz-race hidden>
+			<div class="hz-race__top">
+				<div><span data-hz-i18n="hud.position">POSITION</span><b data-hz-race-pos>1/3</b></div>
+				<div><span data-hz-i18n="hud.time">TIME</span><b data-hz-race-time>00:00.000</b></div>
+				<div><span data-hz-i18n="hud.checkpoint">CHECKPOINT</span><b data-hz-race-cp>1/8</b></div>
+			</div>
+			<div class="hz-race__bar"><i data-hz-race-bar></i></div>
+			<div class="hz-race__event" data-hz-race-name>NAGISA COAST SPRINT</div>
+		</div>
+
+		<div class="hz-radio" data-hz-radio>
+			<span class="hz-radio__wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+			<div><span>HAYNEKO FM</span><b>88.3</b></div>
+			<em data-hz-radio-track>COASTLINE DRIVE</em>
+		</div>
+
+		<div class="hz-message" data-hz-message aria-live="polite"></div>
+		<div class="hz-toasts" data-hz-toasts></div>
+		<div class="hz-countdown" data-hz-countdown hidden><span></span></div>
+		<div class="hz-prompt" data-hz-prompt hidden><kbd>E</kbd><span data-hz-prompt-text></span></div>
+		<div class="hz-zone" data-hz-zone hidden><span data-hz-zone-label>DRIFT ZONE</span><b data-hz-zone-score>0</b></div>
+
+		<div class="hz-minimap">
+			<canvas data-hz-minimap width="240" height="240" aria-label="Map"></canvas>
+			<span class="hz-minimap__n">N</span>
+			<span class="hz-minimap__scale"><i></i>500 M</span>
+		</div>
+
+		<div class="hz-speedo">
+			<svg class="hz-speedo__dial" viewBox="0 0 260 168" aria-hidden="true">
+				<defs>
+					<linearGradient id="hz-gauge-grad" x1="0" y1="0" x2="1" y2="0">
+						<stop offset="0" stop-color="#ffd27a"/>
+						<stop offset="0.55" stop-color="#ff9f45"/>
+						<stop offset="1" stop-color="#ff5a3c"/>
+					</linearGradient>
+				</defs>
+				<path class="hz-speedo__track" d="M28 134 A 102 102 0 0 1 232 134"/>
+				<path class="hz-speedo__fill" data-hz-speed-arc d="M28 134 A 102 102 0 0 1 232 134" stroke="url(#hz-gauge-grad)"/>
+				<g data-hz-ticks></g>
+				<g class="hz-speedo__needle" data-hz-needle>
+					<line x1="130" y1="36" x2="130" y2="54"/>
+					<circle cx="130" cy="134" r="4"></circle>
+				</g>
+			</svg>
+			<div class="hz-speedo__read"><b data-hz-speed>0</b><span data-hz-units>km/h</span></div>
+			<div class="hz-speedo__gear"><span data-hz-i18n="hud.gear">GEAR</span><b data-hz-gear>1</b></div>
+			<div class="hz-speedo__rpm"><i data-hz-rpm-fill></i><span data-hz-rpm-label>RPM</span></div>
+		</div>
+
+		<div class="hz-hint" data-hz-hint><kbd>WASD</kbd> DRIVE · <kbd>SPACE</kbd> HANDBRAKE · <kbd>C</kbd> CAMERA · <kbd>H</kbd> HELP · <kbd>ESC</kbd> PAUSE</div>
+	</section>
+
+	<!-- ============================================================ overlays -->
+	<div class="hz-overlay hz-help" data-hz-help hidden>
+		<div class="hz-modal hz-modal--wide">
+			<div class="hz-modal__head"><span class="hz-modal__eyebrow">DRIVER'S HANDBOOK</span><button type="button" class="hz-iconbtn" data-hz-help-close aria-label="Close">✕</button></div>
+			<h2 class="hz-modal__title" data-hz-i18n="help.title">DRIVER'S HANDBOOK</h2>
+			<div class="hz-help__grid">
+				<div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span data-hz-i18n="help.drive">Throttle, steer, brake / reverse</span></div>
+				<div><kbd>SPACE</kbd><span data-hz-i18n="help.handbrake">Handbrake — hold to break traction</span></div>
+				<div><kbd>C</kbd><span data-hz-i18n="help.camera">Chase / hood / bumper camera</span></div>
+				<div><kbd>R</kbd><span data-hz-i18n="help.reset">Reset to the nearest road</span></div>
+				<div><kbd>E</kbd><span data-hz-i18n="help.interact">Enter an event gate</span></div>
+				<div><kbd>M</kbd><span data-hz-i18n="help.mute">Mute audio</span></div>
+				<div><kbd>H</kbd><span data-hz-i18n="help.help">Open / close this handbook</span></div>
+				<div><kbd>ESC</kbd><span data-hz-i18n="help.pause">Pause</span></div>
+			</div>
+			<p class="hz-modal__copy" data-hz-i18n="help.tip">Chase the sunset. Drift the coast road. If you fall in the sea, R puts you back on tarmac. Gamepad works: left stick steers, RT throttles, LT brakes, A handbrake.</p>
+		</div>
+	</div>
+
+	<div class="hz-overlay hz-pause" data-hz-pause hidden>
+		<div class="hz-modal">
+			<span class="hz-modal__eyebrow">HAYNEKO HORIZON</span>
+			<h2 class="hz-modal__title" data-hz-i18n="pause.title">PAUSED</h2>
+			<p class="hz-modal__copy" data-hz-i18n="pause.copy">The coast is holding its breath.</p>
+			<div class="hz-modal__actions">
+				<button type="button" class="hz-btn hz-btn--primary" data-hz-resume><span data-hz-i18n="pause.resume">RESUME</span><kbd>ESC</kbd></button>
+				<button type="button" class="hz-btn" data-hz-pause-reset><span data-hz-i18n="pause.reset">RESET CAR</span><kbd>R</kbd></button>
+				<button type="button" class="hz-btn" data-hz-pause-settings><span data-hz-i18n="menu.settings">SETTINGS</span></button>
+				<button type="button" class="hz-btn" data-hz-pause-menu><span data-hz-i18n="pause.menu">FESTIVAL MENU</span></button>
+				<button type="button" class="hz-btn hz-btn--ghost" data-hz-pause-exit><span data-hz-i18n="menu.exit">EXIT TO GAMES</span></button>
+			</div>
+		</div>
+	</div>
+
+	<div class="hz-overlay hz-results" data-hz-results hidden>
+		<div class="hz-modal hz-modal--wide">
+			<div class="hz-modal__head"><span class="hz-modal__eyebrow">EVENT COMPLETE</span><span class="hz-results__medal" data-hz-result-medal>GOLD</span></div>
+			<h2 class="hz-modal__title" data-hz-result-name>NAGISA COAST SPRINT</h2>
+			<div class="hz-results__grid">
+				<div><span data-hz-i18n="results.time">TIME</span><b data-hz-result-time>00:00.000</b></div>
+				<div><span data-hz-i18n="results.best">BEST</span><b data-hz-result-best>--:--.---</b></div>
+				<div><span data-hz-i18n="results.position">POSITION</span><b data-hz-result-pos>1 / 3</b></div>
+				<div><span data-hz-i18n="results.skill">SKILL BANKED</span><b data-hz-result-skill>0</b></div>
+			</div>
+			<div class="hz-results__targets" data-hz-result-targets></div>
+			<div class="hz-modal__actions">
+				<button type="button" class="hz-btn hz-btn--primary" data-hz-result-restart><span data-hz-i18n="results.again">RACE AGAIN</span></button>
+				<button type="button" class="hz-btn" data-hz-result-free><span data-hz-i18n="results.free">FREE ROAM</span></button>
+				<button type="button" class="hz-btn hz-btn--ghost" data-hz-result-events><span data-hz-i18n="results.events">EVENT BOARD</span></button>
+			</div>
+		</div>
+	</div>
+
+	<!-- ============================================================ touch -->
+	<div class="hz-touch" data-hz-touch>
+		<div class="hz-touch__steer">
+			<button type="button" data-hz-touch-steer="-1" aria-label="Steer left">◀</button>
+			<button type="button" data-hz-touch-steer="1" aria-label="Steer right">▶</button>
+		</div>
+		<div class="hz-touch__pedals">
+			<button type="button" class="hz-touch__brake" data-hz-touch-brake aria-label="Brake">BRAKE</button>
+			<button type="button" class="hz-touch__hand" data-hz-touch-hand aria-label="Handbrake">HAND</button>
+			<button type="button" class="hz-touch__gas" data-hz-touch-throttle aria-label="Throttle">GAS</button>
+		</div>
+	</div>
+
+	<div class="hz-rotate"><div><span>ROTATE THE DEVICE</span><b>LANDSCAPE PLEASE</b></div></div>
+</div>

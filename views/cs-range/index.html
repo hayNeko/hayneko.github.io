@@ -29,6 +29,13 @@
 				<div class="csr-menu__meta">
 					<span class="csr-chip csr-chip--live"><i></i>LOCAL / OFFLINE</span>
 					<span class="csr-chip">BUILD 01</span>
+					<label class="csr-lang"><span>LANG</span><select data-csr-language aria-label="Language">
+						<option value="en">EN</option>
+						<option value="zh-CN">简中</option>
+						<option value="zh-TW">繁中</option>
+						<option value="ja">日本語</option>
+						<option value="ko">한국어</option>
+					</select></label>
 					<button type="button" class="csr-xbtn" data-csr-menu-exit aria-label="Back to games">✕</button>
 				</div>
 			</header>
@@ -61,6 +68,10 @@
 						<button type="button" class="csr-btn csr-btn--primary csr-btn--deploy" data-csr-deploy>
 							<span class="csr-btn__label">DEPLOY</span>
 							<span class="csr-btn__key">↵</span>
+						</button>
+						<button type="button" class="csr-btn csr-btn--practice" data-csr-practice>
+							<span class="csr-btn__label">PRACTICE RANGE</span>
+							<span class="csr-btn__key">◎</span>
 						</button>
 						<button type="button" class="csr-btn" data-csr-open-controls>CONTROLS</button>
 						<button type="button" class="csr-btn" data-csr-open-settings>SETTINGS</button>
@@ -150,6 +161,16 @@
 
 		<!-- ============================================================ HUD -->
 		<section class="csr-hud" data-csr-hud hidden aria-label="Game HUD">
+			<div class="csr-practice" data-csr-practice-hud hidden>
+				<span class="csr-practice__tag">PRACTICE RANGE</span>
+				<div class="csr-practice__stats">
+					<div><b data-csr-practice-score>0</b><small>SCORE</small></div>
+					<div><b data-csr-practice-hits>0</b><small>HITS</small></div>
+					<div><b data-csr-practice-acc>0%</b><small>ACCURACY</small></div>
+					<div><b data-csr-practice-targets>0</b><small>TARGETS</small></div>
+				</div>
+				<span class="csr-practice__hint">B · FREE ARMORY</span>
+			</div>
 			<div class="csr-hud__top">
 				<div class="csr-radar">
 					<div class="csr-radar__frame">
@@ -159,7 +180,7 @@
 					</div>
 					<div class="csr-radar__timer">
 						<b data-csr-round-timer>1:55</b>
-						<span>ROUND <i data-csr-round-no>1</i></span>
+						<span><span data-csr-round-word>ROUND</span> <i data-csr-round-no>1</i></span>
 					</div>
 				</div>
 
@@ -197,6 +218,16 @@
 				<i class="csr-crosshair__dot"></i>
 			</div>
 			<div class="csr-hitmarker" data-csr-hitmarker aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+			<div class="csr-headshot" data-csr-headshot aria-hidden="true">
+				<span class="csr-headshot__skull">☠</span>
+				<div><b>HEADSHOT</b><small data-csr-headshot-bonus>4× DAMAGE</small></div>
+			</div>
+			<div class="csr-deathcam" data-csr-deathcam hidden aria-live="polite">
+				<span class="csr-deathcam__tag" data-csr-death-type>ELIMINATED BY</span>
+				<b class="csr-deathcam__name" data-csr-killer>—</b>
+				<span class="csr-deathcam__weapon" data-csr-killer-weapon>—</span>
+				<small>SPECTATING · ROUND ENDS IN <i data-csr-death-timer>3</i></small>
+			</div>
 			<div class="csr-dmgdir" data-csr-dmgdir aria-hidden="true"></div>
 
 			<div class="csr-scope" data-csr-scope hidden aria-hidden="true">
@@ -260,6 +291,7 @@
 			<div class="csr-hud__corner" data-csr-debug aria-hidden="true"></div>
 			<div class="csr-touch" data-csr-touch hidden>
 				<div class="csr-touch__top">
+					<button type="button" data-csr-touch-buy aria-label="Buy menu">$</button>
 					<button type="button" data-csr-touch-score aria-label="Scoreboard">≡</button>
 					<button type="button" data-csr-touch-pause aria-label="Pause">II</button>
 				</div>
@@ -280,8 +312,8 @@
 			<div class="csr-buy__panel">
 				<header class="csr-overlay__head">
 					<div>
-						<p>ARMORY // BUY PHASE</p>
-						<h2>BUY MENU</h2>
+						<p data-csr-buy-kicker>ARMORY // BUY PHASE</p>
+						<h2 data-csr-buy-title>BUY MENU</h2>
 					</div>
 					<div class="csr-overlay__cash"><span>AVAILABLE</span><b data-csr-buy-money>$800</b></div>
 					<button type="button" class="csr-xbtn" data-csr-buy-close aria-label="Close buy menu">✕</button>
@@ -289,7 +321,7 @@
 				<div class="csr-buy__grid" data-csr-buy-grid></div>
 				<footer class="csr-overlay__foot">
 					<span>NUMBER KEYS 1–9 · CLICK FOR SIDEARMS / GEAR</span>
-					<span>PURCHASES ARE FINAL FOR THIS ROUND</span>
+					<span data-csr-buy-note>PURCHASES ARE FINAL FOR THIS ROUND</span>
 					<button type="button" class="csr-btn csr-btn--sm" data-csr-buy-close>CLOSE <kbd>B</kbd></button>
 				</footer>
 			</div>
@@ -370,7 +402,7 @@
 					<div class="csr-keyrow"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move</span></div>
 					<div class="csr-keyrow"><kbd>MOUSE</kbd><span>Aim</span></div>
 					<div class="csr-keyrow"><kbd>LMB</kbd><span>Fire</span></div>
-					<div class="csr-keyrow"><kbd>RMB</kbd><span>AWP scope</span></div>
+					<div class="csr-keyrow"><kbd>RMB</kbd><span>Scope (scoped rifles)</span></div>
 					<div class="csr-keyrow"><kbd>R</kbd><span>Reload</span></div>
 					<div class="csr-keyrow"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>Pistol / primary / knife</span></div>
 					<div class="csr-keyrow"><kbd>SHIFT</kbd><span>Walk (quieter, steadier)</span></div>
@@ -383,7 +415,7 @@
 					<div class="csr-keyrow"><kbd>ESC</kbd><span>Pause / release mouse</span></div>
 					<div class="csr-keyrow"><kbd>H</kbd><span>Toggle this manual</span></div>
 				</div>
-				<p class="csr-controls__note">Robots use line-of-sight, flanking paths and randomised accuracy. Cover works both ways. Aim for the head — it does four times damage.</p>
+				<p class="csr-controls__note">Robots use line-of-sight, flanking paths and randomised accuracy. Cover works both ways. Aim for the head — it does four times damage. Chickens wander the range; the Practice Range has a free armory and target boards.</p>
 				<footer class="csr-overlay__foot"><span>CLICK THE FIELD TO LOCK THE MOUSE</span><button type="button" class="csr-btn csr-btn--sm" data-csr-controls-close>BACK</button></footer>
 			</div>
 		</section>

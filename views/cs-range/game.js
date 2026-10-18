@@ -28,7 +28,13 @@
 	}
 	function text(node, value) {
 		if (!node) return;
-		value = String(value);
+		var source = String(value);
+		if (global.CSRangeI18n) {
+			global.CSRangeI18n.remember(node, source);
+			value = global.CSRangeI18n.t(source);
+		} else {
+			value = source;
+		}
 		if (node.textContent !== value) node.textContent = value;
 	}
 	function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
@@ -62,6 +68,10 @@
 	function smoothstep(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
 	function easeOut(t) { t = clamp(t, 0, 1); return 1 - Math.pow(1 - t, 3); }
 
+	var WALL_PENETRATION_MAX = 0.5;
+	var WALL_PENETRATION_LAYERS = 2;
+	var WALL_PENETRATION_DAMAGE = 0.68;
+
 	/* ======================================================================
 	   the game
 	   ====================================================================== */
@@ -90,6 +100,13 @@
 		this.decals = [];
 		this.drops = [];
 		this.dropSeq = 0;
+		this.chickens = [];
+		this.targets = [];
+		this.targetSeq = 0;
+		this.practice = false;
+		this.practiceStats = { score: 0, hits: 0, targets: 0, centers: 0 };
+		this.playerBody = null;
+		this.deathInfo = null;
 		this.nearestDrop = null;
 		this._pickupKey = 0;
 		this._overlayDrawn = false;
@@ -175,6 +192,7 @@
 			this.updateMenuStats();
 			this.resetMatch();
 			this.showMenu();
+			this.applyLanguage();
 			this.loadingDone();
 			this.beginLoop();
 		} catch (err) {
@@ -197,6 +215,13 @@
 			settingsPanel: $(h, 'settings-panel'),
 			mapPreview: $(h, 'map-preview'),
 			menuHostiles: $(h, 'menu-hostiles'),
+			language: $(h, 'language'),
+			practice: $(h, 'practice'),
+			practiceHud: $(h, 'practice-hud'),
+			practiceScore: $(h, 'practice-score'),
+			practiceHits: $(h, 'practice-hits'),
+			practiceAcc: $(h, 'practice-acc'),
+			practiceTargets: $(h, 'practice-targets'),
 			difficulty: $(h, 'difficulty'),
 			squad: $(h, 'squad'),
 			quality: $(h, 'quality'),
@@ -211,6 +236,7 @@
 			radar: $(h, 'radar'),
 			roundTimer: $(h, 'round-timer'),
 			roundNo: $(h, 'round-no'),
+			roundWord: $(h, 'round-word'),
 			scoreCt: $(h, 'score-ct'),
 			scoreT: $(h, 'score-t'),
 			phaseLabel: $(h, 'phase-label'),
@@ -220,6 +246,13 @@
 			killfeed: $(h, 'killfeed'),
 			crosshair: $(h, 'crosshair'),
 			hitmarker: $(h, 'hitmarker'),
+			headshot: $(h, 'headshot'),
+			headshotBonus: $(h, 'headshot-bonus'),
+			deathcam: $(h, 'deathcam'),
+			killer: $(h, 'killer'),
+			deathType: $(h, 'death-type'),
+			killerWeapon: $(h, 'killer-weapon'),
+			deathTimerEl: $(h, 'death-timer'),
 			dmgdir: $(h, 'dmgdir'),
 			scope: $(h, 'scope'),
 			scopeLabel: $(h, 'scope-label'),
@@ -249,12 +282,16 @@
 			touchReload: $(h, 'touch-reload'),
 			touchJump: $(h, 'touch-jump'),
 			touchCrouch: $(h, 'touch-crouch'),
+			touchBuy: $(h, 'touch-buy'),
 			touchPause: $(h, 'touch-pause'),
 			touchScore: $(h, 'touch-score'),
 			scoreClose: $(h, 'score-close'),
 			buy: $(h, 'buy'),
 			buyGrid: $(h, 'buy-grid'),
 			buyMoney: $(h, 'buy-money'),
+			buyKicker: $(h, 'buy-kicker'),
+			buyTitle: $(h, 'buy-title'),
+			buyNote: $(h, 'buy-note'),
 			pause: $(h, 'pause'),
 			resume: $(h, 'resume'),
 			pauseControls: $(h, 'pause-controls'),
@@ -328,6 +365,7 @@
 		var e = this.el;
 
 		this.on(e.deploy, 'click', function () { self.startMatch(); });
+		this.on(e.practice, 'click', function () { self.startPractice(); });
 		this.on(e.menuExit, 'click', function () { self.exitToGames(); });
 		this.on(e.openControls, 'click', function () { self.openControls('menu'); });
 		this.on(e.openSettings, 'click', function () {
@@ -426,6 +464,21 @@
 		this.on(doc, 'visibilitychange', function () {
 			if (doc.hidden && self.state === 'playing') self.pause();
 		});
+		if (e.language) {
+			this.on(e.language, 'change', function () {
+				var loc = e.language.value;
+				if (global.i18n && typeof global.i18n.setLocale === 'function') {
+					global.i18n.setLocale(loc).then(function () { self.applyLanguage(); }, function () {
+						if (global.CSRangeI18n) global.CSRangeI18n.setLocale(loc);
+						self.applyLanguage();
+					});
+				} else if (global.CSRangeI18n) {
+					global.CSRangeI18n.setLocale(loc);
+					self.applyLanguage();
+				}
+			});
+		}
+		this.on(doc, 'i18n:applied', function () { self.applyLanguage(); });
 		if (this.isTouch) this.setupTouch();
 	};
 
@@ -479,6 +532,7 @@
 	};
 
 	RangeGame.prototype.showMenu = function () {
+		this.clearPractice();
 		this.state = 'menu';
 		doc.documentElement.classList.add('csr-lock');
 		if (this.el.hud) this.el.hud.hidden = true;
@@ -559,6 +613,11 @@
 		this.world = C.createMap(this.scene, this.tex, this.renderer);
 		this.nav = C.buildNav(this.world.colliders, this.world.bounds, 0.46);
 		this.hitWorld = this.world.meshes.slice();
+		if (C.buildPlayerBody) {
+			this.playerBody = C.buildPlayerBody();
+			this.playerBody.visible = false;
+			this.scene.add(this.playerBody);
+		}
 		this.fxGroup = new THREE.Group();
 		this.scene.add(this.fxGroup);
 		this.decalGroup = new THREE.Group();
@@ -892,6 +951,7 @@
 
 	RangeGame.prototype.startMatch = function () {
 		if (!this.renderer) return;
+		this.clearPractice();
 		this.sound.ensure();
 		this.sound.setVolume(this.settings.volume);
 		this.hideMenu();
@@ -902,6 +962,112 @@
 		this.focusField();
 		if (!this.isTouch) this.requestLock();
 		if (this.isTouch && this.el.touch) this.el.touch.hidden = false;
+	};
+
+	RangeGame.prototype.setPracticeChrome = function (on) {
+		this.practice = !!on;
+		if (this.el.hud) this.el.hud.classList.toggle('is-practice', !!on);
+		if (this.el.practiceHud) this.el.practiceHud.hidden = !on;
+		text(this.el.buyKicker, on ? 'ARMORY // PRACTICE RANGE' : 'ARMORY // BUY PHASE');
+		text(this.el.buyTitle, on ? 'FREE ARMORY' : 'BUY MENU');
+		text(this.el.buyNote, on ? 'FREE SWAP · INFINITE RESERVE' : 'PURCHASES ARE FINAL FOR THIS ROUND');
+	};
+
+	RangeGame.prototype.clearPractice = function () {
+		this.practice = false;
+		this.setPracticeChrome(false);
+		this.clearTargets();
+		this.clearChickens();
+		this.hideDeathCam();
+	};
+
+	RangeGame.prototype.startPractice = function () {
+		if (!this.renderer) return;
+		this.clearPractice();
+		this.sound.ensure();
+		this.sound.setVolume(this.settings.volume);
+		this.hideMenu();
+		this.hideOverlays();
+		this.clearBots();
+		this.clearDrops();
+		this.clearFx();
+		if (this.el.killfeed) { this.el.killfeed.innerHTML = ''; this.killFeed.length = 0; }
+		this.state = 'playing';
+		this.buyOpen = false;
+		this.scoreboardOpen = false;
+		this.match = {
+			round: 1, ct: 0, t: 0, kills: 0, deaths: 0, hs: 0,
+			shots: 0, hits: 0, money: 16000, started: this.now
+		};
+		this.round = { phase: 'live', timer: 9999, freezeLeft: 0, ended: false };
+		this.roundStats = { kills: 0, hs: 0, shots: 0, hits: 0 };
+		this.practiceStats = { score: 0, hits: 0, targets: 0, centers: 0 };
+		this.loadout = { primary: null, secondary: 'usp', melee: 'knife' };
+		this.ammo = {};
+		Object.keys(C.WEAPONS).forEach(function (id) {
+			this.ammo[id] = { mag: C.WEAPONS[id].mag, reserve: 999 };
+		}, this);
+		var p = this.player;
+		p.x = C.PRACTICE_SPAWN.x;
+		p.z = C.PRACTICE_SPAWN.z;
+		p.feetY = 0; p.vy = 0; p.vx = 0; p.vz = 0;
+		p.yaw = 0; p.pitch = 0;
+		p.alive = true; p.health = 100; p.armor = 100; p.onGround = true;
+		p.eye = 1.62; p.eyeTarget = 1.62; p.height = 1.78;
+		p.deathT = 0; p.deathRoll = 0;
+		this.deathInfo = null;
+		this.deathTimer = 0;
+		this.recoilPitch = 0; this.recoilYaw = 0; this.shake = 0;
+		this.reloading = false; this.scoped = false; this.scopeT = 0;
+		this.input.fire = false; this.semiQueued = false;
+		this.keys.ctrl = false;
+		this.currentWeapon = 'usp';
+		this.currentSlot = 'secondary';
+		this.equipWeapon('usp', true);
+		this.setPracticeChrome(true);
+		if (this.el.hud) this.el.hud.hidden = false;
+		if (this.el.touch && this.isTouch) this.el.touch.hidden = false;
+		this.hideDeathCam();
+		this.spawnTargets();
+		this.spawnChickens(6);
+		this.updateRoundNo();
+		this.updateScoreHUD();
+		this.updateHostiles();
+		this.updateVitalsHUD();
+		this.updateAmmoHUD();
+		this.updateHUD();
+		this.updatePracticeHUD();
+		this.updateBuyHint();
+		this.announce('PRACTICE RANGE', 'SHOOT THE TARGETS — B OPENS THE FREE ARMORY');
+		this.sound.roundStart();
+		this.focusField();
+		if (!this.isTouch) this.requestLock();
+	};
+
+	RangeGame.prototype.updatePractice = function (dt) {
+		this.updatePlayer(dt);
+		this.updateWeapon(dt);
+		this.updateChickens(dt);
+		this.updateTargets(dt);
+		this.updateFx(dt);
+		this.updateRoundTimer();
+		this.updateVitalsHUD();
+		this.updateAmmoHUD();
+		this.updateCrosshair();
+		this.updatePracticeHUD();
+		this.updateBuyHint();
+	};
+
+	RangeGame.prototype.updatePracticeHUD = function () {
+		if (!this.el.practiceHud) return;
+		var s = this.practiceStats || {};
+		var shots = this.match ? this.match.shots : 0;
+		var hits = this.match ? this.match.hits : 0;
+		var acc = shots > 0 ? Math.round(hits / shots * 100) : 0;
+		text(this.el.practiceScore, s.score || 0);
+		text(this.el.practiceHits, hits);
+		text(this.el.practiceAcc, acc + '%');
+		text(this.el.practiceTargets, s.targets || 0);
 	};
 
 	RangeGame.prototype.squadCount = function () {
@@ -921,6 +1087,10 @@
 
 	RangeGame.prototype.startRound = function (first) {
 		var self = this;
+		this.practice = false;
+		this.setPracticeChrome(false);
+		this.clearTargets();
+		this.hideDeathCam();
 		if (!first) this.match.round++;
 		this.clearBots();
 		this.clearFx();
@@ -982,6 +1152,7 @@
 			this.spawnBot(type, pos);
 		}
 		this.clearDrops();
+		this.spawnChickens(5);
 		this.updateHostiles();
 		this.updateBuyHint();
 		this.updateScoreHUD();
@@ -1037,9 +1208,20 @@
 		robot.flash.visible = false;
 		robot.muzzle.add(robot.flash);
 
-		var weaponId = C.choice(type.weaponPool || ['ak47']);
-		var weaponDef = C.WEAPONS[weaponId] || C.WEAPONS.ak47;
-		var magSize = Math.max(4, Math.round(weaponDef.mag * C.rand(0.55, 0.82)));
+		var loadouts = (C.BOT_LOADOUTS && C.BOT_LOADOUTS[type.id]) || [['ak47', 'p250']];
+		var loadout = C.choice(loadouts);
+		var weapons = [];
+		for (var wi = 0; wi < loadout.length; wi++) {
+			var wDef = C.WEAPONS[loadout[wi]];
+			if (!wDef) continue;
+			var wMag = Math.max(4, Math.round(wDef.mag * C.rand(0.55, 0.82)));
+			weapons.push({ id: loadout[wi], def: wDef, magSize: wMag, ammo: wMag, reloading: false, reloadEnd: 0, melee: false });
+		}
+		weapons.push({ id: 'knife', def: C.WEAPONS.knife, magSize: 1, ammo: 1, reloading: false, reloadEnd: 0, melee: true });
+		var currentWeapon = weapons[0];
+		var sniperWeapon = weapons.filter(function (w) { return w.def.category === 'SNIPER'; })[0] || null;
+		var hasRifle = weapons.some(function (w) { return w.def.category === 'RIFLE'; });
+		var hasSmg = weapons.some(function (w) { return w.def.category === 'SMG'; });
 
 		var bot = {
 			robot: robot,
@@ -1052,13 +1234,25 @@
 			speed: type.speed * (0.92 + Math.random() * 0.16),
 			accuracy: type.accuracy * (0.92 + Math.random() * 0.16),
 			damage: type.damage,
-			weaponId: weaponId,
-			weaponDef: weaponDef,
-			magSize: magSize,
-			ammo: magSize,
+			weapons: weapons,
+			weaponIndex: 0,
+			weaponId: currentWeapon.id,
+			weaponDef: currentWeapon.def,
+			magSize: currentWeapon.magSize,
+			ammo: currentWeapon.ammo,
 			reloading: false,
 			reloadEnd: 0,
 			reloadSoundAt: 0,
+			hasRifle: hasRifle,
+			hasSmg: hasSmg,
+			hasSniper: !!sniperWeapon,
+			burstMode: hasRifle && hasSmg,
+			burstLeft: 0,
+			weaponThink: 0,
+			weaponSwitchAt: 0,
+			sniperCoverCooldown: 0,
+			sniperCovered: false,
+			meleeUntil: 0,
 			stationaryUntil: 0,
 			behavior: 'hunt',
 			behaviorSince: 0,
@@ -1106,6 +1300,131 @@
 		return bot;
 	};
 
+	RangeGame.prototype.saveBotWeapon = function (bot) {
+		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
+		if (!rec) return;
+		rec.ammo = bot.ammo;
+		rec.reloading = bot.reloading;
+		rec.reloadEnd = bot.reloadEnd;
+	};
+
+	RangeGame.prototype.setBotWeapon = function (bot, index, silent) {
+		if (!bot || !bot.weapons || index === bot.weaponIndex) return false;
+		var rec = bot.weapons[index];
+		if (!rec) return false;
+		this.saveBotWeapon(bot);
+		bot.weaponIndex = index;
+		bot.weaponId = rec.id;
+		bot.weaponDef = rec.def;
+		bot.magSize = rec.magSize;
+		bot.ammo = rec.ammo;
+		bot.reloading = false;
+		bot.reloadEnd = 0;
+		rec.reloading = false;
+		rec.reloadEnd = 0;
+		bot.robot.reloading = false;
+		bot.burstLeft = 0;
+		bot.reactionDone = false;
+		bot.reaction = 0;
+		bot.nextShot = Math.max(bot.nextShot, this.now + 240);
+		bot.weaponSwitchAt = this.now;
+		bot.stationaryUntil = Math.max(bot.stationaryUntil || 0, this.now + 180);
+		if (bot.behavior === 'sniperCover' && rec.def.category !== 'SNIPER') {
+			bot.behavior = 'hunt';
+			bot.behaviorUntil = 0;
+			bot.tacTarget = null;
+			bot.tacPath = null;
+		}
+		if (!silent) {
+			var dist = Math.hypot(this.player.x - bot.x, this.player.z - bot.z);
+			if (dist < 15) this.sound.burst({ dur: 0.05, type: 'bandpass', freq: 1700, q: 0.9, gain: 0.035 * (1 - dist / 20), pan: this.panFor(bot.x, bot.z) });
+		}
+		return true;
+	};
+
+	RangeGame.prototype.botGuns = function (bot) {
+		return (bot.weapons || []).filter(function (w) { return !w.melee; });
+	};
+
+	RangeGame.prototype.botLoadedGuns = function (bot) {
+		return this.botGuns(bot).filter(function (w) { return w.ammo > 0; });
+	};
+
+	RangeGame.prototype.botWeaponScore = function (bot, rec, dist) {
+		var def = rec.def;
+		var score = 1;
+		if (def.category === 'SNIPER') {
+			score = dist > 14 ? 3.2 : dist < 9 ? 0.2 : 1.7;
+		} else if (def.category === 'SHOTGUN') {
+			score = dist < 10 ? 2.4 : 0.5;
+		} else if (def.category === 'SMG') {
+			score = dist < 14 ? 2.0 : 1.0;
+		} else if (def.category === 'RIFLE') {
+			score = dist >= 8 && dist <= 34 ? 1.8 : 1.2;
+		} else {
+			score = 1.0;
+		}
+		if (rec === bot.weapons[bot.weaponIndex]) score += 0.35;
+		return score;
+	};
+
+	RangeGame.prototype.bestBotGun = function (bot, dist, loadedOnly) {
+		var list = loadedOnly ? this.botLoadedGuns(bot) : this.botGuns(bot);
+		var best = null, bestScore = -1;
+		for (var i = 0; i < list.length; i++) {
+			var score = this.botWeaponScore(bot, list[i], dist);
+			if (score > bestScore) { bestScore = score; best = list[i]; }
+		}
+		return best;
+	};
+
+	RangeGame.prototype.updateBotWeaponChoice = function (bot, dist) {
+		if (!bot || bot.reloading) return;
+		if (bot.weaponThink > 0) return;
+		bot.weaponThink = C.rand(0.42, 0.72);
+		var current = bot.weapons[bot.weaponIndex];
+		var loaded = this.botLoadedGuns(bot);
+		if (!current) return;
+		if (current.melee) {
+			if (loaded.length && dist > 2.4) {
+				var back = this.bestBotGun(bot, dist, true);
+				if (back) this.setBotWeapon(bot, bot.weapons.indexOf(back));
+			} else if (!loaded.length && dist > 3.0) {
+				var empty = this.bestBotGun(bot, dist, false);
+				if (empty) {
+					this.setBotWeapon(bot, bot.weapons.indexOf(empty));
+					this.startBotReload(bot, this.player.x, this.player.feetY + this.player.eye, this.player.z);
+				}
+			}
+			return;
+		}
+		if (bot.ammo <= 0) {
+			if (loaded.length) {
+				var swap = this.bestBotGun(bot, dist, true);
+				if (swap) this.setBotWeapon(bot, bot.weapons.indexOf(swap));
+				return;
+			}
+			if (dist < 3.4 && Math.random() < 0.6) {
+				var knife = bot.weapons.filter(function (w) { return w.melee; })[0];
+				if (knife) { this.setBotWeapon(bot, bot.weapons.indexOf(knife)); return; }
+			}
+			this.startBotReload(bot, this.player.x, this.player.feetY + this.player.eye, this.player.z);
+			return;
+		}
+		/* keep the most appropriate loaded weapon in hand */
+		var best = this.bestBotGun(bot, dist, true);
+		if (!best) return;
+		var bestScore = this.botWeaponScore(bot, best, dist);
+		var currentScore = this.botWeaponScore(bot, current, dist);
+		var mustSwap = false;
+		if (best !== current && bestScore > currentScore + 0.55) mustSwap = true;
+		if (current.def.category === 'SNIPER' && dist < 9 && best !== current) mustSwap = true;
+		if (current.def.category !== 'SNIPER' && bot.hasSniper && dist > 17 && best.def.category === 'SNIPER') mustSwap = true;
+		if (current.def.category === 'RIFLE' && dist < 9 && best.def.category === 'SMG') mustSwap = true;
+		if (current.def.category === 'SMG' && dist > 16 && best.def.category === 'RIFLE') mustSwap = true;
+		if (mustSwap) this.setBotWeapon(bot, bot.weapons.indexOf(best));
+	};
+
 	RangeGame.prototype.clearBots = function () {
 		this.bots.forEach(function (b) {
 			if (b.root) {
@@ -1137,8 +1456,229 @@
 		this.shells.forEach(function (s) { s.mesh.visible = false; s.life = 0; });
 	};
 
+	RangeGame.prototype.spawnChickens = function (count) {
+		this.clearChickens();
+		var spots = C.shuffle((C.CHICKEN_SPAWNS || []).slice());
+		var colors = [0xe8dfca, 0xc7a77a, 0x9a7d5c, 0xd9c7a2, 0x7b5a3d];
+		var n = count == null ? 5 : count;
+		for (var i = 0; i < spots.length && this.chickens.length < n; i++) {
+			var s = spots[i];
+			if (this.collidesBot(s.x, s.z, 0.3)) continue;
+			var model = C.buildChicken({ color: colors[Math.floor(Math.random() * colors.length)] });
+			model.root.scale.setScalar(0.92 + Math.random() * 0.12);
+			model.root.position.set(s.x, 0, s.z);
+			var yaw = Math.random() * Math.PI * 2;
+			model.root.rotation.y = yaw;
+			var hitbox = new THREE.Mesh(
+				new THREE.SphereGeometry(0.34, 8, 6),
+				new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+			);
+			hitbox.position.y = 0.36;
+			model.root.add(hitbox);
+			this.scene.add(model.root);
+			var chicken = {
+				root: model.root, body: model.body, head: model.head, hitbox: hitbox,
+				wingL: model.wingL, wingR: model.wingR, legL: model.legL, legR: model.legR,
+				x: s.x, z: s.z, yaw: yaw, targetYaw: yaw,
+				alive: true, deadT: 0, phase: Math.random() * 8,
+				speed: 0, walkTimer: C.rand(0.8, 2.6), pecking: false,
+				cluckTimer: C.rand(2, 7), flee: false, wingPhase: Math.random() * 6
+			};
+			hitbox.userData = { chicken: chicken, part: 'body' };
+			model.body.userData = { chicken: chicken, part: 'body' };
+			model.head.userData = { chicken: chicken, part: 'head' };
+			model.root.userData = { chicken: chicken };
+			this.chickens.push(chicken);
+		}
+	};
+
+	RangeGame.prototype.clearChickens = function () {
+		for (var i = 0; i < this.chickens.length; i++) {
+			var ch = this.chickens[i];
+			if (!ch.root) continue;
+			ch.root.traverse(function (o) {
+				if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+			});
+			if (ch.root.parent) ch.root.parent.remove(ch.root);
+			if (ch.materials) ch.materials.forEach(function (m) { try { m.dispose(); } catch (e) {} });
+		}
+		this.chickens.length = 0;
+	};
+
+	RangeGame.prototype.updateChickens = function (dt) {
+		var p = this.player;
+		for (var i = 0; i < this.chickens.length; i++) {
+			var ch = this.chickens[i];
+			if (!ch.alive) {
+				ch.deadT += dt;
+				ch.root.rotation.z = Math.min(1.35, ch.deadT * 4.5);
+				ch.root.position.y = Math.max(0, 0.2 - ch.deadT * 0.3);
+				if (ch.deadT > 7) ch.root.visible = false;
+				continue;
+			}
+			ch.cluckTimer -= dt;
+			if (ch.cluckTimer <= 0) {
+				ch.cluckTimer = C.rand(4.5, 11);
+				this.sound.cluck(this.panFor(ch.x, ch.z));
+			}
+			var threatX = p.x, threatZ = p.z;
+			var near = p.alive && Math.hypot(p.x - ch.x, p.z - ch.z) < 3.2;
+			if (!near) {
+				for (var bi = 0; bi < this.bots.length; bi++) {
+					var bb = this.bots[bi];
+					if (!bb.alive) continue;
+					if (Math.hypot(bb.x - ch.x, bb.z - ch.z) < 2.9) {
+						threatX = bb.x; threatZ = bb.z; near = true; break;
+					}
+				}
+			}
+			ch.flee = near;
+			if (ch.flee) {
+				var dx = ch.x - threatX, dz = ch.z - threatZ;
+				var len = Math.hypot(dx, dz) || 1;
+				ch.targetYaw = Math.atan2(-dx / len, -dz / len);
+				ch.speed = 1.9;
+				ch.walkTimer = 0.35;
+			} else {
+				ch.walkTimer -= dt;
+				if (ch.walkTimer <= 0) {
+					if (Math.random() < 0.32) {
+						ch.speed = 0;
+						ch.walkTimer = C.rand(0.9, 2.4);
+					} else {
+						ch.targetYaw = Math.random() * Math.PI * 2;
+						ch.speed = C.rand(0.45, 0.9);
+						ch.walkTimer = C.rand(1.2, 3.4);
+					}
+				}
+			}
+			var turn = 1 - Math.exp(-6 * dt);
+			ch.yaw += Math.atan2(Math.sin(ch.targetYaw - ch.yaw), Math.cos(ch.targetYaw - ch.yaw)) * turn;
+			var spd = ch.speed;
+			if (spd > 0) {
+				var wx = ch.x - Math.sin(ch.yaw) * spd * dt;
+				var wz = ch.z - Math.cos(ch.yaw) * spd * dt;
+				if (!this.collidesBot(wx, ch.z, 0.24)) ch.x = wx;
+				else { ch.targetYaw += Math.PI * 0.7; ch.speed = 0; }
+				if (!this.collidesBot(ch.x, wz, 0.24)) ch.z = wz;
+				else { ch.targetYaw += Math.PI * 0.7; ch.speed = 0; }
+				ch.phase += dt * (7 + spd * 7);
+			} else {
+				ch.phase += dt * 1.2;
+			}
+			ch.root.position.set(ch.x, Math.abs(Math.sin(ch.phase * 0.7)) * 0.018 * (ch.speed > 0 ? 2 : 1), ch.z);
+			ch.root.rotation.y = ch.yaw;
+			var leg = Math.sin(ch.phase) * (ch.speed > 0 ? 0.55 : 0.03);
+			if (ch.legL) ch.legL.rotation.x = leg;
+			if (ch.legR) ch.legR.rotation.x = -leg;
+			var flap = Math.sin(ch.phase * 2.2) * (ch.speed > 1 ? 0.16 : 0.04);
+			if (ch.wingL) ch.wingL.rotation.z = flap;
+			if (ch.wingR) ch.wingR.rotation.z = -flap;
+			if (ch.head) ch.head.position.y = 0.59 + Math.sin(ch.phase * 2.3) * 0.008;
+		}
+	};
+
+	RangeGame.prototype.killChicken = function (ch, point) {
+		if (!ch || !ch.alive) return;
+		ch.alive = false;
+		ch.deadT = 0;
+		this.sound.squawk(this.panFor(ch.x, ch.z));
+		this.spawnSparks(point || new THREE.Vector3(ch.x, 0.4, ch.z), 0xf0e6d0, 18, 2.6);
+	};
+
+	RangeGame.prototype.spawnTargets = function () {
+		this.clearTargets();
+		var spawn = C.PRACTICE_SPAWN || C.PLAYER_SPAWN;
+		var list = C.PRACTICE_TARGETS || [];
+		for (var i = 0; i < list.length; i++) {
+			var s = list[i];
+			if (this.collidesBot(s.x, s.z, 0.42)) continue;
+			var scale = s.scale || 1;
+			var built = C.buildPracticeTarget(s.type, scale);
+			var yaw = Math.atan2(spawn.x - s.x, spawn.z - s.z);
+			built.root.position.set(s.x, 0, s.z);
+			built.root.rotation.y = yaw;
+			built.face.userData = { target: null, part: 'target' };
+			this.scene.add(built.root);
+			var target = {
+				root: built.root, pivot: built.pivot, hitMesh: built.face,
+				x: s.x, z: s.z, baseX: s.x, baseZ: s.z,
+				baseYaw: yaw, scale: scale, kind: s.type,
+				move: s.move || 0, phase: Math.random() * Math.PI * 2,
+				down: false, downT: 0, hits: 0,
+				materials: built.materials
+			};
+			built.face.userData.target = target;
+			this.targets.push(target);
+		}
+	};
+
+	RangeGame.prototype.clearTargets = function () {
+		for (var i = 0; i < this.targets.length; i++) {
+			var t = this.targets[i];
+			if (!t.root) continue;
+			t.root.traverse(function (o) {
+				if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+			});
+			if (t.root.parent) t.root.parent.remove(t.root);
+			(t.materials || []).forEach(function (m) {
+				if (m.map) { try { m.map.dispose(); } catch (e) {} }
+				try { m.dispose(); } catch (e2) {}
+			});
+		}
+		this.targets.length = 0;
+	};
+
+	RangeGame.prototype.updateTargets = function (dt) {
+		for (var i = 0; i < this.targets.length; i++) {
+			var t = this.targets[i];
+			if (t.down) {
+				t.downT += dt;
+				t.pivot.rotation.x = -1.28 * Math.min(1, t.downT * 4.5);
+				if (t.downT >= 2.4) {
+					t.down = false;
+					t.downT = 0;
+					t.pivot.rotation.x = 0;
+					t.root.visible = true;
+					t.x = t.baseX;
+					t.root.position.x = t.x;
+				}
+			} else {
+				if (t.move) {
+					t.phase += dt * 0.9;
+					t.x = t.baseX + Math.sin(t.phase) * t.move;
+					t.root.position.x = t.x;
+				}
+				t.pivot.rotation.x = Math.sin(t.phase * 0.7) * 0.006;
+			}
+		}
+	};
+
+	RangeGame.prototype.hitPracticeTarget = function (target, hit) {
+		if (!target || target.down) return false;
+		target.down = true;
+		target.downT = 0;
+		target.hits++;
+		var points = 10;
+		var center = false;
+		if (hit && hit.uv) {
+			var d = Math.hypot(hit.uv.x - 0.5, hit.uv.y - 0.5);
+			center = d < 0.11;
+			points = center ? 25 : d < 0.23 ? 15 : 10;
+		}
+		this.practiceStats.score += points;
+		this.practiceStats.hits++;
+		this.practiceStats.targets++;
+		if (center) this.practiceStats.centers++;
+		this.sound.target(center);
+		this.spawnSparks(hit && hit.point ? hit.point : new THREE.Vector3(target.x, 1.3, target.z), center ? 0xffd05a : 0xffb36b, center ? 16 : 10, 3.2);
+		this.updatePracticeHUD();
+		return true;
+	};
+
 	RangeGame.prototype.updateRoundNo = function () {
-		text(this.el.roundNo, this.match.round);
+		text(this.el.roundWord, this.practice ? 'PRACTICE' : 'ROUND');
+		text(this.el.roundNo, this.practice ? '' : this.match.round);
 		text(this.el.pauseRound, this.match.round);
 		text(this.el.boardRound, this.match.round);
 	};
@@ -1175,6 +1715,11 @@
 	};
 
 	RangeGame.prototype.updateRoundTimer = function () {
+		if (this.practice) {
+			text(this.el.roundTimer, '∞');
+			if (this.el.phaseLabel) text(this.el.phaseLabel, 'PRACTICE');
+			return;
+		}
 		var val;
 		if (this.state === 'roundover' || this.state === 'matchover') val = '0:00';
 		else if (this.round && this.round.phase === 'freeze') val = fmtTime(this.round.freezeLeft);
@@ -1192,13 +1737,23 @@
 
 	RangeGame.prototype.updateBuyHint = function () {
 		if (!this.el.buyhint) return;
-		var show = this.state === 'playing' && this.round && this.round.phase === 'freeze';
+		var show = this.state === 'playing' && (this.practice || (this.round && this.round.phase === 'freeze'));
 		this.el.buyhint.classList.toggle('is-hidden', !show);
+		var mode = this.practice ? 'practice' : 'live';
+		if (this._buyHintMode !== mode) {
+			this._buyHintMode = mode;
+			var tag = this.el.buyhint.querySelector('span');
+			var line = this.el.buyhint.querySelector('b');
+			if (tag) text(tag, this.practice ? 'FREE ARMORY' : 'BUY PHASE');
+			if (line) line.innerHTML = '<kbd>B</kbd> ' + escapeHTML(this.tr(this.practice ? 'TRY ANY WEAPON' : 'OPEN BUY MENU'));
+		}
 	};
 
 	RangeGame.prototype.announce = function (main, sub) {
 		var a = this.el.announce;
 		if (!a) return;
+		main = this.tr(main);
+		sub = sub ? this.tr(sub) : '';
 		a.innerHTML = escapeHTML(main) + (sub ? '<small>' + escapeHTML(sub) + '</small>' : '');
 		a.classList.remove('is-show', 'is-stay');
 		void a.offsetWidth;
@@ -1247,7 +1802,8 @@
 			return;
 		}
 		if (this.state === 'playing') {
-			this.updateMatch(dt);
+			if (this.practice) this.updatePractice(dt);
+			else this.updateMatch(dt);
 		} else if (this.state === 'roundover') {
 			this.updateResult(dt);
 			this.updateBotsDeath(dt);
@@ -1297,6 +1853,7 @@
 		this.updatePlayer(dt);
 		this.updateWeapon(dt);
 		this.updateBots(dt);
+		this.updateChickens(dt);
 		this.updateFx(dt);
 		this.updateRoundTimer();
 		this.updateVitalsHUD();
@@ -1305,7 +1862,11 @@
 
 		if (!this.player.alive) {
 			this.deathTimer -= dt;
-			if (this.deathTimer <= 0) this.endRound(false, 'You were eliminated by the robot squad.');
+			this.updateDeathHUD();
+			if (this.deathTimer <= 0) {
+				var why = this.deathInfo ? (this.deathInfo.headshot ? 'Headshot by ' : 'Eliminated by ') + this.deathInfo.name + ' (' + this.deathInfo.weapon + ').' : 'You were eliminated by the robot squad.';
+				this.endRound(false, why);
+			}
 		} else if (round.phase === 'live') {
 			var alive = 0;
 			for (var i = 0; i < this.bots.length; i++) if (this.bots[i].alive) alive++;
@@ -1346,6 +1907,7 @@
 		this.scoped = false;
 		this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
 		this.updateBuyHint();
+		this.hideDeathCam();
 
 		var reward = win ? 3250 : 1900;
 		this.resultReward = reward;
@@ -1468,12 +2030,14 @@
 		p.eye = C.damp(p.eye, p.eyeTarget, 12, dt);
 		p.height = C.damp(p.height, wantCrouch ? 1.28 : 1.78, 12, dt);
 
-		/* horizontal collision, axis separated for wall sliding */
+		/* horizontal collision, axis separated for wall sliding + stair step-up */
 		var nx = p.x + p.vx * dt;
-		if (!this.collidesAt(nx, p.z, p.feetY, p.height)) p.x = nx;
+		if (!this.collidesAt(nx, p.z, p.feetY, p.height) && !this.collidesChicken(nx, p.z, 0.34, p.feetY)) p.x = nx;
+		else if (this.tryStepUp(nx, p.z)) p.x = nx;
 		else p.vx = 0;
 		var nz = p.z + p.vz * dt;
-		if (!this.collidesAt(p.x, nz, p.feetY, p.height)) p.z = nz;
+		if (!this.collidesAt(p.x, nz, p.feetY, p.height) && !this.collidesChicken(p.x, nz, 0.34, p.feetY)) p.z = nz;
+		else if (this.tryStepUp(p.x, nz)) p.z = nz;
 		else p.vz = 0;
 
 		/* jump / gravity */
@@ -1527,6 +2091,10 @@
 
 	RangeGame.prototype.updateCamera = function () {
 		var p = this.player;
+		if (!p.alive) {
+			this.updateDeathCamera();
+			return;
+		}
 		var bob = 0, bobX = 0;
 		if (!this.reduceMotion && p.onGround && p.speed > 1.2) {
 			bob = Math.sin(p.bobPhase * 2.1) * 0.012 * Math.min(p.speed / 5, 1);
@@ -1536,19 +2104,78 @@
 		var sx = (Math.random() - 0.5) * shake * 0.05;
 		var sy = (Math.random() - 0.5) * shake * 0.05;
 		var roll = 0;
-		var eye = p.eye;
-		if (!p.alive) {
-			eye = 0.36;
-			roll = p.deathRoll;
-		}
-		this.camera.position.set(p.x + bobX + sx, p.feetY + eye + bob + sy, p.z);
+		this.camera.position.set(p.x + bobX + sx, p.feetY + p.eye + bob + sy, p.z);
 		var pitch = p.pitch + this.recoilPitch;
 		var yaw = p.yaw + this.recoilYaw;
-		if (!p.alive) {
-			pitch = -0.35;
-			yaw = p.yaw;
-		}
 		this.camera.rotation.set(pitch, yaw, roll);
+	};
+
+	RangeGame.prototype.showDeathCam = function (fromBot, headshot) {
+		var p = this.player;
+		var weapon = fromBot && fromBot.weaponDef ? fromBot.weaponDef.name : 'UNKNOWN';
+		this.deathInfo = {
+			killer: fromBot || null,
+			name: fromBot ? fromBot.name : 'THE RANGE',
+			weapon: weapon,
+			headshot: !!headshot
+		};
+		this.deathTimer = 3.6;
+		if (this.el.announce) this.el.announce.classList.remove('is-show', 'is-stay');
+		if (this.playerBody) {
+			this.playerBody.visible = true;
+			this.playerBody.position.set(p.x, p.feetY, p.z);
+			this.playerBody.rotation.set(0, p.yaw, 0);
+		}
+		if (this.el.deathcam) {
+			this.el.deathcam.hidden = false;
+			text(this.el.killer, this.deathInfo.name);
+			text(this.el.killerWeapon, this.deathInfo.weapon);
+			if (this.el.deathType) text(this.el.deathType, headshot ? 'HEADSHOT · ELIMINATED BY' : 'ELIMINATED BY');
+			this.updateDeathHUD();
+		}
+		this.camera.fov = 74;
+		this.camera.updateProjectionMatrix();
+	};
+
+	RangeGame.prototype.hideDeathCam = function () {
+		if (this.playerBody) this.playerBody.visible = false;
+		if (this.el.deathcam) this.el.deathcam.hidden = true;
+		this.deathInfo = null;
+	};
+
+	RangeGame.prototype.updateDeathHUD = function () {
+		if (this.el.deathTimerEl) text(this.el.deathTimerEl, String(Math.max(0, Math.ceil(this.deathTimer))));
+	};
+
+	RangeGame.prototype.updateDeathCamera = function () {
+		var p = this.player;
+		var info = this.deathInfo;
+		var killer = info && info.killer;
+		if (this.playerBody) {
+			var fall = Math.min(1, p.deathT / 0.62);
+			var e = 1 - Math.pow(1 - fall, 3);
+			this.playerBody.position.set(p.x, p.feetY, p.z);
+			this.playerBody.rotation.set(0, p.yaw, 1.36 * e);
+		}
+		var dx = killer ? killer.x - p.x : -Math.sin(p.yaw) * 4;
+		var dz = killer ? killer.z - p.z : -Math.cos(p.yaw) * 4;
+		var len = Math.hypot(dx, dz) || 1;
+		dx /= len; dz /= len;
+		var orbit = Math.sin(p.deathT * 0.45) * 0.24;
+		var ox = dx * Math.cos(orbit) - dz * Math.sin(orbit);
+		var oz = dx * Math.sin(orbit) + dz * Math.cos(orbit);
+		var height = 2.35 + Math.sin(p.deathT * 0.8) * 0.05;
+		var dist = 3.8;
+		var camX = p.x - ox * dist, camZ = p.z - oz * dist;
+		for (var d = dist; d > 1.35; d -= 0.42) {
+			camX = p.x - ox * d;
+			camZ = p.z - oz * d;
+			if (Math.abs(camX) < 36.5 && Math.abs(camZ) < 36.5 && !this.collidesAt(camX, camZ, 0, height + 0.2)) break;
+		}
+		this.camera.position.set(camX, p.feetY + height, camZ);
+		var lookX = p.x + dx * 1.55;
+		var lookZ = p.z + dz * 1.55;
+		this.camera.lookAt(lookX, p.feetY + 1.08, lookZ);
 	};
 
 	RangeGame.prototype.collidesAt = function (x, z, feetY, height) {
@@ -1585,6 +2212,36 @@
 			if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) best = c.maxY;
 		}
 		return best;
+	};
+
+	RangeGame.prototype.collidesChicken = function (x, z, r, feetY) {
+		if (feetY > 0.45) return false;
+		for (var i = 0; i < this.chickens.length; i++) {
+			var ch = this.chickens[i];
+			if (!ch.alive) continue;
+			if (Math.hypot(x - ch.x, z - ch.z) < r + 0.27) return true;
+		}
+		return false;
+	};
+
+	RangeGame.prototype.tryStepUp = function (nx, nz) {
+		var p = this.player;
+		if (!p.onGround || p.vy > 0.15) return false;
+		var r = 0.34, maxStep = 0.46, best = 0;
+		var cols = this.world.colliders;
+		for (var i = 0; i < cols.length; i++) {
+			var c = cols[i];
+			if (!(nx + r > c.minX && nx - r < c.maxX && nz + r > c.minZ && nz - r < c.maxZ)) continue;
+			if (c.maxY > p.feetY + maxStep) return false;
+			if (c.maxY > best) best = c.maxY;
+		}
+		if (best <= p.feetY + 0.04) return false;
+		if (this.collidesAt(nx, nz, best, p.height)) return false;
+		if (this.collidesChicken(nx, nz, r, best)) return false;
+		p.feetY = best;
+		p.vy = 0;
+		p.onGround = true;
+		return true;
 	};
 
 	/* ======================================================================
@@ -1631,6 +2288,7 @@
 	};
 
 	RangeGame.prototype.startReload = function () {
+		if (!this.player.alive) return;
 		var def = this.weaponDef(this.currentWeapon);
 		var ammo = this.ammo[this.currentWeapon];
 		if (!def || !ammo || def.slot === 'melee' || this.reloading) return;
@@ -1647,9 +2305,9 @@
 		var ammo = this.ammo[this.currentWeapon];
 		if (!def || !ammo) { this.reloading = false; return; }
 		var need = def.mag - ammo.mag;
-		var take = Math.min(need, ammo.reserve);
+		var take = this.practice ? need : Math.min(need, ammo.reserve);
 		ammo.mag += take;
-		ammo.reserve -= take;
+		if (!this.practice) ammo.reserve -= take;
 		this.reloading = false;
 		this.updateAmmoHUD();
 	};
@@ -1718,16 +2376,21 @@
 		this.sound.shot(def.sound, 0);
 		this.ejectShell();
 		var pellets = def.pellets || 1;
-		var anyHit = false, anyHead = false;
+		var anyHit = false, anyHead = false, anyKill = false;
 		for (var pi = 0; pi < pellets; pi++) {
 			var res = this.resolvePlayerShot(def, pellets > 1 ? 1.8 : 1);
-			if (res.hit) { anyHit = true; if (res.head) anyHead = true; }
+			if (res.hit) {
+				anyHit = true;
+				if (res.head) anyHead = true;
+				if (res.killed) anyKill = true;
+			}
 		}
 		if (anyHit) {
 			this.match.hits++;
 			this.roundStats.hits++;
-			this.showHitmarker(anyHead);
+			this.showHitmarker(anyHead, anyKill);
 			this.sound.hit(anyHead);
+			if (anyHead) this.showHeadshot(anyKill);
 		}
 		this.updateAmmoHUD();
 		this.semiQueued = false;
@@ -1779,42 +2442,119 @@
 				if (this.bots[i].robot.bodyHit) out.push(this.bots[i].robot.bodyHit);
 			}
 		}
+		for (var c = 0; c < this.chickens.length; c++) {
+			var ch = this.chickens[c];
+			if (ch && ch.alive) out.push(ch.hitbox);
+		}
+		for (var t = 0; t < this.targets.length; t++) {
+			var tg = this.targets[t];
+			if (tg && !tg.down && tg.hitMesh) out.push(tg.hitMesh);
+		}
 		return out;
 	};
 
+	RangeGame.prototype.rayBoxExit = function (origin, dir, c) {
+		var lo = [c.minX, c.minY, c.minZ];
+		var hi = [c.maxX, c.maxY, c.maxZ];
+		var o = [origin.x, origin.y, origin.z];
+		var d = [dir.x, dir.y, dir.z];
+		var tmin = -Infinity, tmax = Infinity;
+		for (var i = 0; i < 3; i++) {
+			if (Math.abs(d[i]) < 1e-8) {
+				if (o[i] < lo[i] || o[i] > hi[i]) return null;
+			} else {
+				var a = (lo[i] - o[i]) / d[i];
+				var b = (hi[i] - o[i]) / d[i];
+				if (a > b) { var tmp = a; a = b; b = tmp; }
+				if (a > tmin) tmin = a;
+				if (b < tmax) tmax = b;
+				if (tmin > tmax) return null;
+			}
+		}
+		return tmax >= 0 ? tmax : null;
+	};
+
+	RangeGame.prototype.wallPenetrationAt = function (origin, dir, hit) {
+		var probe = hit.point.clone().addScaledVector(dir, 0.035);
+		var bestExit = -1;
+		var cols = this.world.colliders;
+		var eps = 0.04;
+		for (var i = 0; i < cols.length; i++) {
+			var c = cols[i];
+			if (probe.x < c.minX - eps || probe.x > c.maxX + eps) continue;
+			if (probe.y < c.minY - eps || probe.y > c.maxY + eps) continue;
+			if (probe.z < c.minZ - eps || probe.z > c.maxZ + eps) continue;
+			var exit = this.rayBoxExit(origin, dir, c);
+			if (exit != null && exit > hit.distance && exit > bestExit) bestExit = exit;
+		}
+		if (bestExit < 0) return null;
+		return {
+			thickness: bestExit - hit.distance,
+			exitPoint: origin.clone().addScaledVector(dir, bestExit)
+		};
+	};
+
 	RangeGame.prototype.resolvePlayerShot = function (def, spreadScale) {
+		/* The ray leaves the camera at the exact crosshair centre. The gun is
+		   only a visual: no muzzle offset is fed into hit detection. */
 		var origin = this.camera.position.clone();
-		var right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
-		var up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
-		origin.addScaledVector(right, 0.12).addScaledVector(up, -0.09);
 		var dir = new THREE.Vector3();
 		this.updateAimDirection(this.currentSpread() * (spreadScale || 1), dir);
 		this.raycaster.set(origin, dir);
 		this.raycaster.far = def.range;
-		var targets = this.hitTargets();
-		var hits = this.raycaster.intersectObjects(targets, false);
+		var hits = this.raycaster.intersectObjects(this.hitTargets(), false);
 		this.raycaster.far = Infinity;
-		var end;
-		var result = { hit: false, head: false };
-		if (hits.length) {
-			var hit = hits[0];
-			end = hit.point.clone();
+		var result = { hit: false, head: false, killed: false, penetrations: 0 };
+		var damageScale = 1;
+		var walls = 0;
+		var end = origin.clone().addScaledVector(dir, def.range);
+
+		for (var hi = 0; hi < hits.length; hi++) {
+			var hit = hits[hi];
 			var data = hit.object.userData;
 			if (data && data.bot && data.bot.alive) {
-				var dmg = def.damage * (data.part === 'head' ? def.head : 1);
+				var dmg = def.damage * damageScale * (data.part === 'head' ? def.head : 1);
 				if (def.pellets && hit.distance > 16) dmg *= clamp(1 - (hit.distance - 16) / 45, 0.32, 1);
-				this.damageBot(data.bot, dmg, data.part === 'head', def.name);
-				this.spawnSparks(end, 0xffd27a, def.pellets ? 4 : 8, 3.2);
+				var killed = this.damageBot(data.bot, dmg, data.part === 'head', def.name);
+				this.spawnSparks(hit.point.clone(), 0xffd27a, def.pellets ? 4 : 8, 3.2);
 				result.hit = true;
 				result.head = data.part === 'head';
-			} else {
-				var n = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
-				this.spawnImpact(end, n, hit.object);
+				result.killed = !!killed;
+				end = hit.point.clone();
+				break;
 			}
-		} else {
-			end = origin.clone().addScaledVector(dir, def.range);
+			if (data && data.chicken && data.chicken.alive) {
+				this.killChicken(data.chicken, hit.point);
+				result.hit = true;
+				end = hit.point.clone();
+				break;
+			}
+			if (data && data.target && !data.target.down) {
+				this.hitPracticeTarget(data.target, hit);
+				result.hit = true;
+				end = hit.point.clone();
+				break;
+			}
+
+			/* world geometry: only walls thinner than the penetration budget pass */
+			var pen = this.wallPenetrationAt(origin, dir, hit);
+			if (pen && pen.thickness <= WALL_PENETRATION_MAX && walls < WALL_PENETRATION_LAYERS) {
+				walls++;
+				result.penetrations++;
+				damageScale *= WALL_PENETRATION_DAMAGE;
+				var pn = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
+				this.spawnImpact(hit.point.clone().addScaledVector(dir, -0.012), pn, hit.object);
+				this.spawnSparks(pen.exitPoint || hit.point, 0xd8c09a, 4, 1.8);
+				continue;
+			}
+			var n = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
+			this.spawnImpact(hit.point, n, hit.object);
+			end = hit.point.clone();
+			break;
 		}
-		this.spawnTracer(origin, end, 0xffe0a0, 0.07);
+
+		var traceStart = origin.clone().addScaledVector(dir, 0.42);
+		this.spawnTracer(traceStart, end, 0xffe0a0, 0.07);
 		return result;
 	};
 
@@ -2056,7 +2796,7 @@
 
 	RangeGame.prototype.updateCrosshair = function () {
 		if (!this.el.crosshair) return;
-		var scoped = this.scoped;
+		var scoped = this.scoped || !this.player.alive;
 		this.el.crosshair.classList.toggle('is-hidden', scoped);
 		if (scoped) return;
 		var def = this.weaponDef(this.currentWeapon);
@@ -2071,7 +2811,7 @@
 	RangeGame.prototype.updateScopeVisual = function () {
 		if (!this.el.scope) return;
 		var def = this.weaponDef(this.currentWeapon);
-		var want = this.scoped && !!def.scope;
+		var want = this.scoped && !!def.scope && this.player.alive;
 		this.el.scope.hidden = !want;
 		if (want) {
 			if (this.el.scopeLabel) text(this.el.scopeLabel, def.name + ' // SCOPED');
@@ -2172,7 +2912,7 @@
 		if (bot.tacPath && bot.tacPath.length) {
 			while (bot.tacIndex < bot.tacPath.length) {
 				var wp = bot.tacPath[bot.tacIndex];
-				if (Math.hypot(wp.x - bot.x, wp.z - bot.z) < 0.55) bot.tacIndex++;
+				if (Math.hypot(wp.x - bot.x, wp.z - bot.z) < 0.7) bot.tacIndex++;
 				else return wp;
 			}
 		}
@@ -2181,9 +2921,13 @@
 
 	RangeGame.prototype.startBotReload = function (bot, px, py, pz) {
 		if (bot.reloading) return;
+		if (!bot.weaponDef || bot.weaponDef.slot === 'melee') return;
 		bot.reloading = true;
 		var def = bot.weaponDef || C.WEAPONS.ak47;
 		bot.reloadEnd = this.now + def.reload * 1000 * C.rand(0.9, 1.2);
+		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
+		if (rec) { rec.reloading = true; rec.reloadEnd = bot.reloadEnd; }
+		bot.burstLeft = 0;
 		bot.behavior = 'reload';
 		bot.behaviorSince = this.now;
 		bot.behaviorUntil = 0;
@@ -2202,6 +2946,8 @@
 	RangeGame.prototype.finishBotReload = function (bot) {
 		bot.reloading = false;
 		bot.ammo = bot.magSize;
+		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
+		if (rec) { rec.ammo = bot.ammo; rec.reloading = false; rec.reloadEnd = 0; }
 		bot.behavior = 'hunt';
 		bot.behaviorUntil = 0;
 		bot.reactionDone = false;
@@ -2241,6 +2987,36 @@
 		this.startTacticalMove(bot, bot.coverPoint || { x: bot.x, z: bot.z });
 	};
 
+	RangeGame.prototype.startBotSniperCover = function (bot, px, py, pz) {
+		if (this.now < bot.sniperCoverCooldown) return false;
+		var cover = this.findCoverPoint(bot, px, py, pz);
+		bot.sniperCoverCooldown = this.now + C.rand(5500, 8500);
+		if (!cover) return false;
+		bot.behavior = 'sniperCover';
+		bot.behaviorSince = this.now;
+		bot.behaviorUntil = this.now + C.rand(3000, 4600);
+		bot.coverPoint = cover;
+		bot.peeking = false;
+		bot.reactionDone = false;
+		this.startTacticalMove(bot, cover);
+		return true;
+	};
+
+	RangeGame.prototype.botMelee = function (bot, dist, diff) {
+		if (!this.player.alive || dist > 2.35 || this.now < bot.nextShot) return;
+		bot.nextShot = this.now + 620 * diff.fire * C.rand(0.9, 1.2);
+		bot.stationaryUntil = this.now + 220;
+		bot.meleeUntil = this.now + 280;
+		bot.reactionDone = true;
+		bot.reaction = 0;
+		this.sound.shot('knife', this.panFor(bot.x, bot.z), Math.min(dist, 12));
+		var chance = clamp(0.58 + (2.35 - dist) * 0.2, 0.4, 0.9);
+		if (Math.random() < chance) {
+			var dmg = bot.damage * 0.62 * diff.damage * C.rand(0.85, 1.15);
+			this.applyPlayerDamage(dmg, bot, false);
+		}
+	};
+
 	RangeGame.prototype.updateBot = function (bot, dt) {
 		var now = this.now;
 		var root = bot.root;
@@ -2271,9 +3047,10 @@
 			if (Math.random() < 0.42) bot.strafe *= -1;
 		}
 
-		/* reload lifecycle */
+		/* reload + real-time weapon selection */
 		if (bot.reloading && now >= bot.reloadEnd) this.finishBotReload(bot);
-		if (!bot.reloading && bot.ammo <= 0) this.startBotReload(bot, px, py, pz);
+		bot.weaponThink = Math.max(0, bot.weaponThink - dt);
+		if (!bot.reloading) this.updateBotWeaponChoice(bot, dist);
 
 		/* reaction / sight acquisition */
 		if (!bot.reloading && los) {
@@ -2290,8 +3067,20 @@
 		var behavior = bot.reloading ? 'reload' : bot.behavior;
 		var canFire = false;
 		var faceTarget = null;
+		var melee = bot.weaponDef.slot === 'melee';
+		var sniping = bot.weaponDef.category === 'SNIPER';
 
-		if (behavior === 'reload' || behavior === 'peekIn') {
+		if (melee) {
+			bot.state = 'knife';
+			bot.behavior = 'knife';
+			faceTarget = { x: px, z: pz };
+			if (dist > 1.65) {
+				moveX = dx / dist * bot.speed * 1.12;
+				moveZ = dz / dist * bot.speed * 1.12;
+			} else if (now >= bot.nextShot) {
+				this.botMelee(bot, dist, diff);
+			}
+		} else if (behavior === 'reload' || behavior === 'peekIn') {
 			bot.state = behavior === 'reload' ? 'reload' : 'peek';
 			var wp = this.nextTacticalWaypoint(bot);
 			if (wp) {
@@ -2309,6 +3098,28 @@
 				bot.behaviorUntil = 0;
 				bot.tacTarget = null;
 				bot.tacPath = null;
+				bot.reactionDone = false;
+			}
+		} else if (behavior === 'sniperCover') {
+			bot.state = 'sniper';
+			faceTarget = { x: px, z: pz };
+			var swp = this.nextTacticalWaypoint(bot);
+			if (swp) {
+				var swdx = swp.x - bot.x, swdz = swp.z - bot.z;
+				var swd = Math.hypot(swdx, swdz);
+				if (swd > 0.65) {
+					moveX = swdx / swd * bot.speed * 0.9;
+					moveZ = swdz / swd * bot.speed * 0.9;
+				}
+			}
+			var atCover = bot.coverPoint && Math.hypot(bot.coverPoint.x - bot.x, bot.coverPoint.z - bot.z) < 0.7;
+			if (atCover || now >= bot.behaviorUntil) {
+				bot.behavior = 'hunt';
+				bot.behaviorSince = now;
+				bot.behaviorUntil = 0;
+				bot.tacTarget = null;
+				bot.tacPath = null;
+				bot.peekCooldown = 0;
 				bot.reactionDone = false;
 			}
 		} else if (behavior === 'peekOut') {
@@ -2338,18 +3149,30 @@
 			var attacking = los && dist < 42;
 			bot.state = attacking ? 'attack' : 'hunt';
 			if (attacking) {
-				var prefMin = bot.type.preferMin, prefMax = bot.type.preferMax;
-				var approach = 0;
-				if (dist > prefMax) approach = 1;
-				else if (dist < prefMin) approach = -1;
 				var nx = dx / dist, nz = dz / dist;
-				var sx = -nz * bot.strafe, sz = nx * bot.strafe;
-				var strafeSpeed = bot.speed * (0.62 + (bot.type.id === 'scout' ? 0.12 : 0));
-				moveX = sx * strafeSpeed * 0.8 + nx * approach * bot.speed;
-				moveZ = sz * strafeSpeed * 0.8 + nz * approach * bot.speed;
-				if (dist < 2.6) { moveX -= nx * bot.speed * 1.2; moveZ -= nz * bot.speed * 1.2; }
-				faceTarget = { x: px, z: pz };
-				if (bot.reactionDone && now >= bot.nextShot) canFire = true;
+				if (sniping) {
+					bot.state = 'sniper';
+					if (dist < 21 && now >= bot.sniperCoverCooldown && this.startBotSniperCover(bot, px, py, pz)) {
+						/* moving to cover this tick; hold fire */
+					} else {
+						faceTarget = { x: px, z: pz };
+						moveX = 0;
+						moveZ = 0;
+						if (bot.reactionDone && now >= bot.nextShot) canFire = true;
+					}
+				} else {
+					var prefMin = bot.type.preferMin, prefMax = bot.type.preferMax;
+					var approach = 0;
+					if (dist > prefMax) approach = 1;
+					else if (dist < prefMin) approach = -1;
+					var sx = -nz * bot.strafe, sz = nx * bot.strafe;
+					var strafeSpeed = bot.speed * (0.62 + (bot.type.id === 'scout' ? 0.12 : 0));
+					moveX = sx * strafeSpeed * 0.8 + nx * approach * bot.speed;
+					moveZ = sz * strafeSpeed * 0.8 + nz * approach * bot.speed;
+					if (dist < 2.6) { moveX -= nx * bot.speed * 1.2; moveZ -= nz * bot.speed * 1.2; }
+					faceTarget = { x: px, z: pz };
+					if (bot.reactionDone && now >= bot.nextShot) canFire = true;
+				}
 			} else if (dist < 38 && bot.peekCooldown <= 0 && this.tryBotPeek(bot, px, py, pz)) {
 				/* behavior switched to peekOut this frame; movement starts next tick */
 			} else {
@@ -2408,8 +3231,8 @@
 			var stepX = moveX * dt;
 			var stepZ = moveZ * dt;
 			var oldX = bot.x, oldZ = bot.z;
-			if (!this.collidesBot(bot.x + stepX, bot.z, 0.4)) bot.x += stepX;
-			if (!this.collidesBot(bot.x, bot.z + stepZ, 0.4)) bot.z += stepZ;
+			if (!this.collidesBot(bot.x + stepX, bot.z, 0.4) && !this.collidesChicken(bot.x + stepX, bot.z, 0.4, 0)) bot.x += stepX;
+			if (!this.collidesBot(bot.x, bot.z + stepZ, 0.4) && !this.collidesChicken(bot.x, bot.z + stepZ, 0.4, 0)) bot.z += stepZ;
 			var moved = Math.hypot(bot.x - oldX, bot.z - oldZ);
 			if (moved < 0.001) bot.stuck += dt; else bot.stuck = Math.max(0, bot.stuck - dt * 2);
 			if (bot.stuck > 0.7) {
@@ -2440,6 +3263,10 @@
 		bot.robot.legR.rotation.x = -swing;
 		bot.robot.armL.rotation.x = -0.8 + swing * 0.2;
 		bot.robot.armR.rotation.x = -0.55 - swing * 0.12;
+		if (now < bot.meleeUntil) {
+			bot.robot.armR.rotation.x = -1.35;
+			bot.robot.armL.rotation.x = -0.55;
+		}
 		bot.robot.torso.position.y = 1.28 + Math.abs(Math.sin(bot.walkPhase)) * 0.012 * Math.min(1, walkSpeed);
 		bot.footTimer -= dt;
 		if (speed > 0.5 && bot.footTimer <= 0) {
@@ -2448,7 +3275,7 @@
 			if (fd < 26) this.sound.burst({ dur: 0.05, type: 'lowpass', freq: 300, gain: 0.035 * (1 - fd / 30), pan: this.panFor(bot.x, bot.z) });
 		}
 
-		if (canFire) this.botShoot(bot, dist, diff);
+		if (canFire && !melee) this.botShoot(bot, dist, diff);
 		if (bot.flash && bot.flash.visible && now > bot.flashUntil) bot.flash.visible = false;
 	};
 
@@ -2473,17 +3300,36 @@
 
 	RangeGame.prototype.botShoot = function (bot, dist, diff) {
 		if (!this.player.alive || bot.reloading || bot.ammo <= 0) return;
+		if (!bot.weaponDef || bot.weaponDef.slot === 'melee') return;
 		var now = this.now;
 		var p = this.player;
 		var def = bot.weaponDef || C.WEAPONS.ak47;
 		bot.ammo--;
+		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
+		if (rec) rec.ammo = bot.ammo;
+
 		var baseGap = bot.type.fireRate;
 		if (def.category === 'SMG') baseGap *= 0.62;
 		else if (def.category === 'SHOTGUN') baseGap *= 1.08;
 		else if (def.category === 'SNIPER') baseGap *= 1.3;
-		bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
-		bot.reaction = 0;
-		bot.reactionDone = false;
+
+		/* bots carrying both a rifle and an SMG fire in short automatic bursts */
+		var bursting = bot.burstMode && (def.category === 'RIFLE' || def.category === 'SMG');
+		if (bursting) {
+			if (bot.burstLeft <= 0) bot.burstLeft = C.randi(3, 5);
+			bot.burstLeft--;
+			if (bot.burstLeft > 0) {
+				bot.nextShot = now + C.rand(82, 136);
+				bot.reactionDone = true;
+				bot.reaction = 0;
+			} else {
+				bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
+				bot.reactionDone = false;
+			}
+		} else {
+			bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
+			bot.reactionDone = false;
+		}
 		bot.stationaryUntil = now + 360;
 
 		var origin = this.tmpB.set(bot.x, 1.42 * bot.baseScale, bot.z);
@@ -2505,9 +3351,16 @@
 
 		var hit = !deliberateMiss && Math.random() < chance;
 		if (hit) {
-			var dmg = bot.damage * diff.damage * C.rand(0.82, 1.18);
+			var scale = def.category === 'SNIPER' ? 1.35 : def.category === 'SHOTGUN' ? 1.4 : def.category === 'SMG' ? 0.62 : def.category === 'RIFLE' ? 1.0 : 0.6;
+			var dmg = bot.damage * scale * diff.damage * C.rand(0.82, 1.18);
+			var headshot = false;
+			if (def.category === 'SNIPER') {
+				var hsChance = clamp(0.08 + diff.accuracy * 0.13, 0.10, 0.30);
+				headshot = Math.random() < hsChance;
+				if (headshot) dmg *= 2.6;
+			}
 			if (Math.random() < 0.07) dmg *= 1.7;
-			this.applyPlayerDamage(dmg, bot);
+			this.applyPlayerDamage(dmg, bot, headshot);
 		} else {
 			var side = new THREE.Vector3(-dir.z, 0, dir.x);
 			if (side.lengthSq() < 0.01) side.set(1, 0, 0);
@@ -2547,7 +3400,7 @@
 		}
 	};
 
-	RangeGame.prototype.applyPlayerDamage = function (amount, fromBot) {
+	RangeGame.prototype.applyPlayerDamage = function (amount, fromBot, headshot) {
 		var p = this.player;
 		if (!p.alive || this.state !== 'playing') return;
 		if (p.armor > 0) {
@@ -2568,22 +3421,24 @@
 			p.deathRoll = 0;
 			this.match.deaths++;
 			this.playerDiedLastRound = true;
-			this.deathTimer = 1.8;
-			this.announce('YOU WERE KILLED', 'THE SQUAD IS STILL ACTIVE');
+			this.showDeathCam(fromBot, !!headshot);
 			if (fromBot) {
 				fromBot.kills++;
-				this.addKillFeed(fromBot.name + ' [' + fromBot.type.label + ']', 'YOU', 'RIFLE', false, false);
+				this.addKillFeed(fromBot.name + ' [' + fromBot.type.label + ']', 'YOU', fromBot.weaponDef ? fromBot.weaponDef.name : 'RIFLE', !!headshot, false);
 			}
 			this.input.fire = false;
 			this.semiQueued = false;
 			this.reloading = false;
 			this.scoped = false;
+			this.camera.fov = 74;
+			this.camera.updateProjectionMatrix();
 			this.updateVitalsHUD();
 		}
 	};
 
 	RangeGame.prototype.damageBot = function (bot, amount, headshot, weaponName) {
-		if (!bot || !bot.alive) return;
+		if (!bot || !bot.alive) return false;
+		var killed = false;
 		bot.hp -= amount;
 		bot.robot.hp = Math.max(0, bot.hp);
 		bot.robot.maxHp = bot.maxHp;
@@ -2592,11 +3447,13 @@
 		bot.robot.healthSprite.visible = bot.hp > 0;
 		if (bot.hp <= 0) {
 			this.killBot(bot, headshot, weaponName);
+			killed = true;
 		} else {
 			/* small flinch */
 			bot.root.position.x += C.rand(-0.04, 0.04);
 			bot.root.position.z += C.rand(-0.04, 0.04);
 		}
+		return killed;
 	};
 
 	RangeGame.prototype.killBot = function (bot, headshot, weaponName) {
@@ -2631,7 +3488,7 @@
 
 	RangeGame.prototype.dropBotWeapon = function (bot) {
 		var def = C.WEAPONS[bot.weaponId];
-		if (!def || !C.buildWeaponPickup) return;
+		if (!def || !C.buildWeaponPickup || def.slot === 'melee') return;
 		var ammo = {
 			mag: Math.max(1, Math.round(def.mag * C.rand(0.45, 0.9))),
 			reserve: C.randi(0, def.reserve)
@@ -2727,8 +3584,8 @@
 		text(this.el.pickupAmmo, best.ammo.mag + ' / ' + best.ammo.reserve);
 		if (this.el.pickupHint) {
 			this.el.pickupHint.innerHTML = this.isTouch
-				? 'TAP TO PICK UP'
-				: 'PRESS <kbd>E</kbd> TO PICK UP';
+				? escapeHTML(this.tr('TAP TO PICK UP'))
+				: escapeHTML(this.tr('PRESS')) + ' <kbd>E</kbd> ' + escapeHTML(this.tr('TO PICK UP'));
 		}
 	};
 
@@ -2779,11 +3636,11 @@
 	   HUD
 	   ====================================================================== */
 	RangeGame.prototype.updateHUD = function () {
-		if (this.el.roundNo) text(this.el.roundNo, this.match ? this.match.round : 1);
+		if (this.el.roundNo) text(this.el.roundNo, this.practice ? '' : (this.match ? this.match.round : 1));
 		if (this.match) {
 			text(this.el.health, Math.max(0, Math.round(this.player.health)));
 			text(this.el.armor, Math.max(0, Math.round(this.player.armor)));
-			text(this.el.money, Math.max(0, Math.round(this.match.money)));
+			text(this.el.money, this.practice ? '∞' : Math.max(0, Math.round(this.match.money)));
 			var hp = this.el.health && this.el.health.parentNode;
 			if (hp) hp.classList.toggle('is-low', this.player.health <= 25);
 			var bar = this.el.healthbar ? this.el.healthbar.querySelector('em') : null;
@@ -2797,7 +3654,7 @@
 	RangeGame.prototype.updateVitalsHUD = function () {
 		text(this.el.health, Math.max(0, Math.round(this.player.health)));
 		text(this.el.armor, Math.max(0, Math.round(this.player.armor)));
-		if (this.match) text(this.el.money, Math.max(0, Math.round(this.match.money)));
+		if (this.match) text(this.el.money, this.practice ? '∞' : Math.max(0, Math.round(this.match.money)));
 		var bar = this.el.healthbar ? this.el.healthbar.querySelector('em') : null;
 		if (bar) bar.style.width = clamp(this.player.health, 0, 100) + '%';
 		var hp = this.el.health && this.el.health.parentNode;
@@ -2814,7 +3671,7 @@
 			text(this.el.reserve, '—');
 		} else {
 			text(this.el.ammo, ammo ? ammo.mag : def.mag);
-			text(this.el.reserve, ammo ? ammo.reserve : def.reserve);
+			text(this.el.reserve, this.practice ? '∞' : (ammo ? ammo.reserve : def.reserve));
 		}
 		if (this.el.ammo && this.el.ammo.parentNode) {
 			this.el.ammo.parentNode.classList.toggle('is-low', !!ammo && ammo.mag <= Math.max(1, Math.floor(def.mag * 0.2)));
@@ -2852,12 +3709,38 @@
 		this.el.dmgdir.classList.add('is-on');
 	};
 
-	RangeGame.prototype.showHitmarker = function (headshot) {
+	RangeGame.prototype.showHitmarker = function (headshot, killed) {
 		if (!this.el.hitmarker) return;
-		this.el.hitmarker.classList.remove('is-on', 'is-head');
+		this.el.hitmarker.classList.remove('is-on', 'is-head', 'is-kill');
 		void this.el.hitmarker.offsetWidth;
 		this.el.hitmarker.classList.add('is-on');
 		if (headshot) this.el.hitmarker.classList.add('is-head');
+		if (headshot && killed) this.el.hitmarker.classList.add('is-kill');
+	};
+
+	RangeGame.prototype.showHeadshot = function (killed) {
+		if (this.el.headshot) {
+			this.el.headshot.classList.remove('is-on', 'is-kill');
+			if (this.el.headshotBonus) text(this.el.headshotBonus, killed ? '+$100 KILL BONUS' : '4× DAMAGE');
+			if (killed) this.el.headshot.classList.add('is-kill');
+			void this.el.headshot.offsetWidth;
+			this.el.headshot.classList.add('is-on');
+			var self = this;
+			clearTimeout(this._headshotTimer);
+			this._headshotTimer = setTimeout(function () {
+				if (self.el.headshot) self.el.headshot.classList.remove('is-on', 'is-kill');
+			}, 820);
+		}
+		if (this.el.flash) {
+			this.el.flash.classList.remove('is-head');
+			void this.el.flash.offsetWidth;
+			this.el.flash.classList.add('is-head');
+			var self2 = this;
+			clearTimeout(this._headFlashTimer);
+			this._headFlashTimer = setTimeout(function () {
+				if (self2.el.flash) self2.el.flash.classList.remove('is-head');
+			}, 330);
+		}
 	};
 
 	RangeGame.prototype.addKillFeed = function (killer, victim, weaponName, headshot, playerKill) {
@@ -2869,6 +3752,7 @@
 			(headshot ? '<span class="csr-kill__hs">HS</span>' : '') +
 			'<b>' + escapeHTML(victim) + '</b>';
 		this.el.killfeed.appendChild(row);
+		if (global.CSRangeI18n) global.CSRangeI18n.apply(row);
 		this.killFeed.push(row);
 		while (this.killFeed.length > 5) {
 			var old = this.killFeed.shift();
@@ -2882,7 +3766,7 @@
 
 	RangeGame.prototype.toast = function (message) {
 		if (!this.el.toast) return;
-		this.el.toast.textContent = message;
+		this.el.toast.textContent = this.tr(message);
 		this.el.toast.classList.add('is-on');
 		var self = this;
 		clearTimeout(this._toastTimer);
@@ -2897,7 +3781,7 @@
 	RangeGame.prototype.openBuy = function () {
 		if (this.state !== 'playing' || !this.round) return;
 		this.closeScoreboard();
-		if (this.round.phase !== 'freeze') {
+		if (!this.practice && this.round.phase !== 'freeze') {
 			this.toast('Buy time is over — the armory is locked.');
 			return;
 		}
@@ -2922,8 +3806,9 @@
 
 	RangeGame.prototype.renderBuy = function () {
 		if (!this.el.buyGrid) return;
+		var free = this.practice;
 		var money = this.match ? this.match.money : 0;
-		text(this.el.buyMoney, fmtMoney(money));
+		text(this.el.buyMoney, free ? 'FREE' : fmtMoney(money));
 		var html = '';
 		for (var i = 0; i < C.BUY_ITEMS.length; i++) {
 			var item = C.BUY_ITEMS[i];
@@ -2932,10 +3817,12 @@
 			var cat = def ? def.category : item.category;
 			var price = item.price;
 			var owned = false;
-			if (item.kind === 'armor') owned = this.player.armor >= 100;
-			else if (def.slot === 'primary') owned = this.loadout.primary === item.id;
-			else owned = this.loadout.secondary === item.id;
-			var can = money >= price && !owned;
+			if (!free) {
+				if (item.kind === 'armor') owned = this.player.armor >= 100;
+				else if (def.slot === 'primary') owned = this.loadout.primary === item.id;
+				else owned = this.loadout.secondary === item.id;
+			}
+			var can = free || (money >= price && !owned);
 			var icon = C.weaponIcon(def ? def.icon : 'armor');
 			var stats = def
 				? '<span>DMG <b>' + def.damage + (def.pellets ? '×' + def.pellets : '') + '</b></span><span>RPM <b>' + def.rpm + '</b></span><span>MAG <b>' + def.mag + '</b></span>'
@@ -2944,7 +3831,7 @@
 				'<div class="csr-buyitem__top"><div><span class="csr-buyitem__key">' + (item.key ? item.key : '·') + '</span>' +
 				'<p class="csr-buyitem__name">' + escapeHTML(name) + '</p>' +
 				'<p class="csr-buyitem__cat">' + escapeHTML(cat) + '</p></div>' +
-				(owned ? '<span class="csr-buyitem__owned">OWNED</span>' : '<span class="csr-buyitem__price' + (money < price ? ' is-short' : '') + '">' + fmtMoney(price) + '</span>') +
+				(owned ? '<span class="csr-buyitem__owned">OWNED</span>' : '<span class="csr-buyitem__price' + (!free && money < price ? ' is-short' : '') + '">' + (free ? 'FREE' : fmtMoney(price)) + '</span>') +
 				'</div>' +
 				'<div class="csr-buyitem__stat">' + stats + '</div>' +
 				'<span class="csr-buyitem__buy">' + (owned ? 'EQUIPPED' : money >= price ? 'BUY  [ ' + item.key + ' ]' : 'NOT ENOUGH CASH') + '</span>' +
@@ -2952,6 +3839,7 @@
 				'</button>';
 		}
 		this.el.buyGrid.innerHTML = html;
+		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.el.buyGrid);
 	};
 
 	RangeGame.prototype.buyItem = function (id) {
@@ -2959,25 +3847,26 @@
 		var item = null;
 		for (var i = 0; i < C.BUY_ITEMS.length; i++) if (C.BUY_ITEMS[i].id === id) item = C.BUY_ITEMS[i];
 		if (!item) return;
-		if (this.match.money < item.price) { this.toast('Not enough cash.'); return; }
+		var free = this.practice;
+		if (!free && this.match.money < item.price) { this.toast('Not enough cash.'); return; }
 		if (item.kind === 'armor') {
-			if (this.player.armor >= 100) { this.toast('Armour is already full.'); return; }
+			if (this.player.armor >= 100 && !free) { this.toast('Armour is already full.'); return; }
 			this.player.armor = 100;
-			this.match.money -= item.price;
+			if (!free) this.match.money -= item.price;
 			this.sound.buy();
-			this.toast('Kevlar + helmet equipped.');
+			this.toast(free ? 'Armour refilled.' : 'Kevlar + helmet equipped.');
 		} else {
 			var def = C.WEAPONS[item.id];
 			if (!def) return;
-			if (def.slot === 'primary' && this.loadout.primary === item.id) { this.toast('Already equipped.'); return; }
-			if (def.slot === 'secondary' && this.loadout.secondary === item.id) { this.toast('Already equipped.'); return; }
-			this.match.money -= item.price;
+			if (!free && def.slot === 'primary' && this.loadout.primary === item.id) { this.toast('Already equipped.'); return; }
+			if (!free && def.slot === 'secondary' && this.loadout.secondary === item.id) { this.toast('Already equipped.'); return; }
+			if (!free) this.match.money -= item.price;
 			if (def.slot === 'primary') this.loadout.primary = item.id;
 			else this.loadout.secondary = item.id;
-			this.ammo[item.id] = { mag: def.mag, reserve: def.reserve };
+			this.ammo[item.id] = { mag: def.mag, reserve: free ? 999 : def.reserve };
 			this.sound.buy();
 			this.equipWeapon(item.id, true);
-			this.toast(def.name + ' acquired.');
+			this.toast(free ? def.name + ' loaded.' : def.name + ' acquired.');
 		}
 		this.updateVitalsHUD();
 		this.updateAmmoHUD();
@@ -2989,6 +3878,7 @@
 	   ====================================================================== */
 	RangeGame.prototype.openScoreboard = function () {
 		if (!this.el.scoreboard) return;
+		if (this.practice) { this.toast('Practice session — no scoreboard.'); return; }
 		this.scoreboardOpen = true;
 		this.el.scoreboard.hidden = false;
 		this.renderScoreboard();
@@ -3008,6 +3898,7 @@
 		var ct = '<div class="csr-board__row is-player' + (this.player.alive ? '' : ' is-dead') + '">' +
 			'<span>PLAYER</span><span>' + this.match.kills + '</span><span>' + this.match.deaths + '</span><span>' + this.match.hs + '</span><span>LOCAL</span></div>';
 		this.el.boardCtRows.innerHTML = ct;
+		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.el.boardCtRows);
 		var html = '';
 		for (var i = 0; i < this.bots.length; i++) {
 			var b = this.bots[i];
@@ -3016,6 +3907,7 @@
 				'<span>' + b.kills + '</span><span>' + b.deaths + '</span><span>0</span><span>' + b.ping + '</span></div>';
 		}
 		this.el.boardTRows.innerHTML = html;
+		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.el.boardTRows);
 	};
 
 	RangeGame.prototype.openControls = function (from) {
@@ -3101,9 +3993,62 @@
 	/* ======================================================================
 	   input
 	   ====================================================================== */
+	RangeGame.prototype.tr = function (source, params) {
+		return global.CSRangeI18n ? global.CSRangeI18n.t(source, params) : String(source);
+	};
+
+	RangeGame.prototype.applyLanguage = function () {
+		if (!this.el) return;
+		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.host);
+		if (this.el.language && global.CSRangeI18n) this.el.language.value = global.CSRangeI18n.getLocale();
+		this._buyHintMode = null;
+		this._pickupKey = -1;
+		this.updateHUD();
+		this.updateAmmoHUD();
+		this.updateVitalsHUD();
+		this.updateHostiles();
+		this.updatePracticeHUD();
+		this.updatePauseMute();
+		this.updateBuyHint();
+		if (this.buyOpen) this.renderBuy();
+		if (this.scoreboardOpen) this.renderScoreboard();
+		if (this.deathInfo && this.el.deathType) {
+			text(this.el.deathType, this.deathInfo.headshot ? 'HEADSHOT · ELIMINATED BY' : 'ELIMINATED BY');
+		}
+	};
+
 	RangeGame.prototype.onKeyDown = function (ev) {
 		var k = ev.key;
 		var code = k.toLowerCase();
+		var combo = !!(ev.ctrlKey || ev.metaKey);
+
+		/* While the range owns the screen, stop browser shortcuts from escaping
+		   the page. Gameplay keys still fall through: holding CTRL to crouch and
+		   pressing S must crouch-walk backwards, not open the Save dialog. */
+		if (combo) {
+			var gameKeyForCombo = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', 'enter', '1', '2', '3', 'e', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+			var isGameKey = gameKeyForCombo.indexOf(k === ' ' ? ' ' : code) !== -1;
+			ev.preventDefault();
+			ev.stopPropagation();
+			if (this.state === 'menu' || this.state === 'boot' || this.state === 'error' || !isGameKey) return;
+			/* Ctrl+W / Ctrl+T / Ctrl+N are browser-reserved and cannot be reliably
+			   cancelled; the request explicitly leaves Ctrl+W alone. */
+		}
+
+		/* F5/F3/F1/F6/F7 reload, find, help and address-bar shortcuts can be
+		   cancelled in Chromium while the game is mounted. F11/F12 are left to
+		   the browser because they are often intentional. */
+		if (!combo && (k === 'F5' || k === 'F3' || k === 'F1' || k === 'F6' || k === 'F7')) {
+			ev.preventDefault();
+			ev.stopPropagation();
+			return;
+		}
+		if (!combo && ev.altKey && (k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown')) {
+			ev.preventDefault();
+			ev.stopPropagation();
+			return;
+		}
+
 		/* controls is a modal layer above menu/pause: close it with Esc / H / Enter */
 		if (this.el.controls && !this.el.controls.hidden) {
 			if (k === 'Escape' || code === 'h' || k === 'Enter') {
@@ -3215,7 +4160,7 @@
 	};
 
 	RangeGame.prototype.onCanvasMouseDown = function (ev) {
-		if (this.state !== 'playing') return;
+		if (this.state !== 'playing' || !this.player.alive) return;
 		if (!this.isTouch && !this.locked && !this.fallbackLook) {
 			this.requestLock();
 			return;
@@ -3296,6 +4241,9 @@
 			self.el.touchCrouch.classList.toggle('is-active', self.input.touchCrouch);
 		});
 		if (this.el.touchScope) this.on(this.el.touchScope, 'click', function () { self.toggleScope(); });
+		if (this.el.touchBuy) this.on(this.el.touchBuy, 'click', function () {
+			if (self.buyOpen) self.closeBuy(); else self.openBuy();
+		});
 		if (this.el.touchPause) this.on(this.el.touchPause, 'click', function () { self.pause(); });
 		if (this.el.touchScore) this.on(this.el.touchScore, 'click', function () {
 			if (self.scoreboardOpen) self.closeScoreboard(); else self.openScoreboard();
@@ -3340,7 +4288,7 @@
 		this.updateCamera();
 		this.renderer.clear();
 		this.renderer.render(this.scene, this.camera);
-		if (!this.scoped && this.currentWeapon) {
+		if (!this.scoped && this.currentWeapon && this.player.alive) {
 			this.renderer.clearDepth();
 			this.renderer.render(this.viewScene, this.viewCamera);
 		}
@@ -3362,6 +4310,8 @@
 			try { this.renderer.forceContextLoss(); } catch (e2) {}
 		}
 		this.clearDrops();
+		this.clearTargets();
+		this.clearChickens();
 		this.bots = [];
 		this.botHitMeshes = [];
 	};
@@ -3376,18 +4326,34 @@
 			armor: this.player.armor,
 			alive: this.player.alive,
 			botsAlive: this.bots.filter(function (b) { return b.alive; }).length,
-			bots: this.bots.map(function (b) { return { name: b.name, type: b.type.id, weapon: b.weaponId, hp: Math.round(b.hp), maxHp: b.maxHp, alive: b.alive, ammo: b.ammo, reloading: b.reloading, behavior: b.behavior, peeking: b.peeking, x: +b.x.toFixed(2), z: +b.z.toFixed(2) }; }),
+			bots: this.bots.map(function (b) { return { name: b.name, type: b.type.id, weapon: b.weaponId, weaponIndex: b.weaponIndex, loadout: (b.weapons || []).map(function (w) { return w.id; }), inventory: (b.weapons || []).map(function (w) { return { id: w.id, ammo: w.ammo, reloading: w.reloading }; }), burstMode: !!b.burstMode, burstLeft: b.burstLeft, hasSniper: !!b.hasSniper, hp: Math.round(b.hp), maxHp: b.maxHp, alive: b.alive, ammo: b.ammo, reloading: b.reloading, behavior: b.behavior, peeking: b.peeking, x: +b.x.toFixed(2), z: +b.z.toFixed(2) }; }),
 			weapon: this.currentWeapon,
 			ammo: this.ammo[this.currentWeapon],
 			money: this.match ? this.match.money : 0,
 			drops: this.drops.map(function (d) { return { weapon: d.weaponId, x: +d.x.toFixed(2), z: +d.z.toFixed(2), mag: d.ammo.mag, reserve: d.ammo.reserve, life: +d.life.toFixed(1) }; }),
 			locked: this.locked,
+			practice: !!this.practice,
+			practiceStats: this.practiceStats,
+			targets: this.targets.map(function (t) { return { x: +t.x.toFixed(2), z: +t.z.toFixed(2), down: t.down, kind: t.kind, move: t.move }; }),
+			chickens: this.chickens.map(function (c) { return { x: +c.x.toFixed(2), z: +c.z.toFixed(2), alive: c.alive, flee: c.flee }; }),
+			death: this.deathInfo ? { killedBy: this.deathInfo.name, weapon: this.deathInfo.weapon, timer: +this.deathTimer.toFixed(2), body: !!(this.playerBody && this.playerBody.visible), camera: { x: +this.camera.position.x.toFixed(2), y: +this.camera.position.y.toFixed(2), z: +this.camera.position.z.toFixed(2) } } : null,
 			player: { x: +this.player.x.toFixed(2), z: +this.player.z.toFixed(2), yaw: +this.player.yaw.toFixed(2) }
 		};
 	};
 
 	RangeGame.prototype.debugStart = function () {
 		this.startMatch();
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugPractice = function () {
+		this.startPractice();
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugKillPlayer = function (index) {
+		var bot = this.bots[Math.max(0, Math.min(this.bots.length - 1, index || 0))] || null;
+		this.applyPlayerDamage(999, bot);
 		return this.debugState();
 	};
 
@@ -3462,6 +4428,8 @@
 		debug: {
 			state: function () { return current ? current.debugState() : null; },
 			start: function () { return current ? current.debugStart() : null; },
+			practice: function () { return current ? current.debugPractice() : null; },
+			killPlayer: function (i) { return current ? current.debugKillPlayer(i) : null; },
 			teleport: function (x, z, yaw) { return current ? current.debugTeleport(x, z, yaw) : null; },
 			lookAt: function (x, z) { return current ? current.debugLookAt(x, z) : null; },
 			killAll: function () { return current ? current.debugKillAll() : null; },
