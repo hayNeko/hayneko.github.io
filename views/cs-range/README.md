@@ -149,6 +149,87 @@ few hundred draw calls.
   bots use the ten-second defuse (no kit) so the player usually wins the race
   to the bomb.
 
+## Robot skill and memory
+
+- **Independent skill for each side.** The setup panel has separate
+  **ALLY ROBOT SKILL** and **ENEMY ROBOT SKILL** selectors (Recruit, Regular,
+  Veteran, Elite). Changing the ally skill never moves the enemy skill, and
+  vice versa. Both are stored in localStorage.
+- Skill controls reaction time, first-shot delay, sight range, perception
+  tick rate, accuracy, deliberate miss chance, damage, fire cadence, movement
+  speed, footstep hearing and planning:
+  - higher skill sees farther and processes targets more often;
+  - on acquiring a target, a high-skill robot snaps onto it and fires much
+    sooner (Elite first-shot delay is roughly a quarter of a second before
+    weapon recovery, versus a second or more for Recruit);
+  - higher skill is more accurate, fires faster and takes fewer deliberate
+    misses.
+- **Top end is much harder.** Elite now uses 1.4× sight, a 0.5× perception
+  interval, a 0.28 reaction multiplier, 1.7× damage, 0.55× fire interval,
+  1.26× accuracy and a 1.5% deliberate-miss chance. Regular and Veteran were
+  raised as well.
+- **Footsteps.** Robots with hearing range on their skill tier can hear an
+  enemy's running footsteps through geometry. Walking (Shift) and crouching
+  make the player quieter. Hearing records a sound contact in the robot's
+  memory; Veteran/Elite also raise a team callout, and the robot will walk
+  toward the sound and scan it. Recruit hears only very close steps.
+- **Self-learning route memory.** Deaths are written to a local
+  `hayneko.range.ai.v1` record containing the route, site, position, number
+  of nearby allies/enemies, round and bomb state. At the start of each round
+  T robots weigh the death/use ratio of the main and flank routes and pick the
+  safer lane (high-skill robots exploit the memory more; low-skill robots
+  explore more). CT deaths by site are recorded too; if one site is clearly deadlier, the
+  next round sends more CT anchors there and leaves the other site lighter.
+- **When to group.** Isolated or outnumbered deaths raise that team's group
+  bias. When the bias is high enough (sooner for high-skill robots), a robot
+  that has drifted more than ~7 m from its nearest teammate paths back to the
+  squad instead of continuing alone. A kept-together squad is therefore a
+  learned response to previous lonely deaths, not a fixed formation.
+- The memory is per browser, capped to the last 40 deaths, and survives page
+  reloads.
+- **Twitch penalty / stall watchdog.** A robot that keeps trying to move but
+  gains less than a few centimetres, or oscillates around the same spot, is
+  treated as stalled after about a second. Its path is cancelled and it is
+  forced into a short wander for up to 2.6 s. If at least three living robots
+  are stalled at once, every non-critical robot has its path cleared and is
+  forced to wander, breaking a squad-wide freeze even when all four teammates
+  are wedged on the same corner.
+- **First-person spectating.** After death the camera goes inside the selected
+  teammate's head (the robot model is hidden), not behind it. The HUD and the
+  spectate card show that robot's live HP and current magazine ammo; LMB cycles
+  teammates.
+- **Chickens.** Robots collide with chickens. If a chicken sits in their path
+  they steer around it; at close range there is a chance they simply kill it,
+  so a chicken can no longer pin a robot against a doorway.
+- **No backpedal fire.** A robot holding a firing solution never moves away
+  from its target while shooting; it strafes or advances instead. Retreating
+  while shooting forward is no longer possible.
+- **Late-round gamble.** With 30 seconds or less on the clock, at least three
+  teammates alive and the C4 still carried, one robot per team (a lurk/support
+  when possible) starts a deliberate full-map gamble: it patrols callout to
+  callout until it finds an enemy, then rejoins normal combat. The C4 carrier,
+  defuser and planting robots are excluded.
+- **Route fear.** Repeated deaths on a lane raise that lane's fear value. The
+  fear cools down with time (roughly half every two minutes) and is reduced
+  when a robot — or the player — kills an enemy on that same lane. A wipe adds
+  fear to every lane the losing team used, while a feared lane is strongly
+  avoided when the next round picks a route.
+- **Team morale and panic.** Team fear is separate from lane fear and is stored
+  with the local AI memory. Two teammates dying within five seconds raises it
+  sharply and shakes the survivors for eight seconds; a third or fourth rapid
+  death escalates it further. While shaken, non-carrier survivors pull toward
+  the nearest teammate, stop pushing alone, suppress aggressive hunts and
+  gambles, and hold instead. Fear decays over time.
+- **4K / 5K confidence.** A round kill counter is kept for the player and every
+  robot. The fourth kill by an ally cuts team fear by 0.18 and the fifth by
+  0.35, clears the shaken timer and shows a confidence toast. Kills of the
+  player by an enemy robot count toward that robot's 4K/5K too.
+- **Re-plan after a death.** Every teammate or robot death (rate-limited to
+  about 1.2 s so a burst of deaths is one revision) triggers a short 0.9 s
+  tactical regroup. T survivors re-pick their main/flank lane from the nearest
+  waypoint using the current fear memory; CT survivors redistribute an anchor
+  to the under-defended site. This is a real re-plan, not just a visual pause.
+
 ## What else is in the range
 
 - Twelve firearms plus a knife across rifles, snipers, SMGs, shotguns and
@@ -217,9 +298,10 @@ registered in scripts/router.js and the entry card in views/games.html.
   the rest of the site and persists the choice via the site's localStorage key.
   Missing game keys fall back to English rather than showing a blank label.
 - The default quality is Balanced; Low disables shadows, High raises the shadow
-  map and device pixel ratio. The menu still exposes difficulty, sensitivity
-  and volume.
-- Bot difficulty changes both accuracy and deliberate miss chance: Recruit
-  misses most often, Elite is the most precise.
+  map and device pixel ratio. The menu still exposes both robot-skill
+  selectors, sensitivity and volume.
+- The two robot-skill selectors change reaction, accuracy, sight, hearing,
+  speed and planning independently for your side and the enemy side. Elite is
+  the hardest of the four tiers; Recruit is the most forgiving.
 - Everything is generated in the browser. Three.js is the only third-party
   dependency; its MIT license is retained in the vendored file.

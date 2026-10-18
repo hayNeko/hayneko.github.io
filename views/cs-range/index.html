@@ -102,8 +102,18 @@
 						<div class="csr-panel__head"><span>OPERATION SETUP</span><i>SET</i></div>
 
 						<div class="csr-field">
-							<span class="csr-field__label">BOT DIFFICULTY</span>
-							<div class="csr-seg" data-csr-difficulty role="group" aria-label="Bot difficulty">
+							<span class="csr-field__label">ALLY ROBOT SKILL</span>
+							<div class="csr-seg" data-csr-difficulty-ally role="group" aria-label="Ally robot skill">
+								<button type="button" data-value="recruit">RECRUIT</button>
+								<button type="button" data-value="regular" class="is-active">REGULAR</button>
+								<button type="button" data-value="veteran">VETERAN</button>
+								<button type="button" data-value="elite">ELITE</button>
+							</div>
+						</div>
+
+						<div class="csr-field">
+							<span class="csr-field__label">ENEMY ROBOT SKILL</span>
+							<div class="csr-seg" data-csr-difficulty-enemy role="group" aria-label="Enemy robot skill">
 								<button type="button" data-value="recruit">RECRUIT</button>
 								<button type="button" data-value="regular" class="is-active">REGULAR</button>
 								<button type="button" data-value="veteran">VETERAN</button>
@@ -246,8 +256,9 @@
 				<i class="csr-bombhud__bar"><em data-csr-bomb-bar></em></i>
 			</div>
 			<div class="csr-spectate" data-csr-spectate hidden aria-live="polite">
-				<span>THIRD-PERSON SPECTATING</span>
+				<span>FIRST-PERSON SPECTATING</span>
 				<b data-csr-spectate-name>—</b>
+				<small><i data-csr-spectate-hp>100</i> HP · <i data-csr-spectate-ammo>30</i> RDS</small>
 				<small><i data-csr-spectate-alive>4</i> ALLIES ALIVE · <kbd>LMB</kbd> NEXT ROBOT</small>
 			</div>
 			<div class="csr-contact" data-csr-contact hidden aria-live="polite">

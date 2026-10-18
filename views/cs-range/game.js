@@ -15,6 +15,7 @@
 	var ROUTE = 'range';
 	var SETTINGS_KEY = 'hayneko.range.settings.v1';
 	var RECORDS_KEY = 'hayneko.range.records.v1';
+	var AI_KEY = 'hayneko.range.ai.v1';
 	var MATCH_TARGET = 13;
 
 	var current = null;
@@ -38,6 +39,383 @@
 		if (node.textContent !== value) node.textContent = value;
 	}
 	function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+	function emptyAIMemory() {
+		return { version: 1, routes: {}, groupBias: { CT: 0.15, T: 0.15 }, teamFear: { CT: 0, T: 0 }, deaths: [] };
+	}
+
+	RangeGame.prototype.normalizeAIMemory = function (raw) {
+		var m = raw && typeof raw === 'object' ? raw : {};
+		var out = emptyAIMemory();
+		if (m.routes && typeof m.routes === 'object') out.routes = m.routes;
+		if (m.groupBias && typeof m.groupBias === 'object') {
+			out.groupBias.CT = clamp(Number(m.groupBias.CT) || 0, 0, 1);
+			out.groupBias.T = clamp(Number(m.groupBias.T) || 0, 0, 1);
+		}
+		if (m.teamFear && typeof m.teamFear === 'object') {
+			out.teamFear.CT = clamp(Number(m.teamFear.CT) || 0, 0, 1);
+			out.teamFear.T = clamp(Number(m.teamFear.T) || 0, 0, 1);
+		}
+		if (Array.isArray(m.deaths)) out.deaths = m.deaths.slice(-40);
+		return out;
+	};
+
+	RangeGame.prototype.saveAIMemory = function () {
+		saveJSON(AI_KEY, this.aiMemory);
+	};
+
+	RangeGame.prototype.difficultyFor = function (team) {
+		var key = team === this.playerTeam ? this.settings.difficultyAlly : this.settings.difficultyEnemy;
+		return C.DIFFICULTY[key] || C.DIFFICULTY.regular;
+	};
+
+	RangeGame.prototype.aiRouteKey = function (team, site, route) {
+		return team + '|' + (site || '?') + '|' + (route || 'anchor');
+	};
+
+	RangeGame.prototype.aiRouteStat = function (team, site, route) {
+		var key = this.aiRouteKey(team, site, route);
+		if (!this.aiMemory.routes[key]) this.aiMemory.routes[key] = { uses: 0, deaths: 0, wins: 0, lastUse: 0, lastDeath: null };
+		return this.aiMemory.routes[key];
+	};
+
+	RangeGame.prototype.teamFearValue = function (team) {
+		return clamp(Number(this.teamFear && this.teamFear[team]) || 0, 0, 1);
+	};
+
+	RangeGame.prototype.registerTeamDeath = function (team, victim) {
+		if (!this.teamFear) this.teamFear = { CT: 0, T: 0 };
+		if (!this.recentDeaths) this.recentDeaths = { CT: [], T: [] };
+		var now = this.now;
+		var arr = this.recentDeaths[team] || (this.recentDeaths[team] = []);
+		arr.push(now);
+		while (arr.length && now - arr[0] > 10000) arr.shift();
+		var c5 = 0, c10 = arr.length;
+		for (var i = 0; i < arr.length; i++) if (now - arr[i] <= 5000) c5++;
+		var spike = 0.035;
+		if (c5 >= 2) spike += 0.18;
+		if (c5 >= 3) spike += 0.12;
+		else if (c10 >= 3) spike += 0.06;
+		this.teamFear[team] = clamp(this.teamFearValue(team) + spike, 0, 1);
+		this.aiMemory.teamFear[team] = this.teamFear[team];
+		if (c5 >= 2) {
+			if (!this.panicUntil) this.panicUntil = { CT: 0, T: 0 };
+			this.panicUntil[team] = now + 8000;
+			this.aiMemory.groupBias[team] = clamp((this.aiMemory.groupBias[team] || 0) + 0.07, 0, 1);
+		}
+		this.saveAIMemory();
+		this.replanTeam(team, victim, c5 >= 2);
+		if (team === this.playerTeam && c5 >= 2 && now - (this._panicToastAt || 0) > 4000) {
+			this._panicToastAt = now;
+			this.toast('Squad shaken — regrouping.');
+		}
+	};
+
+	RangeGame.prototype.teamAce = function (team, n) {
+		if (!this.teamFear) this.teamFear = { CT: 0, T: 0 };
+		var cut = n >= 5 ? 0.35 : 0.18;
+		this.teamFear[team] = clamp(this.teamFearValue(team) - cut, 0, 1);
+		this.aiMemory.teamFear[team] = this.teamFear[team];
+		if (this.panicUntil) this.panicUntil[team] = 0;
+		this.aiMemory.groupBias[team] = clamp((this.aiMemory.groupBias[team] || 0) - 0.08, 0, 1);
+		this.saveAIMemory();
+		if (team === this.playerTeam) this.toast((n >= 5 ? '5K' : '4K') + ' — squad confidence.');
+	};
+
+	RangeGame.prototype.decayTeamFear = function (dt) {
+		if (!this.teamFear) return;
+		['CT', 'T'].forEach(function (team) {
+			var f = clamp(Number(this.teamFear[team]) || 0, 0, 1);
+			if (f <= 0) return;
+			f = Math.max(0, f - dt * 0.006);
+			this.teamFear[team] = f;
+			this.aiMemory.teamFear[team] = f;
+		}, this);
+	};
+
+	RangeGame.prototype.replanTeam = function (team, victim, rapid) {
+		var now = this.now;
+		if (!this.teamReplanAt) this.teamReplanAt = { CT: 0, T: 0 };
+		if (!this.teamReplan) this.teamReplan = { CT: null, T: null };
+		if (now - (this.teamReplanAt[team] || 0) < 1200) {
+			this.teamReplan[team] = { at: now, victim: victim && victim.name, rapid: !!rapid, coalesced: true };
+			return;
+		}
+		this.teamReplanAt[team] = now;
+		var self = this;
+		var alive = this.teamBots(team, true);
+		if (!alive.length) return;
+		var cx = 0, cz = 0;
+		for (var a = 0; a < alive.length; a++) { cx += alive[a].x; cz += alive[a].z; }
+		var rally = this.snapFreePoint(cx / alive.length, cz / alive.length, 0.46);
+		for (var i = 0; i < alive.length; i++) {
+			var bot = alive[i];
+			if (bot.planting || this.criticalRole(bot)) continue;
+			bot.replanUntil = now + 900;
+			bot.replanPoint = team === 'CT'
+				? (bot.holdPoint ? { x: bot.holdPoint.x, z: bot.holdPoint.z } : { x: bot.x, z: bot.z })
+				: { x: rally.x, z: rally.z };
+			bot.path = null;
+			bot.pathGoal = null;
+			bot.pathTimer = 0;
+			if (team === 'T' && this.bomb && this.bomb.state === 'carried' && !bot.hasBomb && !bot.atSite) {
+				var site = bot.site || this.tSite || 'A';
+				var routes = this.world.routes[site] || this.world.routes.A;
+				var routeName = this.aiChooseRoute('T', site, bot.tRouteName || 'main');
+				var pts = routes && routes[routeName];
+				if (pts && pts.length) {
+					var bestIdx = 0, bestD = 1e9;
+					for (var p = 0; p < pts.length; p++) {
+						var pd = Math.hypot(pts[p].x - bot.x, pts[p].z - bot.z);
+						if (pd < bestD) { bestD = pd; bestIdx = p; }
+					}
+					var sliced = [];
+					for (var k = bestIdx; k < pts.length; k++) {
+						sliced.push(self.snapFreePoint(pts[k].x, pts[k].z, 0.46));
+					}
+					if (sliced.length) {
+						bot.route = sliced;
+						bot.routeIndex = 0;
+						bot.tRouteName = routeName;
+						bot.atSite = false;
+					}
+				}
+			}
+		}
+		/* If a CT anchor died at an under-defended site, pull one anchor over. */
+		if (team === 'CT' && victim && victim.site) {
+			var siteId = victim.site;
+			var atSite = alive.filter(function (b) { return b.site === siteId; }).length;
+			if (atSite < 2) {
+				var other = siteId === 'A' ? 'B' : 'A';
+				var candidate = alive.filter(function (b) {
+					return b.site === other && !b.planting && !self.criticalRole(b);
+				})[0];
+				if (candidate) {
+					candidate.site = siteId;
+					candidate.atSite = false;
+					candidate.plantSpot = null;
+					var hold = this.ctPostFor(candidate, siteId);
+					candidate.post = hold;
+					candidate.holdPoint = hold;
+					candidate.route = hold ? [this.snapFreePoint(hold.x, hold.z, 0.46)] : [];
+					candidate.routeIndex = 0;
+					candidate.path = null;
+					candidate.pathGoal = null;
+					candidate.replanUntil = now + 900;
+					candidate.replanPoint = hold ? { x: hold.x, z: hold.z } : { x: candidate.x, z: candidate.z };
+				}
+			}
+		}
+		this.teamReplan[team] = { at: now, victim: victim && victim.name, rapid: !!rapid };
+		this.saveAIMemory();
+	};
+
+	RangeGame.prototype.botReplanObjective = function (bot, dt) {
+		if (!bot.replanUntil) return false;
+		if (this.now >= bot.replanUntil) { bot.replanUntil = 0; bot.replanPoint = null; return false; }
+		if (bot.planting || this.criticalRole(bot)) { bot.replanUntil = 0; return false; }
+		if (bot.replanPoint) {
+			var d = Math.hypot(bot.replanPoint.x - bot.x, bot.replanPoint.z - bot.z);
+			if (d > 1.1) this.botPathTo(bot, bot.replanPoint.x, bot.replanPoint.z, bot.speed * 0.95, dt);
+			else { bot.moveX = 0; bot.moveZ = 0; }
+		} else { bot.moveX = 0; bot.moveZ = 0; }
+		bot.mode = 'replan';
+		return true;
+	};
+
+	RangeGame.prototype.botPanicObjective = function (bot, dt) {
+		var fear = this.teamFearValue(bot.team);
+		var panicking = fear >= 0.4 || (this.panicUntil && this.now < (this.panicUntil[bot.team] || 0));
+		if (!panicking) return false;
+		if (bot.planting || this.criticalRole(bot) || bot.hasBomb) return false;
+		if (this.bomb && (this.bomb.state === 'planted' || this.bomb.state === 'planting')) return false;
+		if (this.bomb && this.bomb.state === 'dropped') {
+			var rank = this.bombRecoveryRank(bot);
+			if (rank >= 0 && rank < 3) return false;
+		}
+		var nearest = null, nd = 1e9;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b === bot || b.team !== bot.team || !b.alive || b.dead) continue;
+			var d = Math.hypot(b.x - bot.x, b.z - bot.z);
+			if (d < nd) { nd = d; nearest = b; }
+		}
+		if (this.player.alive && this.playerTeam === bot.team) {
+			var pd = Math.hypot(this.player.x - bot.x, this.player.z - bot.z);
+			if (pd < nd) { nd = pd; nearest = { x: this.player.x, z: this.player.z }; }
+		}
+		if (!nearest) return false;
+		if (nd > 5.4) this.botPathTo(bot, nearest.x, nearest.z, bot.speed * 0.92, dt);
+		else {
+			bot.moveX = 0;
+			bot.moveZ = 0;
+			var alert = this.teamAlerts && this.teamAlerts[bot.team];
+			if (alert && this.now - alert.seenAt < 8000) bot.face = { x: alert.x, z: alert.z };
+			else bot.face = { x: nearest.x, z: nearest.z };
+		}
+		bot.mode = 'fear';
+		return true;
+	};
+
+	RangeGame.prototype.aiRouteFear = function (team, site, route) {
+		var stat = this.aiRouteStat(team, site, route);
+		var fear = Number(stat.fear) || 0;
+		if (!fear) return 0;
+		var last = Number(stat.lastFearAt) || 0;
+		if (!last) return clamp(fear, 0, 1);
+		var age = Math.max(0, Date.now() - last);
+		/* fear cools down over roughly two minutes without fresh bad news */
+		return clamp(fear * Math.pow(0.5, age / 120000), 0, 1);
+	};
+
+	RangeGame.prototype.aiRecordPlayerKill = function (victim) {
+		if (!this.aiMemory) return;
+		var site = (victim && victim.site) || (this.nearestSite(this.player.x, this.player.z) || {}).id || 'A';
+		var routes = this.playerTeam === 'T' ? ['main', 'flank'] : ['anchor'];
+		for (var i = 0; i < routes.length; i++) {
+			var stat = this.aiRouteStat(this.playerTeam, site, routes[i]);
+			stat.kills = (stat.kills || 0) + 1;
+			stat.lastKillAt = Date.now();
+			stat.fear = clamp((stat.fear || 0) - 0.10, 0, 1);
+			stat.lastFearAt = stat.fear > 0 ? Date.now() : 0;
+		}
+		this.saveAIMemory();
+	};
+
+	RangeGame.prototype.aiRecordRouteKill = function (bot) {
+		if (!bot || !bot.team || !this.aiMemory) return;
+		var site = bot.site || this.tSite || 'A';
+		var route = bot.team === 'T' ? (bot.tRouteName || 'main') : 'anchor';
+		var stat = this.aiRouteStat(bot.team, site, route);
+		stat.kills = (stat.kills || 0) + 1;
+		stat.lastKillAt = Date.now();
+		stat.fear = clamp((stat.fear || 0) - 0.16, 0, 1);
+		stat.lastFearAt = stat.fear > 0 ? Date.now() : 0;
+		this.saveAIMemory();
+	};
+
+	RangeGame.prototype.aiNoteRouteUse = function (team, site, route) {
+		var stat = this.aiRouteStat(team, site, route);
+		stat.uses++;
+		stat.lastUse = this.match ? this.match.round : 0;
+	};
+
+	RangeGame.prototype.aiChooseRoute = function (team, site, fallback) {
+		var plan = (this.difficultyFor(team).planning || 0.5);
+		var main = this.aiRouteStat(team, site, 'main');
+		var flank = this.aiRouteStat(team, site, 'flank');
+		var mainScore = (main.deaths + 1) / (main.uses + 2) + this.aiRouteFear(team, site, 'main') * 1.15;
+		var flankScore = (flank.deaths + 1) / (flank.uses + 2) + this.aiRouteFear(team, site, 'flank') * 1.15;
+		var exploitChance = 0.45 + plan * 0.45;
+		if (Math.random() < exploitChance) return mainScore <= flankScore ? 'main' : 'flank';
+		return Math.random() < 0.5 ? 'main' : (fallback || 'flank');
+	};
+
+	RangeGame.prototype.aiRecordDeath = function (bot, context) {
+		if (!bot || !this.aiMemory) return;
+		var team = bot.team;
+		var site = bot.site || this.tSite || (bot.team === 'CT' ? 'A' : 'A');
+		var route = bot.team === 'T' ? (bot.tRouteName || 'main') : 'anchor';
+		var stat = this.aiRouteStat(team, site, route);
+		stat.deaths++;
+		stat.uses = Math.max(stat.uses, 1);
+		var alliesNear = 0, enemiesNear = 0;
+		var enemyTeam = team === 'CT' ? 'T' : 'CT';
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b === bot || !b.alive || b.dead) continue;
+			var d = Math.hypot(b.x - bot.x, b.z - bot.z);
+			if (b.team === team && d < 14) alliesNear++;
+			else if (b.team === enemyTeam && d < 18) enemiesNear++;
+		}
+		if (this.player.alive && this.playerTeam === team && Math.hypot(this.player.x - bot.x, this.player.z - bot.z) < 14) alliesNear++;
+		if (this.player.alive && this.playerTeam === enemyTeam && Math.hypot(this.player.x - bot.x, this.player.z - bot.z) < 18) enemiesNear++;
+		var isolated = alliesNear < 2;
+		var outnumbered = enemiesNear > alliesNear;
+		var teamAlive = this.aliveTeamCount(team);
+		var enemyAlive = this.aliveTeamCount(enemyTeam);
+		var globalOut = enemyAlive > teamAlive;
+		var bias = this.aiMemory.groupBias[team] || 0;
+		if (isolated) bias += 0.14;
+		if (outnumbered) bias += 0.07;
+		if (globalOut) bias += 0.04;
+		if (!isolated && !outnumbered && !globalOut) bias -= 0.03;
+		this.aiMemory.groupBias[team] = clamp(bias, 0, 1);
+		stat.fear = clamp((stat.fear || 0) + 0.22 + (isolated ? 0.08 : 0) + (outnumbered ? 0.08 : 0) + (globalOut ? 0.05 : 0), 0, 1);
+		stat.lastFearAt = Date.now();
+		stat.lastDeath = {
+			round: this.match ? this.match.round : 0,
+			x: +bot.x.toFixed(1), z: +bot.z.toFixed(1),
+			allies: alliesNear, enemies: enemiesNear,
+			teamAlive: teamAlive, enemyAlive: enemyAlive,
+			isolated: isolated, outnumbered: outnumbered, globalOut: globalOut,
+			cause: context || 'shot'
+		};
+		this.aiMemory.deaths.push({
+			t: Date.now(), round: this.match ? this.match.round : 0, team: team, site: site, route: route,
+			x: +bot.x.toFixed(1), z: +bot.z.toFixed(1),
+			allies: alliesNear, enemies: enemiesNear,
+			teamAlive: teamAlive, enemyAlive: enemyAlive,
+			isolated: isolated, outnumbered: outnumbered, globalOut: globalOut,
+			cause: context || 'shot', bomb: this.bomb ? this.bomb.state : null
+		});
+		if (this.aiMemory.deaths.length > 40) this.aiMemory.deaths.shift();
+		this.saveAIMemory();
+	};
+
+	RangeGame.prototype.aiRecordPlayerDeath = function (fromBot) {
+		if (!this.aiMemory) return;
+		var team = this.playerTeam;
+		var site = (this.nearestSite(this.player.x, this.player.z) || {}).id || 'A';
+		var alliesNear = 0, enemiesNear = 0;
+		var enemyTeam = team === 'CT' ? 'T' : 'CT';
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (!b.alive || b.dead) continue;
+			var d = Math.hypot(b.x - this.player.x, b.z - this.player.z);
+			if (b.team === team && d < 14) alliesNear++;
+			else if (b.team === enemyTeam && d < 18) enemiesNear++;
+		}
+		var isolated = alliesNear < 1;
+		var teamAlive = this.aliveTeamCount(team);
+		var enemyAlive = this.aliveTeamCount(enemyTeam);
+		var bias = this.aiMemory.groupBias[team] || 0;
+		if (isolated) bias += 0.1;
+		if (enemiesNear > alliesNear) bias += 0.06;
+		if (enemyAlive > teamAlive) bias += 0.04;
+		this.aiMemory.groupBias[team] = clamp(bias, 0, 1);
+		this.aiMemory.deaths.push({
+			t: Date.now(), round: this.match ? this.match.round : 0, team: team, site: site, route: 'player',
+			x: +this.player.x.toFixed(1), z: +this.player.z.toFixed(1),
+			allies: alliesNear, enemies: enemiesNear,
+			teamAlive: teamAlive, enemyAlive: enemyAlive, isolated: isolated,
+			cause: fromBot ? ('killed by ' + fromBot.name) : 'player death', bomb: this.bomb ? this.bomb.state : null
+		});
+		if (this.aiMemory.deaths.length > 40) this.aiMemory.deaths.shift();
+		this.saveAIMemory();
+	};
+
+	RangeGame.prototype.aiRecordRound = function (winner) {
+		if (!this.aiMemory) return;
+		var loser = winner === 'CT' ? 'T' : 'CT';
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			var site = b.site || this.tSite || 'A';
+			var route = b.team === 'T' ? (b.tRouteName || 'main') : 'anchor';
+			var stat = this.aiRouteStat(b.team, site, route);
+			if (b.team === winner) {
+				stat.wins++;
+				stat.fear = clamp((stat.fear || 0) - 0.02, 0, 1);
+			} else if (b.team === loser) {
+				/* a wipe makes the lane feel unsafe even for robots that died early */
+				stat.fear = clamp((stat.fear || 0) + 0.10, 0, 1);
+				stat.lastFearAt = Date.now();
+			}
+		}
+		this.aiMemory.groupBias[winner] = clamp((this.aiMemory.groupBias[winner] || 0) - 0.02, 0, 1);
+		this.saveAIMemory();
+	};
+
 	function circleHitsBox(x, z, r, c) {
 		var nx = x < c.minX ? c.minX : (x > c.maxX ? c.maxX : x);
 		var nz = z < c.minZ ? c.minZ : (z > c.maxZ ? c.maxZ : z);
@@ -90,9 +468,14 @@
 		this.fallbackLook = false;
 		this.ignoreUnlockUntil = 0;
 		this.settings = Object.assign({
-			difficulty: 'regular', quality: 'balanced',
-			sens: 1, volume: 0.7, muted: false
+			difficultyAlly: 'regular', difficultyEnemy: 'regular',
+			quality: 'balanced', sens: 1, volume: 0.7, muted: false
 		}, loadJSON(SETTINGS_KEY, {}));
+		/* migrate the single-difficulty setting from the old build */
+		if (!this.settings.difficultyAlly) this.settings.difficultyAlly = this.settings.difficulty || 'regular';
+		if (!this.settings.difficultyEnemy) this.settings.difficultyEnemy = this.settings.difficulty || 'regular';
+		this.aiMemory = this.normalizeAIMemory(loadJSON(AI_KEY, null));
+		this.teamFear = this.aiMemory.teamFear;
 		this.records = Object.assign({
 			bestWins: 0, bestRounds: 0, bestKills: 0, matches: 0
 		}, loadJSON(RECORDS_KEY, {}));
@@ -253,7 +636,8 @@
 			practiceHits: $(h, 'practice-hits'),
 			practiceAcc: $(h, 'practice-acc'),
 			practiceTargets: $(h, 'practice-targets'),
-			difficulty: $(h, 'difficulty'),
+			difficultyAlly: $(h, 'difficulty-ally'),
+			difficultyEnemy: $(h, 'difficulty-enemy'),
 			quality: $(h, 'quality'),
 			sens: $(h, 'sens'),
 			sensValue: $(h, 'sens-value'),
@@ -290,6 +674,8 @@
 			spectate: $(h, 'spectate'),
 			spectateName: $(h, 'spectate-name'),
 			spectateAlive: $(h, 'spectate-alive'),
+			spectateHp: $(h, 'spectate-hp'),
+			spectateAmmo: $(h, 'spectate-ammo'),
 			contact: $(h, 'contact'),
 			contactLabel: $(h, 'contact-label'),
 			contactNote: $(h, 'contact-note'),
@@ -437,15 +823,17 @@
 			setTimeout(function () { e.settingsPanel.classList.remove('is-pulse'); }, 700);
 		});
 
-		if (e.difficulty) {
-			e.difficulty.addEventListener('click', function (ev) {
+		[['difficultyAlly', e.difficultyAlly], ['difficultyEnemy', e.difficultyEnemy]].forEach(function (pair) {
+			var key = pair[0], host = pair[1];
+			if (!host) return;
+			host.addEventListener('click', function (ev) {
 				var b = ev.target.closest ? ev.target.closest('button[data-value]') : null;
 				if (!b) return;
-				self.settings.difficulty = b.getAttribute('data-value');
+				self.settings[key] = b.getAttribute('data-value');
 				self.syncSettingsUI();
 				self.saveSettings();
 			});
-		}
+		});
 		if (e.quality) {
 			e.quality.addEventListener('click', function (ev) {
 				var b = ev.target.closest ? ev.target.closest('button[data-value]') : null;
@@ -538,11 +926,13 @@
 	RangeGame.prototype.syncSettingsUI = function () {
 		var s = this.settings;
 		var e = this.el;
-		if (e.difficulty) {
-			Array.prototype.forEach.call(e.difficulty.querySelectorAll('button'), function (b) {
-				b.classList.toggle('is-active', b.getAttribute('data-value') === s.difficulty);
+		[['difficultyAlly', e.difficultyAlly], ['difficultyEnemy', e.difficultyEnemy]].forEach(function (pair) {
+			var key = pair[0], host = pair[1];
+			if (!host) return;
+			Array.prototype.forEach.call(host.querySelectorAll('button'), function (b) {
+				b.classList.toggle('is-active', b.getAttribute('data-value') === s[key]);
 			});
-		}
+		});
 		if (e.quality) {
 			Array.prototype.forEach.call(e.quality.querySelectorAll('button'), function (b) {
 				b.classList.toggle('is-active', b.getAttribute('data-value') === s.quality);
@@ -1171,6 +1561,19 @@
 		this.playerDefusing = false;
 		this.spectating = false;
 		this.teamAlerts = { CT: null, T: null };
+		this.gamblers = { CT: null, T: null };
+		this.gambleNextAt = { CT: 0, T: 0 };
+		this.recentDeaths = { CT: [], T: [] };
+		this.panicUntil = { CT: 0, T: 0 };
+		this.teamReplanAt = { CT: 0, T: 0 };
+		this.teamReplan = { CT: null, T: null };
+		/* morale carries a little between rounds, but a fresh round cools it */
+		if (this.teamFear) {
+			this.teamFear.CT = clamp(this.teamFearValue('CT') * 0.55, 0, 1);
+			this.teamFear.T = clamp(this.teamFearValue('T') * 0.55, 0, 1);
+			this.aiMemory.teamFear.CT = this.teamFear.CT;
+			this.aiMemory.teamFear.T = this.teamFear.T;
+		}
 		this.contactAlert = null;
 		if (this.el.contact) this.el.contact.hidden = true;
 		if (this.el.kit) this.el.kit.hidden = true;
@@ -1317,6 +1720,7 @@
 	};
 
 	RangeGame.prototype.botHunt = function (bot, dt) {
+		if (this.teamFearValue(bot.team) > 0.55) return false;
 		if (!this.teamAdvantage(bot.team)) return false;
 		if (this.criticalRole(bot)) return false;
 		/* Never abandon an active plant/defuse for a hunt. */
@@ -1355,6 +1759,53 @@
 			bot.roamNextAt = 0;
 		}
 		if (bot.roamTarget && this.botMaybeRoam(bot, pt, dt)) return true;
+		return true;
+	};
+
+	RangeGame.prototype.botGrouping = function (bot, dt) {
+		var bias = (this.aiMemory && this.aiMemory.groupBias && this.aiMemory.groupBias[bot.team]) || 0;
+		bias = Math.max(bias, this.teamFearValue(bot.team) * 0.65);
+		var plan = (bot.diff && bot.diff.planning) || 0.5;
+		var threshold = 0.16 + (1 - plan) * 0.24;
+		if (bias <= threshold) return false;
+		if (bot.planting || bot.hasBomb || this.criticalRole(bot)) return false;
+		if (this.bomb && (this.bomb.state === 'planted' || this.bomb.state === 'planting')) return false;
+		if (this.bomb && this.bomb.state === 'dropped') {
+			var rank = this.bombRecoveryRank(bot);
+			if (rank >= 0 && rank < 3) return false;
+		}
+		var nearest = null, nd = 1e9;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b === bot || b.team !== bot.team || !b.alive || b.dead) continue;
+			var d = Math.hypot(b.x - bot.x, b.z - bot.z);
+			if (d < nd) { nd = d; nearest = b; }
+		}
+		if (this.player.alive && this.playerTeam === bot.team) {
+			var pd = Math.hypot(this.player.x - bot.x, this.player.z - bot.z);
+			if (pd < nd) { nd = pd; nearest = { x: this.player.x, z: this.player.z, player: true }; }
+		}
+		if (!nearest || nd < 7.2 || nd > 30) return false;
+		this.botPathTo(bot, nearest.x, nearest.z, bot.speed * 0.96, dt);
+		bot.mode = 'regroup';
+		return true;
+	};
+
+	RangeGame.prototype.botHearObjective = function (bot, dt) {
+		var h = bot.lastHeard;
+		if (!h) return false;
+		if (this.now - h.t > 5000) { bot.lastHeard = null; return false; }
+		if (bot.planting || this.criticalRole(bot)) return false;
+		if (bot.hasBomb && bot.atSite) return false;
+		var d = Math.hypot(h.x - bot.x, h.z - bot.z);
+		bot.mode = 'listen';
+		if (d > 3.3) {
+			this.botPathTo(bot, h.x, h.z, bot.speed * 0.9, dt);
+		} else {
+			bot.moveX = 0;
+			bot.moveZ = 0;
+			bot.face = { x: h.x, z: h.z };
+		}
 		return true;
 	};
 
@@ -1527,8 +1978,9 @@
 			bot.site = site;
 			bot.role = roles[i] || 'support';
 			bot.guardIndex = i;
-			bot.tRouteName = routeNames[i] || 'main';
-			var route = tRoutes[routeNames[i] || 'main'] || tRoutes.main || [];
+			bot.tRouteName = self.aiChooseRoute('T', site, routeNames[i] || 'main');
+			self.aiNoteRouteUse('T', site, bot.tRouteName);
+			var route = tRoutes[bot.tRouteName] || tRoutes.main || [];
 			bot.route = route.map(function (w, wi) {
 				var jitter = wi === route.length - 1 ? 0 : 0.55;
 				return self.snapFreePoint(w.x + C.rand(-jitter, jitter), w.z + C.rand(-jitter, jitter), 0.46);
@@ -1552,18 +2004,33 @@
 		else if (carrier) this.attachBombCarrier(carrier);
 
 		var ctBots = this.teamBots('CT', true);
+		var ctCount = ctBots.length;
+		var aStat = this.aiRouteStat('CT', 'A', 'anchor');
+		var bStat = this.aiRouteStat('CT', 'B', 'anchor');
+		var aRate = (aStat.deaths + 1) / (aStat.uses + 2) + this.aiRouteFear('CT', 'A', 'anchor') * 0.18;
+		var bRate = (bStat.deaths + 1) / (bStat.uses + 2) + this.aiRouteFear('CT', 'B', 'anchor') * 0.18;
+		var dangerSite = null;
+		if (aRate > bRate + 0.05) dangerSite = 'A';
+		else if (bRate > aRate + 0.05) dangerSite = 'B';
+		var dangerCount = Math.min(ctCount, Math.max(1, Math.ceil(ctCount * 0.6)));
+		var siteCounts = { A: 0, B: 0 };
 		ctBots.forEach(function (bot, i) {
-			var assigned = i < 2 ? 'A' : 'B';
+			var assigned;
+			if (!dangerSite) assigned = i < Math.min(2, ctCount) ? 'A' : 'B';
+			else if (i < dangerCount) assigned = dangerSite;
+			else assigned = dangerSite === 'A' ? 'B' : 'A';
+			var idx = siteCounts[assigned]++;
 			var holdList = assigned === 'A' ? self.world.holds.ctA : self.world.holds.ctB;
-			var hold = holdList[i % 2] || holdList[0] || null;
+			var hold = holdList[idx % holdList.length] || holdList[0] || null;
 			if (hold) {
 				var hp = self.snapFreePoint(hold.x, hold.z, 0.46);
 				hold = { x: hp.x, z: hp.z, lx: hold.lx, lz: hold.lz };
 			}
+			self.aiNoteRouteUse('CT', assigned, 'anchor');
 			bot.site = assigned;
 			bot.homeSite = assigned;
 			bot.role = assigned === 'A' ? 'A ANCHOR' : 'B ANCHOR';
-			bot.guardIndex = i;
+			bot.guardIndex = idx;
 			bot.post = hold;
 			bot.holdPoint = hold;
 			var baseRoute = (self.world.routes.ct[assigned] || []).map(function (w) {
@@ -1575,6 +2042,7 @@
 			bot.mode = 'defend';
 			bot.think = C.rand(0.05, 0.4);
 		});
+		this.saveAIMemory();
 	};
 
 	RangeGame.prototype.spawnBot = function (typeId, pos, team, index) {
@@ -1633,19 +2101,24 @@
 		var hasRifle = weapons.some(function (w) { return w.def.category === 'RIFLE'; });
 		var hasSmg = weapons.some(function (w) { return w.def.category === 'SMG'; });
 
+		var spawnDiff = this.difficultyFor(team);
+		var baseSpeed = type.speed * (0.92 + Math.random() * 0.16);
 		var bot = {
 			id: ++this.botSeq,
 			team: team,
+			diff: spawnDiff,
+			baseSpeed: baseSpeed,
 			robot: robot,
 			root: robot.root,
 			x: pos.x, z: pos.z, y: 0,
 			baseScale: robot.baseScale,
 			hp: robot.hp, maxHp: robot.maxHp,
 			alive: true, dead: false,
+			gamble: false, wanderUntil: 0, wanderPoint: null, stallTimer: 0, twitchPenalty: 0, roundKills: 0,
 			type: type, name: name,
 			role: '',
 			site: '',
-			speed: type.speed * (0.92 + Math.random() * 0.16),
+			speed: baseSpeed * (spawnDiff.speed || 1),
 			accuracy: type.accuracy * (0.92 + Math.random() * 0.16),
 			damage: type.damage,
 			weapons: weapons,
@@ -2660,14 +3133,33 @@
 		return best;
 	};
 
+	RangeGame.prototype.restoreSpectateBody = function () {
+		if (this._specHiddenBot && this._specHiddenBot.root) this._specHiddenBot.root.visible = true;
+		this._specHiddenBot = null;
+	};
+
+	RangeGame.prototype.hideSpectateBody = function (t) {
+		this.restoreSpectateBody();
+		if (t && t.root) {
+			t.root.visible = false;
+			this._specHiddenBot = t;
+		}
+		if (this.playerBody) this.playerBody.visible = false;
+	};
+
 	RangeGame.prototype.beginSpectate = function () {
 		if (this.spectating) return;
 		this.spectating = true;
 		this.selectSpectateTarget();
-		if (this.spectateTarget) this.hideDeathCam();
-		this._specCam = null;
+		if (this.spectateTarget) {
+			this.hideDeathCam();
+			this.hideSpectateBody(this.spectateTarget);
+		}
 		if (this.el.spectate) this.el.spectate.hidden = false;
-		if (this.el.hud) this.el.hud.classList.add('is-spectating');
+		if (this.el.hud) {
+			this.el.hud.classList.remove('is-dead');
+			this.el.hud.classList.add('is-spectating');
+		}
 		this.updateSpectateHUD();
 	};
 
@@ -2677,11 +3169,11 @@
 			var b = this.bots[i];
 			if (b.team === this.playerTeam && b.alive && !b.dead) list.push(b);
 		}
-		if (!list.length) { this.spectateTarget = null; this.updateSpectateHUD(); return; }
+		if (!list.length) { this.restoreSpectateBody(); this.spectateTarget = null; this.updateSpectateHUD(); return; }
 		var idx = list.indexOf(this.spectateTarget);
 		idx = (idx + (dir || 1) + list.length) % list.length;
 		this.spectateTarget = list[idx];
-		this._specCam = null;
+		this.hideSpectateBody(this.spectateTarget);
 		if (this.el.spectate) this.el.spectate.hidden = false;
 		if (this.el.hud) this.el.hud.classList.add('is-spectating');
 		this.updateSpectateHUD();
@@ -2691,7 +3183,7 @@
 	RangeGame.prototype.hideSpectate = function () {
 		this.spectating = false;
 		this.spectateTarget = null;
-		this._specCam = null;
+		this.restoreSpectateBody();
 		if (this.el.spectate) this.el.spectate.hidden = true;
 		if (this.el.hud) this.el.hud.classList.remove('is-spectating');
 		for (var i = 0; i < this.bots.length; i++) {
@@ -2704,41 +3196,65 @@
 		if (!this.spectating) return;
 		var t = this.spectateTarget;
 		if (!t || !t.alive || t.dead) t = this.selectSpectateTarget();
-		if (this.el.spectateName) text(this.el.spectateName, t ? t.name : 'NO ROBOTS LEFT');
+		if (!t) {
+			if (this.el.spectateName) text(this.el.spectateName, 'NO ROBOTS LEFT');
+			if (this.el.spectateHp) text(this.el.spectateHp, '0');
+			if (this.el.spectateAmmo) text(this.el.spectateAmmo, '0');
+			return;
+		}
+		this.spectateTarget = t;
+		if (this._specHiddenBot !== t) this.hideSpectateBody(t);
+		var hp = Math.max(0, Math.round(t.hp));
+		if (this.el.spectateName) text(this.el.spectateName, t.name);
 		if (this.el.spectateAlive) text(this.el.spectateAlive, String(this.aliveTeamCount(this.playerTeam)));
+		if (this.el.spectateHp) text(this.el.spectateHp, hp);
+		if (this.el.spectateAmmo) text(this.el.spectateAmmo, t.ammo != null ? t.ammo : '—');
+		if (this.el.health) text(this.el.health, hp);
+		if (this.el.armor) text(this.el.armor, t.armor != null ? Math.max(0, Math.round(t.armor)) : '0');
+		var hbar = this.el.healthbar ? this.el.healthbar.querySelector('em') : null;
+		if (hbar) hbar.style.width = clamp(hp / Math.max(1, t.maxHp) * 100, 0, 100) + '%';
+		var hpar = this.el.health && this.el.health.parentNode;
+		if (hpar) hpar.classList.toggle('is-low', hp <= 25);
+		var def = t.weaponDef || (t.weapons && t.weapons[t.weaponIndex] && t.weapons[t.weaponIndex].def);
+		if (def) {
+			if (this.el.weapon) text(this.el.weapon, def.name);
+			if (this.el.slot) text(this.el.slot, def.category || def.slot);
+			if (this.el.ammo) text(this.el.ammo, t.ammo != null ? t.ammo : '—');
+			if (this.el.reserve) text(this.el.reserve, '—');
+			if (this.el.ammo && this.el.ammo.parentNode) {
+				this.el.ammo.parentNode.classList.toggle('is-low', t.ammo != null && t.magSize && t.ammo <= Math.max(1, Math.floor(t.magSize * 0.2)));
+			}
+		}
 	};
 
 	RangeGame.prototype.updateSpectateCamera = function () {
 		var t = this.spectateTarget;
 		if (!t || !t.alive || t.dead) t = this.selectSpectateTarget();
-		if (!t) { if (this.playerBody) this.playerBody.visible = true; this.updateDeathCamera(); return; }
+		if (!t) {
+			this.restoreSpectateBody();
+			if (this.playerBody) this.playerBody.visible = true;
+			this.updateDeathCamera();
+			return;
+		}
 		this.spectateTarget = t;
-		for (var i = 0; i < this.bots.length; i++) {
-			var b = this.bots[i];
-			if (b.root) b.root.visible = true;
-		}
+		if (this._specHiddenBot !== t) this.hideSpectateBody(t);
 		var cam = this.camera;
-		var yaw = t.yaw;
-		var eye = 1.36 * t.baseScale;
-		var dist = 3.8, height = 2.25;
-		var bx = t.x - Math.sin(yaw) * dist;
-		var bz = t.z - Math.cos(yaw) * dist;
-		for (var d = dist; d > 1.0; d -= 0.35) {
-			bx = t.x - Math.sin(yaw) * d;
-			bz = t.z - Math.cos(yaw) * d;
-			if (Math.abs(bx) < 38 && Math.abs(bz) < 39 && !this.collidesAt(bx, bz, 0, height + 0.3)) break;
+		var eye = 1.6 * t.baseScale + Math.sin(t.walkPhase || 0) * 0.012;
+		var yaw;
+		if (t.face) yaw = Math.atan2(-(t.face.x - t.x), -(t.face.z - t.z));
+		else yaw = (t.yaw || 0) + Math.PI;
+		var pitch = 0;
+		if (t.target) {
+			var td = Math.hypot(t.target.x - t.x, t.target.z - t.z);
+			pitch = Math.atan2((t.target.eye || eye) - eye, Math.max(0.5, td));
 		}
-		if (!this._specCam) this._specCam = new THREE.Vector3(bx, height, bz);
-		var k = this.reduceMotion ? 1 : 0.28;
-		this._specCam.x += (bx - this._specCam.x) * k;
-		this._specCam.y += (height - this._specCam.y) * k;
-		this._specCam.z += (bz - this._specCam.z) * k;
 		cam.fov = 74;
-		cam.position.copy(this._specCam);
-		var lookAhead = 4.6;
-		cam.lookAt(t.x + Math.sin(yaw) * lookAhead, eye + 0.1, t.z + Math.cos(yaw) * lookAhead);
+		cam.position.set(t.x, eye, t.z);
+		cam.rotation.set(pitch, yaw, 0);
 		cam.updateProjectionMatrix();
+		this.updateSpectateHUD();
 	};
+
 	RangeGame.prototype.updateRoundNo = function () {
 		text(this.el.roundWord, this.practice ? 'PRACTICE' : 'ROUND');
 		text(this.el.roundNo, this.practice ? '' : this.match.round);
@@ -3006,6 +3522,7 @@
 
 		var winner = win ? 'CT' : 'T';
 		var playerWin = (winner === this.playerTeam);
+		this.aiRecordRound(winner);
 		this.roundPlayerWin = playerWin;
 		var reward;
 		if (playerWin) {
@@ -4174,10 +4691,13 @@
 	};
 
 	RangeGame.prototype.updateBots = function (dt) {
+		this.decayTeamFear(dt);
+		this.updateGamble();
 		for (var i = 0; i < this.bots.length; i++) {
 			var bot = this.bots[i];
 			if (bot) this.updateBot(bot, dt);
 		}
+		this.checkTeamStall();
 	};
 
 	RangeGame.prototype.pointHasLos = function (fx, fy, fz, px, py, pz) {
@@ -4226,7 +4746,8 @@
 	RangeGame.prototype.botCanSee = function (bot, target) {
 		if (!target || !target.alive) return false;
 		var dx = target.x - bot.x, dz = target.z - bot.z;
-		var maxRange = (bot.weaponDef && bot.weaponDef.category === 'SNIPER') ? 42 : 34;
+		var diff = bot.diff || this.difficultyFor(bot.team);
+		var maxRange = ((bot.weaponDef && bot.weaponDef.category === 'SNIPER') ? 42 : 34) * (diff.sight || 1);
 		if (dx * dx + dz * dz > maxRange * maxRange) return false;
 		return this.pointHasLos(bot.x, 1.48 * bot.baseScale, bot.z, target.x, target.eye, target.z);
 	};
@@ -4255,18 +4776,64 @@
 		return null;
 	};
 
+	RangeGame.prototype.botHear = function (bot, diff) {
+		diff = diff || bot.diff || this.difficultyFor(bot.team);
+		if (!diff.hearing) return;
+		var now = this.now;
+		if (now - (bot.hearCheck || 0) < 300) return;
+		bot.hearCheck = now;
+		var enemyTeam = bot.team === 'CT' ? 'T' : 'CT';
+		var best = null, bestD = 1e9;
+		var p = this.player;
+		if (p.alive && this.playerTeam === enemyTeam) {
+			var stride = this.keys.shift ? 0.55 : this.keys.ctrl ? 0.35 : 1;
+			var pd = Math.hypot(p.x - bot.x, p.z - bot.z);
+			if (p.speed > 0.9 && pd < diff.hearing * stride) { best = { x: p.x, z: p.z }; bestD = pd; }
+		}
+		var enemies = this.teamBots(enemyTeam, true);
+		for (var i = 0; i < enemies.length; i++) {
+			var eb = enemies[i];
+			var sp = eb.moveSpeed || 0;
+			if (sp < 1.1) continue;
+			var d = Math.hypot(eb.x - bot.x, eb.z - bot.z);
+			if (d < diff.hearing * (sp > 2.4 ? 1 : 0.72) && d < bestD) {
+				best = { x: eb.x, z: eb.z };
+				bestD = d;
+			}
+		}
+		if (best) {
+			bot.lastHeard = { x: best.x, z: best.z, t: now };
+			if ((diff.hearing >= 14 || (diff.planning || 0) >= 0.8) && now - (bot.hearAlertAt || 0) > 2500) {
+				bot.hearAlertAt = now;
+				this.raiseAlert(bot.team, best.x, best.z, 'sound');
+			}
+		}
+	};
+
 	RangeGame.prototype.botUpdatePerception = function (bot, dt) {
+		var diff = bot.diff || this.difficultyFor(bot.team);
 		bot.think -= dt;
 		if (bot.think > 0) return;
-		bot.think = C.rand(0.2, 0.34);
+		bot.think = C.rand(0.2, 0.34) * (diff.think || 1);
 		var t = this.botPerception(bot);
+		this.botHear(bot, diff);
 		var key = t ? (t.kind + (t.bot ? t.bot.id : 'p')) : '';
 		if (key !== bot.targetKey) {
 			bot.targetKey = key;
 			bot.reaction = 0;
 			bot.reactionDone = false;
+			if (t) {
+				/* High skill snaps onto a fresh target and fires much sooner. */
+				var firstDelay = (bot.type.reaction * diff.reaction + C.rand(0, 0.08)) * 1000;
+				bot.nextShot = Math.min(bot.nextShot || 1e9, this.now + firstDelay);
+			}
 		}
 		if (t) {
+			if (bot.gamble) {
+				bot.gamble = false;
+				bot.gamblePoint = null;
+				if (this.gamblers && this.gamblers[bot.team] === bot) this.gamblers[bot.team] = null;
+			}
 			bot.lastSeen = { x: t.x, z: t.z, t: this.now };
 			bot.lastEnemySeenAt = this.now;
 			bot.roamNextAt = this.now + C.rand((bot.idleLimit || 10) * 0.85, (bot.idleLimit || 10) * 1.15);
@@ -4566,6 +5133,13 @@
 				bot.moveZ *= 0.2;
 			}
 		}
+		/* never backpedal while holding a firing solution: keep the feet
+		   moving laterally or forward, not away from the target */
+		var backward = bot.moveX * nx + bot.moveZ * nz;
+		if (backward < 0) {
+			bot.moveX -= nx * backward;
+			bot.moveZ -= nz * backward;
+		}
 		return true;
 	};
 
@@ -4778,7 +5352,218 @@
 		this.botHoldAt(bot, home, dt);
 	};
 
+	RangeGame.prototype.botAvoidChicken = function (bot) {
+		var sp = Math.hypot(bot.moveX, bot.moveZ);
+		if (sp < 0.2 || !this.chickens || !this.chickens.length) return;
+		var nx = bot.moveX / sp, nz = bot.moveZ / sp;
+		var best = null, bestD = 1e9;
+		for (var i = 0; i < this.chickens.length; i++) {
+			var ch = this.chickens[i];
+			if (!ch.alive) continue;
+			var dx = ch.x - bot.x, dz = ch.z - bot.z;
+			var d = Math.hypot(dx, dz);
+			if (d < 0.01 || d > 2.1) continue;
+			var dot = (dx * nx + dz * nz) / d;
+			if (dot < 0.22) continue;
+			if (d < bestD) { bestD = d; best = ch; }
+		}
+		if (!best) return;
+		if (bestD < 1.25 && this.now - (bot.chickenKillAt || 0) > 1300 && Math.random() < 0.45) {
+			bot.chickenKillAt = this.now;
+			this.killChicken(best, new THREE.Vector3(best.x, 0.4, best.z));
+			return;
+		}
+		var cross = nx * (best.z - bot.z) - nz * (best.x - bot.x);
+		var side = cross > 0 ? -1 : 1;
+		var push = sp * (0.9 + (1.4 - Math.min(1.4, bestD)) * 0.9);
+		bot.moveX += -nz * side * push;
+		bot.moveZ += nx * side * push;
+		bot.chickenAvoidAt = this.now;
+	};
+
+	RangeGame.prototype.pickWanderPoint = function (bot, minR, maxR, maxTries) {
+		minR = minR || 3.5;
+		maxR = maxR || 9;
+		maxTries = maxTries || 16;
+		for (var i = 0; i < maxTries; i++) {
+			var ang = C.rand(0, Math.PI * 2);
+			var r = C.rand(minR, maxR);
+			var x = bot.x + Math.cos(ang) * r;
+			var z = bot.z + Math.sin(ang) * r;
+			if (Math.abs(x) > this.world.bounds - 2 || Math.abs(z) > this.world.bounds - 2) continue;
+			if (this.collidesBot(x, z, 0.5)) continue;
+			if (this.world.walkableAt && !this.world.walkableAt(x, z)) continue;
+			var p = C.findPath(this.nav, bot.x, bot.z, x, z);
+			if (p && p.length) return { x: x, z: z };
+		}
+		return null;
+	};
+
+	RangeGame.prototype.forceBotWander = function (bot) {
+		if (!bot || !bot.alive || bot.dead) return false;
+		if (bot.planting || this.criticalRole(bot)) return false;
+		bot.path = null;
+		bot.pathGoal = null;
+		bot.pathTimer = 0;
+		bot.stuck = 0;
+		bot.stallTimer = 0;
+		bot.wanderUntil = this.now + 2600;
+		bot.wanderPoint = null;
+		bot.wanderAngAt = 0;
+		bot.stallProbeX = bot.x;
+		bot.stallProbeZ = bot.z;
+		bot.stallProbeAt = this.now;
+		bot.mode = 'wander';
+		bot.twitchPenalty = (bot.twitchPenalty || 0) + 1;
+		if (bot.route && bot.routeIndex < bot.route.length - 1) bot.routeIndex++;
+		return true;
+	};
+
+	RangeGame.prototype.botForceWander = function (bot, dt) {
+		if (!bot.wanderUntil) return false;
+		if (this.now >= bot.wanderUntil) {
+			bot.wanderUntil = 0;
+			bot.wanderPoint = null;
+			return false;
+		}
+		if (bot.planting || this.criticalRole(bot)) {
+			bot.wanderUntil = 0;
+			return false;
+		}
+		if (!bot.wanderPoint || Math.hypot(bot.wanderPoint.x - bot.x, bot.wanderPoint.z - bot.z) < 1.1) {
+			bot.wanderPoint = this.pickWanderPoint(bot, 3.5, 9) || this.pickWanderPoint(bot, 2, 5, 10);
+		}
+		if (bot.wanderPoint) {
+			this.botPathTo(bot, bot.wanderPoint.x, bot.wanderPoint.z, bot.speed, dt);
+			bot.mode = 'wander';
+			return true;
+		}
+		if (this.now > (bot.wanderAngAt || 0)) {
+			bot.wanderAng = C.rand(0, Math.PI * 2);
+			bot.wanderAngAt = this.now + 1200;
+		}
+		bot.moveX = Math.cos(bot.wanderAng) * bot.speed * 0.8;
+		bot.moveZ = Math.sin(bot.wanderAng) * bot.speed * 0.8;
+		bot.mode = 'wander';
+		return true;
+	};
+
+	RangeGame.prototype.botStallWatchdog = function (bot, dt, preX, preZ) {
+		if (!this.round || this.round.phase !== 'live' || this.state !== 'playing' || bot.dead) return;
+		if (bot.wanderUntil) { bot.stallTimer = 0; return; }
+		if (bot.planting || this.criticalRole(bot)) { bot.stallTimer = 0; return; }
+		var intended = Math.hypot(bot.moveX || 0, bot.moveZ || 0) > 0.3;
+		var moved = Math.hypot(bot.x - preX, bot.z - preZ);
+		var deliberatelyStill = this.now < (bot.stationaryUntil || 0);
+		if (intended && !deliberatelyStill && moved < 0.055) bot.stallTimer = (bot.stallTimer || 0) + dt;
+		else if (!intended || deliberatelyStill) bot.stallTimer = 0;
+		else bot.stallTimer = Math.max(0, (bot.stallTimer || 0) - dt * 4);
+		/* Net-displacement probe catches robots twitching back and forth
+		   instead of making forward progress. */
+		if (!bot.stallProbeAt || this.now - bot.stallProbeAt > 900) {
+			var net = Math.hypot(bot.x - (bot.stallProbeX != null ? bot.stallProbeX : bot.x),
+				bot.z - (bot.stallProbeZ != null ? bot.stallProbeZ : bot.z));
+			if (intended && !deliberatelyStill && net < 0.32) bot.stallTimer = (bot.stallTimer || 0) + 0.9;
+			else if (net > 0.45) bot.stallTimer = 0;
+			bot.stallProbeX = bot.x;
+			bot.stallProbeZ = bot.z;
+			bot.stallProbeAt = this.now;
+		}
+		if (bot.stallTimer > 1.15) this.forceBotWander(bot);
+	};
+
+	RangeGame.prototype.checkTeamStall = function () {
+		if (this.state !== 'playing' || !this.round || this.round.phase !== 'live') return;
+		if (this.now < (this._teamStallBreakAt || 0)) return;
+		var stalled = 0, alive = 0;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (!b.alive || b.dead) continue;
+			alive++;
+			if ((b.stallTimer || 0) > 0.65 && !b.planting && !this.criticalRole(b)) stalled++;
+		}
+		if (stalled >= 3 && stalled >= Math.ceil(alive * 0.5)) {
+			this._teamStallBreakAt = this.now + 4500;
+			for (var j = 0; j < this.bots.length; j++) {
+				var bot = this.bots[j];
+				if (!bot.alive || bot.dead) continue;
+				if (bot.planting || this.criticalRole(bot)) continue;
+				this.forceBotWander(bot);
+			}
+		}
+	};
+
+	RangeGame.prototype.pickGamblePoint = function (bot) {
+		var list = [];
+		var callouts = this.world.callouts || [];
+		for (var i = 0; i < callouts.length; i++) {
+			var c = callouts[i];
+			if (c && typeof c.x === 'number') list.push({ x: c.x, z: c.z, name: c.name });
+		}
+		if (this.world.sites) {
+			for (var s = 0; s < this.world.sites.length; s++) list.push({ x: this.world.sites[s].x, z: this.world.sites[s].z });
+		}
+		C.shuffle(list);
+		for (var k = 0; k < list.length; k++) {
+			var p = list[k];
+			if (Math.hypot(p.x - bot.x, p.z - bot.z) < 8) continue;
+			if (this.collidesBot(p.x, p.z, 0.5)) continue;
+			if (this.world.walkableAt && !this.world.walkableAt(p.x, p.z)) continue;
+			var path = C.findPath(this.nav, bot.x, bot.z, p.x, p.z);
+			if (path && path.length) return { x: p.x, z: p.z, name: p.name };
+		}
+		return this.pickWanderPoint(bot, 8, 18, 10);
+	};
+
+	RangeGame.prototype.botGambleObjective = function (bot, dt) {
+		if (!bot.gamble) return false;
+		if (this.teamFearValue(bot.team) > 0.5) return false;
+		if (!this.bomb || this.bomb.state !== 'carried') return false;
+		if (bot.planting || bot.hasBomb || this.criticalRole(bot)) return false;
+		var now = this.now;
+		if (!bot.gamblePoint || Math.hypot(bot.gamblePoint.x - bot.x, bot.gamblePoint.z - bot.z) < 1.4 ||
+			now - (bot.gambleAt || 0) > 12000) {
+			bot.gamblePoint = this.pickGamblePoint(bot);
+			bot.gambleAt = now;
+			if (!bot.gamblePoint) { bot.gamble = false; return false; }
+		}
+		this.botPathTo(bot, bot.gamblePoint.x, bot.gamblePoint.z, bot.speed * 1.03, dt);
+		bot.mode = 'gamble';
+		return true;
+	};
+
+	RangeGame.prototype.updateGamble = function () {
+		if (this.state !== 'playing' || !this.round || this.round.phase !== 'live' || this.round.ended) return;
+		if (!this.bomb || this.bomb.state !== 'carried') {
+			for (var x = 0; x < this.bots.length; x++) this.bots[x].gamble = false;
+			return;
+		}
+		if (!this.gamblers) this.gamblers = { CT: null, T: null };
+		if (!this.gambleNextAt) this.gambleNextAt = { CT: 0, T: 0 };
+		if (this.round.timer > 30) return;
+		var self = this;
+		['CT', 'T'].forEach(function (team) {
+			if (self.aliveTeamCount(team) < 3) return;
+			var current = self.gamblers[team];
+			if (current && current.alive && !current.dead && current.gamble) return;
+			if (self.now < (self.gambleNextAt[team] || 0)) return;
+			var candidates = self.teamBots(team, true).filter(function (b) {
+				return b.alive && !b.dead && !b.gamble && !b.hasBomb && !b.planting && !self.criticalRole(b);
+			});
+			if (!candidates.length) return;
+			var pick = candidates.filter(function (b) { return b.role === 'lurk' || b.role === 'support'; })[0] || candidates[0];
+			pick.gamble = true;
+			pick.gamblePoint = null;
+			pick.gambleAt = 0;
+			self.gamblers[team] = pick;
+			self.gambleNextAt[team] = self.now + 9000;
+		});
+	};
+
 	RangeGame.prototype.botObjective = function (bot, dt) {
+		if (this.botForceWander(bot, dt)) return;
+		if (this.botReplanObjective(bot, dt)) return;
+		if (this.botPanicObjective(bot, dt)) return;
 		var b = this.bomb;
 		if (bot.supportTarget) {
 			if (this.now >= bot.supportUntil || (b && (b.state === 'planted' || b.state === 'planting')) || bot.hasBomb || bot.planting || (b && b.defuser === bot)) {
@@ -4811,6 +5596,9 @@
 			}
 		}
 		if (this.botHunt(bot, dt)) return;
+		if (this.botGrouping(bot, dt)) return;
+		if (this.botHearObjective(bot, dt)) return;
+		if (this.botGambleObjective(bot, dt)) return;
 		if (bot.team === 'T') this.tBotObjective(bot, dt);
 		else this.ctBotObjective(bot, dt);
 	};
@@ -4818,6 +5606,7 @@
 	RangeGame.prototype.updateBot = function (bot, dt) {
 		var now = this.now;
 		var root = bot.root;
+		var preX = bot.x, preZ = bot.z;
 		if (bot.dead) {
 			this.updateBotsDeathOne(bot, dt);
 			return;
@@ -4839,7 +5628,9 @@
 			bot.target = null;
 			target = null;
 		}
-		var diff = C.DIFFICULTY[this.settings.difficulty] || C.DIFFICULTY.regular;
+		var diff = this.difficultyFor(bot.team);
+		bot.diff = diff;
+		if (bot.baseSpeed) bot.speed = bot.baseSpeed * (diff.speed || 1);
 		var b = this.bomb;
 		var distToBomb = b ? Math.hypot(bot.x - b.x, bot.z - b.z) : 1e9;
 		var mustDefuse = !!(b && b.state === 'planted' && b.defuser === bot && b.fuse < 9 && distToBomb < 3.4);
@@ -4885,6 +5676,8 @@
 			}
 			speed = Math.hypot(bot.moveX, bot.moveZ);
 		}
+		this.botAvoidChicken(bot);
+		speed = Math.hypot(bot.moveX, bot.moveZ);
 		bot.moveSpeed = speed;
 
 		if (speed > 0.001) {
@@ -4994,6 +5787,7 @@
 			if (fd < 26) this.sound.burst({ dur: 0.05, type: 'lowpass', freq: 300, gain: 0.03 * (1 - fd / 30), pan: this.panFor(bot.x, bot.z) });
 		}
 		if (bot.flash && bot.flash.visible && now > bot.flashUntil) bot.flash.visible = false;
+		this.botStallWatchdog(bot, dt, preX, preZ);
 	};
 
 	RangeGame.prototype.animateBotIdle = function (bot, dt) {
@@ -5041,6 +5835,9 @@
 			p.deathT = 0;
 			p.deathRoll = 0;
 			this.match.deaths++;
+			this.aiRecordPlayerDeath(fromBot);
+			var playerSite = (this.nearestSite(p.x, p.z) || {}).id || 'A';
+			this.registerTeamDeath(this.playerTeam, { name: 'YOU', x: p.x, z: p.z, site: playerSite });
 			this.playerDiedLastRound = true;
 			this.playerWasKilledLastRound = true;
 			this.playerDefusing = false;
@@ -5053,6 +5850,8 @@
 			if (this.el.hud) this.el.hud.classList.add('is-dead');
 			if (fromBot) {
 				fromBot.kills++;
+				fromBot.roundKills = (fromBot.roundKills || 0) + 1;
+				if (fromBot.roundKills === 4 || fromBot.roundKills === 5) this.teamAce(fromBot.team, fromBot.roundKills);
 				if (headshot) fromBot.hs++;
 				this.addKillFeed(fromBot.name, 'YOU', fromBot.weaponDef ? fromBot.weaponDef.name : 'RIFLE', !!headshot, false);
 			}
@@ -5127,6 +5926,9 @@
 		bot.dead = true;
 		bot.alive = false;
 		bot.hp = 0;
+		var deathCause = (killer === 'player' || killer == null || killer === this.player)
+			? ('killed by YOU' + (headshot ? ' (headshot)' : ''))
+			: ('killed by ' + (killer && killer.name ? killer.name : 'enemy'));
 		bot.deaths = 1;
 		bot.headshotDeath = !!headshot;
 		bot.robot.healthSprite.visible = false;
@@ -5140,16 +5942,23 @@
 			this.dropBomb(bot);
 		}
 		this.dropBotWeapon(bot);
+		this.aiRecordDeath(bot, deathCause);
+		if (killer && killer !== this.player && killer.team && killer.name) this.aiRecordRouteKill(killer);
+		this.registerTeamDeath(bot.team, bot);
 		var byPlayer = (killer === 'player' || killer == null || killer === this.player);
 		if (byPlayer) {
+			this.aiRecordPlayerKill(bot);
 			this.match.kills++;
 			this.roundStats.kills++;
+			if (this.roundStats.kills === 4 || this.roundStats.kills === 5) this.teamAce(this.playerTeam, this.roundStats.kills);
 			if (headshot) { this.match.hs++; this.roundStats.hs++; }
 			var reward = 300 + (headshot ? 100 : 0);
 			this.match.money = clamp(this.match.money + reward, 0, 16000);
 			this.addKillFeed('YOU', bot.name, weaponName || 'RIFLE', headshot, true);
 		} else {
 			killer.kills++;
+			killer.roundKills = (killer.roundKills || 0) + 1;
+			if (killer.roundKills === 4 || killer.roundKills === 5) this.teamAce(killer.team, killer.roundKills);
 			if (headshot) killer.hs++;
 			this.addKillFeed(killer.name, bot.name, weaponName || 'RIFLE', headshot, false);
 		}
@@ -5357,9 +6166,11 @@
 		this.updateRoundTimer();
 		this.updateBuyHint();
 		this.updatePickupPrompt();
+		if (this.spectating) this.updateSpectateHUD();
 	};
 
 	RangeGame.prototype.updateVitalsHUD = function () {
+		if (this.spectating) { this.updateSpectateHUD(); return; }
 		text(this.el.health, Math.max(0, Math.round(this.player.health)));
 		text(this.el.armor, Math.max(0, Math.round(this.player.armor)));
 		if (this.match) text(this.el.money, this.practice ? '∞' : Math.max(0, Math.round(this.match.money)));
@@ -5370,6 +6181,7 @@
 	};
 
 	RangeGame.prototype.updateAmmoHUD = function () {
+		if (this.spectating) { this.updateSpectateHUD(); return; }
 		var def = this.weaponDef(this.currentWeapon);
 		var ammo = this.ammo[this.currentWeapon];
 		text(this.el.weapon, def.name);

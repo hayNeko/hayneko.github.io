@@ -215,10 +215,31 @@
 	};
 
 	var DIFFICULTY = {
-		recruit: { label: 'RECRUIT', accuracy: 0.55, reaction: 1.25, damage: 0.65, fire: 1.25, speed: 0.9, missChance: 0.34 },
-		regular: { label: 'REGULAR', accuracy: 0.78, reaction: 1.0, damage: 1.0, fire: 1.0, speed: 1.0, missChance: 0.22 },
-		veteran: { label: 'VETERAN', accuracy: 0.92, reaction: 0.76, damage: 1.2, fire: 0.85, speed: 1.08, missChance: 0.12 },
-		elite: { label: 'ELITE', accuracy: 1.06, reaction: 0.56, damage: 1.45, fire: 0.7, speed: 1.16, missChance: 0.05 }
+		/* The old presets were all on the easy side; these values make the top
+		   tier genuinely punishing. accuracy/fire/damage/speed all scale up,
+		   reaction (seconds multiplier) shrinks, sight/hearing/thinking scale
+		   perception. planning controls how strongly a robot trusts its own
+		   accumulated route/death memory. */
+		recruit: {
+			label: 'RECRUIT', accuracy: 0.72, reaction: 0.95, damage: 0.9,
+			fire: 1.05, speed: 0.95, missChance: 0.24,
+			sight: 0.85, think: 1.15, hearing: 5, planning: 0.35
+		},
+		regular: {
+			label: 'REGULAR', accuracy: 0.96, reaction: 0.64, damage: 1.15,
+			fire: 0.85, speed: 1.05, missChance: 0.11,
+			sight: 1.05, think: 0.8, hearing: 10, planning: 0.6
+		},
+		veteran: {
+			label: 'VETERAN', accuracy: 1.12, reaction: 0.42, damage: 1.42,
+			fire: 0.7, speed: 1.12, missChance: 0.05,
+			sight: 1.2, think: 0.64, hearing: 16, planning: 0.8
+		},
+		elite: {
+			label: 'ELITE', accuracy: 1.26, reaction: 0.28, damage: 1.7,
+			fire: 0.55, speed: 1.2, missChance: 0.015,
+			sight: 1.4, think: 0.5, hearing: 24, planning: 1.0
+		}
 	};
 
 	var BOT_NAMES = [
