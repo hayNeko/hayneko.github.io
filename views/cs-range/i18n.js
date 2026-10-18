@@ -298,6 +298,228 @@
 		}
 	};
 
+	/* ---- bomb-defusal update: menu, HUD, objective and AI callouts ---- */
+	Object.assign(MESSAGES['zh-CN'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. You are the fifth counter-terrorist: hold A and B with four CT bots, break the terrorist push and defuse their C4.': '真实的 de_dust2，为 5v5 拆弹模式重建。你是第五名反恐精英：与四名 CT 机器人一起守住 A、B 两点，阻止恐怖分子推进并拆除 C4。',
+		'Five counter-terrorists hold Dust 2 against a five-man terrorist bot squad. You are the human anchor: the C4 decides the round. First side to thirteen wins.': '五名反恐精英在 Dust 2 防守五名恐怖分子机器人。你是唯一的人类：C4 决定回合胜负。先赢 13 回合者获胜。',
+		'You + 4 CT bots defend A and B. The T squad pushes one site with C4.': '你 + 4 名 CT 机器人防守 A、B。T 小队携带 C4 进攻其中一个包点。',
+		'Hold angles, trade with your bots, rotate on the plant. Hold': '卡住枪线，与机器人队友互相补枪，炸弹安放后及时转点。按住',
+		'to defuse.': '拆弹。',
+		'Headshots do four times damage. Buy time is the only chance to shop with': '爆头造成四倍伤害。只有购买时间可以按',
+		'Win the round, keep your gun. Die and the loadout, armour and kit are gone.': '赢下回合就能保留武器。阵亡会失去装备、护甲和拆弹器。',
+		'Single-player 5v5 bomb defusal. All assets are generated in the browser — no downloads, no external services.': '单人 5v5 拆弹模式。所有资源均在浏览器内生成——无需下载，也不依赖外部服务。',
+		'DEFUSAL': '拆弹', '13 ROUNDS': '13 回合', 'SQUADS': '小队', 'TERRORISTS': '恐怖分子', 'CT ALIVE': 'CT 存活',
+		'C4': 'C4', 'SPECTATING': '观战', 'CT STILL ALIVE': 'CT 仍存活', 'HOLD E TO DEFUSE': '按住 E 拆弹',
+		'DEFUSING': '拆弹中', 'KIT': '拆弹器', 'NO KIT': '无拆弹器', 'HOLD USE TO DEFUSE': '按住使用键拆弹',
+		'PICK UP / DEFUSE': '拾取 / 拆弹', 'Pick up dropped weapon / hold to defuse': '拾取掉落武器 / 按住拆弹',
+		'Four CT bots and five T bots play the C4 objective: CT anchors hold A and B, rotate on the plant and cover the defuser; T bots push a site, cover the carrier and hold post-plant angles. Cover works both ways. Aim for the head — it does four times damage. The Practice Range has a free armory and target boards.': '4 名 CT 机器人与 5 名 T 机器人围绕 C4 目标作战：CT 锚点守住 A、B，在炸弹安放后转点并掩护拆弹；T 机器人会推进包点、掩护携带者并在安放后卡点。掩体对双方都有效。瞄准头部——四倍伤害。练习靶场提供免费军械库和靶板。',
+		'SPECTATING IN': '观战倒计时', 'DEFEND THE SITES — STOP THE C4': '守住包点——阻止 C4 安放',
+		'BOMB PLANTED': '炸弹已安放', 'BOMB DROPPED': '炸弹已掉落', 'BOMB DEFUSED': '炸弹已拆除', 'BOMB DETONATED': '炸弹已引爆',
+		'C4 BEING PLANTED': 'C4 正在安放', 'COVER THE CARRIER': '掩护安放者', 'DEFUSE IT': '拆除炸弹',
+		'TERRORISTS WIN': '恐怖分子胜利', 'All terrorists eliminated.': '所有恐怖分子已被消灭。',
+		'All counter-terrorists eliminated.': '所有反恐精英已被消灭。',
+		'Time expired before the bomb was planted.': '炸弹安放前时间耗尽。',
+		'The bomb was defused.': '炸弹已被拆除。', 'The bomb detonated.': '炸弹已引爆。',
+		'Defuse kit acquired.': '已获得拆弹器。', 'Defuse kit already equipped.': '已装备拆弹器。',
+		'DEFUSE KIT': '拆弹器', 'Halves the time needed to defuse the bomb.': '将拆弹所需时间减半。',
+		'FIRST TO 13': '先到 13', 'The sites held. Operation complete.': '包点守住了。行动完成。',
+		'The terrorist squad took the sites. Regroup and try again.': '恐怖分子小队拿下了包点。重整旗鼓再试一次。'
+	});
+	Object.assign(MESSAGES['zh-TW'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. You are the fifth counter-terrorist: hold A and B with four CT bots, break the terrorist push and defuse their C4.': '真實的 de_dust2，為 5v5 拆彈模式重建。你是第五名反恐精英：與四名 CT 機器人一起守住 A、B 兩點，阻止恐怖分子推進並拆除 C4。',
+		'Five counter-terrorists hold Dust 2 against a five-man terrorist bot squad. You are the human anchor: the C4 decides the round. First side to thirteen wins.': '五名反恐精英在 Dust 2 防守五名恐怖分子機器人。你是唯一的人類：C4 決定回合勝負。先贏 13 回合者獲勝。',
+		'You + 4 CT bots defend A and B. The T squad pushes one site with C4.': '你 + 4 名 CT 機器人防守 A、B。T 小隊攜帶 C4 進攻其中一個包點。',
+		'Hold angles, trade with your bots, rotate on the plant. Hold': '卡住槍線，與機器人隊友互相補槍，炸彈安放後及時轉點。按住',
+		'to defuse.': '拆彈。',
+		'Headshots do four times damage. Buy time is the only chance to shop with': '爆頭造成四倍傷害。只有購買時間可以按',
+		'Win the round, keep your gun. Die and the loadout, armour and kit are gone.': '贏下回合就能保留武器。陣亡會失去裝備、護甲和拆彈器。',
+		'Single-player 5v5 bomb defusal. All assets are generated in the browser — no downloads, no external services.': '單人 5v5 拆彈模式。所有資源皆在瀏覽器內生成——無需下載，也不依賴外部服務。',
+		'DEFUSAL': '拆彈', '13 ROUNDS': '13 回合', 'SQUADS': '小隊', 'TERRORISTS': '恐怖分子', 'CT ALIVE': 'CT 存活',
+		'C4': 'C4', 'SPECTATING': '觀戰', 'CT STILL ALIVE': 'CT 仍存活', 'HOLD E TO DEFUSE': '按住 E 拆彈',
+		'DEFUSING': '拆彈中', 'KIT': '拆彈器', 'NO KIT': '無拆彈器', 'HOLD USE TO DEFUSE': '按住使用鍵拆彈',
+		'PICK UP / DEFUSE': '拾取 / 拆彈', 'Pick up dropped weapon / hold to defuse': '拾取掉落武器 / 按住拆彈',
+		'Four CT bots and five T bots play the C4 objective: CT anchors hold A and B, rotate on the plant and cover the defuser; T bots push a site, cover the carrier and hold post-plant angles. Cover works both ways. Aim for the head — it does four times damage. The Practice Range has a free armory and target boards.': '4 名 CT 機器人與 5 名 T 機器人圍繞 C4 目標作戰：CT 錨點守住 A、B，在炸彈安放後轉點並掩護拆彈；T 機器人會推進包點、掩護攜帶者並在安放後卡點。掩體對雙方都有效。瞄準頭部——四倍傷害。練習靶場提供免費軍械庫和靶板。',
+		'SPECTATING IN': '觀戰倒數', 'DEFEND THE SITES — STOP THE C4': '守住包點——阻止 C4 安放',
+		'BOMB PLANTED': '炸彈已安放', 'BOMB DROPPED': '炸彈已掉落', 'BOMB DEFUSED': '炸彈已拆除', 'BOMB DETONATED': '炸彈已引爆',
+		'C4 BEING PLANTED': 'C4 正在安放', 'COVER THE CARRIER': '掩護安放者', 'DEFUSE IT': '拆除炸彈',
+		'TERRORISTS WIN': '恐怖分子勝利', 'All terrorists eliminated.': '所有恐怖分子已被消滅。',
+		'All counter-terrorists eliminated.': '所有反恐精英已被消滅。',
+		'Time expired before the bomb was planted.': '炸彈安放前時間耗盡。',
+		'The bomb was defused.': '炸彈已被拆除。', 'The bomb detonated.': '炸彈已引爆。',
+		'Defuse kit acquired.': '已獲得拆彈器。', 'Defuse kit already equipped.': '已裝備拆彈器。',
+		'DEFUSE KIT': '拆彈器', 'Halves the time needed to defuse the bomb.': '將拆彈所需時間減半。',
+		'FIRST TO 13': '先到 13', 'The sites held. Operation complete.': '包點守住了。行動完成。',
+		'The terrorist squad took the sites. Regroup and try again.': '恐怖分子小隊拿下了包點。重整旗鼓再試一次。'
+	});
+	Object.assign(MESSAGES['ja'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. You are the fifth counter-terrorist: hold A and B with four CT bots, break the terrorist push and defuse their C4.': '本物の de_dust2 を 5v5 爆弾解除向けに再構築。あなたは 5 人目の CT：4 体の CT ボットと A/B を守り、T の突入を止めて C4 を解除する。',
+		'Five counter-terrorists hold Dust 2 against a five-man terrorist bot squad. You are the human anchor: the C4 decides the round. First side to thirteen wins.': 'CT 5 人が T ボット 5 人から Dust 2 を守る。人間はあなただけ。C4 がラウンドを決める。13 先取で勝利。',
+		'You + 4 CT bots defend A and B. The T squad pushes one site with C4.': 'あなた + CT ボット 4 体で A/B を防衛。T 部隊は C4 で片方のサイトへ突入する。',
+		'Hold angles, trade with your bots, rotate on the plant. Hold': '角を押さえ、ボットとトレードし、設置後はローテート。',
+		'to defuse.': 'で解除。',
+		'Headshots do four times damage. Buy time is the only chance to shop with': 'ヘッドショットは 4 倍ダメージ。購入はバイタイムに',
+		'Win the round, keep your gun. Die and the loadout, armour and kit are gone.': 'ラウンドを取れば武器を保持。死亡すると装備・アーマー・キットを失う。',
+		'Single-player 5v5 bomb defusal. All assets are generated in the browser — no downloads, no external services.': 'シングルプレイ 5v5 爆弾解除。全アセットはブラウザ内で生成——ダウンロードも外部サービスも不要。',
+		'DEFUSAL': '爆弾解除', '13 ROUNDS': '13 ラウンド', 'SQUADS': '部隊', 'TERRORISTS': 'テロリスト', 'CT ALIVE': 'CT 生存',
+		'C4': 'C4', 'SPECTATING': '観戦中', 'CT STILL ALIVE': 'CT 生存', 'HOLD E TO DEFUSE': 'E 長押しで解除',
+		'DEFUSING': '解除中', 'KIT': 'キット', 'NO KIT': 'キットなし', 'HOLD USE TO DEFUSE': '使用キー長押しで解除',
+		'PICK UP / DEFUSE': '拾う / 解除', 'Pick up dropped weapon / hold to defuse': '落ちた武器を拾う / 長押しで解除',
+		'Four CT bots and five T bots play the C4 objective: CT anchors hold A and B, rotate on the plant and cover the defuser; T bots push a site, cover the carrier and hold post-plant angles. Cover works both ways. Aim for the head — it does four times damage. The Practice Range has a free armory and target boards.': 'CT ボット 4 体と T ボット 5 体が C4 を巡って戦う。CT は A/B を保持し、設置後にローテートして解除を援護。T はサイトへ突入し、キャリアを援護して設置後に角を押さえる。掩体は双方に有効。ヘッドショットは 4 倍ダメージ。練習場では自由に武器を試せる。',
+		'SPECTATING IN': '観戦まで', 'DEFEND THE SITES — STOP THE C4': 'サイトを守れ — C4 を止めろ',
+		'BOMB PLANTED': '爆弾設置', 'BOMB DROPPED': '爆弾ドロップ', 'BOMB DEFUSED': '爆弾解除', 'BOMB DETONATED': '爆弾爆発',
+		'C4 BEING PLANTED': 'C4 設置中', 'COVER THE CARRIER': 'キャリアを援護', 'DEFUSE IT': '解除せよ',
+		'TERRORISTS WIN': 'テロリスト勝利', 'All terrorists eliminated.': 'テロリストを全滅させた。',
+		'All counter-terrorists eliminated.': 'CT が全滅した。',
+		'Time expired before the bomb was planted.': '設置前に時間切れ。',
+		'The bomb was defused.': '爆弾を解除した。', 'The bomb detonated.': '爆弾が爆発した。',
+		'Defuse kit acquired.': '解除キットを入手。', 'Defuse kit already equipped.': '解除キットは装備済み。',
+		'DEFUSE KIT': '解除キット', 'Halves the time needed to defuse the bomb.': '解除時間を半減する。',
+		'FIRST TO 13': '13 先取', 'The sites held. Operation complete.': 'サイトを守り切った。作戦完了。',
+		'The terrorist squad took the sites. Regroup and try again.': 'テロリストにサイトを取られた。立て直して再挑戦。'
+	});
+	Object.assign(MESSAGES['ko'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. You are the fifth counter-terrorist: hold A and B with four CT bots, break the terrorist push and defuse their C4.': '실제 de_dust2를 5v5 폭탄 해체 모드로 재구성. 당신은 5번째 CT로, 4명의 CT 봇과 A/B를 지키고 T의 진입을 막아 C4를 해체하세요.',
+		'Five counter-terrorists hold Dust 2 against a five-man terrorist bot squad. You are the human anchor: the C4 decides the round. First side to thirteen wins.': 'CT 5명이 T 봇 5명으로부터 Dust 2를 지킵니다. 유일한 인간인 당신이 중심입니다. C4가 라운드를 결정하며 13선승제입니다.',
+		'You + 4 CT bots defend A and B. The T squad pushes one site with C4.': '당신 + CT 봇 4명이 A/B를 방어합니다. T 팀은 C4를 들고 한 사이트로 진입합니다.',
+		'Hold angles, trade with your bots, rotate on the plant. Hold': '각을 잡고 봇과 트레이드하며 설치 후 로테이션. ',
+		'to defuse.': '를 눌러 해체.',
+		'Headshots do four times damage. Buy time is the only chance to shop with': '헤드샷은 4배 피해. 구매는 바이 타임에 ',
+		'Win the round, keep your gun. Die and the loadout, armour and kit are gone.': '라운드를 이기면 무기를 유지합니다. 사망하면 장비, 방어구, 해체 키트를 잃습니다.',
+		'Single-player 5v5 bomb defusal. All assets are generated in the browser — no downloads, no external services.': '싱글 플레이 5v5 폭탄 해체. 모든 리소스는 브라우저에서 생성되며 다운로드나 외부 서비스가 필요 없습니다.',
+		'DEFUSAL': '폭탄 해체', '13 ROUNDS': '13 라운드', 'SQUADS': '팀', 'TERRORISTS': '테러리스트', 'CT ALIVE': 'CT 생존',
+		'C4': 'C4', 'SPECTATING': '관전', 'CT STILL ALIVE': 'CT 생존', 'HOLD E TO DEFUSE': 'E를 눌러 해체',
+		'DEFUSING': '해체 중', 'KIT': '해체 키트', 'NO KIT': '키트 없음', 'HOLD USE TO DEFUSE': '사용 키를 눌러 해체',
+		'PICK UP / DEFUSE': '줍기 / 해체', 'Pick up dropped weapon / hold to defuse': '떨어진 무기 줍기 / 길게 눌러 해체',
+		'Four CT bots and five T bots play the C4 objective: CT anchors hold A and B, rotate on the plant and cover the defuser; T bots push a site, cover the carrier and hold post-plant angles. Cover works both ways. Aim for the head — it does four times damage. The Practice Range has a free armory and target boards.': 'CT 봇 4명과 T 봇 5명이 C4 목표를 두고 싸웁니다. CT는 A/B를 사수하고 설치 후 로테이션해 해체를 엄호하며, T는 사이트를 밀고 캐리어를 엄호한 뒤 설치 후 각을 잡습니다. 엄폐물은 양쪽 모두 유효합니다. 헤드샷은 4배 피해. 연습장에서는 모든 무기를 무료로 사용할 수 있습니다.',
+		'SPECTATING IN': '관전까지', 'DEFEND THE SITES — STOP THE C4': '사이트를 지켜라 — C4를 막아라',
+		'BOMB PLANTED': '폭탄 설치됨', 'BOMB DROPPED': '폭탄 드롭', 'BOMB DEFUSED': '폭탄 해체됨', 'BOMB DETONATED': '폭탄 폭발',
+		'C4 BEING PLANTED': 'C4 설치 중', 'COVER THE CARRIER': '설치자 엄호', 'DEFUSE IT': '해체하라',
+		'TERRORISTS WIN': '테러리스트 승리', 'All terrorists eliminated.': '모든 테러리스트를 제거했습니다.',
+		'All counter-terrorists eliminated.': '모든 CT가 제거되었습니다.',
+		'Time expired before the bomb was planted.': '폭탄 설치 전에 시간이 끝났습니다.',
+		'The bomb was defused.': '폭탄이 해체되었습니다.', 'The bomb detonated.': '폭탄이 폭발했습니다.',
+		'Defuse kit acquired.': '해체 키트 획득.', 'Defuse kit already equipped.': '해체 키트가 이미 장착되어 있습니다.',
+		'DEFUSE KIT': '해체 키트', 'Halves the time needed to defuse the bomb.': '폭탄 해체 시간을 절반으로 줄입니다.',
+		'FIRST TO 13': '13선승', 'The sites held. Operation complete.': '사이트를 지켰습니다. 작전 완료.',
+		'The terrorist squad took the sites. Regroup and try again.': '테러리스트 팀이 사이트를 차지했습니다. 재정비 후 다시 시도하세요.'
+	});
+
+	Object.assign(MESSAGES['zh-CN'], { 'CONTACT': '预警', 'CT ROTATING': 'CT 转点支援', 'ENEMY SPOTTED': '发现敌人' });
+	Object.assign(MESSAGES['zh-TW'], { 'CONTACT': '預警', 'CT ROTATING': 'CT 轉點支援', 'ENEMY SPOTTED': '發現敵人' });
+	Object.assign(MESSAGES['ja'], { 'CONTACT': 'コンタクト', 'CT ROTATING': 'CT ローテート', 'ENEMY SPOTTED': '敵を発見' });
+	Object.assign(MESSAGES['ko'], { 'CONTACT': '접촉', 'CT ROTATING': 'CT 로테이션', 'ENEMY SPOTTED': '적 발견' });
+
+	Object.assign(MESSAGES['zh-CN'], {
+		'CHOOSE YOUR SIDE': '选择你的阵营', 'OPERATION DEPLOYMENT': '行动部署', 'SIDE SELECT': '阵营选择',
+		'HOLD A / B · DEFUSE THE C4': '守住 A / B · 拆除 C4', 'TAKE A / B · PLANT THE C4': '进攻 A / B · 安放 C4',
+		'You spawn at CT spawn with four CT robots.': '你与四名 CT 机器人一起在 CT 出生点出生。',
+		'You carry the C4 with four T robots. Hold E at a site to plant.': '你与四名 T 机器人携带 C4。在包点按住 E 安放。',
+		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2，5v5 拆弹模式。你与四名机器人队友加入同一阵营。选择 CT 守点拆弹，或选择 T 进攻安放 C4。',
+		'BACK TO MENU': '返回主菜单', 'THIRD-PERSON SPECTATING': '第三人称观战', 'NEXT ROBOT': '切换机器人',
+		'ALLIES ALIVE': '队友存活', 'C4 CARRIER': 'C4 携带者', 'HOLD E TO PLANT': '按住 E 安放', 'HOLD USE TO PLANT': '按住使用键安放',
+		'PLANTING C4': '正在安放 C4', 'PRESS E TO RECOVER THE C4': '按 E 拾取 C4', 'HOLD E — STAY STILL': '按住 E — 保持静止',
+		'TAKE A SITE — PRESS B TO OPEN THE ARMORY': '进攻包点——按 B 打开军械库',
+		'PLANT THE C4 — CLEAR THE SITE': '安放 C4——清除包点',
+		'C4 RECOVERED': '已拾取 C4', 'HOLD E AT A SITE TO PLANT': '在包点按住 E 安放',
+		'The sites fell. Operation complete.': '包点已攻陷。行动完成。',
+		'The defence held. Regroup and try again.': '防守成功。重整旗鼓再试一次。',
+		'Terrorists cannot buy a defuse kit.': '恐怖分子无法购买拆弹器。',
+		'While dead: switch spectated robot': '阵亡后：切换观战机器人',
+		'As T: hold at a site to plant the C4': '作为 T：在包点按住以安放 C4',
+		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '拾取掉落武器 / 按住拆弹（CT）或安放（T）',
+		'T ALIVE': 'T 存活', 'ALLY ROTATING': '队友转点支援', 'PLANT C4': '安放 C4'
+	});
+	Object.assign(MESSAGES['zh-TW'], {
+		'CHOOSE YOUR SIDE': '選擇你的陣營', 'OPERATION DEPLOYMENT': '行動部署', 'SIDE SELECT': '陣營選擇',
+		'HOLD A / B · DEFUSE THE C4': '守住 A / B · 拆除 C4', 'TAKE A / B · PLANT THE C4': '進攻 A / B · 安放 C4',
+		'You spawn at CT spawn with four CT robots.': '你與四名 CT 機器人一起在 CT 出生點出生。',
+		'You carry the C4 with four T robots. Hold E at a site to plant.': '你與四名 T 機器人攜帶 C4。在包點按住 E 安放。',
+		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2，5v5 拆彈模式。你與四名機器人隊友加入同一陣營。選擇 CT 守點拆彈，或選擇 T 進攻安放 C4。',
+		'BACK TO MENU': '返回主選單', 'THIRD-PERSON SPECTATING': '第三人稱觀戰', 'NEXT ROBOT': '切換機器人',
+		'ALLIES ALIVE': '隊友存活', 'C4 CARRIER': 'C4 攜帶者', 'HOLD E TO PLANT': '按住 E 安放', 'HOLD USE TO PLANT': '按住使用鍵安放',
+		'PLANTING C4': '正在安放 C4', 'PRESS E TO RECOVER THE C4': '按 E 拾取 C4', 'HOLD E — STAY STILL': '按住 E — 保持靜止',
+		'TAKE A SITE — PRESS B TO OPEN THE ARMORY': '進攻包點——按 B 開啟軍械庫',
+		'PLANT THE C4 — CLEAR THE SITE': '安放 C4——清除包點',
+		'C4 RECOVERED': '已拾取 C4', 'HOLD E AT A SITE TO PLANT': '在包點按住 E 安放',
+		'The sites fell. Operation complete.': '包點已攻陷。行動完成。',
+		'The defence held. Regroup and try again.': '防守成功。重整旗鼓再試一次。',
+		'Terrorists cannot buy a defuse kit.': '恐怖分子無法購買拆彈器。',
+		'While dead: switch spectated robot': '陣亡後：切換觀戰機器人',
+		'As T: hold at a site to plant the C4': '作為 T：在包點按住以安放 C4',
+		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '拾取掉落武器 / 按住拆彈（CT）或安放（T）',
+		'T ALIVE': 'T 存活', 'ALLY ROTATING': '隊友轉點支援', 'PLANT C4': '安放 C4'
+	});
+	Object.assign(MESSAGES['ja'], {
+		'CHOOSE YOUR SIDE': '陣営を選択', 'OPERATION DEPLOYMENT': '作戦展開', 'SIDE SELECT': '陣営選択',
+		'HOLD A / B · DEFUSE THE C4': 'A / B を防衛 · C4 を解除', 'TAKE A / B · PLANT THE C4': 'A / B を攻撃 · C4 を設置',
+		'You spawn at CT spawn with four CT robots.': 'CT スポーンで CT ロボット4体と共に出撃します。',
+		'You carry the C4 with four T robots. Hold E at a site to plant.': 'T ロボット4体と C4 を運びます。サイトで E を長押しして設置。',
+		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2、5v5 のボム解除。ロボット4体と共にどちらかの陣営へ。CT はサイトを守って解除、T はサイトを攻めて C4 を設置します。',
+		'BACK TO MENU': 'メニューへ戻る', 'THIRD-PERSON SPECTATING': '三人称観戦', 'NEXT ROBOT': 'ロボット切替',
+		'ALLIES ALIVE': '味方生存', 'C4 CARRIER': 'C4 所持者', 'HOLD E TO PLANT': 'E を長押しで設置', 'HOLD USE TO PLANT': '使用キー長押しで設置',
+		'PLANTING C4': 'C4 設置中', 'PRESS E TO RECOVER THE C4': 'E で C4 を回収', 'HOLD E — STAY STILL': 'E を長押し — 静止',
+		'TAKE A SITE — PRESS B TO OPEN THE ARMORY': 'サイトを攻めろ——B でアーマリー',
+		'PLANT THE C4 — CLEAR THE SITE': 'C4 を設置——サイトを制圧',
+		'C4 RECOVERED': 'C4 回収', 'HOLD E AT A SITE TO PLANT': 'サイトで E を長押しして設置',
+		'The sites fell. Operation complete.': 'サイトを制圧。作戦完了。',
+		'The defence held. Regroup and try again.': '防衛成功。立て直して再挑戦。',
+		'Terrorists cannot buy a defuse kit.': 'テロリストは解除キットを購入できません。',
+		'While dead: switch spectated robot': '死亡時：観戦ロボットを切替',
+		'As T: hold at a site to plant the C4': 'T 側：サイトで長押しして C4 を設置',
+		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '武器を拾う / 長押しで解除（CT）または設置（T）',
+		'T ALIVE': 'T 生存', 'ALLY ROTATING': '味方ローテート', 'PLANT C4': 'C4 設置'
+	});
+	Object.assign(MESSAGES['ko'], {
+		'CHOOSE YOUR SIDE': '진영 선택', 'OPERATION DEPLOYMENT': '작전 전개', 'SIDE SELECT': '진영 선택',
+		'HOLD A / B · DEFUSE THE C4': 'A / B 사수 · C4 해체', 'TAKE A / B · PLANT THE C4': 'A / B 공격 · C4 설치',
+		'You spawn at CT spawn with four CT robots.': 'CT 스폰에서 CT 로봇 4명과 함께 시작합니다.',
+		'You carry the C4 with four T robots. Hold E at a site to plant.': 'T 로봇 4명과 C4를 운반합니다. 사이트에서 E를 길게 눌러 설치하세요.',
+		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2, 5v5 폭탄 해체. 로봇 4명과 한 진영에 합류합니다. CT는 사이트를 지키고 해체하며, T는 사이트를 공격해 C4를 설치합니다.',
+		'BACK TO MENU': '메뉴로', 'THIRD-PERSON SPECTATING': '3인칭 관전', 'NEXT ROBOT': '로봇 전환',
+		'ALLIES ALIVE': '아군 생존', 'C4 CARRIER': 'C4 소지자', 'HOLD E TO PLANT': 'E를 길게 눌러 설치', 'HOLD USE TO PLANT': '사용 키를 길게 눌러 설치',
+		'PLANTING C4': 'C4 설치 중', 'PRESS E TO RECOVER THE C4': 'E로 C4 회수', 'HOLD E — STAY STILL': 'E를 길게 — 정지',
+		'TAKE A SITE — PRESS B TO OPEN THE ARMORY': '사이트 공격——B로 무기고',
+		'PLANT THE C4 — CLEAR THE SITE': 'C4 설치——사이트 확보',
+		'C4 RECOVERED': 'C4 회수', 'HOLD E AT A SITE TO PLANT': '사이트에서 E를 길게 눌러 설치',
+		'The sites fell. Operation complete.': '사이트를 확보했습니다. 작전 완료.',
+		'The defence held. Regroup and try again.': '수비 성공. 재정비 후 다시 시도하세요.',
+		'Terrorists cannot buy a defuse kit.': '테러리스트는 해체 키트를 구매할 수 없습니다.',
+		'While dead: switch spectated robot': '사망 시: 관전 로봇 전환',
+		'As T: hold at a site to plant the C4': 'T 진영: 사이트에서 길게 눌러 C4 설치',
+		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '무기 줍기 / 길게 눌러 해체(CT) 또는 설치(T)',
+		'T ALIVE': 'T 생존', 'ALLY ROTATING': '아군 로테이션', 'PLANT C4': 'C4 설치'
+	});
+
+
+	Object.assign(MESSAGES['zh-CN'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. Pick a side: hold A and B as CT, or take a site and plant the C4 as T. First to thirteen wins.': '真实的 de_dust2，为 5v5 拆弹模式重建。选择阵营：作为 CT 守住 A、B 两点，或作为 T 进攻包点并安放 C4。先赢 13 回合者获胜。',
+		'Choose CT or T and deploy with four robot teammates. You are the human anchor: the C4 decides the round. First side to thirteen wins.': '选择 CT 或 T，与四名机器人队友一起出击。你是唯一的人类：C4 决定回合胜负。先赢 13 回合者获胜。',
+		'Pick CT or T at deployment. CT defends A and B; T attacks with the C4.': '部署时选择 CT 或 T。CT 防守 A、B 两点；T 携带 C4 进攻。',
+		'Hold angles, trade with your bots, rotate on the plant. Hold <kbd>E</kbd> to defuse as CT, or to plant as T.': '卡住枪线，与机器人队友互相补枪，炸弹安放后及时转点。作为 CT 按住 <kbd>E</kbd> 拆弹，作为 T 按住 <kbd>E</kbd> 安放。',
+		'to defuse as CT, or to plant as T.': '拆弹（CT）或安放（T）。'
+	});
+	Object.assign(MESSAGES['zh-TW'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. Pick a side: hold A and B as CT, or take a site and plant the C4 as T. First to thirteen wins.': '真實的 de_dust2，為 5v5 拆彈模式重建。選擇陣營：作為 CT 守住 A、B 兩點，或作為 T 進攻包點並安放 C4。先贏 13 回合者獲勝。',
+		'Choose CT or T and deploy with four robot teammates. You are the human anchor: the C4 decides the round. First side to thirteen wins.': '選擇 CT 或 T，與四名機器人隊友一起出擊。你是唯一的人類：C4 決定回合勝負。先贏 13 回合者獲勝。',
+		'Pick CT or T at deployment. CT defends A and B; T attacks with the C4.': '部署時選擇 CT 或 T。CT 防守 A、B 兩點；T 攜帶 C4 進攻。',
+		'Hold angles, trade with your bots, rotate on the plant. Hold <kbd>E</kbd> to defuse as CT, or to plant as T.': '卡住槍線，與機器人隊友互相補槍，炸彈安放後及時轉點。作為 CT 按住 <kbd>E</kbd> 拆彈，作為 T 按住 <kbd>E</kbd> 安放。',
+		'to defuse as CT, or to plant as T.': '拆彈（CT）或安放（T）。'
+	});
+	Object.assign(MESSAGES['ja'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. Pick a side: hold A and B as CT, or take a site and plant the C4 as T. First to thirteen wins.': '本物の de_dust2 を 5v5 ボム解除用に再構築。陣営を選択：CT は A / B を守り、T はサイトを攻めて C4 を設置します。13 ラウンド先取で勝利。',
+		'Choose CT or T and deploy with four robot teammates. You are the human anchor: the C4 decides the round. First side to thirteen wins.': 'CT か T を選び、ロボット4体と出撃。人間はあなただけ。C4 がラウンドを決めます。13 ラウンド先取で勝利。',
+		'Pick CT or T at deployment. CT defends A and B; T attacks with the C4.': '展開時に CT か T を選択。CT は A / B を防衛し、T は C4 で攻撃します。',
+		'Hold angles, trade with your bots, rotate on the plant. Hold <kbd>E</kbd> to defuse as CT, or to plant as T.': '角を固め、ロボットとトレードし、設置後にローテート。CT は <kbd>E</kbd> 長押しで解除、T は <kbd>E</kbd> 長押しで設置。',
+		'to defuse as CT, or to plant as T.': '解除（CT）または設置（T）。'
+	});
+	Object.assign(MESSAGES['ko'], {
+		'The real de_dust2, rebuilt for 5v5 bomb defusal. Pick a side: hold A and B as CT, or take a site and plant the C4 as T. First to thirteen wins.': '실제 de_dust2를 5v5 폭탄 해체용으로 재구성. 진영 선택: CT는 A / B를 지키고, T는 사이트를 공격해 C4를 설치합니다. 13라운드 선취 승리.',
+		'Choose CT or T and deploy with four robot teammates. You are the human anchor: the C4 decides the round. First side to thirteen wins.': 'CT 또는 T를 선택해 로봇 4명과 출격하세요. 인간은 당신뿐입니다. C4가 라운드를 결정합니다. 13라운드 선취 승리.',
+		'Pick CT or T at deployment. CT defends A and B; T attacks with the C4.': '전개 시 CT 또는 T를 선택. CT는 A / B를 수비하고 T는 C4로 공격합니다.',
+		'Hold angles, trade with your bots, rotate on the plant. Hold <kbd>E</kbd> to defuse as CT, or to plant as T.': '각을 잡고 로봇과 교전하며 설치 후 로테이션. CT는 <kbd>E</kbd>를 길게 눌러 해체, T는 <kbd>E</kbd>를 길게 눌러 설치.',
+		'to defuse as CT, or to plant as T.': '해체(CT) 또는 설치(T).'
+	});
+
 	var SOURCE = {};
 	var REVERSE = {};
 	LOCALES.forEach(function (loc) {

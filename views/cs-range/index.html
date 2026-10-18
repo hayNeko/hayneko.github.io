@@ -1,4 +1,4 @@
-<!-- views/cs-range/index.html — CS:GO-inspired robot elimination range -->
+<!-- views/cs-range/index.html — Dust 2 5v5 bomb-defusal game -->
 <div class="csr" data-cs-range data-state="boot">
 	<div class="csr__stage">
 		<canvas class="csr__canvas" data-csr-canvas aria-label="Dust Range 3D view"></canvas>
@@ -45,8 +45,8 @@
 					<p class="csr-kicker">TRAINING OPERATION <span>//</span> 01</p>
 					<h1 class="csr-title"><span>DUST</span><b>RANGE</b></h1>
 					<p class="csr-lede">
-						A de_dust-inspired killing floor. Randomised robot squads, real weapon handling,
-						one life per round. Clear every hostile before the clock runs out.
+						The real de_dust2, rebuilt for 5v5 bomb defusal. You are the fifth counter-terrorist:
+						hold A and B with four CT bots, break the terrorist push and defuse their C4.
 					</p>
 
 					<div class="csr-mapcard">
@@ -58,9 +58,9 @@
 						</div>
 						<div class="csr-mapcard__meta">
 							<div><span>MAP</span><b>DUST_RANGE</b></div>
-							<div><span>MODE</span><b>ELIMINATION</b></div>
-							<div><span>FIRST TO</span><b>8 ROUNDS</b></div>
-							<div><span>HOSTILES</span><b data-csr-menu-hostiles>AUTO</b></div>
+							<div><span>MODE</span><b>DEFUSAL</b></div>
+							<div><span>FIRST TO</span><b>13 ROUNDS</b></div>
+							<div><span>SQUADS</span><b data-csr-menu-hostiles>5 v 5</b></div>
 						</div>
 					</div>
 
@@ -78,7 +78,7 @@
 					</div>
 
 					<p class="csr-menu__note">
-						Mouse + keyboard recommended. All assets are generated in the browser — no downloads,
+						Single-player 5v5 bomb defusal. All assets are generated in the browser — no downloads,
 						no external services. <span>Click DEPLOY, then the field to lock the mouse.</span>
 					</p>
 				</div>
@@ -87,14 +87,14 @@
 					<div class="csr-panel">
 						<div class="csr-panel__head"><span>MISSION BRIEF</span><i>01</i></div>
 						<p class="csr-panel__copy">
-							Robots have overrun the training site. Eliminate the whole squad to take the round.
-							Die and the round is lost. First side to eight rounds wins the operation.
+							Five counter-terrorists hold Dust 2 against a five-man terrorist bot squad.
+							You are the human anchor: the C4 decides the round. First side to thirteen wins.
 						</p>
 						<ul class="csr-brief">
-							<li><i>01</i><span>Every round spawns a random robot squad — scouts, troopers, heavies and snipers.</span></li>
-							<li><i>02</i><span>Earn cash for kills and rounds. Press <kbd>B</kbd> during buy time to shop.</span></li>
-							<li><i>03</i><span>Headshots do four times damage. Robot heads pop. Use cover.</span></li>
-							<li><i>04</i><span>Defeated robots drop their weapon. Press <kbd>E</kbd> on the field to pick it up.</span></li>
+							<li><i>01</i><span>Pick CT or T at deployment. CT defends A and B; T attacks with the C4.</span></li>
+							<li><i>02</i><span>Hold angles, trade with your bots, rotate on the plant. Hold <kbd>E</kbd> to defuse as CT, or to plant as T.</span></li>
+							<li><i>03</i><span>Headshots do four times damage. Buy time is the only chance to shop with <kbd>B</kbd>.</span></li>
+							<li><i>04</i><span>Win the round, keep your gun. Die and the loadout, armour and kit are gone.</span></li>
 						</ul>
 					</div>
 
@@ -108,16 +108,6 @@
 								<button type="button" data-value="regular" class="is-active">REGULAR</button>
 								<button type="button" data-value="veteran">VETERAN</button>
 								<button type="button" data-value="elite">ELITE</button>
-							</div>
-						</div>
-
-						<div class="csr-field">
-							<span class="csr-field__label">SQUAD SIZE</span>
-							<div class="csr-seg" data-csr-squad role="group" aria-label="Squad size">
-								<button type="button" data-value="3">3</button>
-								<button type="button" data-value="5" class="is-active">5</button>
-								<button type="button" data-value="7">7</button>
-								<button type="button" data-value="auto">AUTO</button>
 							</div>
 						</div>
 
@@ -159,6 +149,38 @@
 			</footer>
 		</section>
 
+
+		<!-- ============================================================ team select -->
+		<section class="csr-overlay csr-team" data-csr-team hidden aria-label="Choose your side">
+			<div class="csr-overlay__backdrop"></div>
+			<div class="csr-team__panel">
+				<p class="csr-kicker">OPERATION DEPLOYMENT <span>//</span> SIDE SELECT</p>
+				<h2 class="csr-team__title">CHOOSE YOUR SIDE</h2>
+				<p class="csr-team__copy">Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.</p>
+				<div class="csr-team__options">
+					<button type="button" class="csr-team__card csr-team__card--ct" data-csr-join-ct>
+						<span class="csr-team__badge">CT</span>
+						<span class="csr-team__body">
+							<b>COUNTER-TERRORISTS</b>
+							<small>HOLD A / B · DEFUSE THE C4</small>
+							<em>You spawn at CT spawn with four CT robots.</em>
+						</span>
+						<span class="csr-team__go">DEPLOY ▸</span>
+					</button>
+					<button type="button" class="csr-team__card csr-team__card--t" data-csr-join-t>
+						<span class="csr-team__badge">T</span>
+						<span class="csr-team__body">
+							<b>TERRORISTS</b>
+							<small>TAKE A / B · PLANT THE C4</small>
+							<em>You carry the C4 with four T robots. Hold E at a site to plant.</em>
+						</span>
+						<span class="csr-team__go">DEPLOY ▸</span>
+					</button>
+				</div>
+				<button type="button" class="csr-btn csr-btn--ghost csr-team__back" data-csr-team-back>BACK TO MENU</button>
+			</div>
+		</section>
+
 		<!-- ============================================================ HUD -->
 		<section class="csr-hud" data-csr-hud hidden aria-label="Game HUD">
 			<div class="csr-practice" data-csr-practice-hud hidden>
@@ -174,7 +196,7 @@
 			<div class="csr-hud__top">
 				<div class="csr-radar">
 					<div class="csr-radar__frame">
-						<canvas data-csr-radar width="360" height="360" aria-label="Tactical radar"></canvas>
+						<canvas data-csr-radar width="512" height="512" aria-label="Tactical radar"></canvas>
 						<span class="csr-radar__map">DUST_RANGE</span>
 						<span class="csr-radar__north">N</span>
 					</div>
@@ -192,24 +214,51 @@
 					</div>
 					<div class="csr-score__mid">
 						<span data-csr-phase-label>BUY TIME</span>
-						<b>FIRST TO 8</b>
+						<b>FIRST TO 13</b>
 						<div class="csr-score__pips" data-csr-pips aria-hidden="true"></div>
 					</div>
 					<div class="csr-score__team csr-score__team--t">
 						<span class="csr-score__tag">T</span>
 						<b data-csr-score-t>0</b>
-						<span class="csr-score__label">ROBOT SQUAD</span>
+						<span class="csr-score__label">TERRORISTS</span>
 					</div>
 				</div>
 
 				<div class="csr-hud__right">
 					<div class="csr-hostiles">
-						<span>HOSTILES</span>
+						<span data-csr-hostile-label>TERRORISTS</span>
 						<b data-csr-hostiles>0</b>
 						<i data-csr-hostile-dots></i>
 					</div>
+					<div class="csr-hostiles csr-hostiles--ct">
+						<span data-csr-ally-label>CT ALIVE</span>
+						<b data-csr-allies>5</b>
+						<i data-csr-ally-dots></i>
+					</div>
 					<div class="csr-killfeed" data-csr-killfeed aria-live="polite"></div>
 				</div>
+			</div>
+
+			<div class="csr-bombhud" data-csr-bombhud hidden aria-live="polite">
+				<span class="csr-bombhud__tag">C4</span>
+				<b data-csr-bomb-timer>40.0</b>
+				<span class="csr-bombhud__site" data-csr-bomb-site>SITE A</span>
+				<i class="csr-bombhud__bar"><em data-csr-bomb-bar></em></i>
+			</div>
+			<div class="csr-spectate" data-csr-spectate hidden aria-live="polite">
+				<span>THIRD-PERSON SPECTATING</span>
+				<b data-csr-spectate-name>—</b>
+				<small><i data-csr-spectate-alive>4</i> ALLIES ALIVE · <kbd>LMB</kbd> NEXT ROBOT</small>
+			</div>
+			<div class="csr-contact" data-csr-contact hidden aria-live="polite">
+				<span>CONTACT</span>
+				<b data-csr-contact-label>A SITE</b>
+				<small data-csr-contact-note>ENEMY SPOTTED</small>
+			</div>
+			<div class="csr-defuse" data-csr-defuse hidden aria-live="polite">
+				<span data-csr-defuse-text>HOLD E TO DEFUSE</span>
+				<b data-csr-defuse-kit>NO KIT · 10s</b>
+				<i class="csr-defuse__bar"><em data-csr-defuse-bar></em></i>
 			</div>
 
 			<div class="csr-crosshair" data-csr-crosshair aria-hidden="true">
@@ -221,12 +270,6 @@
 			<div class="csr-headshot" data-csr-headshot aria-hidden="true">
 				<span class="csr-headshot__skull">☠</span>
 				<div><b>HEADSHOT</b><small data-csr-headshot-bonus>4× DAMAGE</small></div>
-			</div>
-			<div class="csr-deathcam" data-csr-deathcam hidden aria-live="polite">
-				<span class="csr-deathcam__tag" data-csr-death-type>ELIMINATED BY</span>
-				<b class="csr-deathcam__name" data-csr-killer>—</b>
-				<span class="csr-deathcam__weapon" data-csr-killer-weapon>—</span>
-				<small>SPECTATING · ROUND ENDS IN <i data-csr-death-timer>3</i></small>
 			</div>
 			<div class="csr-dmgdir" data-csr-dmgdir aria-hidden="true"></div>
 
@@ -250,6 +293,8 @@
 					<div class="csr-money">
 						<span>$</span><b data-csr-money>800</b>
 					</div>
+					<span class="csr-kit" data-csr-kit hidden>KIT</span>
+					<span class="csr-c4tag" data-csr-c4tag hidden>C4 CARRIER</span>
 				</div>
 
 				<div class="csr-ammo">
@@ -278,7 +323,7 @@
 				<span><kbd>SPACE</kbd> JUMP</span>
 				<span><kbd>R</kbd> RELOAD</span>
 				<span><kbd>B</kbd> BUY</span>
-				<span><kbd>E</kbd> PICK UP</span>
+				<span><kbd>E</kbd> <span data-csr-use-hint>PICK UP / DEFUSE</span></span>
 				<span><kbd>TAB</kbd> SCORE</span>
 			</div>
 			<button type="button" class="csr-buyhint" data-csr-buyhint aria-label="Open buy menu"><span>BUY PHASE</span><b><kbd>B</kbd> OPEN BUY MENU</b></button>
@@ -302,9 +347,26 @@
 					<button type="button" data-csr-touch-jump aria-label="Jump">↑</button>
 					<button type="button" data-csr-touch-crouch aria-label="Crouch">↓</button>
 					<button type="button" data-csr-touch-scope aria-label="Scope">◎</button>
+					<button type="button" data-csr-touch-use aria-label="Use / defuse">E</button>
 				</div>
 			</div>
 		</section>
+
+
+		<!-- ============================================================ round banner -->
+		<div class="csr-banner" data-csr-banner hidden aria-live="polite">
+			<span class="csr-banner__stripe"></span>
+			<div class="csr-banner__main">
+				<p class="csr-banner__kicker" data-csr-banner-kicker>ROUND 1</p>
+				<b class="csr-banner__title" data-csr-banner-title>COUNTER-TERRORISTS WIN</b>
+				<p class="csr-banner__reason" data-csr-banner-reason>The bomb was defused.</p>
+			</div>
+			<div class="csr-banner__side">
+				<span data-csr-banner-score>CT 1 — 0 T</span>
+				<b data-csr-banner-reward>+$3,250</b>
+				<small data-csr-banner-next>NEXT ROUND IN 3</small>
+			</div>
+		</div>
 
 		<!-- ============================================================ buy -->
 		<section class="csr-overlay csr-buy" data-csr-buy hidden aria-label="Buy menu">
@@ -354,7 +416,7 @@
 			<div class="csr-result__panel" data-csr-result-panel data-outcome="win">
 				<p class="csr-result__kicker" data-csr-result-kicker>ROUND 1</p>
 				<h2 class="csr-result__title" data-csr-result-title>COUNTER-TERRORISTS WIN</h2>
-				<p class="csr-result__reason" data-csr-result-reason>All hostiles eliminated.</p>
+				<p class="csr-result__reason" data-csr-result-reason>All terrorists eliminated.</p>
 				<div class="csr-result__rule"><i></i><span data-csr-result-score>CT 1 — 0 T</span><i></i></div>
 				<div class="csr-result__stats">
 					<div><span>KILLS</span><b data-csr-result-kills>0</b></div>
@@ -372,7 +434,7 @@
 			<div class="csr-overlay__backdrop"></div>
 			<div class="csr-board">
 				<header class="csr-overlay__head">
-					<div><p>DUST_RANGE // ELIMINATION</p><h2>SCOREBOARD</h2></div>
+					<div><p>DUST_RANGE // DEFUSAL</p><h2>SCOREBOARD</h2></div>
 					<div class="csr-overlay__cash"><span>ROUND</span><b data-csr-board-round>1</b></div>
 					<button type="button" class="csr-xbtn" data-csr-score-close aria-label="Close scoreboard">✕</button>
 				</header>
@@ -382,7 +444,7 @@
 						<div class="csr-board__rows" data-csr-board-ct-rows></div>
 					</div>
 					<div class="csr-board__team csr-board__team--t">
-						<div class="csr-board__teamhead"><span>ROBOT SQUAD</span><b data-csr-board-t>0</b></div>
+						<div class="csr-board__teamhead"><span>TERRORISTS</span><b data-csr-board-t>0</b></div>
 						<div class="csr-board__rows" data-csr-board-t-rows></div>
 					</div>
 				</div>
@@ -409,13 +471,15 @@
 					<div class="csr-keyrow"><kbd>CTRL</kbd><span>Crouch</span></div>
 					<div class="csr-keyrow"><kbd>SPACE</kbd><span>Jump</span></div>
 					<div class="csr-keyrow"><kbd>B</kbd><span>Buy menu</span></div>
-					<div class="csr-keyrow"><kbd>E</kbd><span>Pick up dropped weapon</span></div>
+					<div class="csr-keyrow"><kbd>E</kbd><span>Pick up dropped weapon / hold to defuse (CT) or plant (T)</span></div>
 					<div class="csr-keyrow"><kbd>TAB</kbd><span>Scoreboard</span></div>
+					<div class="csr-keyrow"><kbd>LMB</kbd><span>While dead: switch spectated robot</span></div>
+					<div class="csr-keyrow"><kbd>E</kbd><span>As T: hold at a site to plant the C4</span></div>
 					<div class="csr-keyrow"><kbd>M</kbd><span>Mute audio</span></div>
 					<div class="csr-keyrow"><kbd>ESC</kbd><span>Pause / release mouse</span></div>
 					<div class="csr-keyrow"><kbd>H</kbd><span>Toggle this manual</span></div>
 				</div>
-				<p class="csr-controls__note">Robots use line-of-sight, flanking paths and randomised accuracy. Cover works both ways. Aim for the head — it does four times damage. Chickens wander the range; the Practice Range has a free armory and target boards.</p>
+				<p class="csr-controls__note">Four CT bots and five T bots play the C4 objective: CT anchors hold A and B, rotate on the plant and cover the defuser; T bots push a site, cover the carrier and hold post-plant angles. Cover works both ways. Aim for the head — it does four times damage. The Practice Range has a free armory and target boards.</p>
 				<footer class="csr-overlay__foot"><span>CLICK THE FIELD TO LOCK THE MOUSE</span><button type="button" class="csr-btn csr-btn--sm" data-csr-controls-close>BACK</button></footer>
 			</div>
 		</section>
@@ -426,7 +490,7 @@
 			<div class="csr-match__panel" data-csr-match-panel data-outcome="won">
 				<p class="csr-kicker">OPERATION COMPLETE</p>
 				<h2 class="csr-match__title" data-csr-match-title>VICTORY</h2>
-				<p class="csr-match__copy" data-csr-match-copy>The training site is clear.</p>
+				<p class="csr-match__copy" data-csr-match-copy>The sites held. Operation complete.</p>
 				<div class="csr-match__score"><span>CT</span><b data-csr-match-ct>8</b><i>—</i><b data-csr-match-t>0</b><span>T</span></div>
 				<div class="csr-match__stats">
 					<div><span>ROUNDS</span><b data-csr-match-rounds>8</b></div>

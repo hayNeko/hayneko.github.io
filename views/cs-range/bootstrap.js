@@ -9,11 +9,12 @@
 	'use strict';
 
 	var doc = global.document;
+	var BUILD = '20261019w';
 	var ASSETS = [
 		'views/cs-range/vendor/three.min.js',
-		'views/cs-range/content.js',
-		'views/cs-range/i18n.js',
-		'views/cs-range/game.js'
+		'views/cs-range/content.js?v=' + BUILD,
+		'views/cs-range/i18n.js?v=' + BUILD,
+		'views/cs-range/game.js?v=' + BUILD
 	];
 	var loading = false;
 	var pendingHost = null;

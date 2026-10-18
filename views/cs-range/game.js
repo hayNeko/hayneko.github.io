@@ -2,7 +2,7 @@
  * views/cs-range/game.js — DUST RANGE
  *
  * The match layer: pointer-lock FPS controller, hitscan weapons, round economy,
- * buy menu, random robot AI with A* navigation, kill feed, radar and HUD.
+ * five-vs-five team AI with A* navigation and C4 duty, kill feed, radar and HUD.
  * Content (map, textures, models, audio) lives in content.js; this file is the
  * state machine that turns them into a game.
  */
@@ -15,7 +15,7 @@
 	var ROUTE = 'range';
 	var SETTINGS_KEY = 'hayneko.range.settings.v1';
 	var RECORDS_KEY = 'hayneko.range.records.v1';
-	var MATCH_TARGET = 8;
+	var MATCH_TARGET = 13;
 
 	var current = null;
 
@@ -38,6 +38,12 @@
 		if (node.textContent !== value) node.textContent = value;
 	}
 	function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+	function circleHitsBox(x, z, r, c) {
+		var nx = x < c.minX ? c.minX : (x > c.maxX ? c.maxX : x);
+		var nz = z < c.minZ ? c.minZ : (z > c.maxZ ? c.maxZ : z);
+		var dx = x - nx, dz = z - nz;
+		return dx * dx + dz * dz < r * r;
+	}
 	function pad(n) { return n < 10 ? '0' + n : String(n); }
 	function fmtTime(seconds) {
 		seconds = Math.max(0, Math.ceil(seconds));
@@ -84,7 +90,7 @@
 		this.fallbackLook = false;
 		this.ignoreUnlockUntil = 0;
 		this.settings = Object.assign({
-			difficulty: 'regular', squad: 5, quality: 'balanced',
+			difficulty: 'regular', quality: 'balanced',
 			sens: 1, volume: 0.7, muted: false
 		}, loadJSON(SETTINGS_KEY, {}));
 		this.records = Object.assign({
@@ -93,6 +99,21 @@
 
 		this.bots = [];
 		this.botHitMeshes = [];
+		this.botSeq = 0;
+		this.bomb = null;
+		this.bombGroup = null;
+		this.bombModel = null;
+		this.bombCarryMesh = null;
+		this.defuseKit = false;
+		this.playerDefusing = false;
+		this.spectating = false;
+		this.spectateTarget = null;
+		this.tSite = 'A';
+		this.carrier = null;
+		this.teamAlerts = { CT: null, T: null };
+		this.alertSeq = 0;
+		this.contactAlert = null;
+		this.playerContactTimer = 0;
 		this.tracers = [];
 		this.sparks = [];
 		this.debris = [];
@@ -103,6 +124,12 @@
 		this.chickens = [];
 		this.targets = [];
 		this.targetSeq = 0;
+		this.playerTeam = 'CT';
+		this.enemyTeam = 'T';
+		this.playerHasBomb = false;
+		this.playerPlanting = false;
+		this.playerPlantProgress = 0;
+		this.pendingTeam = 'CT';
 		this.practice = false;
 		this.practiceStats = { score: 0, hits: 0, targets: 0, centers: 0 };
 		this.playerBody = null;
@@ -138,7 +165,7 @@
 			deathRoll: 0, deathT: 0
 		};
 		this.input = {
-			forward: 0, strafe: 0, fire: false,
+			forward: 0, strafe: 0, fire: false, defuse: false,
 			jumpQueued: false, crouch: false,
 			touchMoveX: 0, touchMoveY: 0, touchCrouch: false
 		};
@@ -208,6 +235,10 @@
 			loading: $(h, 'loading'),
 			loadingHint: $(h, 'loading-hint'),
 			menu: $(h, 'menu'),
+			team: $(h, 'team'),
+			joinCt: $(h, 'join-ct'),
+			joinT: $(h, 'join-t'),
+			teamBack: $(h, 'team-back'),
 			deploy: $(h, 'deploy'),
 			menuExit: $(h, 'menu-exit'),
 			openControls: $(h, 'open-controls'),
@@ -223,7 +254,6 @@
 			practiceAcc: $(h, 'practice-acc'),
 			practiceTargets: $(h, 'practice-targets'),
 			difficulty: $(h, 'difficulty'),
-			squad: $(h, 'squad'),
 			quality: $(h, 'quality'),
 			sens: $(h, 'sens'),
 			sensValue: $(h, 'sens-value'),
@@ -243,6 +273,26 @@
 			pips: $(h, 'pips'),
 			hostiles: $(h, 'hostiles'),
 			hostileDots: $(h, 'hostile-dots'),
+			hostileLabel: $(h, 'hostile-label'),
+			allies: $(h, 'allies'),
+			allyDots: $(h, 'ally-dots'),
+			allyLabel: $(h, 'ally-label'),
+			c4tag: $(h, 'c4tag'),
+			kit: $(h, 'kit'),
+			bombhud: $(h, 'bombhud'),
+			bombTimer: $(h, 'bomb-timer'),
+			bombSite: $(h, 'bomb-site'),
+			bombBar: $(h, 'bomb-bar'),
+			defuse: $(h, 'defuse'),
+			defuseText: $(h, 'defuse-text'),
+			defuseKitLabel: $(h, 'defuse-kit'),
+			defuseBar: $(h, 'defuse-bar'),
+			spectate: $(h, 'spectate'),
+			spectateName: $(h, 'spectate-name'),
+			spectateAlive: $(h, 'spectate-alive'),
+			contact: $(h, 'contact'),
+			contactLabel: $(h, 'contact-label'),
+			contactNote: $(h, 'contact-note'),
 			killfeed: $(h, 'killfeed'),
 			crosshair: $(h, 'crosshair'),
 			hitmarker: $(h, 'hitmarker'),
@@ -267,6 +317,7 @@
 			slotInds: [$(h, 'slot-ind'), h.querySelectorAll('[data-csr-slot-ind]')],
 			announce: $(h, 'announce'),
 			hintbar: $(h, 'hintbar'),
+			useHint: $(h, 'use-hint'),
 			buyhint: $(h, 'buyhint'),
 			pickup: $(h, 'pickup'),
 			pickupName: $(h, 'pickup-name'),
@@ -282,6 +333,7 @@
 			touchReload: $(h, 'touch-reload'),
 			touchJump: $(h, 'touch-jump'),
 			touchCrouch: $(h, 'touch-crouch'),
+			touchUse: $(h, 'touch-use'),
 			touchBuy: $(h, 'touch-buy'),
 			touchPause: $(h, 'touch-pause'),
 			touchScore: $(h, 'touch-score'),
@@ -312,6 +364,13 @@
 			resultReward: $(h, 'result-reward'),
 			resultNext: $(h, 'result-next'),
 			resultSkip: $(h, 'result-skip'),
+			banner: $(h, 'banner'),
+			bannerKicker: $(h, 'banner-kicker'),
+			bannerTitle: $(h, 'banner-title'),
+			bannerReason: $(h, 'banner-reason'),
+			bannerScore: $(h, 'banner-score'),
+			bannerReward: $(h, 'banner-reward'),
+			bannerNext: $(h, 'banner-next'),
 			scoreboard: $(h, 'scoreboard'),
 			boardRound: $(h, 'board-round'),
 			boardCt: $(h, 'board-ct'),
@@ -364,7 +423,10 @@
 		var self = this;
 		var e = this.el;
 
-		this.on(e.deploy, 'click', function () { self.startMatch(); });
+		this.on(e.deploy, 'click', function () { self.openTeamSelect(); });
+		this.on(e.joinCt, 'click', function () { self.chooseTeam('CT'); });
+		this.on(e.joinT, 'click', function () { self.chooseTeam('T'); });
+		this.on(e.teamBack, 'click', function () { self.closeTeamSelect(); });
 		this.on(e.practice, 'click', function () { self.startPractice(); });
 		this.on(e.menuExit, 'click', function () { self.exitToGames(); });
 		this.on(e.openControls, 'click', function () { self.openControls('menu'); });
@@ -380,16 +442,6 @@
 				var b = ev.target.closest ? ev.target.closest('button[data-value]') : null;
 				if (!b) return;
 				self.settings.difficulty = b.getAttribute('data-value');
-				self.syncSettingsUI();
-				self.saveSettings();
-			});
-		}
-		if (e.squad) {
-			e.squad.addEventListener('click', function (ev) {
-				var b = ev.target.closest ? ev.target.closest('button[data-value]') : null;
-				if (!b) return;
-				var v = b.getAttribute('data-value');
-				self.settings.squad = (v === 'auto') ? 'auto' : Number(v);
 				self.syncSettingsUI();
 				self.saveSettings();
 			});
@@ -441,6 +493,7 @@
 		this.on(e.pauseMute, 'click', function () { self.toggleMute(); });
 		this.on(e.pauseExit, 'click', function () { self.exitToGames(); });
 		this.on(e.resultSkip, 'click', function () { self.nextRound(true); });
+		this.on(e.banner, 'click', function () { if (self.state === 'roundover') self.nextRound(true); });
 		this.on(e.again, 'click', function () { self.playAgain(); });
 		this.on(e.matchExit, 'click', function () { self.exitToGames(); });
 
@@ -490,12 +543,6 @@
 				b.classList.toggle('is-active', b.getAttribute('data-value') === s.difficulty);
 			});
 		}
-		if (e.squad) {
-			var want = String(s.squad);
-			Array.prototype.forEach.call(e.squad.querySelectorAll('button'), function (b) {
-				b.classList.toggle('is-active', b.getAttribute('data-value') === want);
-			});
-		}
 		if (e.quality) {
 			Array.prototype.forEach.call(e.quality.querySelectorAll('button'), function (b) {
 				b.classList.toggle('is-active', b.getAttribute('data-value') === s.quality);
@@ -505,9 +552,7 @@
 		if (e.sensValue) text(e.sensValue, Number(s.sens).toFixed(2));
 		if (e.vol) e.vol.value = String(s.volume);
 		if (e.volValue) text(e.volValue, Math.round(Number(s.volume) * 100) + '%');
-		if (e.menuHostiles) {
-			text(e.menuHostiles, s.squad === 'auto' ? 'AUTO' : String(s.squad));
-		}
+		if (e.menuHostiles) text(e.menuHostiles, '5 v 5');
 	};
 
 	RangeGame.prototype.saveSettings = function () {
@@ -537,9 +582,34 @@
 		doc.documentElement.classList.add('csr-lock');
 		if (this.el.hud) this.el.hud.hidden = true;
 		if (this.el.menu) this.el.menu.hidden = false;
+		if (this.el.team) this.el.team.hidden = true;
+		if (this.el.banner) this.el.banner.hidden = true;
 		this.hideOverlays();
 		if (this.el.loading) this.el.loading.hidden = true;
 		this.releaseLock(true);
+	};
+
+	RangeGame.prototype.openTeamSelect = function () {
+		if (!this.renderer) return;
+		this.hideMenu();
+		this.state = 'menu';
+		if (this.el.team) this.el.team.hidden = false;
+		if (this.el.loading) this.el.loading.hidden = true;
+		this.releaseLock(true);
+	};
+
+	RangeGame.prototype.closeTeamSelect = function () {
+		if (this.el.team) this.el.team.hidden = true;
+		if (this.el.menu) this.el.menu.hidden = false;
+		this.state = 'menu';
+	};
+
+	RangeGame.prototype.chooseTeam = function (team) {
+		this.playerTeam = team === 'T' ? 'T' : 'CT';
+		this.enemyTeam = this.playerTeam === 'CT' ? 'T' : 'CT';
+		this.pendingTeam = this.playerTeam;
+		if (this.el.team) this.el.team.hidden = true;
+		this.startMatch();
 	};
 
 	RangeGame.prototype.hideMenu = function () {
@@ -548,7 +618,7 @@
 
 	RangeGame.prototype.hideOverlays = function () {
 		var e = this.el;
-		[e.buy, e.pause, e.result, e.scoreboard, e.controls, e.match].forEach(function (n) {
+		[e.buy, e.pause, e.result, e.scoreboard, e.controls, e.match, e.team, e.banner].forEach(function (n) {
 			if (n) n.hidden = true;
 		});
 	};
@@ -788,42 +858,90 @@
 			ctx.beginPath(); ctx.moveTo(X(gx), Y(-B)); ctx.lineTo(X(gx), Y(B)); ctx.stroke();
 			ctx.beginPath(); ctx.moveTo(X(-B), Y(gx)); ctx.lineTo(X(B), Y(gx)); ctx.stroke();
 		}
-		/* floor */
-		ctx.fillStyle = detailed ? 'rgba(190,162,120,0.08)' : 'rgba(190,162,120,0.06)';
-		ctx.fillRect(X(-B), Y(-B), B * 2 * s, B * 2 * s);
-		/* colliders */
-		var cols = this.world ? this.world.colliders : [];
+
+		var world = this.world;
+		if (world && world.grid) {
+			var grid = world.grid, GS = grid.size, gm = grid.min;
+			ctx.fillStyle = detailed ? 'rgba(196,168,124,0.34)' : 'rgba(186,160,120,0.30)';
+			for (var gz = 0; gz < GS; gz++) {
+				for (var gx = 0; gx < GS; gx++) {
+					if (!grid.cells[gz * GS + gx]) continue;
+					ctx.fillRect(X(gm + gx), Y(gm + gz), s + 0.4, s + 0.4);
+				}
+			}
+			/* crisp outline along every footprint edge */
+			ctx.strokeStyle = detailed ? 'rgba(215,162,74,0.5)' : 'rgba(215,162,74,0.4)';
+			ctx.lineWidth = detailed ? 1.2 : 1;
+			ctx.beginPath();
+			for (var oz = 0; oz < GS; oz++) {
+				for (var ox = 0; ox < GS; ox++) {
+					if (!grid.cells[oz * GS + ox]) continue;
+					var wx0 = gm + ox, wz0 = gm + oz;
+					if (ox === 0 || !grid.cells[oz * GS + ox - 1]) { ctx.moveTo(X(wx0), Y(wz0)); ctx.lineTo(X(wx0), Y(wz0 + 1)); }
+					if (ox === GS - 1 || !grid.cells[oz * GS + ox + 1]) { ctx.moveTo(X(wx0 + 1), Y(wz0)); ctx.lineTo(X(wx0 + 1), Y(wz0 + 1)); }
+					if (oz === 0 || !grid.cells[(oz - 1) * GS + ox]) { ctx.moveTo(X(wx0), Y(wz0)); ctx.lineTo(X(wx0 + 1), Y(wz0)); }
+					if (oz === GS - 1 || !grid.cells[(oz + 1) * GS + ox]) { ctx.moveTo(X(wx0), Y(wz0 + 1)); ctx.lineTo(X(wx0 + 1), Y(wz0 + 1)); }
+				}
+			}
+			ctx.stroke();
+		}
+
+		/* solid cover and building edges */
+		var cols = world ? world.colliders : [];
 		for (var i = 0; i < cols.length; i++) {
 			var c = cols[i];
-			if (c.minY > 2) continue;
+			if (c.minY > 2.4) continue;
 			var hgt = c.maxY - c.minY;
-			ctx.fillStyle = hgt > 3 ? 'rgba(207,182,143,0.28)' : hgt > 1.6 ? 'rgba(207,182,143,0.45)' : 'rgba(215,162,74,0.5)';
+			ctx.fillStyle = hgt > 2.4 ? 'rgba(4,8,10,0.82)' : hgt > 1.3 ? 'rgba(31,43,45,0.85)' : 'rgba(215,162,74,0.45)';
 			ctx.fillRect(X(c.minX), Y(c.minZ), Math.max(1, (c.maxX - c.minX) * s), Math.max(1, (c.maxZ - c.minZ) * s));
 		}
-		/* sites */
-		if (this.world) {
-			this.world.sites.forEach(function (site) {
-				ctx.strokeStyle = 'rgba(212,89,67,0.7)';
+
+		/* bomb sites */
+		if (world && world.sites) {
+			world.sites.forEach(function (site) {
+				ctx.strokeStyle = 'rgba(212,89,67,0.8)';
 				ctx.lineWidth = detailed ? 2 : 1.2;
 				ctx.beginPath();
 				ctx.arc(X(site.x), Y(site.z), site.r * s, 0, Math.PI * 2);
 				ctx.stroke();
-				ctx.fillStyle = 'rgba(212,89,67,0.8)';
-				ctx.font = '700 ' + Math.round(14 * s / 4.3) + 'px Bahnschrift, Arial Narrow, sans-serif';
+				ctx.fillStyle = 'rgba(212,89,67,0.9)';
+				ctx.font = '700 ' + Math.max(10, Math.round(18 * s / 4.3)) + 'px Bahnschrift, Arial Narrow, sans-serif';
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'middle';
 				ctx.fillText(site.id, X(site.x), Y(site.z));
 			});
 		}
+
 		/* spawn markers */
-		ctx.fillStyle = 'rgba(111,159,216,0.8)';
-		ctx.beginPath();
-		ctx.arc(X(0), Y(31), 4, 0, Math.PI * 2);
-		ctx.fill();
-		ctx.fillStyle = 'rgba(217,164,65,0.8)';
-		ctx.beginPath();
-		ctx.arc(X(0), Y(-31), 4, 0, Math.PI * 2);
-		ctx.fill();
+		if (world && world.spawns) {
+			var ct = world.spawns.ct && world.spawns.ct[0];
+			var t = world.spawns.t && world.spawns.t[0];
+			if (ct) {
+				ctx.fillStyle = 'rgba(111,159,216,0.9)';
+				ctx.beginPath();
+				ctx.arc(X(ct.x), Y(ct.z), 4, 0, Math.PI * 2);
+				ctx.fill();
+			}
+			if (t) {
+				ctx.fillStyle = 'rgba(217,164,65,0.9)';
+				ctx.beginPath();
+				ctx.arc(X(t.x), Y(t.z), 4, 0, Math.PI * 2);
+				ctx.fill();
+			}
+		}
+
+		/* callouts on the large map card */
+		if (detailed && world && world.callouts) {
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+			for (var k = 0; k < world.callouts.length; k++) {
+				var co = world.callouts[k];
+				ctx.fillStyle = co.big ? 'rgba(232,226,212,0.72)' : 'rgba(232,226,212,0.4)';
+				ctx.font = (co.big ? '700 10px ' : '700 8px ') + 'Bahnschrift, Arial Narrow, sans-serif';
+				ctx.fillText(co.name, X(co.x), Y(co.z));
+			}
+		}
+
 		/* compass */
 		ctx.fillStyle = 'rgba(232,226,212,0.45)';
 		ctx.font = '9px Consolas, monospace';
@@ -836,11 +954,10 @@
 		if (!c) return;
 		var ctx = c.getContext('2d');
 		this.paintTopDown(ctx, c.width, c.height, true);
-		/* a little print-map typography around the square preview */
 		ctx.fillStyle = 'rgba(232,226,212,0.3)';
 		ctx.font = '9px Consolas, monospace';
 		ctx.textAlign = 'right';
-		ctx.fillText('76 × 76 M', c.width - 16, 24);
+		ctx.fillText('80 × 80 M · DE_DUST2', c.width - 16, 24);
 	};
 
 	RangeGame.prototype.buildRadarBase = function () {
@@ -859,42 +976,88 @@
 		ctx.drawImage(this.radarBase, 0, 0);
 		var lay = this.topDownLayout(canvas.width, canvas.height);
 		var B = lay.bounds, s = lay.scale, ox = lay.ox, oy = lay.oy;
+		var now = this.now;
 		var px = ox + (this.player.x + B) * s;
 		var py = oy + (this.player.z + B) * s;
 
 		/* view cone */
-		ctx.save();
-		ctx.translate(px, py);
-		ctx.rotate(-this.player.yaw);
-		var grad = ctx.createLinearGradient(0, 0, 0, -70);
-		grad.addColorStop(0, 'rgba(232,226,212,0.22)');
-		grad.addColorStop(1, 'rgba(232,226,212,0)');
-		ctx.fillStyle = grad;
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(-38, -72);
-		ctx.lineTo(38, -72);
-		ctx.closePath();
-		ctx.fill();
-		ctx.restore();
+		if (this.player.alive) {
+			ctx.save();
+			ctx.translate(px, py);
+			ctx.rotate(-this.player.yaw);
+			var grad = ctx.createLinearGradient(0, 0, 0, -70);
+			grad.addColorStop(0, 'rgba(232,226,212,0.22)');
+			grad.addColorStop(1, 'rgba(232,226,212,0)');
+			ctx.fillStyle = grad;
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(-38, -72);
+			ctx.lineTo(38, -72);
+			ctx.closePath();
+			ctx.fill();
+			ctx.restore();
+		}
 
-		/* bots */
+		/* teammates, then hostiles (dim unless a CT has spotted them) */
 		for (var i = 0; i < this.bots.length; i++) {
 			var b = this.bots[i];
 			if (!b || (!b.alive && b.deathT > 0.8)) continue;
 			var bx = ox + (b.x + B) * s;
 			var by = oy + (b.z + B) * s;
-			ctx.fillStyle = b.alive ? 'rgba(224,88,62,0.95)' : 'rgba(224,88,62,0.25)';
-			ctx.beginPath();
-			ctx.arc(bx, by, b.alive ? 3.4 : 2.2, 0, Math.PI * 2);
-			ctx.fill();
-			if (b.alive) {
-				ctx.strokeStyle = 'rgba(224,88,62,0.32)';
-				ctx.lineWidth = 1;
+			if (b.team === this.playerTeam) {
+				ctx.fillStyle = b.alive ? 'rgba(104,178,255,0.95)' : 'rgba(104,178,255,0.25)';
 				ctx.beginPath();
-				ctx.arc(bx, by, 5.5, 0, Math.PI * 2);
-				ctx.stroke();
+				ctx.arc(bx, by, b.alive ? 3.1 : 2, 0, Math.PI * 2);
+				ctx.fill();
+			} else {
+				var spotted = b.spottedUntil > now;
+				ctx.fillStyle = b.alive ? (spotted ? 'rgba(224,88,62,0.98)' : 'rgba(214,110,90,0.45)') : 'rgba(224,88,62,0.2)';
+				ctx.beginPath();
+				ctx.arc(bx, by, b.alive ? (spotted ? 3.4 : 2.4) : 1.8, 0, Math.PI * 2);
+				ctx.fill();
+				if (b.alive && spotted) {
+					ctx.strokeStyle = 'rgba(224,88,62,0.4)';
+					ctx.lineWidth = 1;
+					ctx.beginPath();
+					ctx.arc(bx, by, 5.6, 0, Math.PI * 2);
+					ctx.stroke();
+				}
 			}
+		}
+
+		/* the objective */
+		var bomb = this.bomb;
+		if (bomb && (bomb.state === 'planted' || bomb.state === 'dropped')) {
+			var mx = ox + (bomb.x + B) * s;
+			var my = oy + (bomb.z + B) * s;
+			var pulse = 0.5 + 0.5 * Math.sin(now * 0.012);
+			ctx.fillStyle = bomb.state === 'planted' ? 'rgba(255,72,42,' + (0.55 + pulse * 0.45) + ')' : 'rgba(255,196,90,0.9)';
+			ctx.fillRect(mx - 3.5, my - 3.5, 7, 7);
+			ctx.strokeStyle = 'rgba(255,92,52,0.55)';
+			ctx.lineWidth = 1;
+			ctx.strokeRect(mx - 6, my - 6, 12, 12);
+			if (bomb.state === 'planted') {
+				ctx.font = '700 9px Consolas, monospace';
+				ctx.textAlign = 'center';
+				ctx.fillStyle = 'rgba(255,120,90,0.9)';
+				ctx.fillText('C4', mx, my - 9);
+			}
+		}
+
+		var alert = this.teamAlerts && this.teamAlerts[this.playerTeam];
+		if (alert && now - alert.seenAt < 6000) {
+			var ax = ox + (alert.x + B) * s;
+			var ay = oy + (alert.z + B) * s;
+			var pulse = 0.5 + 0.5 * Math.sin(now * 0.01);
+			ctx.strokeStyle = 'rgba(255, 196, 90, ' + (0.35 + pulse * 0.45) + ')';
+			ctx.lineWidth = 1.4;
+			ctx.beginPath();
+			ctx.arc(ax, ay, 6 + pulse * 5, 0, Math.PI * 2);
+			ctx.stroke();
+			ctx.fillStyle = 'rgba(255, 210, 122, 0.9)';
+			ctx.beginPath();
+			ctx.arc(ax, ay, 2.2, 0, Math.PI * 2);
+			ctx.fill();
 		}
 
 		/* weapon drops */
@@ -909,18 +1072,20 @@
 		}
 
 		/* player arrow */
-		ctx.save();
-		ctx.translate(px, py);
-		ctx.rotate(-this.player.yaw);
-		ctx.fillStyle = '#f2ead8';
-		ctx.beginPath();
-		ctx.moveTo(0, -7);
-		ctx.lineTo(5, 5);
-		ctx.lineTo(0, 2.5);
-		ctx.lineTo(-5, 5);
-		ctx.closePath();
-		ctx.fill();
-		ctx.restore();
+		if (this.player.alive) {
+			ctx.save();
+			ctx.translate(px, py);
+			ctx.rotate(-this.player.yaw);
+			ctx.fillStyle = '#f2ead8';
+			ctx.beginPath();
+			ctx.moveTo(0, -7);
+			ctx.lineTo(5, 5);
+			ctx.lineTo(0, 2.5);
+			ctx.lineTo(-5, 5);
+			ctx.closePath();
+			ctx.fill();
+			ctx.restore();
+		}
 	};
 
 	/* ======================================================================
@@ -934,7 +1099,7 @@
 	RangeGame.prototype.resetMatch = function () {
 		this.match = {
 			round: 1, ct: 0, t: 0, kills: 0, deaths: 0, hs: 0,
-			shots: 0, hits: 0, money: 800, started: 0
+			shots: 0, hits: 0, money: 800, started: 0, lossStreak: 0
 		};
 		this.roundHistory = [];
 		this.loadout = { primary: null, secondary: 'usp', melee: 'knife' };
@@ -944,6 +1109,12 @@
 		this.player.armor = 0;
 		this.player.alive = true;
 		this.playerDiedLastRound = false;
+		this.playerWasKilledLastRound = false;
+		this.defuseKit = false;
+		this.spectating = false;
+		this.playerDefusing = false;
+		this.bomb = null;
+		this.hideSpectate();
 		this.matchStartedAt = this.now;
 		this.equipWeapon('usp', true);
 		this.updateScoreHUD();
@@ -955,6 +1126,7 @@
 		this.sound.ensure();
 		this.sound.setVolume(this.settings.volume);
 		this.hideMenu();
+		if (this.el.team) this.el.team.hidden = true;
 		this.hideOverlays();
 		if (this.el.hud) this.el.hud.hidden = false;
 		this.resetMatch();
@@ -979,6 +1151,8 @@
 		this.clearTargets();
 		this.clearChickens();
 		this.hideDeathCam();
+		this.hideSpectate();
+		if (this.el.hud) this.el.hud.classList.remove('is-dead', 'is-spectating');
 	};
 
 	RangeGame.prototype.startPractice = function () {
@@ -990,7 +1164,17 @@
 		this.hideOverlays();
 		this.clearBots();
 		this.clearDrops();
+		this.clearBomb();
 		this.clearFx();
+		this.bomb = null;
+		this.defuseKit = false;
+		this.playerDefusing = false;
+		this.spectating = false;
+		this.teamAlerts = { CT: null, T: null };
+		this.contactAlert = null;
+		if (this.el.contact) this.el.contact.hidden = true;
+		if (this.el.kit) this.el.kit.hidden = true;
+		if (this.el.hud) this.el.hud.classList.remove('is-dead', 'is-spectating');
 		if (this.el.killfeed) { this.el.killfeed.innerHTML = ''; this.killFeed.length = 0; }
 		this.state = 'playing';
 		this.buyOpen = false;
@@ -1070,19 +1254,158 @@
 		text(this.el.practiceTargets, s.targets || 0);
 	};
 
-	RangeGame.prototype.squadCount = function () {
-		if (this.settings.squad === 'auto') return clamp(3 + Math.floor((this.match.round - 1) / 2), 3, 7);
-		return clamp(Number(this.settings.squad) || 5, 1, 7);
+	RangeGame.prototype.teamBots = function (team, aliveOnly) {
+		var out = [];
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.team !== team) continue;
+			if (aliveOnly && (!b.alive || b.dead)) continue;
+			out.push(b);
+		}
+		return out;
 	};
 
-	RangeGame.prototype.pickBotType = function () {
-		var round = this.match.round;
-		var pool = ['scout', 'trooper', 'trooper', 'trooper'];
-		if (round >= 2) pool.push('heavy');
-		if (round >= 2) pool.push('heavy');
-		if (round >= 3) pool.push('sniper');
-		if (round >= 4) pool.push('scout', 'sniper');
-		return C.choice(pool);
+	RangeGame.prototype.aliveTeamCount = function (team) {
+		var n = 0;
+		if (team === this.playerTeam && this.player && this.player.alive) n++;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.team === team && b.alive && !b.dead) n++;
+		}
+		return n;
+	};
+
+	RangeGame.prototype.teamAdvantage = function (team) {
+		var enemyTeam = team === 'CT' ? 'T' : 'CT';
+		var allies = this.aliveTeamCount(team);
+		var enemies = this.aliveTeamCount(enemyTeam);
+		return enemies > 0 && allies > enemies && (enemies <= 2 || allies - enemies >= 2);
+	};
+
+	RangeGame.prototype.criticalRole = function (bot) {
+		var b = this.bomb;
+		if (!b) return false;
+		if (b.state === 'planted' && b.defuser === bot) return true;
+		if (b.state === 'planting' && b.planter === bot) return true;
+		if (bot.planting) return true;
+		return false;
+	};
+
+	RangeGame.prototype.bombRecoveryRank = function (bot) {
+		var b = this.bomb;
+		if (!b || b.state !== 'dropped' || bot.team !== 'T') return -1;
+		var list = this.teamBots('T', true).slice();
+		list.sort(function (a, c) {
+			return Math.hypot(a.x - b.x, a.z - b.z) - Math.hypot(c.x - b.x, c.z - b.z);
+		});
+		return list.indexOf(bot);
+	};
+
+	RangeGame.prototype.huntPointFor = function (bot) {
+		var now = this.now;
+		var alert = this.teamAlerts && this.teamAlerts[bot.team];
+		if (alert && now - alert.seenAt < 12000) return { x: alert.x, z: alert.z };
+		var best = null, bestT = -1;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.team !== bot.team || !b.alive || b.dead) continue;
+			if (!b.lastSeen || now - b.lastSeen.t > 10000) continue;
+			if (b.lastSeen.t > bestT) { bestT = b.lastSeen.t; best = { x: b.lastSeen.x, z: b.lastSeen.z }; }
+		}
+		if (best) return best;
+		return null;
+	};
+
+	RangeGame.prototype.botHunt = function (bot, dt) {
+		if (!this.teamAdvantage(bot.team)) return false;
+		if (this.criticalRole(bot)) return false;
+		/* Never abandon an active plant/defuse for a hunt. */
+		if (this.bomb && (this.bomb.state === 'planted' || this.bomb.state === 'planting')) return false;
+		/* Keep the two closest T robots on a dropped C4 even while the rest
+		   push the advantage. */
+		if (this.bomb && this.bomb.state === 'dropped' && bot.team === 'T' &&
+			this.bombRecoveryRank(bot) >= 0 && this.bombRecoveryRank(bot) < 2) return false;
+		var pt = this.huntPointFor(bot);
+		if (!pt) return false;
+		/* Do not beeline into an unreachable pocket: only hunt a contact the
+		   navmesh can actually reach. */
+		var hp = this.snapFreePoint(pt.x, pt.z, 0.46);
+		if (!bot.huntCheck || this.now - bot.huntCheck > 1500 ||
+			!bot.huntPoint || Math.hypot(bot.huntPoint.x - hp.x, bot.huntPoint.z - hp.z) > 3) {
+			var probe = C.findPath(this.nav, bot.x, bot.z, hp.x, hp.z);
+			bot.huntCheck = this.now;
+			bot.huntPoint = hp;
+			bot.huntPathOk = !!(probe && probe.length);
+		}
+		if (!bot.huntPathOk) return false;
+		pt = bot.huntPoint;
+		var d = Math.hypot(pt.x - bot.x, pt.z - bot.z);
+		bot.mode = 'hunt';
+		if (d > 3.6) {
+			this.botPathTo(bot, pt.x, pt.z, bot.speed * 1.08, dt);
+			return true;
+		}
+		bot.moveX = 0;
+		bot.moveZ = 0;
+		var scan = Math.sin(this.now * 0.0011 + bot.scanPhase) * 3.2;
+		bot.face = { x: pt.x + scan, z: pt.z + scan };
+		if (this.now > (bot.huntRoamAt || 0)) {
+			bot.huntRoamAt = this.now + 2200;
+			bot.roamTarget = this.pickRoamPoint(bot, pt);
+			bot.roamNextAt = 0;
+		}
+		if (bot.roamTarget && this.botMaybeRoam(bot, pt, dt)) return true;
+		return true;
+	};
+
+	RangeGame.prototype.teamTypes = function (team) {
+		return team === 'CT'
+			? ['trooper', 'heavy', 'scout', 'sniper']
+			: ['trooper', 'trooper', 'scout', 'heavy', 'sniper'];
+	};
+
+	RangeGame.prototype.findOpenSpawn = function (pos, seed) {
+		if (!this.collidesBot(pos.x, pos.z, 0.46)) return { x: pos.x, z: pos.z, yaw: pos.yaw || 0 };
+		for (var r = 1; r <= 4; r++) {
+			for (var a = 0; a < 12; a++) {
+				var ang = (a / 12) * Math.PI * 2 + (seed || 0);
+				var x = pos.x + Math.cos(ang) * r;
+				var z = pos.z + Math.sin(ang) * r;
+				if (this.world.walkableAt ? this.world.walkableAt(x, z) : true) {
+					if (!this.collidesBot(x, z, 0.46)) return { x: x, z: z, yaw: pos.yaw || 0 };
+				}
+			}
+		}
+		return { x: pos.x, z: pos.z, yaw: pos.yaw || 0 };
+	};
+
+	RangeGame.prototype.snapFreePoint = function (x, z, r) {
+		r = r || 0.46;
+		if (this.world.walkableAt(x, z) && !this.collidesBot(x, z, r)) return { x: x, z: z };
+		for (var ring = 1; ring <= 16; ring++) {
+			var rad = ring * 0.5;
+			for (var a = 0; a < 16; a++) {
+				var ang = (a / 16) * Math.PI * 2 + (ring % 2 ? 0.19 : 0);
+				var px = x + Math.cos(ang) * rad;
+				var pz = z + Math.sin(ang) * rad;
+				if (this.world.walkableAt(px, pz) && !this.collidesBot(px, pz, r)) return { x: px, z: pz };
+			}
+		}
+		return { x: x, z: z };
+	};
+
+	RangeGame.prototype.spawnTeam = function (team, count) {
+		var spawnList = this.world.spawns[team === 'CT' ? 'ct' : 't'] || [];
+		var types = this.teamTypes(team);
+		var startAt = team === this.playerTeam ? 1 : 0;
+		for (var i = 0; i < count; i++) {
+			var raw = spawnList[(startAt + i) % spawnList.length] || { x: 0, z: 0 };
+			var pos = this.findOpenSpawn(raw, i * 0.7);
+			var typeId = types[i % types.length];
+			if (team === 'T' && i === 0) typeId = 'trooper';
+			var bot = this.spawnBot(typeId, pos, team, i);
+			bot.spawnIndex = i;
+		}
 	};
 
 	RangeGame.prototype.startRound = function (first) {
@@ -1091,45 +1414,76 @@
 		this.setPracticeChrome(false);
 		this.clearTargets();
 		this.hideDeathCam();
+		this.hideSpectate();
 		if (!first) this.match.round++;
 		this.clearBots();
+		this.clearDrops();
+		this.clearBomb();
 		this.clearFx();
+		this.clearChickens();
+		this.bomb = {
+			state: 'carried', carrier: null, planter: null, defuser: null,
+			x: 0, z: 0, site: null, fuse: 0, plantProgress: 0,
+			defuseProgress: 0, playerDefuseProgress: 0,
+			beepTimer: 0, ledPhase: 0, teamDefuseTime: 7
+		};
 		this.round = {
-			phase: 'freeze', timer: 120, freezeLeft: 6.5,
+			phase: 'freeze', timer: 115, freezeLeft: 10.0,
 			ended: false
 		};
 		this.roundStats = { kills: 0, hs: 0, shots: 0, hits: 0 };
 		this.state = 'playing';
 		this.resultReward = 0;
-		var lostLoadout = !first && this.playerDiedLastRound;
+		this.playerHasBomb = false;
+		this.playerPlanting = false;
+		this.playerPlantProgress = 0;
+		this.playerDefusing = false;
+		this.spectating = false;
+		this.spectateTarget = null;
+		this.teamAlerts = { CT: null, T: null };
+		this.contactAlert = null;
+		if (this.el.contact) this.el.contact.hidden = true;
 		this.playerDiedLastRound = false;
+		var lostLoadout = !first && this.playerWasKilledLastRound;
+		this.playerWasKilledLastRound = false;
 		this.updateRoundNo();
 		this.updateScoreHUD();
 		this.updatePips();
+		if (this.el.hud) {
+			this.el.hud.hidden = false;
+			this.el.hud.classList.remove('is-dead', 'is-spectating');
+		}
 
-		/* player respawn */
+		/* player respawn — the player is the fifth counter-terrorist */
 		var p = this.player;
-		p.x = C.PLAYER_SPAWN.x; p.z = C.PLAYER_SPAWN.z;
+		var mySpawns = this.world.spawns[this.playerTeam === 'T' ? 't' : 'ct'] || [];
+		var spawn = mySpawns[0] || C.PLAYER_SPAWN || { x: 0, z: 0 };
+		p.x = spawn.x; p.z = spawn.z;
+		p.yaw = (spawn.yaw || 0) + Math.PI;
 		p.feetY = 0; p.vy = 0; p.vx = 0; p.vz = 0;
-		p.yaw = 0; p.pitch = 0;
+		p.pitch = 0;
 		p.alive = true; p.health = 100; p.onGround = true;
 		p.deathRoll = 0; p.deathT = 0;
 		p.eye = 1.62; p.eyeTarget = 1.62; p.height = 1.78;
 		this.recoilPitch = 0; this.recoilYaw = 0; this.shake = 0;
 		this.reloading = false; this.scoped = false; this.scopeT = 0;
-		this.input.fire = false; this.input.crouch = false; this.semiQueued = false;
+		this.input.fire = false; this.input.crouch = false; this.input.defuse = false; this.semiQueued = false;
+		this.playerHasBomb = false;
+		this.playerPlanting = false;
+		this.playerPlantProgress = 0;
 		this.keys.ctrl = false;
 		this.deathTimer = 0;
 		this.hideOverlays();
 		if (this.el.hud) this.el.hud.hidden = false;
 
-		/* if the player died last round, the loadout is lost */
+		/* dying loses the loadout; surviving keeps weapons, armour and the kit */
 		if (first || lostLoadout || !this.loadout.secondary) {
 			this.loadout = { primary: null, secondary: 'usp', melee: 'knife' };
 			Object.keys(C.WEAPONS).forEach(function (id) {
 				this.ammo[id] = { mag: C.WEAPONS[id].mag, reserve: C.WEAPONS[id].reserve };
 			}, this);
 			p.armor = 0;
+			this.defuseKit = false;
 			this.equipWeapon('usp', true);
 		} else {
 			var spent = this.ammo[this.currentWeapon];
@@ -1139,65 +1493,115 @@
 		this.updateAmmoHUD();
 		this.updateVitalsHUD();
 
-		/* robots */
-		var count = this.squadCount();
-		var used = [];
+		/* 5 v 5: the player fills one slot on the chosen side */
 		this.usedBotNames = {};
-		var spawns = C.shuffle(C.BOT_SPAWNS.slice());
-		for (var i = 0; i < count; i++) {
-			var type = this.pickBotType();
-			var pos = this.pickSpawn(spawns, used);
-			if (!pos) break;
-			used.push(pos);
-			this.spawnBot(type, pos);
-		}
-		this.clearDrops();
+		this.botSeq = this.botSeq || 0;
+		this.spawnTeam('CT', this.playerTeam === 'CT' ? 4 : 5);
+		this.spawnTeam('T', this.playerTeam === 'T' ? 4 : 5);
+		this.setupRoundPlans();
+
 		this.spawnChickens(5);
 		this.updateHostiles();
 		this.updateBuyHint();
 		this.updateScoreHUD();
 		this.updatePips();
+		this.updateBombHUD();
 		if (this.el.killfeed) { this.el.killfeed.innerHTML = ''; this.killFeed.length = 0; }
-		this.announce('ROUND ' + this.match.round, 'BUY TIME — PRESS B TO OPEN THE ARMORY');
+		this.announce('ROUND ' + this.match.round, this.playerTeam === 'T' ? 'TAKE A SITE — PRESS B TO OPEN THE ARMORY' : 'BUY TIME — PRESS B TO OPEN THE ARMORY');
 		this.sound.roundStart();
 		this.updateHUD();
 		this.focusField();
 	};
 
-	RangeGame.prototype.pickSpawn = function (spawns, used) {
-		var p = this.player;
-		for (var i = 0; i < spawns.length; i++) {
-			var s = spawns[i];
-			if (used.indexOf(s) !== -1) continue;
-			if (Math.hypot(s.x - p.x, s.z - p.z) < 13) continue;
-			if (this.collidesBot(s.x, s.z, 0.45)) continue;
-			return s;
+	RangeGame.prototype.setupRoundPlans = function () {
+		var self = this;
+		var site = Math.random() < 0.5 ? 'A' : 'B';
+		this.tSite = site;
+		var tRoutes = this.world.routes[site] || this.world.routes.A;
+		var tBots = this.teamBots('T', true);
+		var playerOnT = this.playerTeam === 'T';
+		var roles = playerOnT ? ['entry', 'support', 'lurk', 'support'] : ['carrier', 'entry', 'support', 'lurk', 'support'];
+		var routeNames = playerOnT ? ['main', 'main', 'flank', 'flank'] : ['main', 'main', 'main', 'flank', 'flank'];
+		var carrier = null;
+		tBots.forEach(function (bot, i) {
+			bot.site = site;
+			bot.role = roles[i] || 'support';
+			bot.guardIndex = i;
+			bot.tRouteName = routeNames[i] || 'main';
+			var route = tRoutes[routeNames[i] || 'main'] || tRoutes.main || [];
+			bot.route = route.map(function (w, wi) {
+				var jitter = wi === route.length - 1 ? 0 : 0.55;
+				return self.snapFreePoint(w.x + C.rand(-jitter, jitter), w.z + C.rand(-jitter, jitter), 0.46);
+			});
+			bot.routeIndex = 0;
+			bot.atSite = false;
+			bot.mode = 'advance';
+			bot.plantSpot = null;
+			bot.planting = false;
+			bot.plantProgress = 0;
+			bot.holdPoint = null;
+			bot.think = C.rand(0.05, 0.35);
+			if (bot.role === 'carrier') carrier = bot;
+		});
+		if (!carrier && tBots.length) {
+			carrier = tBots[0];
+			carrier.role = 'carrier';
 		}
-		for (var j = 0; j < spawns.length; j++) {
-			if (!this.collidesBot(spawns[j].x, spawns[j].z, 0.45)) return spawns[j];
-		}
-		return null;
+		this.carrier = carrier;
+		if (playerOnT) this.givePlayerBomb();
+		else if (carrier) this.attachBombCarrier(carrier);
+
+		var ctBots = this.teamBots('CT', true);
+		ctBots.forEach(function (bot, i) {
+			var assigned = i < 2 ? 'A' : 'B';
+			var holdList = assigned === 'A' ? self.world.holds.ctA : self.world.holds.ctB;
+			var hold = holdList[i % 2] || holdList[0] || null;
+			if (hold) {
+				var hp = self.snapFreePoint(hold.x, hold.z, 0.46);
+				hold = { x: hp.x, z: hp.z, lx: hold.lx, lz: hold.lz };
+			}
+			bot.site = assigned;
+			bot.homeSite = assigned;
+			bot.role = assigned === 'A' ? 'A ANCHOR' : 'B ANCHOR';
+			bot.guardIndex = i;
+			bot.post = hold;
+			bot.holdPoint = hold;
+			var baseRoute = (self.world.routes.ct[assigned] || []).map(function (w) {
+				return self.snapFreePoint(w.x + C.rand(-0.35, 0.35), w.z + C.rand(-0.35, 0.35), 0.46);
+			});
+			if (hold) baseRoute.push(self.snapFreePoint(hold.x, hold.z, 0.46));
+			bot.route = baseRoute;
+			bot.routeIndex = 0;
+			bot.mode = 'defend';
+			bot.think = C.rand(0.05, 0.4);
+		});
 	};
 
-	RangeGame.prototype.spawnBot = function (typeId, pos) {
+	RangeGame.prototype.spawnBot = function (typeId, pos, team, index) {
 		var type = C.BOT_TYPES[typeId] || C.BOT_TYPES.trooper;
-		var torsos = ['#b9b0a0', '#8b9690', '#6d746d', '#a69783', '#9d7d61', '#7d858f'];
-		var accents = ['#e2603b', '#f2a23c', '#d84b36', '#ff5f45', '#7ab6b0', '#d6c26a', '#9a8cff'];
+		var torsos = team === 'CT'
+			? ['#6f7f8b', '#7d8b96', '#5e6f7c', '#86939b']
+			: ['#b9b0a0', '#a69783', '#8b9690', '#9d7d61', '#d2c3a6'];
+		var accents = team === 'CT'
+			? ['#5aa9e6', '#7cc4ff', '#4f8fc4', '#9fd7ff']
+			: ['#e2603b', '#f2a23c', '#d84b36', '#ff5f45'];
 		var name = C.robotName();
 		for (var attempt = 0; attempt < 24 && this.usedBotNames && this.usedBotNames[name]; attempt++) name = C.robotName();
 		if (this.usedBotNames) this.usedBotNames[name] = true;
+		var torsoColor = type.torso && team === 'T' ? type.torso : C.choice(torsos);
+		if (team === 'T' && Math.random() < 0.5) torsoColor = C.choice(torsos);
 		var robot = C.buildRobot({
 			type: type, name: name,
-			torso: C.choice(torsos), accent: C.choice(accents)
+			torso: torsoColor, accent: C.choice(accents)
 		});
 		robot.baseScale = type.scale || 1;
+		robot.healthFriendly = (team === this.playerTeam);
+		C.drawHealthSprite(robot);
 		robot.root.scale.setScalar(robot.baseScale * 0.05);
 		robot.root.position.set(pos.x, 0, pos.z);
-		robot.root.rotation.y = Math.atan2(-pos.x, -pos.z);
+		robot.root.rotation.y = pos.yaw || 0;
 		robot.root.traverse(function (o) {
-			if (o.isMesh || o.isSprite) {
-				if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
-			}
+			if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
 		});
 		this.scene.add(robot.root);
 		robot.flash = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -1208,8 +1612,14 @@
 		robot.flash.visible = false;
 		robot.muzzle.add(robot.flash);
 
-		var loadouts = (C.BOT_LOADOUTS && C.BOT_LOADOUTS[type.id]) || [['ak47', 'p250']];
-		var loadout = C.choice(loadouts);
+		var teamLoadouts = C.TEAM_LOADOUTS[team] || C.TEAM_LOADOUTS.T;
+		var primary;
+		if (type.id === 'sniper') primary = C.choice(teamLoadouts.sniper);
+		else if (type.id === 'scout') primary = C.choice(team === 'CT' ? ['mp9', 'ump45', 'mp9'] : ['mp9', 'ump45', 'galil']);
+		else if (type.id === 'heavy') primary = C.choice(team === 'CT' ? ['m4a4', 'nova', 'ump45'] : ['ak47', 'nova', 'galil']);
+		else primary = C.choice(teamLoadouts.primary);
+		var secondary = C.choice(teamLoadouts.secondary);
+		var loadout = [primary, secondary];
 		var weapons = [];
 		for (var wi = 0; wi < loadout.length; wi++) {
 			var wDef = C.WEAPONS[loadout[wi]];
@@ -1224,6 +1634,8 @@
 		var hasSmg = weapons.some(function (w) { return w.def.category === 'SMG'; });
 
 		var bot = {
+			id: ++this.botSeq,
+			team: team,
 			robot: robot,
 			root: robot.root,
 			x: pos.x, z: pos.z, y: 0,
@@ -1231,6 +1643,8 @@
 			hp: robot.hp, maxHp: robot.maxHp,
 			alive: true, dead: false,
 			type: type, name: name,
+			role: '',
+			site: '',
 			speed: type.speed * (0.92 + Math.random() * 0.16),
 			accuracy: type.accuracy * (0.92 + Math.random() * 0.16),
 			damage: type.damage,
@@ -1254,7 +1668,8 @@
 			sniperCovered: false,
 			meleeUntil: 0,
 			stationaryUntil: 0,
-			behavior: 'hunt',
+			behavior: 'advance',
+			mode: 'advance',
 			behaviorSince: 0,
 			behaviorUntil: 0,
 			peekCooldown: C.rand(0.8, 2.4),
@@ -1271,10 +1686,12 @@
 			path: null,
 			pathIndex: 0,
 			pathTimer: 0,
+			repath: 0,
+			pathGoal: null,
 			stuck: 0,
 			lastX: pos.x, lastZ: pos.z,
-			state: 'hunt',
-			yaw: robot.root.rotation.y,
+			state: 'advance',
+			yaw: pos.yaw || 0,
 			strafe: Math.random() < 0.5 ? -1 : 1,
 			strafeTimer: 0,
 			walkPhase: Math.random() * 6,
@@ -1282,10 +1699,26 @@
 			deathT: 0,
 			deathSpin: C.rand(-2.4, 2.4),
 			headshotDeath: false,
-			kills: 0, deaths: 0,
+			kills: 0, deaths: 0, hs: 0,
 			ping: C.randi(12, 42),
 			flashUntil: 0,
-			footTimer: 0
+			footTimer: 0,
+			moveX: 0, moveZ: 0, moveSpeed: 0,
+			target: null, targetKey: '', targetThink: 0,
+			lastSeen: null, lastAttacker: null, lastHitAt: 0,
+			route: [], routeIndex: 0, atSite: false,
+			post: null, holdPoint: null,
+			guardIndex: index || 0,
+			hasBomb: false, bombPack: null,
+			plantSpot: null, planting: false, plantProgress: 0,
+			defuseTime: C.BOMB ? C.BOMB.defuse : 7,
+			scanPhase: C.rand(0, 6.28),
+			spottedUntil: 0,
+			lastEnemySeenAt: this.now,
+			idleLimit: C.rand(8, 14),
+			roamNextAt: this.now + C.rand(8, 14),
+			roamTarget: null, roamWaitUntil: 0, roamCount: 0,
+			supportUntil: 0, supportTarget: null, supportAlertId: 0
 		};
 		robot.head.userData = { bot: bot, part: 'head', hit: true };
 		robot.torso.userData = { bot: bot, part: 'body', hit: true };
@@ -1295,8 +1728,10 @@
 		robot.reloading = false;
 		C.drawHealthSprite(robot);
 		this.bots.push(bot);
-		this.botHitMeshes.push(robot.head, robot.torso);
-		if (robot.bodyHit) this.botHitMeshes.push(robot.bodyHit);
+		if (team === 'T') {
+			this.botHitMeshes.push(robot.head, robot.torso);
+			if (robot.bodyHit) this.botHitMeshes.push(robot.bodyHit);
+		}
 		return bot;
 	};
 
@@ -1676,6 +2111,634 @@
 		return true;
 	};
 
+	/* ======================================================================
+	   the C4 objective and the spectator camera
+	   ====================================================================== */
+	RangeGame.prototype.nearestSite = function (x, z) {
+		var best = null, bestD = 1e9;
+		for (var i = 0; i < this.world.sites.length; i++) {
+			var s = this.world.sites[i];
+			var d = Math.hypot(x - s.x, z - s.z);
+			if (d < bestD) { bestD = d; best = s; }
+		}
+		return best;
+	};
+
+	RangeGame.prototype.clearBomb = function () {
+		this.detachBombCarrier();
+		if (this.bombGroup) {
+			this.scene.remove(this.bombGroup);
+			this.bombGroup.traverse(function (o) {
+				if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+				if (o.material) { try { o.material.dispose(); } catch (e2) {} }
+			});
+			this.bombGroup = null;
+			this.bombModel = null;
+		}
+		this.bomb = null;
+		this.playerDefusing = false;
+		this.bombCarryMesh = null;
+		if (this.el.bombhud) this.el.bombhud.hidden = true;
+		if (this.el.defuse) this.el.defuse.hidden = true;
+	};
+
+	RangeGame.prototype.detachBombCarrier = function () {
+		if (this.bombCarryMesh) {
+			var parent = this.bombCarryMesh.parent;
+			if (parent) parent.remove(this.bombCarryMesh);
+			this.bombCarryMesh.traverse(function (o) {
+				if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+				if (o.material) { try { o.material.dispose(); } catch (e2) {} }
+			});
+			this.bombCarryMesh = null;
+		}
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.bombPack) { b.bombPack = null; }
+			b.hasBomb = false;
+		}
+		if (this.bomb) this.bomb.carrier = null;
+		this.playerHasBomb = false;
+		this.playerPlanting = false;
+		this.playerPlantProgress = 0;
+	};
+
+	RangeGame.prototype.attachBombCarrier = function (bot) {
+		if (!bot || !this.bomb) return;
+		this.detachBombCarrier();
+		var g = new THREE.Group();
+		var caseMat = new THREE.MeshStandardMaterial({ color: 0x39402f, roughness: 0.6, metalness: 0.32 });
+		var ledMat = new THREE.MeshBasicMaterial({ color: 0xff3b22 });
+		var body = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.3, 0.18), caseMat);
+		body.castShadow = true;
+		g.add(body);
+		var led = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.02), ledMat);
+		led.position.set(0.12, 0.06, 0.095);
+		g.add(led);
+		var strap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.22), new THREE.MeshStandardMaterial({ color: 0x2a2b25, roughness: 0.9 }));
+		strap.position.y = 0.14;
+		g.add(strap);
+		g.position.set(0, 1.25, -0.34);
+		g.rotation.x = 0.08;
+		bot.root.add(g);
+		bot.bombPack = g;
+		bot.hasBomb = true;
+		this.bombCarryMesh = g;
+		this.bomb.carrier = bot;
+		this.bomb.state = 'carried';
+		this.playerHasBomb = false;
+	};
+
+	RangeGame.prototype.givePlayerBomb = function () {
+		if (!this.bomb) return;
+		this.detachBombCarrier();
+		this.bomb.state = 'carried';
+		this.bomb.carrier = this.player;
+		this.bomb.x = this.player.x;
+		this.bomb.z = this.player.z;
+		this.bomb.plantProgress = 0;
+		this.playerHasBomb = true;
+		this.playerPlanting = false;
+		this.playerPlantProgress = 0;
+		if (this.el.c4tag) this.el.c4tag.hidden = false;
+	};
+
+	RangeGame.prototype.createBombWorldModel = function (x, z, dropped) {
+		if (this.bombGroup) {
+			this.scene.remove(this.bombGroup);
+			this.bombGroup.traverse(function (o) {
+				if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+				if (o.material) { try { o.material.dispose(); } catch (e2) {} }
+			});
+			this.bombGroup = null;
+		}
+		var model = C.buildBomb();
+		model.group.position.set(x, 0, z);
+		model.group.rotation.y = dropped ? C.rand(0, 6.28) : -0.2;
+		this.scene.add(model.group);
+		var glow = new THREE.Sprite(new THREE.SpriteMaterial({
+			map: this.tex.glow, color: 0xff4a2a, transparent: true, opacity: 0.5,
+			blending: THREE.AdditiveBlending, depthWrite: false
+		}));
+		glow.scale.set(1.35, 1.35, 1);
+		glow.position.y = 0.3;
+		model.group.add(glow);
+		model.glow = glow;
+		this.bombGroup = model.group;
+		this.bombModel = model;
+		return model;
+	};
+
+	RangeGame.prototype.choosePlantSpot = function (bot, site) {
+		if (!site) site = this.nearestSite(bot.x, bot.z);
+		var spots = (site && site.plantSpots) || [];
+		var best = null, bestD = 1e9;
+		for (var i = 0; i < spots.length; i++) {
+			var s = spots[i];
+			if (this.collidesBot(s.x, s.z, 0.34)) continue;
+			var d = Math.hypot(s.x - bot.x, s.z - bot.z);
+			if (d < bestD) { bestD = d; best = s; }
+		}
+		return best || { x: site ? site.x : bot.x, z: site ? site.z : bot.z, name: 'DEFAULT' };
+	};
+
+	RangeGame.prototype.plantBomb = function (bot) {
+		if (!this.bomb || (this.bomb.state !== 'carried' && this.bomb.state !== 'planting')) return;
+		var site = this.nearestSite(bot.x, bot.z);
+		if (!site) return;
+		var spot = this.choosePlantSpot(bot, site);
+		var b = this.bomb;
+		b.state = 'planted';
+		b.site = site.id;
+		b.x = spot.x; b.z = spot.z;
+		b.fuse = C.BOMB ? C.BOMB.fuse : 40;
+		b.plantProgress = 0;
+		b.beepTimer = 0.15;
+		b.ledPhase = 0;
+		b.planter = null;
+		bot.hasBomb = false;
+		bot.planting = false;
+		bot.plantProgress = 0;
+		bot.role = 'guard';
+		this.detachBombCarrier();
+		b.carrier = null;
+		this.createBombWorldModel(spot.x, spot.z, false);
+		for (var si = 0; si < this.bots.length; si++) {
+			var sb = this.bots[si];
+			sb.supportTarget = null;
+			sb.supportUntil = 0;
+			sb.supportAlertId = 0;
+		}
+		this.announce('BOMB PLANTED', 'SITE ' + site.id + ' — ' + this.tr('DEFUSE IT') + ' (' + (spot.name || 'C4') + ')');
+		this.sound.tone({ freq: 620, to: 940, dur: 0.16, gain: 0.18, type: 'square' });
+		this.sound.tone({ freq: 1240, dur: 0.1, gain: 0.09, type: 'sine', delay: 0.12 });
+		this.updateHostiles();
+	};
+
+	RangeGame.prototype.dropBomb = function (bot) {
+		if (!this.bomb) return;
+		if (this.bomb.state !== 'carried' && this.bomb.state !== 'planting') return;
+		var b = this.bomb;
+		b.state = 'dropped';
+		b.x = bot.x;
+		b.z = bot.z;
+		b.plantProgress = 0;
+		b.defuseProgress = 0;
+		b.playerDefuseProgress = 0;
+		b.planter = null;
+		bot.planting = false;
+		bot.plantProgress = 0;
+		this.detachBombCarrier();
+		b.carrier = null;
+		this.createBombWorldModel(bot.x, bot.z, true);
+		this.announce('BOMB DROPPED', 'RECOVER THE C4');
+	};
+
+	RangeGame.prototype.prepareBombCarrier = function (bot) {
+		if (!bot) return;
+		var site = this.nearestSite(bot.x, bot.z) || this.siteById(this.tSite) || this.world.sites[0];
+		if (!site) return;
+		bot.role = 'carrier';
+		bot.site = site.id;
+		bot.atSite = false;
+		bot.plantSpot = null;
+		bot.planting = false;
+		bot.plantProgress = 0;
+		bot.routeIndex = 0;
+		bot.path = null;
+		bot.pathGoal = null;
+		bot.think = 0;
+		bot.route = [this.snapFreePoint(site.x, site.z, 0.46)];
+		/* The rest of the squad regroups on the same site for the deployment. */
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b === bot || b.team !== 'T' || !b.alive || b.dead || b.planting) continue;
+			b.site = site.id;
+			b.atSite = false;
+			b.plantSpot = null;
+			b.route = [this.snapFreePoint(site.x, site.z, 0.46)];
+			b.routeIndex = 0;
+			b.path = null;
+			b.pathGoal = null;
+			b.think = 0;
+		}
+	};
+
+	RangeGame.prototype.pickupBomb = function (bot) {
+		if (!this.bomb || this.bomb.state !== 'dropped') return;
+		if (Math.hypot(bot.x - this.bomb.x, bot.z - this.bomb.z) > 1.7) return;
+		if (this.bombGroup) {
+			this.scene.remove(this.bombGroup);
+			this.bombGroup.traverse(function (o) {
+				if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+				if (o.material) { try { o.material.dispose(); } catch (e2) {} }
+			});
+			this.bombGroup = null;
+			this.bombModel = null;
+		}
+		this.bomb.state = 'carried';
+		this.attachBombCarrier(bot);
+		this.prepareBombCarrier(bot);
+	};
+
+	RangeGame.prototype.defuseTime = function () {
+		return this.defuseKit ? (C.BOMB ? C.BOMB.defuseKit : 5) : (C.BOMB ? C.BOMB.defuse : 10);
+	};
+
+	RangeGame.prototype.defuseBomb = function (by) {
+		if (!this.bomb || this.bomb.state !== 'planted') return;
+		this.bomb.state = 'defused';
+		this.bomb.playerDefuseProgress = this.defuseTime();
+		this.playerDefusing = false;
+		if (this.bombModel) {
+			try {
+				this.bombModel.ledMat.color.setHex(0x7dffb0);
+				this.bombModel.glow.material.color.setHex(0x7dffb0);
+			} catch (e) {}
+		}
+		var name = (by === 'player') ? 'YOU' : (by && by.name ? by.name : 'CT');
+		this.announce('BOMB DEFUSED', this.tr(name) + ' — COUNTER-TERRORISTS WIN');
+		this.sound.tone({ freq: 880, to: 440, dur: 0.4, gain: 0.2, type: 'triangle' });
+		this.addKillFeed(name, 'C4', 'DEFUSE', false, by === 'player');
+		this.endRound(true, 'The bomb was defused.', 'defuse');
+	};
+
+	RangeGame.prototype.explodeBomb = function () {
+		if (!this.bomb || this.bomb.state === 'exploded' || this.bomb.state === 'defused') return;
+		this.bomb.state = 'exploded';
+		var bx = this.bomb.x, bz = this.bomb.z;
+		this.sound.explode();
+		this.shake = 1.3;
+		this.flashDamage();
+		if (this.el.flash) {
+			var self = this;
+			this.el.flash.classList.add('is-head');
+			setTimeout(function () { if (self.el.flash) self.el.flash.classList.remove('is-head'); }, 420);
+		}
+		this.spawnSparks(new THREE.Vector3(bx, 1.2, bz), 0xffb060, 46, 9);
+		if (this.bombGroup) this.bombGroup.visible = false;
+		this.announce('BOMB DETONATED', 'SITE ' + (this.bomb.site || '?') + ' — TERRORISTS WIN');
+		if (this.player.alive && Math.hypot(this.player.x - bx, this.player.z - bz) < 18) {
+			this.player.health = 0;
+			this.player.alive = false;
+			this.playerWasKilledLastRound = true;
+			this.playerDiedLastRound = true;
+			this.el.hud && this.el.hud.classList.add('is-dead');
+		}
+		this.endRound(false, 'The bomb detonated.', 'explode');
+	};
+
+	RangeGame.prototype.nearestCTBotToBomb = function () {
+		if (!this.bomb) return null;
+		var best = null, bestD = 1e9;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.team !== 'CT' || !b.alive || b.dead) continue;
+			var d = Math.hypot(b.x - this.bomb.x, b.z - this.bomb.z);
+			if (d < bestD) { bestD = d; best = b; }
+		}
+		return best;
+	};
+
+	RangeGame.prototype.pickupBombPlayer = function () {
+		var b = this.bomb;
+		if (!b || b.state !== 'dropped' || this.playerTeam !== 'T') return;
+		if (Math.hypot(this.player.x - b.x, this.player.z - b.z) > 1.8) return;
+		if (this.bombGroup) {
+			this.scene.remove(this.bombGroup);
+			this.bombGroup.traverse(function (o) {
+				if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} }
+				if (o.material) { try { o.material.dispose(); } catch (e2) {} }
+			});
+			this.bombGroup = null;
+			this.bombModel = null;
+		}
+		b.state = 'carried';
+		b.carrier = this.player;
+		b.x = this.player.x;
+		b.z = this.player.z;
+		this.playerHasBomb = true;
+		this.playerPlanting = false;
+		this.playerPlantProgress = 0;
+		this.announce('C4 RECOVERED', 'HOLD E AT A SITE TO PLANT');
+		this.sound.tone({ freq: 520, to: 760, dur: 0.12, gain: 0.12, type: 'triangle' });
+	};
+
+	RangeGame.prototype.plantPlayerBomb = function (site) {
+		var b = this.bomb;
+		if (!b || b.state !== 'carried' || !this.playerHasBomb) return;
+		if (!site) site = this.nearestSite(this.player.x, this.player.z);
+		if (!site) return;
+		b.state = 'planted';
+		b.site = site.id;
+		b.x = this.player.x;
+		b.z = this.player.z;
+		b.fuse = C.BOMB ? C.BOMB.fuse : 40;
+		b.plantProgress = 0;
+		b.playerPlantProgress = 0;
+		b.playerDefuseProgress = 0;
+		b.beepTimer = 0.15;
+		b.ledPhase = 0;
+		b.planter = this.player;
+		this.playerHasBomb = false;
+		this.playerPlanting = false;
+		this.playerPlantProgress = 0;
+		this.playerPlantProgress = 0;
+		this.detachBombCarrier();
+		this.createBombWorldModel(b.x, b.z, false);
+		for (var si = 0; si < this.bots.length; si++) {
+			var sb = this.bots[si];
+			sb.supportTarget = null;
+			sb.supportUntil = 0;
+			sb.supportAlertId = 0;
+		}
+		this.announce('BOMB PLANTED', 'SITE ' + site.id + ' — DEFEND THE C4');
+		this.sound.tone({ freq: 620, to: 940, dur: 0.16, gain: 0.18, type: 'square' });
+		this.sound.tone({ freq: 1240, dur: 0.1, gain: 0.09, type: 'sine', delay: 0.12 });
+		this.updateHostiles();
+		this.updateBombHUD();
+	};
+
+	RangeGame.prototype.updatePlayerPlant = function (dt) {
+		var b = this.bomb;
+		var p = this.player;
+		if (!b || !this.playerHasBomb || b.state !== 'carried') {
+			this.playerPlanting = false;
+			this.playerPlantProgress = Math.max(0, this.playerPlantProgress - dt * 2);
+			return;
+		}
+		if (this.playerTeam !== 'T' || !p.alive || this.state !== 'playing' || !this.round || this.round.phase !== 'live') return;
+		var site = this.nearestSite(p.x, p.z);
+		var onSite = !!site && Math.hypot(p.x - site.x, p.z - site.z) <= site.r + 0.6;
+		var moving = this.keys.w || this.keys.a || this.keys.s || this.keys.d || p.speed > 0.7 || this.input.fire;
+		if (!onSite) {
+			this.playerPlanting = false;
+			this.playerPlantProgress = Math.max(0, this.playerPlantProgress - dt * 1.6);
+			return;
+		}
+		if (this.input.defuse && !moving) {
+			if (!this.playerPlanting) {
+				this.playerPlanting = true;
+				this.playerPlantProgress = 0;
+				this.announce('PLANTING C4', 'HOLD E — STAY STILL');
+			}
+			this.playerPlantProgress += dt;
+			if (this.playerPlantProgress >= (C.BOMB ? C.BOMB.plantTime : 3.2)) {
+				this.plantPlayerBomb(site);
+			}
+		} else {
+			this.playerPlanting = false;
+			this.playerPlantProgress = Math.max(0, this.playerPlantProgress - dt * 2.2);
+		}
+	};
+
+	RangeGame.prototype.updatePlayerDefuse = function (dt) {
+		var b = this.bomb;
+		var p = this.player;
+		if (!b) return;
+		if (this.playerTeam !== 'CT') { b.playerDefuseProgress = 0; this.playerDefusing = false; return; }
+		if (b.state !== 'planted') { b.playerDefuseProgress = 0; this.playerDefusing = false; return; }
+		var dist = Math.hypot(p.x - b.x, p.z - b.z);
+		var near = p.alive && this.state === 'playing' && dist < 2.2 && this.round && this.round.phase === 'live';
+		var moving = this.keys.w || this.keys.a || this.keys.s || this.keys.d || p.speed > 0.7 || this.input.fire;
+		if (near && this.input.defuse && !moving) {
+			this.playerDefusing = true;
+			b.playerDefuseProgress += dt;
+			if (b.playerDefuseProgress >= this.defuseTime()) {
+				b.playerDefuseProgress = this.defuseTime();
+				this.defuseBomb('player');
+			}
+		} else {
+			this.playerDefusing = false;
+			b.playerDefuseProgress = Math.max(0, b.playerDefuseProgress - dt * 2.2);
+		}
+	};
+
+	RangeGame.prototype.updateBomb = function (dt) {
+		var b = this.bomb;
+		if (!b) return;
+		var now = this.now;
+		if (b.state === 'carried' || b.state === 'planting') {
+			if (b.carrier) { b.x = b.carrier.x; b.z = b.carrier.z; }
+			if (b.state === 'planting' && b.planter && (!b.planter.alive || b.planter.dead)) {
+				this.dropBomb(b.planter);
+			}
+			if (b.carrier === this.player) this.updatePlayerPlant(dt);
+		} else if (b.state === 'dropped') {
+			/* a terrorist close enough picks the C4 back up */
+			var ts = this.teamBots('T', true);
+			for (var i = 0; i < ts.length; i++) {
+				var t = ts[i];
+				if (Math.hypot(t.x - b.x, t.z - b.z) < 1.55) { this.pickupBomb(t); break; }
+			}
+			if (this.playerTeam === 'T' && this.player.alive &&
+				Math.hypot(this.player.x - b.x, this.player.z - b.z) < 1.7 &&
+				this.input.defuse && this.round && this.round.phase === 'live') {
+				this.pickupBombPlayer();
+			}
+			if (this.bombGroup) {
+				this.bombGroup.position.y = Math.sin(this.gameTime * 2.4) * 0.02;
+			}
+		} else if (b.state === 'planted') {
+			b.fuse -= dt;
+			b.ledPhase += dt;
+			var interval = b.fuse > 22 ? 1.15 : b.fuse > 11 ? 0.62 : 0.3;
+			b.beepTimer -= dt;
+			if (b.beepTimer <= 0) {
+				b.beepTimer = interval;
+				var distP = Math.hypot(this.player.x - b.x, this.player.z - b.z);
+				var att = C.clamp(1 - distP / 80, 0.1, 1);
+				this.sound.tone({ freq: b.fuse < 11 ? 1400 : 1050, dur: 0.05, gain: 0.09 * att, type: 'square', pan: this.panFor(b.x, b.z) });
+				if (b.fuse < 8) this.sound.tone({ freq: 1800, dur: 0.04, gain: 0.05, type: 'sine' });
+			}
+			if (this.bombModel) {
+				var on = Math.sin(b.ledPhase * (b.fuse < 11 ? 22 : 10)) > 0;
+				this.bombModel.ledMat.color.setHex(on ? 0xff3b22 : 0x4a1208);
+				if (this.bombModel.glow) this.bombModel.glow.material.opacity = on ? 0.62 : 0.16;
+				this.bombModel.group.rotation.y += dt * 0.12;
+			}
+			/* bot defuser: one CT bot nearest the C4 tries to stick it */
+			if (this.playerDefusing) {
+				b.defuser = null;
+				b.defuseProgress = 0;
+			} else {
+				if (!b.defuser || !b.defuser.alive || b.defuser.dead) {
+					var best = this.nearestCTBotToBomb();
+					if (best && Math.hypot(best.x - b.x, best.z - b.z) < 38) b.defuser = best;
+				}
+				if (b.defuser) {
+					var d = b.defuser;
+					if (!d.alive || d.dead || Math.hypot(d.x - b.x, d.z - b.z) > 1.9) {
+						b.defuseProgress = Math.max(0, b.defuseProgress - dt * 2);
+					} else {
+						b.defuseProgress += dt;
+						if (b.defuseProgress >= (d.defuseTime || 7)) {
+							b.defuseProgress = d.defuseTime || 7;
+							this.defuseBomb(d);
+						}
+					}
+				}
+			}
+			this.updatePlayerDefuse(dt);
+			if (b.fuse <= 0) { b.fuse = 0; this.explodeBomb(); }
+		}
+		this.updateBombHUD();
+	};
+
+	RangeGame.prototype.updateBombHUD = function () {
+		var e = this.el;
+		var b = this.bomb;
+		if (!e) return;
+		var planted = !!(b && b.state === 'planted');
+		if (e.bombhud) {
+			e.bombhud.hidden = !planted;
+			if (planted) {
+				var fuseTxt = Math.max(0, b.fuse).toFixed(1);
+				text(e.bombTimer, fuseTxt);
+				text(e.bombSite, 'SITE ' + (b.site || '?'));
+				e.bombhud.classList.toggle('is-critical', b.fuse < 10);
+				var prog = Math.max(b.playerDefuseProgress || 0, b.defuseProgress || 0);
+				var total = this.defuseTime();
+				var pct = C.clamp(prog / total, 0, 1) * 100;
+				if (e.bombBar) e.bombBar.style.width = pct + '%';
+			}
+		}
+		if (e.c4tag) e.c4tag.hidden = !this.playerHasBomb;
+		if (e.defuse) {
+			var showDefuse = false, defuseOn = false;
+			var plantSite = null;
+			if (this.playerTeam === 'T' && this.player.alive) {
+				if (this.playerHasBomb && b && b.state === 'carried') {
+					plantSite = this.nearestSite(this.player.x, this.player.z);
+					var onSite = !!plantSite && Math.hypot(this.player.x - plantSite.x, this.player.z - plantSite.z) <= plantSite.r + 0.6;
+					if (onSite && this.round && this.round.phase === 'live' && this.state === 'playing') {
+						showDefuse = true;
+						defuseOn = !!this.playerPlanting;
+						var plantTotal = C.BOMB ? C.BOMB.plantTime : 3.2;
+						if (e.defuseText) text(e.defuseText, this.playerPlanting ? 'PLANTING C4' : (this.isTouch ? 'HOLD USE TO PLANT' : 'HOLD E TO PLANT'));
+						if (e.defuseKitLabel) text(e.defuseKitLabel, 'C4 · SITE ' + plantSite.id + ' · ' + plantTotal.toFixed(1) + 's');
+						if (e.defuseBar) e.defuseBar.style.width = C.clamp((this.playerPlantProgress || 0) / plantTotal, 0, 1) * 100 + '%';
+					}
+				} else if (b && b.state === 'dropped' && Math.hypot(this.player.x - b.x, this.player.z - b.z) < 1.8) {
+					showDefuse = true;
+					if (e.defuseText) text(e.defuseText, 'PRESS E TO RECOVER THE C4');
+					if (e.defuseKitLabel) text(e.defuseKitLabel, 'BOMB DROPPED');
+					if (e.defuseBar) e.defuseBar.style.width = '0%';
+				}
+			} else if (this.playerTeam === 'CT') {
+				var near = planted && this.player.alive && Math.hypot(this.player.x - b.x, this.player.z - b.z) < 2.2;
+				showDefuse = near;
+				if (near) {
+					defuseOn = !!this.playerDefusing;
+					var canKit = this.defuseKit;
+					var seconds = this.defuseTime();
+					if (e.defuseText) {
+						text(e.defuseText, this.playerDefusing ? 'DEFUSING' : (this.isTouch ? 'HOLD USE TO DEFUSE' : 'HOLD E TO DEFUSE'));
+					}
+					if (e.defuseKitLabel) text(e.defuseKitLabel, this.tr(canKit ? 'KIT' : 'NO KIT') + ' · ' + seconds.toFixed(0) + 's');
+					if (e.defuseBar) e.defuseBar.style.width = C.clamp((b.playerDefuseProgress || 0) / seconds, 0, 1) * 100 + '%';
+				}
+			}
+			e.defuse.hidden = !showDefuse;
+			e.defuse.classList.toggle('is-on', defuseOn);
+		}
+		if (e.kit) {
+			e.kit.hidden = !(this.defuseKit && this.playerTeam === 'CT');
+		}
+	};
+
+	RangeGame.prototype.selectSpectateTarget = function () {
+		var best = null, bestD = 1e9;
+		var p = this.player;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.team !== this.playerTeam || !b.alive || b.dead) continue;
+			var d = Math.hypot(b.x - p.x, b.z - p.z);
+			if (d < bestD) { bestD = d; best = b; }
+		}
+		this.spectateTarget = best;
+		return best;
+	};
+
+	RangeGame.prototype.beginSpectate = function () {
+		if (this.spectating) return;
+		this.spectating = true;
+		this.selectSpectateTarget();
+		if (this.spectateTarget) this.hideDeathCam();
+		this._specCam = null;
+		if (this.el.spectate) this.el.spectate.hidden = false;
+		if (this.el.hud) this.el.hud.classList.add('is-spectating');
+		this.updateSpectateHUD();
+	};
+
+	RangeGame.prototype.cycleSpectateTarget = function (dir) {
+		var list = [];
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.team === this.playerTeam && b.alive && !b.dead) list.push(b);
+		}
+		if (!list.length) { this.spectateTarget = null; this.updateSpectateHUD(); return; }
+		var idx = list.indexOf(this.spectateTarget);
+		idx = (idx + (dir || 1) + list.length) % list.length;
+		this.spectateTarget = list[idx];
+		this._specCam = null;
+		if (this.el.spectate) this.el.spectate.hidden = false;
+		if (this.el.hud) this.el.hud.classList.add('is-spectating');
+		this.updateSpectateHUD();
+		this.sound.tone({ freq: 620, to: 860, dur: 0.06, gain: 0.05, type: 'square' });
+	};
+
+	RangeGame.prototype.hideSpectate = function () {
+		this.spectating = false;
+		this.spectateTarget = null;
+		this._specCam = null;
+		if (this.el.spectate) this.el.spectate.hidden = true;
+		if (this.el.hud) this.el.hud.classList.remove('is-spectating');
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.root) b.root.visible = true;
+		}
+	};
+
+	RangeGame.prototype.updateSpectateHUD = function () {
+		if (!this.spectating) return;
+		var t = this.spectateTarget;
+		if (!t || !t.alive || t.dead) t = this.selectSpectateTarget();
+		if (this.el.spectateName) text(this.el.spectateName, t ? t.name : 'NO ROBOTS LEFT');
+		if (this.el.spectateAlive) text(this.el.spectateAlive, String(this.aliveTeamCount(this.playerTeam)));
+	};
+
+	RangeGame.prototype.updateSpectateCamera = function () {
+		var t = this.spectateTarget;
+		if (!t || !t.alive || t.dead) t = this.selectSpectateTarget();
+		if (!t) { if (this.playerBody) this.playerBody.visible = true; this.updateDeathCamera(); return; }
+		this.spectateTarget = t;
+		for (var i = 0; i < this.bots.length; i++) {
+			var b = this.bots[i];
+			if (b.root) b.root.visible = true;
+		}
+		var cam = this.camera;
+		var yaw = t.yaw;
+		var eye = 1.36 * t.baseScale;
+		var dist = 3.8, height = 2.25;
+		var bx = t.x - Math.sin(yaw) * dist;
+		var bz = t.z - Math.cos(yaw) * dist;
+		for (var d = dist; d > 1.0; d -= 0.35) {
+			bx = t.x - Math.sin(yaw) * d;
+			bz = t.z - Math.cos(yaw) * d;
+			if (Math.abs(bx) < 38 && Math.abs(bz) < 39 && !this.collidesAt(bx, bz, 0, height + 0.3)) break;
+		}
+		if (!this._specCam) this._specCam = new THREE.Vector3(bx, height, bz);
+		var k = this.reduceMotion ? 1 : 0.28;
+		this._specCam.x += (bx - this._specCam.x) * k;
+		this._specCam.y += (height - this._specCam.y) * k;
+		this._specCam.z += (bz - this._specCam.z) * k;
+		cam.fov = 74;
+		cam.position.copy(this._specCam);
+		var lookAhead = 4.6;
+		cam.lookAt(t.x + Math.sin(yaw) * lookAhead, eye + 0.1, t.z + Math.cos(yaw) * lookAhead);
+		cam.updateProjectionMatrix();
+	};
 	RangeGame.prototype.updateRoundNo = function () {
 		text(this.el.roundWord, this.practice ? 'PRACTICE' : 'ROUND');
 		text(this.el.roundNo, this.practice ? '' : this.match.round);
@@ -1694,9 +2757,9 @@
 
 	RangeGame.prototype.updatePips = function () {
 		if (!this.el.pips) return;
-		var history = this.roundHistory.slice(-8);
+		var history = this.roundHistory.slice(-13);
 		var html = '';
-		for (var i = 0; i < 8; i++) {
+		for (var i = 0; i < 13; i++) {
 			if (history[i]) html += '<i class="is-' + history[i] + '"></i>';
 			else html += '<i></i>';
 		}
@@ -1704,13 +2767,25 @@
 	};
 
 	RangeGame.prototype.updateHostiles = function () {
-		var alive = 0;
-		for (var i = 0; i < this.bots.length; i++) if (this.bots[i].alive) alive++;
-		text(this.el.hostiles, alive);
+		var enemyAlive = 0, allyAlive = this.player.alive ? 1 : 0;
+		for (var i = 0; i < this.bots.length; i++) {
+			if (!this.bots[i].alive) continue;
+			if (this.bots[i].team === this.playerTeam) allyAlive++;
+			else enemyAlive++;
+		}
+		text(this.el.hostiles, enemyAlive);
+		if (this.el.hostileLabel) text(this.el.hostileLabel, this.enemyTeam === 'T' ? 'TERRORISTS' : 'COUNTER-TERRORISTS');
 		if (this.el.hostileDots) {
 			var html = '';
-			for (var d = 0; d < alive; d++) html += '<span></span>';
+			for (var d = 0; d < enemyAlive; d++) html += '<span></span>';
 			this.el.hostileDots.innerHTML = html;
+		}
+		if (this.el.allies) text(this.el.allies, allyAlive);
+		if (this.el.allyLabel) text(this.el.allyLabel, this.playerTeam === 'CT' ? 'CT ALIVE' : 'T ALIVE');
+		if (this.el.allyDots) {
+			var html2 = '';
+			for (var a = 0; a < allyAlive; a++) html2 += '<span></span>';
+			this.el.allyDots.innerHTML = html2;
 		}
 	};
 
@@ -1721,15 +2796,20 @@
 			return;
 		}
 		var val;
+		var bomb = this.bomb;
+		var planted = bomb && bomb.state === 'planted';
 		if (this.state === 'roundover' || this.state === 'matchover') val = '0:00';
 		else if (this.round && this.round.phase === 'freeze') val = fmtTime(this.round.freezeLeft);
+		else if (planted) val = fmtTime(Math.max(0, bomb.fuse));
 		else if (this.round) val = fmtTime(this.round.timer);
 		else val = '1:55';
 		text(this.el.roundTimer, val);
+		if (this.el.roundTimer) this.el.roundTimer.classList.toggle('is-bomb', !!planted);
 		if (this.el.phaseLabel) {
 			var label = 'BUY TIME';
 			if (this.state === 'roundover') label = 'ROUND OVER';
 			else if (this.state === 'matchover') label = 'MATCH OVER';
+			else if (planted) label = this.playerDefusing ? 'DEFUSING' : 'BOMB PLANTED';
 			else if (this.round && this.round.phase === 'live') label = 'LIVE';
 			text(this.el.phaseLabel, label);
 		}
@@ -1836,23 +2916,29 @@
 			if (round.freezeLeft <= 0) {
 				round.freezeLeft = 0;
 				round.phase = 'live';
-				this.announce('ROUND START', 'ELIMINATE THE ROBOT SQUAD');
+				this.announce('ROUND START', this.playerTeam === 'T' ? 'PLANT THE C4 — CLEAR THE SITE' : 'DEFEND THE SITES — STOP THE C4');
 				this.sound.roundStart();
 				this.updateBuyHint();
 				if (this.buyOpen) this.closeBuy();
 			}
 		}
-		if (round.phase === 'live' && this.player.alive) {
-			round.timer -= dt;
-			if (round.timer <= 0) {
-				round.timer = 0;
-				this.endRound(false, 'Time expired before the squad was eliminated.');
+		if (round.phase === 'live') {
+			var planted = this.bomb && this.bomb.state === 'planted';
+			if (!planted) {
+				round.timer -= dt;
+				if (round.timer <= 0) {
+					round.timer = 0;
+					this.endRound(true, 'Time expired before the bomb was planted.', 'time');
+					return;
+				}
 			}
 		}
 
 		this.updatePlayer(dt);
+		this.checkPlayerContact(dt);
 		this.updateWeapon(dt);
 		this.updateBots(dt);
+		this.updateBomb(dt);
 		this.updateChickens(dt);
 		this.updateFx(dt);
 		this.updateRoundTimer();
@@ -1863,30 +2949,29 @@
 		if (!this.player.alive) {
 			this.deathTimer -= dt;
 			this.updateDeathHUD();
-			if (this.deathTimer <= 0) {
-				var why = this.deathInfo ? (this.deathInfo.headshot ? 'Headshot by ' : 'Eliminated by ') + this.deathInfo.name + ' (' + this.deathInfo.weapon + ').' : 'You were eliminated by the robot squad.';
-				this.endRound(false, why);
-			}
-		} else if (round.phase === 'live') {
-			var alive = 0;
-			for (var i = 0; i < this.bots.length; i++) if (this.bots[i].alive) alive++;
-			if (alive === 0) this.endRound(true, 'All hostiles eliminated.');
+			if (this.deathTimer <= 0 && !this.spectating) this.beginSpectate();
+			if (this.spectating) this.updateSpectateHUD();
 		}
+		this.checkRoundEnd();
 		this.updateBuyHint();
+		this.updateBombHUD();
+		this.updateContactHUD();
 	};
 
 	RangeGame.prototype.updateResult = function (dt) {
 		this.resultTimer -= dt;
-		if (this.el.resultNext) {
-			text(this.el.resultNext, 'NEXT ROUND IN ' + Math.max(1, Math.ceil(this.resultTimer)));
+		if (this.el.bannerNext) {
+			text(this.el.bannerNext, 'NEXT ROUND IN ' + Math.max(1, Math.ceil(this.resultTimer)));
 		}
 		this.updateFx(dt);
+		this.updateBotsDeath(dt);
 		this.updateViewWeapon(dt);
 		if (this.resultTimer <= 0) this.nextRound(false);
 	};
 
 	RangeGame.prototype.nextRound = function (manual) {
 		if (this.state !== 'roundover') return;
+		this.hideRoundBanner();
 		if (this.match.ct >= MATCH_TARGET || this.match.t >= MATCH_TARGET) {
 			this.showMatch();
 			return;
@@ -1895,58 +2980,96 @@
 		this.startRound(false);
 	};
 
-	RangeGame.prototype.endRound = function (win, reason) {
+	RangeGame.prototype.endRound = function (win, reason, cause) {
 		if (!this.round || this.round.ended) return;
 		this.round.ended = true;
 		this.round.phase = 'over';
 		this.state = 'roundover';
 		this.closeScoreboard();
 		this.input.fire = false;
+		this.input.defuse = false;
 		this.semiQueued = false;
 		this.reloading = false;
 		this.scoped = false;
+		this.playerPlanting = false;
 		this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
 		this.updateBuyHint();
-		this.hideDeathCam();
+		this.playerDefusing = false;
+		if (this.el.defuse) this.el.defuse.hidden = true;
+		if (this.el.bombhud) this.el.bombhud.hidden = true;
+		if (this.el.contact) this.el.contact.hidden = true;
+		if (this.el.c4tag) this.el.c4tag.hidden = true;
+		if (this.el.announce) {
+			this.el.announce.classList.remove('is-show', 'is-stay');
+			this.el.announce.textContent = '';
+		}
 
-		var reward = win ? 3250 : 1900;
+		var winner = win ? 'CT' : 'T';
+		var playerWin = (winner === this.playerTeam);
+		this.roundPlayerWin = playerWin;
+		var reward;
+		if (playerWin) {
+			reward = cause === 'defuse' ? 3500 : 3250;
+			this.match.lossStreak = 0;
+		} else {
+			reward = clamp(1400 + this.match.lossStreak * 500, 1400, 3400);
+			this.match.lossStreak++;
+		}
+		if (win) this.match.ct++; else this.match.t++;
 		this.resultReward = reward;
 		this.match.money = clamp(this.match.money + reward, 0, 16000);
-		if (win) this.match.ct++; else this.match.t++;
 		this.roundHistory.push(win ? 'ct' : 't');
-		if (win) this.sound.win(); else this.sound.lose();
+		if (playerWin) this.sound.win(); else this.sound.lose();
 		this.updateScoreHUD();
 		this.updatePips();
 		this.updateHostiles();
 		this.updateHUD();
 
+		/* The round result is a banner, not a modal page. The next round starts
+		   on its own a few seconds later (Space skips). */
+		if (this.el.result) this.el.result.hidden = true;
+		this.showRoundBanner(playerWin, winner, reason || '', reward);
+		this.resultTimer = 3.2;
+	};
+
+	RangeGame.prototype.showRoundBanner = function (playerWin, winner, reason, reward) {
 		var e = this.el;
-		if (e.resultPanel) e.resultPanel.dataset.outcome = win ? 'win' : 'lose';
-		text(e.resultKicker, 'ROUND ' + this.match.round);
-		text(e.resultTitle, win ? 'COUNTER-TERRORISTS WIN' : 'ROBOT SQUAD WINS');
-		text(e.resultReason, reason || '');
-		text(e.resultScore, 'CT ' + this.match.ct + ' — ' + this.match.t + ' T');
-		text(e.resultKills, this.roundStats.kills);
-		text(e.resultHs, this.roundStats.hs);
-		text(e.resultAcc, (this.roundStats.shots ? Math.round(this.roundStats.hits / this.roundStats.shots * 100) : 0) + '%');
-		text(e.resultReward, '+' + fmtMoney(reward));
-		text(e.resultNext, 'NEXT ROUND IN 5');
-		if (e.result) e.result.hidden = false;
-		this.resultTimer = 5.2;
+		if (!e || !e.banner) return;
+		e.banner.hidden = false;
+		e.banner.classList.toggle('is-win', !!playerWin);
+		e.banner.classList.toggle('is-loss', !playerWin);
+		e.banner.classList.toggle('is-ct', this.playerTeam === 'CT');
+		e.banner.classList.toggle('is-t', this.playerTeam === 'T');
+		if (e.bannerKicker) e.bannerKicker.textContent = this.tr('ROUND') + ' ' + this.match.round + ' · ' + this.tr(this.playerTeam === 'CT' ? 'COUNTER-TERRORISTS' : 'TERRORISTS');
+		text(e.bannerTitle, winner === 'CT' ? 'COUNTER-TERRORISTS WIN' : 'TERRORISTS WIN');
+		text(e.bannerReason, reason || '');
+		text(e.bannerScore, 'CT ' + this.match.ct + ' — ' + this.match.t + ' T');
+		text(e.bannerReward, '+' + fmtMoney(reward));
+		text(e.bannerNext, 'NEXT ROUND IN 3');
+	};
+
+	RangeGame.prototype.hideRoundBanner = function () {
+		if (this.el.banner) this.el.banner.hidden = true;
 	};
 
 	RangeGame.prototype.showMatch = function () {
 		this.closeScoreboard();
 		this.state = 'matchover';
-		var won = this.match.ct >= MATCH_TARGET;
+		this.hideSpectate();
+		this.hideRoundBanner();
+		var myScore = this.playerTeam === 'CT' ? this.match.ct : this.match.t;
+		var won = myScore >= MATCH_TARGET;
 		var e = this.el;
 		if (e.result) e.result.hidden = true;
+		if (e.banner) e.banner.hidden = true;
 		if (e.pause) e.pause.hidden = true;
 		if (e.buy) e.buy.hidden = true;
 		if (e.scoreboard) e.scoreboard.hidden = true;
 		if (e.matchPanel) e.matchPanel.dataset.outcome = won ? 'won' : 'lost';
 		text(e.matchTitle, won ? 'VICTORY' : 'DEFEAT');
-		text(e.matchCopy, won ? 'The training site is clear. Operation complete.' : 'The robot squad held the site. Regroup and try again.');
+		text(e.matchCopy, won
+			? (this.playerTeam === 'CT' ? 'The sites held. Operation complete.' : 'The sites fell. Operation complete.')
+			: (this.playerTeam === 'CT' ? 'The terrorist squad took the sites. Regroup and try again.' : 'The defence held. Regroup and try again.'));
 		text(e.matchCt, this.match.ct);
 		text(e.matchT, this.match.t);
 		text(e.matchRounds, this.match.round);
@@ -1958,9 +3081,9 @@
 
 		var r = this.records;
 		r.matches = (r.matches || 0) + 1;
-		r.bestWins = Math.max(r.bestWins || 0, this.match.ct);
-		r.totalRounds = (r.totalRounds || 0) + this.match.ct;
-		r.bestRounds = Math.max(r.bestRounds || 0, this.match.ct);
+		r.bestWins = Math.max(r.bestWins || 0, myScore);
+		r.totalRounds = (r.totalRounds || 0) + myScore;
+		r.bestRounds = Math.max(r.bestRounds || 0, myScore);
 		r.bestKills = Math.max(r.bestKills || 0, this.match.kills);
 		saveJSON(RECORDS_KEY, r);
 		this.updateMenuStats();
@@ -2092,7 +3215,8 @@
 	RangeGame.prototype.updateCamera = function () {
 		var p = this.player;
 		if (!p.alive) {
-			this.updateDeathCamera();
+			if (this.spectating) this.updateSpectateCamera();
+			else this.updateDeathCamera();
 			return;
 		}
 		var bob = 0, bobX = 0;
@@ -2119,19 +3243,17 @@
 			weapon: weapon,
 			headshot: !!headshot
 		};
-		this.deathTimer = 3.6;
+		this.deathTimer = 1.4;
 		if (this.el.announce) this.el.announce.classList.remove('is-show', 'is-stay');
 		if (this.playerBody) {
 			this.playerBody.visible = true;
 			this.playerBody.position.set(p.x, p.feetY, p.z);
 			this.playerBody.rotation.set(0, p.yaw, 0);
 		}
-		if (this.el.deathcam) {
-			this.el.deathcam.hidden = false;
-			text(this.el.killer, this.deathInfo.name);
-			text(this.el.killerWeapon, this.deathInfo.weapon);
-			if (this.el.deathType) text(this.el.deathType, headshot ? 'HEADSHOT · ELIMINATED BY' : 'ELIMINATED BY');
-			this.updateDeathHUD();
+		if (this.el.deathcam) this.el.deathcam.hidden = true;
+		if (this.el.specHint) {
+			this.el.specHint.hidden = false;
+			text(this.el.specHint, (headshot ? 'HEADSHOT · ' : '') + 'ELIMINATED BY ' + this.deathInfo.name + ' · ' + this.deathInfo.weapon);
 		}
 		this.camera.fov = 74;
 		this.camera.updateProjectionMatrix();
@@ -2140,6 +3262,7 @@
 	RangeGame.prototype.hideDeathCam = function () {
 		if (this.playerBody) this.playerBody.visible = false;
 		if (this.el.deathcam) this.el.deathcam.hidden = true;
+		if (this.el.specHint) this.el.specHint.hidden = true;
 		this.deathInfo = null;
 	};
 
@@ -2179,13 +3302,13 @@
 	};
 
 	RangeGame.prototype.collidesAt = function (x, z, feetY, height) {
-		var r = 0.34;
+		var r = 0.32;
 		var cols = this.world.colliders;
 		for (var i = 0; i < cols.length; i++) {
 			var c = cols[i];
 			if (feetY + 0.06 >= c.maxY) continue;
 			if (feetY + height <= c.minY + 0.02) continue;
-			if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) return true;
+			if (circleHitsBox(x, z, r, c)) return true;
 		}
 		return false;
 	};
@@ -2196,7 +3319,7 @@
 			var c = cols[i];
 			if (c.maxY < 0.2) continue;
 			if (c.minY > 1.6) continue;
-			if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) return true;
+			if (circleHitsBox(x, z, r, c)) return true;
 		}
 		return false;
 	};
@@ -2209,7 +3332,7 @@
 			var c = cols[i];
 			if (c.maxY > feetY + 0.34) continue;
 			if (c.maxY <= best) continue;
-			if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) best = c.maxY;
+			if (circleHitsBox(x, z, r, c)) best = c.maxY;
 		}
 		return best;
 	};
@@ -2227,11 +3350,11 @@
 	RangeGame.prototype.tryStepUp = function (nx, nz) {
 		var p = this.player;
 		if (!p.onGround || p.vy > 0.15) return false;
-		var r = 0.34, maxStep = 0.46, best = 0;
+		var r = 0.32, maxStep = 0.46, best = 0;
 		var cols = this.world.colliders;
 		for (var i = 0; i < cols.length; i++) {
 			var c = cols[i];
-			if (!(nx + r > c.minX && nx - r < c.maxX && nz + r > c.minZ && nz - r < c.maxZ)) continue;
+			if (!circleHitsBox(nx, nz, r, c)) continue;
 			if (c.maxY > p.feetY + maxStep) return false;
 			if (c.maxY > best) best = c.maxY;
 		}
@@ -2513,6 +3636,12 @@
 			var hit = hits[hi];
 			var data = hit.object.userData;
 			if (data && data.bot && data.bot.alive) {
+				if (data.bot.team === this.playerTeam) {
+					this.spawnSparks(hit.point.clone(), 0x6fb2ff, 5, 1.7);
+					end = hit.point.clone();
+					break;
+				}
+				this.raiseAlert(data.bot.team, data.bot.x, data.bot.z, 'player');
 				var dmg = def.damage * damageScale * (data.part === 'head' ? def.head : 1);
 				if (def.pellets && hit.distance > 16) dmg *= clamp(1 - (hit.distance - 16) / 45, 0.32, 1);
 				var killed = this.damageBot(data.bot, dmg, data.part === 'head', def.name);
@@ -2833,8 +3962,222 @@
 	/* ======================================================================
 	   robot AI
 	   ====================================================================== */
+	/* ======================================================================
+	   robot AI — two teams, C4 duty, holds and covering fire
+	   ====================================================================== */
+	/* --- team alerts, spectator-style info and idle relocation --------------- */
+	RangeGame.prototype.calloutAt = function (x, z) {
+		if (!this.world || !this.world.callouts) return 'CONTACT';
+		var sites = this.world.sites || [];
+		for (var i = 0; i < sites.length; i++) {
+			var s = sites[i];
+			if (Math.hypot(x - s.x, z - s.z) < s.r + 3) return s.id + ' SITE';
+		}
+		var best = null, bestD = 1e9;
+		for (var c = 0; c < this.world.callouts.length; c++) {
+			var co = this.world.callouts[c];
+			var d = Math.hypot(x - co.x, z - co.z);
+			if (d < bestD) { bestD = d; best = co; }
+		}
+		return best ? best.name : 'CONTACT';
+	};
+
+	RangeGame.prototype.assignSupporters = function (team, alert) {
+		var b = this.bomb;
+		if (b && (b.state === 'planted' || b.state === 'planting')) return 0;
+		var now = this.now;
+		var list = [];
+		var bots = this.teamBots(team, true);
+		for (var i = 0; i < bots.length; i++) {
+			var bot = bots[i];
+			if (bot.hasBomb || bot.planting) continue;
+			if (b && b.defuser === bot) continue;
+			if (Math.hypot(bot.x - alert.x, bot.z - alert.z) < 9) continue;
+			list.push(bot);
+		}
+		list.sort(function (a, c) {
+			return Math.hypot(a.x - alert.x, a.z - alert.z) - Math.hypot(c.x - alert.x, c.z - alert.z);
+		});
+		var max = team === 'T' ? 2 : 1;
+		var n = 0;
+		for (var j = 0; j < list.length && n < max; j++) {
+			var bot2 = list[j];
+			bot2.supportUntil = now + 6500;
+			bot2.supportTarget = { x: alert.x, z: alert.z };
+			bot2.supportAlertId = alert.id;
+			bot2.roamTarget = null;
+			bot2.roamWaitUntil = 0;
+			bot2.path = null;
+			bot2.pathGoal = null;
+			n++;
+		}
+		return n;
+	};
+
+	RangeGame.prototype.raiseAlert = function (team, x, z, source) {
+		if (this.state !== 'playing' || !this.round || this.round.phase !== 'live') return null;
+		if (!this.teamAlerts) this.teamAlerts = { CT: null, T: null };
+		var now = this.now;
+		var prev = this.teamAlerts[team];
+		if (prev) {
+			prev.seenAt = now;
+			if (Math.hypot(prev.x - x, prev.z - z) < 10 && now - prev.raisedAt < 9000) {
+				if (team === this.playerTeam) this.updateContactHUD();
+				return prev;
+			}
+		}
+		var alert = {
+			id: ++this.alertSeq,
+			team: team, x: x, z: z,
+			label: this.calloutAt(x, z),
+			raisedAt: now, seenAt: now,
+			source: (source && source.name) ? source.name : (source || null),
+			supporters: 0
+		};
+		this.teamAlerts[team] = alert;
+		alert.supporters = this.assignSupporters(team, alert);
+		if (team === this.playerTeam) {
+			this.contactAlert = alert;
+			this.updateContactHUD();
+			this.sound.tone({ freq: 940, to: 1280, dur: 0.07, gain: 0.07, type: 'square' });
+			this.sound.tone({ freq: 560, dur: 0.05, gain: 0.035, type: 'sine', delay: 0.08 });
+		}
+		return alert;
+	};
+
+	RangeGame.prototype.updateContactHUD = function () {
+		if (!this.el || !this.el.contact) return;
+		var a = this.teamAlerts && this.teamAlerts[this.playerTeam];
+		if (!a || this.now - a.seenAt > 5000 || this.state === 'roundover' || this.state === 'matchover') {
+			this.el.contact.hidden = true;
+			return;
+		}
+		this.el.contact.hidden = false;
+		text(this.el.contactLabel, a.label || 'CONTACT');
+		text(this.el.contactNote, a.supporters > 0 ? 'ALLY ROTATING' : 'ENEMY SPOTTED');
+	};
+
+	RangeGame.prototype.checkPlayerContact = function (dt) {
+		this.playerContactTimer = (this.playerContactTimer || 0) - dt;
+		if (this.playerContactTimer > 0) return;
+		this.playerContactTimer = 0.22;
+		var p = this.player;
+		if (!p.alive || this.state !== 'playing' || !this.round || this.round.phase !== 'live') return;
+		var dir = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+		var fl = Math.hypot(dir.x, dir.z) || 1;
+		var ts = this.teamBots(this.enemyTeam, true);
+		for (var i = 0; i < ts.length; i++) {
+			var t = ts[i];
+			var dx = t.x - p.x, dz = t.z - p.z;
+			var dist = Math.hypot(dx, dz);
+			if (dist > 42 || dist < 0.5) continue;
+			var dot = (dir.x * (dx / dist) + dir.z * (dz / dist)) / fl;
+			if (dist > 7 && dot < 0.25) continue;
+			if (this.pointHasLos(p.x, p.feetY + p.eye, p.z, t.x, 1.36 * t.baseScale, t.z)) {
+				this.raiseAlert(this.playerTeam, t.x, t.z, 'player');
+				break;
+			}
+		}
+	};
+
+	RangeGame.prototype.pickRoamPoint = function (bot, post) {
+		var siteId = (this.bomb && this.bomb.site) || bot.site || 'A';
+		var site = this.siteById(siteId);
+		var holds = bot.team === 'CT'
+			? (siteId === 'A' ? this.world.holds.ctA : this.world.holds.ctB)
+			: (siteId === 'A' ? this.world.holds.tA : this.world.holds.tB);
+		var planted = !!(this.bomb && this.bomb.state === 'planted');
+		var radius = planted ? 7.0 : 11.0;
+		var candidates = [];
+		var holdList = holds || [];
+		for (var i = 0; i < holdList.length; i++) {
+			var h = holdList[i];
+			if (Math.hypot(h.x - bot.x, h.z - bot.z) < 2.2) continue;
+			candidates.push({ x: h.x + C.rand(-1.2, 1.2), z: h.z + C.rand(-1.2, 1.2) });
+		}
+		var cx = post ? post.x : (site ? site.x : bot.x);
+		var cz = post ? post.z : (site ? site.z : bot.z);
+		for (var a = 0; a < 8; a++) {
+			var ang = C.rand(0, Math.PI * 2);
+			var r = C.rand(3, radius);
+			candidates.push({ x: cx + Math.cos(ang) * r, z: cz + Math.sin(ang) * r });
+		}
+		if (site) {
+			for (var b2 = 0; b2 < 4; b2++) {
+				var ang2 = C.rand(0, Math.PI * 2);
+				var r2 = C.rand(3, radius);
+				candidates.push({ x: site.x + Math.cos(ang2) * r2, z: site.z + Math.sin(ang2) * r2 });
+			}
+		}
+		C.shuffle(candidates);
+		var tried = 0;
+		for (var k = 0; k < candidates.length; k++) {
+			var q = candidates[k];
+			if (Math.abs(q.x) > this.world.bounds - 2 || Math.abs(q.z) > this.world.bounds - 2) continue;
+			if (this.collidesBot(q.x, q.z, 0.55)) continue;
+			if (this.world.walkableAt && !this.world.walkableAt(q.x, q.z)) continue;
+			if (Math.hypot(q.x - bot.x, q.z - bot.z) < 2.4) continue;
+			var path = C.findPath(this.nav, bot.x, bot.z, q.x, q.z);
+			if (!path || !path.length) { if (++tried > 5) break; continue; }
+			return { x: q.x, z: q.z };
+		}
+		return null;
+	};
+
+	RangeGame.prototype.botMaybeRoam = function (bot, post, dt) {
+		var now = this.now;
+		if (bot.supportTarget && now < bot.supportUntil) return false;
+		if (now < (bot.roamNextAt || 0)) return false;
+		if (this.bomb && this.bomb.state === 'planting') return false;
+		if (this.bomb && this.bomb.state === 'planted' && this.bomb.defuser === bot) return false;
+		if (this.bomb && this.bomb.state === 'planted' && bot.team === 'CT' && (this.bomb.defuser || this.playerDefusing)) return false;
+		if (!bot.roamTarget) {
+			bot.roamTarget = this.pickRoamPoint(bot, post);
+			bot.roamWaitUntil = 0;
+			if (!bot.roamTarget) {
+				bot.roamNextAt = now + C.rand(4, 8);
+				return false;
+			}
+			bot.path = null;
+			bot.pathGoal = null;
+		}
+		var d = Math.hypot(bot.roamTarget.x - bot.x, bot.roamTarget.z - bot.z);
+		if (d > 1.0) {
+			this.botPathTo(bot, bot.roamTarget.x, bot.roamTarget.z, bot.speed * 0.9, dt);
+			bot.mode = 'roam';
+			return true;
+		}
+		bot.moveX = 0;
+		bot.moveZ = 0;
+		bot.mode = 'roam';
+		if (!bot.roamWaitUntil) bot.roamWaitUntil = now + C.rand(1.2, 2.6);
+		if (now < bot.roamWaitUntil) {
+			var scan = now * 0.0011 + bot.scanPhase;
+			bot.face = { x: bot.x + Math.cos(scan) * 3, z: bot.z + Math.sin(scan) * 3 };
+			return true;
+		}
+		bot.roamTarget = null;
+		bot.roamWaitUntil = 0;
+		bot.roamCount = (bot.roamCount || 0) + 1;
+		if (bot.roamCount < 2) {
+			bot.roamTarget = this.pickRoamPoint(bot, post);
+			if (bot.roamTarget) {
+				bot.path = null;
+				bot.pathGoal = null;
+				bot.mode = 'roam';
+				return true;
+			}
+		}
+		bot.roamCount = 0;
+		bot.roamNextAt = now + C.rand(7, 12);
+		return false;
+	};
+
 	RangeGame.prototype.updateBots = function (dt) {
-		for (var i = 0; i < this.bots.length; i++) this.updateBot(this.bots[i], dt);
+		for (var i = 0; i < this.bots.length; i++) {
+			var bot = this.bots[i];
+			if (bot) this.updateBot(bot, dt);
+		}
 	};
 
 	RangeGame.prototype.pointHasLos = function (fx, fy, fz, px, py, pz) {
@@ -2851,95 +4194,265 @@
 		return hits.length === 0;
 	};
 
+	RangeGame.prototype.panFor = function (x, z) {
+		var right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+		var dir = new THREE.Vector3(x - this.player.x, 0, z - this.player.z);
+		if (dir.lengthSq() < 0.001) return 0;
+		dir.normalize();
+		return clamp(dir.dot(right), -1, 1) * 0.65;
+	};
+
+	RangeGame.prototype.botLineOfSight = function (bot, px, py, pz) {
+		return this.pointHasLos(bot.x, 1.48 * bot.baseScale, bot.z, px, py, pz);
+	};
+
+	RangeGame.prototype.playerTargetInfo = function () {
+		var p = this.player;
+		return {
+			kind: 'player', alive: p.alive, x: p.x, z: p.z,
+			feetY: p.feetY, eye: p.feetY + p.eye,
+			speed: p.speed, name: 'YOU', team: this.playerTeam, bot: null
+		};
+	};
+
+	RangeGame.prototype.botTargetInfo = function (b) {
+		return {
+			kind: 'bot', alive: b.alive && !b.dead, x: b.x, z: b.z,
+			feetY: 0, eye: 1.36 * b.baseScale,
+			speed: b.moveSpeed || 0, name: b.name, team: b.team, bot: b
+		};
+	};
+
+	RangeGame.prototype.botCanSee = function (bot, target) {
+		if (!target || !target.alive) return false;
+		var dx = target.x - bot.x, dz = target.z - bot.z;
+		var maxRange = (bot.weaponDef && bot.weaponDef.category === 'SNIPER') ? 42 : 34;
+		if (dx * dx + dz * dz > maxRange * maxRange) return false;
+		return this.pointHasLos(bot.x, 1.48 * bot.baseScale, bot.z, target.x, target.eye, target.z);
+	};
+
+	RangeGame.prototype.botPerception = function (bot) {
+		if (bot.target && bot.target.alive && this.botCanSee(bot, bot.target)) {
+			if (bot.target.kind === 'bot') bot.target.bot.spottedUntil = this.now + 2000;
+			return bot.target;
+		}
+		var candidates = [];
+		var enemyTeam = bot.team === 'CT' ? 'T' : 'CT';
+		if (this.player.alive && this.playerTeam === enemyTeam) candidates.push(this.playerTargetInfo());
+		var enemies = this.teamBots(enemyTeam, true);
+		for (var i = 0; i < enemies.length; i++) candidates.push(this.botTargetInfo(enemies[i]));
+		candidates.sort(function (a, b) {
+			return Math.hypot(a.x - bot.x, a.z - bot.z) - Math.hypot(b.x - bot.x, b.z - bot.z);
+		});
+		var limit = Math.min(candidates.length, 4);
+		for (var c = 0; c < limit; c++) {
+			var t = candidates[c];
+			if (this.botCanSee(bot, t)) {
+				if (t.kind === 'bot') t.bot.spottedUntil = this.now + 2000;
+				return t;
+			}
+		}
+		return null;
+	};
+
+	RangeGame.prototype.botUpdatePerception = function (bot, dt) {
+		bot.think -= dt;
+		if (bot.think > 0) return;
+		bot.think = C.rand(0.2, 0.34);
+		var t = this.botPerception(bot);
+		var key = t ? (t.kind + (t.bot ? t.bot.id : 'p')) : '';
+		if (key !== bot.targetKey) {
+			bot.targetKey = key;
+			bot.reaction = 0;
+			bot.reactionDone = false;
+		}
+		if (t) {
+			bot.lastSeen = { x: t.x, z: t.z, t: this.now };
+			bot.lastEnemySeenAt = this.now;
+			bot.roamNextAt = this.now + C.rand((bot.idleLimit || 10) * 0.85, (bot.idleLimit || 10) * 1.15);
+			bot.roamTarget = null;
+			bot.roamWaitUntil = 0;
+			bot.roamCount = 0;
+			this.raiseAlert(bot.team, t.x, t.z, bot);
+		}
+		bot.target = t;
+	};
+
+	RangeGame.prototype.botPathTo = function (bot, tx, tz, speed, dt) {
+		var goalDist = Math.hypot(tx - bot.x, tz - bot.z);
+		if (goalDist < 0.5) { bot.moveX = 0; bot.moveZ = 0; return true; }
+		bot.pathTimer -= dt;
+		if (!bot.path || bot.pathTimer <= 0 || !bot.pathGoal ||
+			Math.hypot(bot.pathGoal.x - tx, bot.pathGoal.z - tz) > 2.2) {
+			bot.path = C.findPath(this.nav, bot.x, bot.z, tx, tz);
+			bot.pathIndex = 0;
+			bot.pathTimer = C.rand(0.9, 1.4);
+			bot.pathGoal = { x: tx, z: tz };
+		}
+		var wx = tx, wz = tz;
+		if (bot.path && bot.path.length) {
+			while (bot.pathIndex < bot.path.length) {
+				var wp = bot.path[bot.pathIndex];
+				if (Math.hypot(wp.x - bot.x, wp.z - bot.z) < 0.62) bot.pathIndex++;
+				else break;
+			}
+			if (bot.pathIndex < bot.path.length) {
+				wx = bot.path[bot.pathIndex].x;
+				wz = bot.path[bot.pathIndex].z;
+			}
+		} else {
+			var snapped = this.snapFreePoint(tx, tz, 0.46);
+			wx = snapped.x;
+			wz = snapped.z;
+			/* A missing path must not turn into a blind beeline through a
+			   corner; stand and retry instead. */
+			if (Math.hypot(wx - bot.x, wz - bot.z) > 1.2) {
+				bot.moveX = 0;
+				bot.moveZ = 0;
+				return false;
+			}
+		}
+		var dx = wx - bot.x, dz = wz - bot.z;
+		var d = Math.hypot(dx, dz);
+		if (d > 0.2) {
+			bot.moveX = dx / d * speed;
+			bot.moveZ = dz / d * speed;
+		} else {
+			bot.moveX = 0;
+			bot.moveZ = 0;
+		}
+		return goalDist < 0.9;
+	};
+
+	RangeGame.prototype.botFollowRoute = function (bot, dt) {
+		if (!bot.route || !bot.route.length) return true;
+		if (bot.routeIndex >= bot.route.length) return true;
+		var wp = bot.route[bot.routeIndex];
+		var d = Math.hypot(wp.x - bot.x, wp.z - bot.z);
+		if (d < 1.3) {
+			bot.routeIndex++;
+			bot.path = null;
+			if (bot.routeIndex >= bot.route.length) {
+				bot.atSite = true;
+				return true;
+			}
+			wp = bot.route[bot.routeIndex];
+		}
+		this.botPathTo(bot, wp.x, wp.z, bot.speed * 0.98, dt);
+		return false;
+	};
+
+	RangeGame.prototype.tPostFor = function (bot) {
+		var site = (this.bomb && this.bomb.site) ? this.bomb.site : (bot.site || this.tSite || 'A');
+		var holds = site === 'A' ? this.world.holds.tA : this.world.holds.tB;
+		if (!holds || !holds.length) return null;
+		var post = holds[bot.guardIndex % holds.length];
+		if (!post) return null;
+		var p = this.snapFreePoint(post.x, post.z, 0.46);
+		return { x: p.x, z: p.z, lx: post.lx, lz: post.lz };
+	};
+
+	RangeGame.prototype.ctPostFor = function (bot, site) {
+		var holds = site === 'A' ? this.world.holds.ctA : this.world.holds.ctB;
+		if (!holds || !holds.length) return null;
+		var post = holds[bot.guardIndex % holds.length] || holds[0];
+		if (!post) return null;
+		var p = this.snapFreePoint(post.x, post.z, 0.46);
+		return { x: p.x, z: p.z, lx: post.lx, lz: post.lz };
+	};
+
+	RangeGame.prototype.siteById = function (id) {
+		if (!this.world || !this.world.sites) return null;
+		for (var i = 0; i < this.world.sites.length; i++) {
+			if (this.world.sites[i].id === id) return this.world.sites[i];
+		}
+		return null;
+	};
+
+	RangeGame.prototype.botHoldAt = function (bot, post, dt) {
+		if (!post) { bot.moveX = 0; bot.moveZ = 0; return; }
+		if (this.botMaybeRoam(bot, post, dt)) return;
+		var d = Math.hypot(post.x - bot.x, post.z - bot.z);
+		if (d > 1.1) {
+			this.botPathTo(bot, post.x, post.z, bot.speed * 0.92, dt);
+			bot.mode = 'rotate';
+		} else {
+			bot.moveX = 0;
+			bot.moveZ = 0;
+			bot.mode = 'hold';
+			var scan = Math.sin(this.now * 0.00045 + bot.scanPhase) * 2.4;
+			bot.face = { x: (post.lx || post.x) + scan * 0.5, z: (post.lz || post.z) + scan * 0.5 };
+		}
+	};
+
+	RangeGame.prototype.nearestBombSeeker = function () {
+		var b = this.bomb;
+		if (!b) return null;
+		var best = null, bestD = 1e9;
+		var ts = this.teamBots('T', true);
+		for (var i = 0; i < ts.length; i++) {
+			var d = Math.hypot(ts[i].x - b.x, ts[i].z - b.z);
+			if (d < bestD) { bestD = d; best = ts[i]; }
+		}
+		return best;
+	};
+
 	RangeGame.prototype.tacticalSamples = function (bot, px, py, pz) {
-		var eye = 1.5 * bot.baseScale;
+		var eye = 1.48 * bot.baseScale;
 		var out = [];
-		var radii = [1.8, 2.8, 4, 5.5, 7];
+		var radii = [1.9, 3.0, 4.4, 6.0];
 		var bound = this.world.bounds - 1.6;
 		for (var ri = 0; ri < radii.length; ri++) {
 			var r = radii[ri];
-			for (var ai = 0; ai < 16; ai++) {
-				var a = (ai / 16) * Math.PI * 2;
+			for (var ai = 0; ai < 12; ai++) {
+				var a = (ai / 12) * Math.PI * 2;
 				var x = bot.x + Math.cos(a) * r;
 				var z = bot.z + Math.sin(a) * r;
 				if (Math.abs(x) > bound || Math.abs(z) > bound) continue;
 				if (this.collidesBot(x, z, 0.5)) continue;
-				out.push({
-					x: x, z: z, dist: r,
-					los: this.pointHasLos(x, eye, z, px, py, pz)
-				});
+				out.push({ x: x, z: z, dist: r, los: this.pointHasLos(x, eye, z, px, py, pz) });
 			}
 		}
 		return out;
 	};
 
 	RangeGame.prototype.findCoverPoint = function (bot, px, py, pz) {
-		if (!this.pointHasLos(bot.x, 1.5 * bot.baseScale, bot.z, px, py, pz)) {
-			return { x: bot.x, z: bot.z, path: null };
+		if (!this.pointHasLos(bot.x, 1.48 * bot.baseScale, bot.z, px, py, pz)) {
+			return { x: bot.x, z: bot.z };
 		}
 		var samples = this.tacticalSamples(bot, px, py, pz).filter(function (s) { return !s.los && s.dist >= 1.8; });
 		samples.sort(function (a, b) { return a.dist - b.dist; });
-		for (var i = 0; i < samples.length && i < 8; i++) {
+		for (var i = 0; i < samples.length && i < 6; i++) {
 			var s = samples[i];
 			var path = C.findPath(this.nav, bot.x, bot.z, s.x, s.z);
-			if (path && path.length) return { x: s.x, z: s.z, path: path };
+			if (path && path.length) return { x: s.x, z: s.z };
 		}
-		return { x: bot.x, z: bot.z, path: null };
-	};
-
-	RangeGame.prototype.findPeekPoint = function (bot, px, py, pz) {
-		var samples = this.tacticalSamples(bot, px, py, pz).filter(function (s) {
-			return s.los && s.dist >= 1.4 && s.dist <= 6.5;
-		});
-		samples.sort(function (a, b) { return a.dist - b.dist; });
-		for (var i = 0; i < samples.length && i < 8; i++) {
-			var s = samples[i];
-			var path = C.findPath(this.nav, bot.x, bot.z, s.x, s.z);
-			if (path && path.length) return { x: s.x, z: s.z, path: path };
-		}
-		return null;
-	};
-
-	RangeGame.prototype.startTacticalMove = function (bot, point) {
-		if (!point) { bot.tacTarget = null; bot.tacPath = null; return; }
-		bot.tacTarget = { x: point.x, z: point.z };
-		bot.tacPath = point.path || C.findPath(this.nav, bot.x, bot.z, point.x, point.z);
-		bot.tacIndex = 0;
-	};
-
-	RangeGame.prototype.nextTacticalWaypoint = function (bot) {
-		if (!bot.tacTarget) return null;
-		if (bot.tacPath && bot.tacPath.length) {
-			while (bot.tacIndex < bot.tacPath.length) {
-				var wp = bot.tacPath[bot.tacIndex];
-				if (Math.hypot(wp.x - bot.x, wp.z - bot.z) < 0.7) bot.tacIndex++;
-				else return wp;
-			}
-		}
-		return bot.tacTarget;
+		return { x: bot.x, z: bot.z };
 	};
 
 	RangeGame.prototype.startBotReload = function (bot, px, py, pz) {
 		if (bot.reloading) return;
 		if (!bot.weaponDef || bot.weaponDef.slot === 'melee') return;
+		if (!bot.ammo && !(bot.weapons && bot.weapons[bot.weaponIndex])) return;
 		bot.reloading = true;
 		var def = bot.weaponDef || C.WEAPONS.ak47;
-		bot.reloadEnd = this.now + def.reload * 1000 * C.rand(0.9, 1.2);
+		bot.reloadEnd = this.now + def.reload * 1000 * C.rand(0.9, 1.15);
 		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
 		if (rec) { rec.reloading = true; rec.reloadEnd = bot.reloadEnd; }
 		bot.burstLeft = 0;
 		bot.behavior = 'reload';
-		bot.behaviorSince = this.now;
-		bot.behaviorUntil = 0;
+		bot.mode = 'reload';
 		bot.reactionDone = false;
 		bot.reaction = 0;
 		bot.robot.reloading = true;
-		var cover = this.findCoverPoint(bot, px, py, pz);
-		bot.coverPoint = cover;
-		this.startTacticalMove(bot, cover);
-		var dist = Math.hypot(px - bot.x, pz - bot.z);
+		bot.reloadGoal = null;
+		if (px != null) {
+			var cover = this.findCoverPoint(bot, px, py, pz);
+			if (cover && Math.hypot(cover.x - bot.x, cover.z - bot.z) > 0.8) bot.reloadGoal = cover;
+		}
+		var dist = Math.hypot(this.player.x - bot.x, this.player.z - bot.z);
 		if (dist < 24) {
-			this.sound.burst({ dur: 0.06, type: 'bandpass', freq: 900, q: 1.2, gain: 0.045 * (1 - dist / 30), pan: this.panFor(bot.x, bot.z) });
+			this.sound.burst({ dur: 0.06, type: 'bandpass', freq: 900, q: 1.2, gain: 0.04 * (1 - dist / 30), pan: this.panFor(bot.x, bot.z) });
 		}
 	};
 
@@ -2948,73 +4461,358 @@
 		bot.ammo = bot.magSize;
 		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
 		if (rec) { rec.ammo = bot.ammo; rec.reloading = false; rec.reloadEnd = 0; }
-		bot.behavior = 'hunt';
-		bot.behaviorUntil = 0;
+		bot.behavior = 'advance';
 		bot.reactionDone = false;
 		bot.reaction = 0;
 		bot.robot.reloading = false;
 		bot.stationaryUntil = 0;
+		bot.reloadGoal = null;
+		bot.path = null;
 		C.drawHealthSprite(bot.robot);
 		var dist = Math.hypot(this.player.x - bot.x, this.player.z - bot.z);
 		if (dist < 24) {
-			this.sound.burst({ dur: 0.04, type: 'bandpass', freq: 1500, q: 1.1, gain: 0.04 * (1 - dist / 30), pan: this.panFor(bot.x, bot.z) });
+			this.sound.burst({ dur: 0.04, type: 'bandpass', freq: 1500, q: 1.1, gain: 0.035 * (1 - dist / 30), pan: this.panFor(bot.x, bot.z) });
 		}
 	};
 
-	RangeGame.prototype.tryBotPeek = function (bot, px, py, pz) {
-		if (bot.peekCooldown > 0) return false;
-		var peek = this.findPeekPoint(bot, px, py, pz);
-		if (!peek) {
-			bot.peekCooldown = C.rand(1.4, 2.6);
-			return false;
-		}
-		bot.behavior = 'peekOut';
-		bot.behaviorSince = this.now;
-		bot.behaviorUntil = this.now + C.rand(2200, 3400);
-		bot.peekPoint = peek;
-		bot.coverPoint = { x: bot.x, z: bot.z, path: null };
-		bot.peeking = false;
-		bot.peekCooldown = C.rand(5.5, 8.5);
-		this.startTacticalMove(bot, peek);
-		return true;
-	};
-
-	RangeGame.prototype.beginPeekRetreat = function (bot) {
-		bot.behavior = 'peekIn';
-		bot.behaviorSince = this.now;
-		bot.behaviorUntil = this.now + C.rand(850, 1400);
-		bot.peeking = false;
-		this.startTacticalMove(bot, bot.coverPoint || { x: bot.x, z: bot.z });
-	};
-
-	RangeGame.prototype.startBotSniperCover = function (bot, px, py, pz) {
-		if (this.now < bot.sniperCoverCooldown) return false;
-		var cover = this.findCoverPoint(bot, px, py, pz);
-		bot.sniperCoverCooldown = this.now + C.rand(5500, 8500);
-		if (!cover) return false;
-		bot.behavior = 'sniperCover';
-		bot.behaviorSince = this.now;
-		bot.behaviorUntil = this.now + C.rand(3000, 4600);
-		bot.coverPoint = cover;
-		bot.peeking = false;
-		bot.reactionDone = false;
-		this.startTacticalMove(bot, cover);
-		return true;
-	};
-
-	RangeGame.prototype.botMelee = function (bot, dist, diff) {
-		if (!this.player.alive || dist > 2.35 || this.now < bot.nextShot) return;
-		bot.nextShot = this.now + 620 * diff.fire * C.rand(0.9, 1.2);
+	RangeGame.prototype.botMelee = function (bot, target, dist, diff) {
+		if (!target || !target.alive || dist > 2.35 || this.now < bot.nextShot) return;
+		bot.nextShot = this.now + 560 * diff.fire * C.rand(0.9, 1.15);
 		bot.stationaryUntil = this.now + 220;
 		bot.meleeUntil = this.now + 280;
 		bot.reactionDone = true;
 		bot.reaction = 0;
 		this.sound.shot('knife', this.panFor(bot.x, bot.z), Math.min(dist, 12));
-		var chance = clamp(0.58 + (2.35 - dist) * 0.2, 0.4, 0.9);
-		if (Math.random() < chance) {
-			var dmg = bot.damage * 0.62 * diff.damage * C.rand(0.85, 1.15);
-			this.applyPlayerDamage(dmg, bot, false);
+		if (Math.random() < clamp(0.55 + (2.35 - dist) * 0.2, 0.4, 0.9)) {
+			var dmg = bot.damage * 0.7 * diff.damage * C.rand(0.85, 1.15);
+			if (target.kind === 'player') this.applyPlayerDamage(dmg, bot, false);
+			else this.damageBotByBot(target.bot, dmg, bot, false, 'KNIFE');
 		}
+	};
+
+	RangeGame.prototype.botCombat = function (bot, target, dt, diff) {
+		var now = this.now;
+		var dist = Math.hypot(target.x - bot.x, target.z - bot.z) || 0.001;
+		bot.mode = 'fight';
+		bot.behavior = 'attack';
+		bot.face = { x: target.x, z: target.z };
+		if (!bot.reactionDone) {
+			bot.reaction += dt;
+			if (bot.reaction >= bot.type.reaction * diff.reaction) bot.reactionDone = true;
+		}
+		bot.weaponThink = Math.max(0, bot.weaponThink - dt);
+		if (!bot.reloading) this.updateBotWeaponChoice(bot, dist);
+		if (bot.reloading) return true;
+
+		var melee = bot.weaponDef && bot.weaponDef.slot === 'melee';
+		if (melee) {
+			if (dist > 1.65) {
+				this.botPathTo(bot, target.x, target.z, bot.speed * 1.12, dt);
+			} else {
+				bot.moveX = 0;
+				bot.moveZ = 0;
+				this.botMelee(bot, target, dist, diff);
+			}
+			return true;
+		}
+
+		if (bot.ammo <= 0) {
+			this.startBotReload(bot, target.x, target.eye, target.z);
+			return true;
+		}
+
+		var canFire = bot.reactionDone && now >= bot.nextShot;
+		if (canFire) {
+			this.botShoot(bot, target, dist, diff);
+		}
+
+		/* fire discipline and footwork: hold ground with a rifle, strafe in
+		   the mid range, and back off when the enemy is in the face */
+		var nx = (target.x - bot.x) / dist;
+		var nz = (target.z - bot.z) / dist;
+		if (bot.weaponDef.category === 'SNIPER' && dist > 8 && bot.team === 'CT') {
+			bot.moveX = 0;
+			bot.moveZ = 0;
+		} else if (dist > 8) {
+			/* use the navmesh for the approach: a target visible across a
+			   doorway is not a straight ground path */
+			bot.strafeTimer -= dt;
+			if (bot.strafeTimer <= 0) {
+				bot.strafeTimer = C.rand(0.7, 1.8);
+				if (Math.random() < 0.45) bot.strafe *= -1;
+			}
+			this.botPathTo(bot, target.x, target.z, bot.speed * (canFire ? 0.62 : 0.92), dt);
+			var sx = -nz * bot.strafe * bot.speed * 0.25;
+			var sz = nx * bot.strafe * bot.speed * 0.25;
+			bot.moveX += sx;
+			bot.moveZ += sz;
+		} else {
+			var prefMin = bot.type.preferMin, prefMax = bot.type.preferMax;
+			var approach = dist > prefMax ? 1 : dist < prefMin ? -1 : 0;
+			var strafeSpeed = bot.speed * 0.55;
+			bot.strafeTimer -= dt;
+			if (bot.strafeTimer <= 0) {
+				bot.strafeTimer = C.rand(0.7, 1.8);
+				if (Math.random() < 0.45) bot.strafe *= -1;
+			}
+			bot.moveX = -nz * bot.strafe * strafeSpeed + nx * approach * bot.speed * 0.9;
+			bot.moveZ = nx * bot.strafe * strafeSpeed + nz * approach * bot.speed * 0.9;
+			if (dist < 2.5) {
+				bot.moveX -= nx * bot.speed * 1.2;
+				bot.moveZ -= nz * bot.speed * 1.2;
+			}
+			if (canFire) {
+				bot.moveX *= 0.2;
+				bot.moveZ *= 0.2;
+			}
+		}
+		return true;
+	};
+
+	RangeGame.prototype.botShoot = function (bot, target, dist, diff) {
+		if (!target || !target.alive || bot.reloading || bot.ammo <= 0) return;
+		if (!bot.weaponDef || bot.weaponDef.slot === 'melee') return;
+		var now = this.now;
+		var def = bot.weaponDef || C.WEAPONS.ak47;
+		bot.ammo--;
+		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
+		if (rec) rec.ammo = bot.ammo;
+
+		var baseGap = bot.type.fireRate;
+		if (def.category === 'SMG') baseGap *= 0.66;
+		else if (def.category === 'SHOTGUN') baseGap *= 1.08;
+		else if (def.category === 'SNIPER') baseGap *= 1.34;
+
+		var bursting = bot.burstMode && (def.category === 'RIFLE' || def.category === 'SMG');
+		if (bursting) {
+			if (bot.burstLeft <= 0) bot.burstLeft = C.randi(3, 5);
+			bot.burstLeft--;
+			if (bot.burstLeft > 0) {
+				bot.nextShot = now + C.rand(80, 130);
+				bot.reactionDone = true;
+				bot.reaction = 0;
+			} else {
+				bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
+				bot.reactionDone = false;
+			}
+		} else {
+			bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
+			bot.reactionDone = false;
+		}
+		bot.stationaryUntil = now + 300;
+
+		var origin = this.tmpB.set(bot.x, 1.42 * bot.baseScale, bot.z);
+		var aim = new THREE.Vector3(target.x, target.eye - C.rand(0.12, 0.42), target.z);
+		var dir = new THREE.Vector3().subVectors(aim, origin).normalize();
+		var tracerEnd = aim.clone();
+
+		var missChance = diff.missChance != null ? diff.missChance : 0.22;
+		if (target.speed > 2.2) missChance *= 1.1;
+		if (dist > 34) missChance *= 1.12;
+		var deliberateMiss = Math.random() < missChance;
+
+		var chance = bot.accuracy * diff.accuracy;
+		chance *= clamp(1.18 - dist / 48, 0.25, 1);
+		if (target.speed > 2.2) chance *= 0.84;
+		chance = clamp(chance, 0.05, 0.9);
+
+		var hit = !deliberateMiss && Math.random() < chance;
+		var headshot = false;
+		if (hit) {
+			var scale = def.category === 'SNIPER' ? 1.35 : def.category === 'SHOTGUN' ? 1.35 : def.category === 'SMG' ? 0.62 : def.category === 'RIFLE' ? 1.0 : 0.6;
+			var dmg = bot.damage * scale * diff.damage * C.rand(0.82, 1.18);
+			var hsChance = def.category === 'SNIPER' ? clamp(0.08 + diff.accuracy * 0.12, 0.1, 0.28) : 0.05;
+			headshot = Math.random() < hsChance;
+			if (headshot) dmg *= def.category === 'SNIPER' ? 2.3 : 1.6;
+			if (Math.random() < 0.06) dmg *= 1.45;
+			if (target.kind === 'player') {
+				this.applyPlayerDamage(dmg, bot, headshot);
+				this.spawnSparks(this.camera.position.clone(), 0xff6a4a, 5, 1.8);
+			} else if (target.bot) {
+				this.damageBotByBot(target.bot, dmg * 2.15, bot, headshot, def.name);
+				this.spawnSparks(new THREE.Vector3(target.x, 1.25, target.z), 0xff8b52, 4, 1.8);
+			}
+		} else {
+			var side = new THREE.Vector3(-dir.z, 0, dir.x);
+			if (side.lengthSq() < 0.01) side.set(1, 0, 0);
+			side.normalize();
+			var spread = deliberateMiss ? C.rand(1.4, 4.4) : C.rand(0.7, 2.2);
+			var sign = Math.random() < 0.5 ? -1 : 1;
+			tracerEnd.copy(aim).addScaledVector(side, spread * sign);
+			tracerEnd.y += deliberateMiss ? C.rand(-1.3, 2.0) : C.rand(-0.7, 1.1);
+		}
+
+		if (bot.flash) {
+			bot.muzzle.updateWorldMatrix(true, false);
+			bot.flash.visible = true;
+			bot.flashUntil = now + 45;
+			bot.flash.material.rotation = Math.random() * Math.PI * 2;
+		}
+		this.spawnTracer(origin.clone(), tracerEnd, 0xff9a50, 0.09);
+		this.sound.shot(def.sound || 'rifle', this.panFor(bot.x, bot.z), dist);
+	};
+
+	RangeGame.prototype.tBotObjective = function (bot, dt) {
+		var b = this.bomb;
+		var now = this.now;
+		if (!b) return;
+
+		/* someone has to recover a dropped C4 */
+		if (b.state === 'dropped') {
+			var rank = this.bombRecoveryRank(bot);
+			var squadSize = Math.min(3, this.teamBots('T', true).length);
+			if (rank >= 0 && rank < squadSize) {
+				if (Math.hypot(bot.x - b.x, bot.z - b.z) < 1.7) {
+					this.pickupBomb(bot);
+					bot.mode = 'advance';
+					bot.path = null;
+					return;
+				}
+				this.botPathTo(bot, b.x, b.z, bot.speed * 1.1, dt);
+				bot.mode = 'recover';
+				bot.face = { x: b.x, z: b.z };
+				return;
+			}
+			var bd = Math.hypot(bot.x - b.x, bot.z - b.z);
+			if (bd < 22) {
+				var cover = this.snapFreePoint(b.x + (bot.x - b.x) * 0.22, b.z + (bot.z - b.z) * 0.22, 0.46);
+				this.botHoldAt(bot, { x: cover.x, z: cover.z, lx: b.x, lz: b.z }, dt);
+				bot.mode = 'recover';
+				return;
+			}
+		}
+
+		/* the carrier walks the route, then plants on the site */
+		if (b.carrier === bot && (b.state === 'carried' || b.state === 'planting')) {
+			if (!bot.atSite) {
+				if (this.botFollowRoute(bot, dt)) bot.atSite = true;
+				bot.mode = 'advance';
+				return;
+			}
+			var site = this.siteById(bot.site) || this.nearestSite(bot.x, bot.z);
+			if (!bot.plantSpot) bot.plantSpot = this.choosePlantSpot(bot, site);
+			var spot = bot.plantSpot;
+			if (!spot) { bot.moveX = 0; bot.moveZ = 0; return; }
+			var sd = Math.hypot(spot.x - bot.x, spot.z - bot.z);
+			if (!bot.planting) {
+				if (sd > 0.95) {
+					this.botPathTo(bot, spot.x, spot.z, bot.speed * 1.02, dt);
+					bot.mode = 'plantrun';
+					return;
+				}
+				bot.planting = true;
+				bot.plantProgress = 0;
+				b.state = 'planting';
+				b.planter = bot;
+				b.plantAnnounced = false;
+			}
+			bot.mode = 'plant';
+			bot.moveX = 0;
+			bot.moveZ = 0;
+			bot.face = { x: spot.x, z: spot.z };
+			b.x = bot.x;
+			b.z = bot.z;
+			bot.plantProgress += dt;
+			b.plantProgress = bot.plantProgress;
+			if (!b.plantAnnounced) {
+				b.plantAnnounced = true;
+				this.announce('C4 BEING PLANTED', this.tr('COVER THE CARRIER'));
+			}
+			if (bot.plantProgress >= (C.BOMB ? C.BOMB.plantTime : 3.2)) {
+				this.plantBomb(bot);
+			}
+			return;
+		}
+
+		/* planted (or being planted): the rest of the squad covers the site */
+		if (b.state === 'planted' || b.state === 'planting') {
+			if (!bot.atSite) {
+				if (this.botFollowRoute(bot, dt)) bot.atSite = true;
+				bot.mode = 'advance';
+				return;
+			}
+			this.botHoldAt(bot, this.tPostFor(bot), dt);
+			bot.mode = b.state === 'planting' ? 'cover' : 'guard';
+			return;
+		}
+
+		/* pre-plant movement */
+		if (this.botFollowRoute(bot, dt)) bot.atSite = true;
+		bot.mode = bot.atSite ? 'guard' : 'advance';
+		if (bot.atSite) this.botHoldAt(bot, this.tPostFor(bot), dt);
+	};
+
+	RangeGame.prototype.ctBotObjective = function (bot, dt) {
+		var b = this.bomb;
+		var now = this.now;
+		if (!b) return;
+		if (b.state === 'planted') {
+			if (b.defuser === bot) {
+				var d = Math.hypot(bot.x - b.x, bot.z - b.z);
+				if (d > 1.35) {
+					this.botPathTo(bot, b.x, b.z, bot.speed * 1.12, dt);
+					bot.mode = 'rotate';
+				} else {
+					bot.moveX = 0;
+					bot.moveZ = 0;
+					bot.mode = 'defuse';
+					bot.face = { x: b.x, z: b.z };
+				}
+				return;
+			}
+			var siteObj = this.siteById(b.site) || this.nearestSite(b.x, b.z);
+			if (siteObj && Math.hypot(bot.x - siteObj.x, bot.z - siteObj.z) > 17) {
+				this.botPathTo(bot, siteObj.x, siteObj.z + 2.5, bot.speed * 1.08, dt);
+				bot.mode = 'rotate';
+				return;
+			}
+			var post = this.ctPostFor(bot, b.site);
+			this.botHoldAt(bot, post, dt);
+			bot.mode = 'guard';
+			return;
+		}
+
+		/* pre-plant: hold the assigned site (botHoldAt also drives idle roaming) */
+		var home = bot.post || this.ctPostFor(bot, bot.site);
+		if (!home) { bot.moveX = 0; bot.moveZ = 0; return; }
+		this.botHoldAt(bot, home, dt);
+	};
+
+	RangeGame.prototype.botObjective = function (bot, dt) {
+		var b = this.bomb;
+		if (bot.supportTarget) {
+			if (this.now >= bot.supportUntil || (b && (b.state === 'planted' || b.state === 'planting')) || bot.hasBomb || bot.planting || (b && b.defuser === bot)) {
+				bot.supportTarget = null;
+				bot.supportUntil = 0;
+				bot.supportAlertId = 0;
+				bot.path = null;
+			} else {
+				var sd = Math.hypot(bot.supportTarget.x - bot.x, bot.supportTarget.z - bot.z);
+				if (sd > 3.6) {
+					this.botPathTo(bot, bot.supportTarget.x, bot.supportTarget.z, bot.speed * 1.05, dt);
+					bot.mode = 'support';
+					return;
+				}
+				bot.moveX = 0;
+				bot.moveZ = 0;
+				bot.mode = 'support';
+				var suppScan = Math.sin(this.now * 0.0009 + bot.scanPhase) * 2.6;
+				bot.face = { x: bot.supportTarget.x + suppScan, z: bot.supportTarget.z + suppScan };
+				return;
+			}
+		}
+		/* pursue a recently seen enemy, but never chase a ghost forever */
+		if (bot.lastSeen && this.now - bot.lastSeen.t < 2400) {
+			var d = Math.hypot(bot.lastSeen.x - bot.x, bot.lastSeen.z - bot.z);
+			if (d > 2.4) {
+				this.botPathTo(bot, bot.lastSeen.x, bot.lastSeen.z, bot.speed * 0.98, dt);
+				bot.mode = 'hunt';
+				return;
+			}
+		}
+		if (this.botHunt(bot, dt)) return;
+		if (bot.team === 'T') this.tBotObjective(bot, dt);
+		else this.ctBotObjective(bot, dt);
 	};
 
 	RangeGame.prototype.updateBot = function (bot, dt) {
@@ -3029,233 +4827,150 @@
 		root.scale.setScalar(targetScale);
 		root.position.set(bot.x, 0, bot.z);
 
-		if (this.round.phase !== 'live' || !this.player.alive) {
+		if (!this.round || this.round.phase !== 'live' || this.state !== 'playing') {
 			this.animateBotIdle(bot, dt);
+			root.position.set(bot.x, 0, bot.z);
 			return;
 		}
-		var p = this.player;
-		var px = p.x, pz = p.z, py = p.feetY + p.eye;
-		var dx = px - bot.x, dz = pz - bot.z;
-		var dist = Math.hypot(dx, dz) || 0.001;
-		var los = this.botLineOfSight(bot, px, py, pz);
+
+		this.botUpdatePerception(bot, dt);
+		var target = bot.target;
+		if (target && (!target.alive || (target.bot && target.bot.dead))) {
+			bot.target = null;
+			target = null;
+		}
 		var diff = C.DIFFICULTY[this.settings.difficulty] || C.DIFFICULTY.regular;
+		var b = this.bomb;
+		var distToBomb = b ? Math.hypot(bot.x - b.x, bot.z - b.z) : 1e9;
+		var mustDefuse = !!(b && b.state === 'planted' && b.defuser === bot && b.fuse < 9 && distToBomb < 3.4);
 
-		bot.peekCooldown = Math.max(0, bot.peekCooldown - dt);
-		bot.strafeTimer -= dt;
-		if (bot.strafeTimer <= 0) {
-			bot.strafeTimer = C.rand(0.75, 1.9);
-			if (Math.random() < 0.42) bot.strafe *= -1;
-		}
-
-		/* reload + real-time weapon selection */
-		if (bot.reloading && now >= bot.reloadEnd) this.finishBotReload(bot);
-		bot.weaponThink = Math.max(0, bot.weaponThink - dt);
-		if (!bot.reloading) this.updateBotWeaponChoice(bot, dist);
-
-		/* reaction / sight acquisition */
-		if (!bot.reloading && los) {
-			if (!bot.reactionDone) {
-				bot.reaction += dt;
-				if (bot.reaction >= bot.type.reaction * diff.reaction) bot.reactionDone = true;
-			}
-		} else if (!los) {
-			bot.reactionDone = false;
-			bot.reaction = Math.max(0, bot.reaction - dt * 1.4);
-		}
-
-		var moveX = 0, moveZ = 0;
-		var behavior = bot.reloading ? 'reload' : bot.behavior;
-		var canFire = false;
-		var faceTarget = null;
-		var melee = bot.weaponDef.slot === 'melee';
-		var sniping = bot.weaponDef.category === 'SNIPER';
-
-		if (melee) {
-			bot.state = 'knife';
-			bot.behavior = 'knife';
-			faceTarget = { x: px, z: pz };
-			if (dist > 1.65) {
-				moveX = dx / dist * bot.speed * 1.12;
-				moveZ = dz / dist * bot.speed * 1.12;
-			} else if (now >= bot.nextShot) {
-				this.botMelee(bot, dist, diff);
-			}
-		} else if (behavior === 'reload' || behavior === 'peekIn') {
-			bot.state = behavior === 'reload' ? 'reload' : 'peek';
-			var wp = this.nextTacticalWaypoint(bot);
-			if (wp) {
-				var wdx = wp.x - bot.x, wdz = wp.z - bot.z;
-				var wd = Math.hypot(wdx, wdz);
-				if (wd > 0.65) {
-					moveX = wdx / wd * bot.speed * 0.84;
-					moveZ = wdz / wd * bot.speed * 0.84;
-				}
-			}
-			faceTarget = { x: px, z: pz };
-			if (behavior === 'peekIn' && ((wp && Math.hypot(wp.x - bot.x, wp.z - bot.z) < 0.7) || now >= bot.behaviorUntil)) {
-				bot.behavior = 'hunt';
-				bot.behaviorSince = now;
-				bot.behaviorUntil = 0;
-				bot.tacTarget = null;
-				bot.tacPath = null;
-				bot.reactionDone = false;
-			}
-		} else if (behavior === 'sniperCover') {
-			bot.state = 'sniper';
-			faceTarget = { x: px, z: pz };
-			var swp = this.nextTacticalWaypoint(bot);
-			if (swp) {
-				var swdx = swp.x - bot.x, swdz = swp.z - bot.z;
-				var swd = Math.hypot(swdx, swdz);
-				if (swd > 0.65) {
-					moveX = swdx / swd * bot.speed * 0.9;
-					moveZ = swdz / swd * bot.speed * 0.9;
-				}
-			}
-			var atCover = bot.coverPoint && Math.hypot(bot.coverPoint.x - bot.x, bot.coverPoint.z - bot.z) < 0.7;
-			if (atCover || now >= bot.behaviorUntil) {
-				bot.behavior = 'hunt';
-				bot.behaviorSince = now;
-				bot.behaviorUntil = 0;
-				bot.tacTarget = null;
-				bot.tacPath = null;
-				bot.peekCooldown = 0;
-				bot.reactionDone = false;
-			}
-		} else if (behavior === 'peekOut') {
-			bot.state = 'peek';
-			faceTarget = { x: px, z: pz };
-			if (!bot.peeking) {
-				var pwp = this.nextTacticalWaypoint(bot);
-				if (pwp) {
-					var pdx = pwp.x - bot.x, pdz = pwp.z - bot.z;
-					var pd = Math.hypot(pdx, pdz);
-					if (pd > 0.65) {
-						moveX = pdx / pd * bot.speed * 0.95;
-						moveZ = pdz / pd * bot.speed * 0.95;
-					}
-				}
-				var nearPeek = bot.peekPoint && Math.hypot(bot.peekPoint.x - bot.x, bot.peekPoint.z - bot.z) < 0.7;
-				if (nearPeek || (los && now - bot.behaviorSince > 1350)) {
-					bot.peeking = true;
-				}
-			}
-			if (bot.peeking) {
-				moveX = 0; moveZ = 0;
-				if (los && bot.reactionDone && now >= bot.nextShot) canFire = true;
-			}
-			if (now >= bot.behaviorUntil) this.beginPeekRetreat(bot);
+		var targetDist = target ? Math.hypot(target.x - bot.x, target.z - bot.z) : 1e9;
+		var carrierAtSite = !!(b && b.carrier === bot && bot.atSite && b.state === 'carried');
+		if (bot.planting || (carrierAtSite && targetDist > 7)) {
+			this.tBotObjective(bot, dt);
+		} else if (target && this.botCanSee(bot, target) && !mustDefuse) {
+			this.botCombat(bot, target, dt, diff);
 		} else {
-			var attacking = los && dist < 42;
-			bot.state = attacking ? 'attack' : 'hunt';
-			if (attacking) {
-				var nx = dx / dist, nz = dz / dist;
-				if (sniping) {
-					bot.state = 'sniper';
-					if (dist < 21 && now >= bot.sniperCoverCooldown && this.startBotSniperCover(bot, px, py, pz)) {
-						/* moving to cover this tick; hold fire */
-					} else {
-						faceTarget = { x: px, z: pz };
-						moveX = 0;
-						moveZ = 0;
-						if (bot.reactionDone && now >= bot.nextShot) canFire = true;
-					}
-				} else {
-					var prefMin = bot.type.preferMin, prefMax = bot.type.preferMax;
-					var approach = 0;
-					if (dist > prefMax) approach = 1;
-					else if (dist < prefMin) approach = -1;
-					var sx = -nz * bot.strafe, sz = nx * bot.strafe;
-					var strafeSpeed = bot.speed * (0.62 + (bot.type.id === 'scout' ? 0.12 : 0));
-					moveX = sx * strafeSpeed * 0.8 + nx * approach * bot.speed;
-					moveZ = sz * strafeSpeed * 0.8 + nz * approach * bot.speed;
-					if (dist < 2.6) { moveX -= nx * bot.speed * 1.2; moveZ -= nz * bot.speed * 1.2; }
-					faceTarget = { x: px, z: pz };
-					if (bot.reactionDone && now >= bot.nextShot) canFire = true;
-				}
-			} else if (dist < 38 && bot.peekCooldown <= 0 && this.tryBotPeek(bot, px, py, pz)) {
-				/* behavior switched to peekOut this frame; movement starts next tick */
+			this.botObjective(bot, dt);
+		}
+
+		if (bot.reloading) {
+			if (now >= bot.reloadEnd) {
+				this.finishBotReload(bot);
 			} else {
-				if (bot.pathTimer <= 0 || !bot.path || bot.pathIndex >= bot.path.length) {
-					bot.pathTimer = C.rand(0.55, 1.15);
-					var tx = px + C.rand(-2.5, 2.5);
-					var tz = pz + C.rand(-2.5, 2.5);
-					bot.path = C.findPath(this.nav, bot.x, bot.z, tx, tz);
-					bot.pathIndex = 0;
-				}
-				if (bot.path && bot.path.length) {
-					while (bot.pathIndex < bot.path.length) {
-						var chaseWp = bot.path[bot.pathIndex];
-						if (Math.hypot(chaseWp.x - bot.x, chaseWp.z - bot.z) < 0.62) bot.pathIndex++;
-						else break;
-					}
-					if (bot.pathIndex < bot.path.length) {
-						var cwp = bot.path[bot.pathIndex];
-						var cdx = cwp.x - bot.x, cdz = cwp.z - bot.z;
-						var cd = Math.hypot(cdx, cdz) || 1;
-						moveX = cdx / cd * bot.speed;
-						moveZ = cdz / cd * bot.speed;
-					}
-				} else {
-					moveX = dx / dist * bot.speed;
-					moveZ = dz / dist * bot.speed;
-				}
+				bot.mode = 'reload';
+				if (bot.reloadGoal) this.botPathTo(bot, bot.reloadGoal.x, bot.reloadGoal.z, bot.speed * 0.9, dt);
+				else { bot.moveX = 0; bot.moveZ = 0; }
+				if (target) bot.face = { x: target.x, z: target.z };
 			}
 		}
 
-		if (canFire) {
-			moveX = 0;
-			moveZ = 0;
-		}
 		if (now < bot.stationaryUntil) {
-			moveX = 0;
-			moveZ = 0;
+			bot.moveX = 0;
+			bot.moveZ = 0;
 		}
 
-		/* separation */
-		if (!canFire) {
+		var speed = Math.hypot(bot.moveX, bot.moveZ);
+		/* keep the squad from stacking into one silhouette */
+		if (speed > 0.01) {
 			for (var i = 0; i < this.bots.length; i++) {
 				var o = this.bots[i];
 				if (o === bot || !o.alive || o.dead) continue;
 				var ox = bot.x - o.x, oz = bot.z - o.z;
 				var od = Math.hypot(ox, oz);
-				if (od > 0.001 && od < 1.5) {
-					moveX += ox / od * (1.5 - od) * 2.2;
-					moveZ += oz / od * (1.5 - od) * 2.2;
+				if (od > 0.001 && od < 1.35) {
+					bot.moveX += ox / od * (1.35 - od) * 2.4;
+					bot.moveZ += oz / od * (1.35 - od) * 2.4;
 				}
 			}
+			speed = Math.hypot(bot.moveX, bot.moveZ);
 		}
+		bot.moveSpeed = speed;
 
-		var speed = Math.hypot(moveX, moveZ);
 		if (speed > 0.001) {
-			var stepX = moveX * dt;
-			var stepZ = moveZ * dt;
+			var stepX = bot.moveX * dt;
+			var stepZ = bot.moveZ * dt;
 			var oldX = bot.x, oldZ = bot.z;
 			if (!this.collidesBot(bot.x + stepX, bot.z, 0.4) && !this.collidesChicken(bot.x + stepX, bot.z, 0.4, 0)) bot.x += stepX;
 			if (!this.collidesBot(bot.x, bot.z + stepZ, 0.4) && !this.collidesChicken(bot.x, bot.z + stepZ, 0.4, 0)) bot.z += stepZ;
 			var moved = Math.hypot(bot.x - oldX, bot.z - oldZ);
-			if (moved < 0.001) bot.stuck += dt; else bot.stuck = Math.max(0, bot.stuck - dt * 2);
-			if (bot.stuck > 0.7) {
-				bot.stuck = 0;
-				bot.pathTimer = 0;
-				bot.x += Math.cos(now * 0.001 + bot.walkPhase) * 0.25;
-				bot.z += Math.sin(now * 0.001 + bot.walkPhase) * 0.25;
+			if (moved < 0.001) {
+				bot.stuck += dt;
+				/* Round-body local avoidance: a circle never wedges on a right
+				   angle the way a square box does. Try a short tangential slide
+				   around the blocked corner, scored toward the current waypoint. */
+				if (bot.stuck > 0.08) {
+					var baseAng = Math.atan2(stepZ, stepX);
+					var slideLen = Math.min(0.26, Math.max(0.09, speed * dt * 2.4));
+					var gx = 0, gz = 0;
+					if (bot.path && bot.pathIndex < bot.path.length) {
+						gx = bot.path[bot.pathIndex].x - bot.x;
+						gz = bot.path[bot.pathIndex].z - bot.z;
+					} else if (bot.pathGoal) {
+						gx = bot.pathGoal.x - bot.x;
+						gz = bot.pathGoal.z - bot.z;
+					} else {
+						gx = stepX;
+						gz = stepZ;
+					}
+					var gl = Math.hypot(gx, gz) || 1;
+					gx /= gl; gz /= gl;
+					var bestScore = -2, bestX = null, bestZ = null;
+					var slideAngles = [0.55, -0.55, 1.0, -1.0, 1.5, -1.5];
+					for (var si = 0; si < slideAngles.length; si++) {
+						var sa = baseAng + slideAngles[si];
+						var nx = bot.x + Math.cos(sa) * slideLen;
+						var nz = bot.z + Math.sin(sa) * slideLen;
+						if (this.collidesBot(nx, nz, 0.4) || this.collidesChicken(nx, nz, 0.4, 0)) continue;
+						if (this.world.walkableAt && !this.world.walkableAt(nx, nz)) continue;
+						var score = (nx - bot.x) * gx + (nz - bot.z) * gz;
+						if (score > bestScore) { bestScore = score; bestX = nx; bestZ = nz; }
+					}
+					if (bestX != null) {
+						bot.x = bestX;
+						bot.z = bestZ;
+						moved = slideLen;
+						bot.pathTimer = 0;
+					}
+				}
+				if (bot.stuck > 0.65) {
+					bot.stuck = 0;
+					bot.path = null;
+					bot.pathTimer = 0;
+					if (bot.route && bot.routeIndex < bot.route.length - 1) bot.routeIndex++;
+					/* last resort: step out in a free compass direction */
+					for (var na = 0; na < 8; na++) {
+						var ca = (na / 8) * Math.PI * 2;
+						var ux = bot.x + Math.cos(ca) * 0.32;
+						var uz = bot.z + Math.sin(ca) * 0.32;
+						if (!this.collidesBot(ux, uz, 0.4) && !this.collidesChicken(ux, uz, 0.4, 0) &&
+							(!this.world.walkableAt || this.world.walkableAt(ux, uz))) {
+							bot.x = ux;
+							bot.z = uz;
+							break;
+						}
+					}
+				}
+			} else {
+				bot.stuck = Math.max(0, bot.stuck - dt * 2);
 			}
 		}
 
-		/* facing */
-		var targetYaw;
-		if (faceTarget) targetYaw = Math.atan2(px - bot.x, pz - bot.z);
-		else if (speed > 0.2) targetYaw = Math.atan2(moveX, moveZ);
-		else targetYaw = bot.yaw;
-		bot.yaw = dampAngle(bot.yaw, targetYaw, 9, dt);
+		var targetYaw = bot.yaw;
+		if (bot.face) targetYaw = Math.atan2(bot.face.x - bot.x, bot.face.z - bot.z);
+		else if (speed > 0.2) targetYaw = Math.atan2(bot.moveX, bot.moveZ);
+		bot.yaw = dampAngle(bot.yaw, targetYaw, target ? 10 : 6, dt);
 		root.rotation.y = bot.yaw;
 		var gunBase = -0.04;
-		var aimPitch = bot.reloading ? 0 : -Math.atan2(py - (1.32 * bot.baseScale + 0.2), Math.max(0.5, dist));
+		var aimPitch = 0;
+		if (target) {
+			var tdist = Math.hypot(target.x - bot.x, target.z - bot.z);
+			aimPitch = -Math.atan2(target.eye - (1.32 * bot.baseScale + 0.2), Math.max(0.5, tdist));
+		}
 		bot.robot.gun.rotation.x = C.damp(bot.robot.gun.rotation.x, gunBase + aimPitch * 0.7, 8, dt);
 		root.position.set(bot.x, 0, bot.z);
 
-		/* walk animation */
+		/* walk cycle */
 		var walkSpeed = speed / Math.max(0.1, bot.speed);
 		bot.walkPhase += dt * (4 + speed * 1.4);
 		var swing = Math.sin(bot.walkPhase) * 0.6 * Math.min(1, walkSpeed);
@@ -3267,15 +4982,17 @@
 			bot.robot.armR.rotation.x = -1.35;
 			bot.robot.armL.rotation.x = -0.55;
 		}
+		if (bot.planting) {
+			bot.robot.armR.rotation.x = -1.1;
+			bot.robot.armL.rotation.x = -1.1;
+		}
 		bot.robot.torso.position.y = 1.28 + Math.abs(Math.sin(bot.walkPhase)) * 0.012 * Math.min(1, walkSpeed);
 		bot.footTimer -= dt;
 		if (speed > 0.5 && bot.footTimer <= 0) {
-			bot.footTimer = 0.42;
-			var fd = Math.hypot(bot.x - p.x, bot.z - p.z);
-			if (fd < 26) this.sound.burst({ dur: 0.05, type: 'lowpass', freq: 300, gain: 0.035 * (1 - fd / 30), pan: this.panFor(bot.x, bot.z) });
+			bot.footTimer = 0.44;
+			var fd = Math.hypot(bot.x - this.player.x, bot.z - this.player.z);
+			if (fd < 26) this.sound.burst({ dur: 0.05, type: 'lowpass', freq: 300, gain: 0.03 * (1 - fd / 30), pan: this.panFor(bot.x, bot.z) });
 		}
-
-		if (canFire && !melee) this.botShoot(bot, dist, diff);
 		if (bot.flash && bot.flash.visible && now > bot.flashUntil) bot.flash.visible = false;
 	};
 
@@ -3284,103 +5001,6 @@
 		bot.robot.legL.rotation.x = C.damp(bot.robot.legL.rotation.x, 0, 4, dt);
 		bot.robot.legR.rotation.x = C.damp(bot.robot.legR.rotation.x, 0, 4, dt);
 		bot.robot.torso.position.y = 1.28 + Math.sin(bot.walkPhase) * 0.008;
-	};
-
-	RangeGame.prototype.botLineOfSight = function (bot, px, py, pz) {
-		return this.pointHasLos(bot.x, 1.5 * bot.baseScale, bot.z, px, py, pz);
-	};
-
-	RangeGame.prototype.panFor = function (x, z) {
-		var right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
-		var dir = new THREE.Vector3(x - this.player.x, 0, z - this.player.z);
-		if (dir.lengthSq() < 0.001) return 0;
-		dir.normalize();
-		return clamp(dir.dot(right), -1, 1) * 0.65;
-	};
-
-	RangeGame.prototype.botShoot = function (bot, dist, diff) {
-		if (!this.player.alive || bot.reloading || bot.ammo <= 0) return;
-		if (!bot.weaponDef || bot.weaponDef.slot === 'melee') return;
-		var now = this.now;
-		var p = this.player;
-		var def = bot.weaponDef || C.WEAPONS.ak47;
-		bot.ammo--;
-		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
-		if (rec) rec.ammo = bot.ammo;
-
-		var baseGap = bot.type.fireRate;
-		if (def.category === 'SMG') baseGap *= 0.62;
-		else if (def.category === 'SHOTGUN') baseGap *= 1.08;
-		else if (def.category === 'SNIPER') baseGap *= 1.3;
-
-		/* bots carrying both a rifle and an SMG fire in short automatic bursts */
-		var bursting = bot.burstMode && (def.category === 'RIFLE' || def.category === 'SMG');
-		if (bursting) {
-			if (bot.burstLeft <= 0) bot.burstLeft = C.randi(3, 5);
-			bot.burstLeft--;
-			if (bot.burstLeft > 0) {
-				bot.nextShot = now + C.rand(82, 136);
-				bot.reactionDone = true;
-				bot.reaction = 0;
-			} else {
-				bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
-				bot.reactionDone = false;
-			}
-		} else {
-			bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
-			bot.reactionDone = false;
-		}
-		bot.stationaryUntil = now + 360;
-
-		var origin = this.tmpB.set(bot.x, 1.42 * bot.baseScale, bot.z);
-		var target = new THREE.Vector3(p.x, p.feetY + p.eye - C.rand(0.18, 0.5), p.z);
-		var dir = new THREE.Vector3().subVectors(target, origin).normalize();
-		var tracerEnd = target.clone();
-
-		/* deliberate miss roll: lower difficulty -> wider, more frequent misses */
-		var missChance = diff.missChance != null ? diff.missChance : 0.22;
-		if (p.speed > 2.2) missChance *= 1.12;
-		if (dist > 34) missChance *= 1.12;
-		var deliberateMiss = Math.random() < missChance;
-
-		var chance = bot.accuracy * diff.accuracy;
-		chance *= clamp(1.18 - dist / 48, 0.25, 1);
-		if (p.speed > 2.2) chance *= 0.82;
-		if (this.keys.ctrl || this.input.touchCrouch) chance *= 0.88;
-		chance = clamp(chance, 0.05, 0.92);
-
-		var hit = !deliberateMiss && Math.random() < chance;
-		if (hit) {
-			var scale = def.category === 'SNIPER' ? 1.35 : def.category === 'SHOTGUN' ? 1.4 : def.category === 'SMG' ? 0.62 : def.category === 'RIFLE' ? 1.0 : 0.6;
-			var dmg = bot.damage * scale * diff.damage * C.rand(0.82, 1.18);
-			var headshot = false;
-			if (def.category === 'SNIPER') {
-				var hsChance = clamp(0.08 + diff.accuracy * 0.13, 0.10, 0.30);
-				headshot = Math.random() < hsChance;
-				if (headshot) dmg *= 2.6;
-			}
-			if (Math.random() < 0.07) dmg *= 1.7;
-			this.applyPlayerDamage(dmg, bot, headshot);
-		} else {
-			var side = new THREE.Vector3(-dir.z, 0, dir.x);
-			if (side.lengthSq() < 0.01) side.set(1, 0, 0);
-			side.normalize();
-			var spread = deliberateMiss ? C.rand(1.4, 4.4) : C.rand(0.8, 2.4);
-			var sign = Math.random() < 0.5 ? -1 : 1;
-			var lift = deliberateMiss ? C.rand(-1.4, 2.1) : C.rand(-0.8, 1.2);
-			tracerEnd.copy(target).addScaledVector(side, spread * sign);
-			tracerEnd.y += lift;
-		}
-
-		if (bot.flash) {
-			bot.muzzle.updateWorldMatrix(true, false);
-			bot.flash.visible = true;
-			bot.flashUntil = now + 45;
-			bot.flash.material.rotation = Math.random() * Math.PI * 2;
-		}
-		this.spawnTracer(origin.clone(), tracerEnd, 0xff9a50, 0.09);
-		this.sound.shot(def.sound || 'rifle', this.panFor(bot.x, bot.z), dist);
-		if (hit) this.spawnSparks(this.camera.position.clone(), 0xff6a4a, 5, 1.8);
 	};
 
 	RangeGame.prototype.updateBotsDeath = function (dt) {
@@ -3414,6 +5034,7 @@
 		this.flashDamage();
 		this.showDamageDirection(fromBot ? fromBot.x : p.x, fromBot ? fromBot.z : p.z);
 		this.updateVitalsHUD();
+		if (fromBot) this.raiseAlert(this.playerTeam, fromBot.x, fromBot.z, fromBot);
 		if (p.health <= 0) {
 			p.health = 0;
 			p.alive = false;
@@ -3421,10 +5042,19 @@
 			p.deathRoll = 0;
 			this.match.deaths++;
 			this.playerDiedLastRound = true;
+			this.playerWasKilledLastRound = true;
+			this.playerDefusing = false;
+			this.playerHasBomb = false;
+			this.playerPlanting = false;
+			if (this.bomb && this.bomb.carrier === this.player) this.dropBomb(this.player);
+			this.deathTimer = 1.6;
+			this.spectating = false;
 			this.showDeathCam(fromBot, !!headshot);
+			if (this.el.hud) this.el.hud.classList.add('is-dead');
 			if (fromBot) {
 				fromBot.kills++;
-				this.addKillFeed(fromBot.name + ' [' + fromBot.type.label + ']', 'YOU', fromBot.weaponDef ? fromBot.weaponDef.name : 'RIFLE', !!headshot, false);
+				if (headshot) fromBot.hs++;
+				this.addKillFeed(fromBot.name, 'YOU', fromBot.weaponDef ? fromBot.weaponDef.name : 'RIFLE', !!headshot, false);
 			}
 			this.input.fire = false;
 			this.semiQueued = false;
@@ -3433,30 +5063,66 @@
 			this.camera.fov = 74;
 			this.camera.updateProjectionMatrix();
 			this.updateVitalsHUD();
+			this.updateHostiles();
+			this.checkRoundEnd();
 		}
 	};
 
 	RangeGame.prototype.damageBot = function (bot, amount, headshot, weaponName) {
-		if (!bot || !bot.alive) return false;
+		if (!bot || !bot.alive || bot.team === this.playerTeam) return false;
 		var killed = false;
 		bot.hp -= amount;
 		bot.robot.hp = Math.max(0, bot.hp);
 		bot.robot.maxHp = bot.maxHp;
 		bot.hitFlash = 0.08;
+		bot.think = 0;
+		bot.lastAttacker = 'player';
+		bot.reactionDone = false;
+		bot.reaction = 0;
+		bot.lastEnemySeenAt = this.now;
+		bot.roamNextAt = this.now + C.rand((bot.idleLimit || 10) * 0.9, (bot.idleLimit || 10) * 1.3);
+		bot.roamTarget = null;
+		this.raiseAlert(bot.team, this.player.x, this.player.z, 'player');
 		C.drawHealthSprite(bot.robot);
 		bot.robot.healthSprite.visible = bot.hp > 0;
 		if (bot.hp <= 0) {
-			this.killBot(bot, headshot, weaponName);
+			this.killBot(bot, headshot, weaponName, 'player');
 			killed = true;
 		} else {
-			/* small flinch */
 			bot.root.position.x += C.rand(-0.04, 0.04);
 			bot.root.position.z += C.rand(-0.04, 0.04);
 		}
 		return killed;
 	};
 
-	RangeGame.prototype.killBot = function (bot, headshot, weaponName) {
+	RangeGame.prototype.damageBotByBot = function (bot, amount, attacker, headshot, weaponName) {
+		if (!bot || !bot.alive || bot.dead) return false;
+		if (attacker && attacker.team === bot.team) return false;
+		bot.hp -= amount;
+		bot.robot.hp = Math.max(0, bot.hp);
+		bot.robot.maxHp = bot.maxHp;
+		bot.hitFlash = 0.08;
+		bot.think = 0;
+		bot.lastAttacker = attacker || null;
+		bot.lastHitAt = this.now;
+		bot.lastEnemySeenAt = this.now;
+		bot.roamNextAt = this.now + C.rand((bot.idleLimit || 10) * 0.9, (bot.idleLimit || 10) * 1.3);
+		bot.roamTarget = null;
+		if (attacker) this.raiseAlert(bot.team, attacker.x, attacker.z, attacker);
+		bot.reactionDone = false;
+		bot.reaction = 0;
+		C.drawHealthSprite(bot.robot);
+		bot.robot.healthSprite.visible = bot.hp > 0;
+		if (bot.hp <= 0) {
+			this.killBot(bot, headshot, weaponName || 'RIFLE', attacker);
+			return true;
+		}
+		bot.root.position.x += C.rand(-0.04, 0.04);
+		bot.root.position.z += C.rand(-0.04, 0.04);
+		return false;
+	};
+
+	RangeGame.prototype.killBot = function (bot, headshot, weaponName, killer) {
 		if (!bot || bot.dead) return;
 		bot.dead = true;
 		bot.alive = false;
@@ -3464,37 +5130,54 @@
 		bot.deaths = 1;
 		bot.headshotDeath = !!headshot;
 		bot.robot.healthSprite.visible = false;
+		bot.planting = false;
 		if (headshot && bot.robot.head) {
 			bot.robot.head.visible = false;
 			this.spawnRobotHead(bot);
 		}
+		if (this.bomb && (this.bomb.carrier === bot || this.bomb.planter === bot) &&
+			(this.bomb.state === 'carried' || this.bomb.state === 'planting')) {
+			this.dropBomb(bot);
+		}
 		this.dropBotWeapon(bot);
-		this.match.kills++;
-		this.roundStats.kills++;
-		if (headshot) { this.match.hs++; this.roundStats.hs++; }
-		var reward = 300 + (headshot ? 100 : 0);
-		this.match.money = clamp(this.match.money + reward, 0, 16000);
-		this.addKillFeed('YOU', bot.name, weaponName, headshot, true);
+		var byPlayer = (killer === 'player' || killer == null || killer === this.player);
+		if (byPlayer) {
+			this.match.kills++;
+			this.roundStats.kills++;
+			if (headshot) { this.match.hs++; this.roundStats.hs++; }
+			var reward = 300 + (headshot ? 100 : 0);
+			this.match.money = clamp(this.match.money + reward, 0, 16000);
+			this.addKillFeed('YOU', bot.name, weaponName || 'RIFLE', headshot, true);
+		} else {
+			killer.kills++;
+			if (headshot) killer.hs++;
+			this.addKillFeed(killer.name, bot.name, weaponName || 'RIFLE', headshot, false);
+		}
 		this.sound.explode();
 		this.spawnSparks(new THREE.Vector3(bot.x, 1.3, bot.z), headshot ? 0xffd66a : 0xff8b52, 20, 4.4);
 		this.updateHostiles();
 		this.updateVitalsHUD();
-		if (this.round.phase === 'live') {
-			var alive = 0;
-			for (var i = 0; i < this.bots.length; i++) if (this.bots[i].alive) alive++;
-			if (alive === 0) this.endRound(true, 'All hostiles eliminated.');
+		this.updateBombHUD();
+		this.checkRoundEnd();
+	};
+
+	RangeGame.prototype.checkRoundEnd = function () {
+		if (!this.round || this.round.ended || this.round.phase !== 'live' || this.state !== 'playing') return;
+		var ctAlive = this.aliveTeamCount('CT');
+		var tAlive = this.aliveTeamCount('T');
+		if (ctAlive === 0) {
+			this.endRound(false, 'All counter-terrorists eliminated.', 'elim');
+			return;
+		}
+		if (tAlive === 0 && (!this.bomb || (this.bomb.state !== 'planted' && this.bomb.state !== 'defused' && this.bomb.state !== 'exploded'))) {
+			this.endRound(true, 'All terrorists eliminated.', 'elim');
 		}
 	};
 
-	RangeGame.prototype.dropBotWeapon = function (bot) {
-		var def = C.WEAPONS[bot.weaponId];
-		if (!def || !C.buildWeaponPickup || def.slot === 'melee') return;
-		var ammo = {
-			mag: Math.max(1, Math.round(def.mag * C.rand(0.45, 0.9))),
-			reserve: C.randi(0, def.reserve)
-		};
-		var pickup = C.buildWeaponPickup(bot.weaponId, def, ammo);
-		pickup.group.position.set(bot.x, 0.02, bot.z);
+	RangeGame.prototype.createWeaponDrop = function (weaponId, def, ammo, x, z, spark) {
+		if (!def || !C.buildWeaponPickup || def.slot === 'melee') return null;
+		var pickup = C.buildWeaponPickup(weaponId, def, ammo);
+		pickup.group.position.set(x, 0.02, z);
 		this.scene.add(pickup.group);
 		var drop = {
 			id: ++this.dropSeq,
@@ -3504,17 +5187,27 @@
 			label: pickup.label,
 			labelTex: pickup.labelTex,
 			materials: pickup.materials,
-			weaponId: bot.weaponId,
+			weaponId: weaponId,
 			def: def,
 			ammo: ammo,
-			x: bot.x,
-			z: bot.z,
+			x: x,
+			z: z,
 			life: 35,
 			phase: C.rand(0, 6.28)
 		};
 		this.drops.push(drop);
-		this.spawnSparks(new THREE.Vector3(bot.x, 0.55, bot.z), 0xffd58a, 7, 2.2);
+		if (spark) this.spawnSparks(new THREE.Vector3(x, 0.55, z), 0xffd58a, 7, 2.2);
 		return drop;
+	};
+
+	RangeGame.prototype.dropBotWeapon = function (bot) {
+		var def = C.WEAPONS[bot.weaponId];
+		if (!def || !C.buildWeaponPickup || def.slot === 'melee') return;
+		var ammo = {
+			mag: Math.max(1, Math.round(def.mag * C.rand(0.45, 0.9))),
+			reserve: C.randi(0, def.reserve)
+		};
+		return this.createWeaponDrop(bot.weaponId, def, ammo, bot.x, bot.z, true);
 	};
 
 	RangeGame.prototype.removeDrop = function (drop) {
@@ -3595,17 +5288,31 @@
 		var def = drop.def;
 		if (!def || (def.slot !== 'primary' && def.slot !== 'secondary')) return;
 		var slot = def.slot;
-		if (this.loadout[slot] === drop.weaponId) {
+		var oldId = this.loadout[slot];
+		if (oldId === drop.weaponId) {
 			var ammo = this.ammo[drop.weaponId];
 			if (!ammo) ammo = this.ammo[drop.weaponId] = { mag: 0, reserve: 0 };
 			ammo.mag = Math.min(def.mag, ammo.mag + drop.ammo.mag);
 			ammo.reserve = Math.min(def.reserve * 2, ammo.reserve + drop.ammo.reserve);
 			this.toast('Picked up ' + def.name + ' ammo.');
 		} else {
+			/* Swap, not teleport: the replaced gun is thrown onto the floor
+			   as a real pickup with its current magazine and reserve. */
+			var droppedName = null;
+			if (oldId) {
+				var oldDef = C.WEAPONS[oldId];
+				if (oldDef) {
+					var oldAmmo = this.ammo[oldId] || { mag: oldDef.mag, reserve: oldDef.reserve };
+					this.createWeaponDrop(oldId, oldDef, { mag: oldAmmo.mag, reserve: oldAmmo.reserve },
+						this.player.x, this.player.z, true);
+					droppedName = oldDef.name;
+				}
+				delete this.ammo[oldId];
+			}
 			this.loadout[slot] = drop.weaponId;
 			this.ammo[drop.weaponId] = { mag: drop.ammo.mag, reserve: drop.ammo.reserve };
 			this.equipWeapon(drop.weaponId, true);
-			this.toast('Picked up ' + def.name + '.');
+			this.toast(droppedName ? ('Swapped ' + droppedName + ' for ' + def.name + '.') : ('Picked up ' + def.name + '.'));
 		}
 		this.sound.buy();
 		this.updateAmmoHUD();
@@ -3636,6 +5343,7 @@
 	   HUD
 	   ====================================================================== */
 	RangeGame.prototype.updateHUD = function () {
+		if (this.el.useHint) text(this.el.useHint, (this.playerTeam === 'T' && !this.practice) ? 'PLANT C4' : 'PICK UP / DEFUSE');
 		if (this.el.roundNo) text(this.el.roundNo, this.practice ? '' : (this.match ? this.match.round : 1));
 		if (this.match) {
 			text(this.el.health, Math.max(0, Math.round(this.player.health)));
@@ -3804,6 +5512,17 @@
 		if (!this.isTouch) this.requestLock();
 	};
 
+	RangeGame.prototype.canBuyItem = function (item) {
+		if (!item) return false;
+		if (this.practice) return true;
+		if (item.kind === 'kit') return this.playerTeam === 'CT';
+		if (item.kind !== 'weapon') return true;
+		var pool = this.playerTeam === 'CT'
+			? ['m4a4', 'mp9', 'ump45', 'awp', 'ssg08', 'nova', 'p250', 'deagle']
+			: ['ak47', 'galil', 'sg553', 'mp9', 'ump45', 'awp', 'ssg08', 'nova', 'p250', 'deagle'];
+		return pool.indexOf(item.id) !== -1;
+	};
+
 	RangeGame.prototype.renderBuy = function () {
 		if (!this.el.buyGrid) return;
 		var free = this.practice;
@@ -3812,6 +5531,7 @@
 		var html = '';
 		for (var i = 0; i < C.BUY_ITEMS.length; i++) {
 			var item = C.BUY_ITEMS[i];
+			if (!this.canBuyItem(item)) continue;
 			var def = item.kind === 'weapon' ? C.WEAPONS[item.id] : null;
 			var name = def ? def.name : item.name;
 			var cat = def ? def.category : item.category;
@@ -3819,14 +5539,19 @@
 			var owned = false;
 			if (!free) {
 				if (item.kind === 'armor') owned = this.player.armor >= 100;
-				else if (def.slot === 'primary') owned = this.loadout.primary === item.id;
-				else owned = this.loadout.secondary === item.id;
+				else if (item.kind === 'kit') owned = !!this.defuseKit;
+				else if (def) {
+					if (def.slot === 'primary') owned = this.loadout.primary === item.id;
+					else owned = this.loadout.secondary === item.id;
+				}
 			}
 			var can = free || (money >= price && !owned);
 			var icon = C.weaponIcon(def ? def.icon : 'armor');
 			var stats = def
 				? '<span>DMG <b>' + def.damage + (def.pellets ? '×' + def.pellets : '') + '</b></span><span>RPM <b>' + def.rpm + '</b></span><span>MAG <b>' + def.mag + '</b></span>'
-				: '<span>ARMOR <b>+100</b></span><span>HEAD <b>PROTECTED</b></span>';
+				: item.kind === 'kit'
+					? '<span>DEFUSE <b>5.0s</b></span><span>KIT <b>FAST</b></span>'
+					: '<span>ARMOR <b>+100</b></span><span>HEAD <b>PROTECTED</b></span>';
 			html += '<button type="button" class="csr-buyitem' + (owned ? ' is-owned' : '') + (!can && !owned ? ' is-locked' : '') + '" data-buy-id="' + item.id + '">' +
 				'<div class="csr-buyitem__top"><div><span class="csr-buyitem__key">' + (item.key ? item.key : '·') + '</span>' +
 				'<p class="csr-buyitem__name">' + escapeHTML(name) + '</p>' +
@@ -3834,7 +5559,7 @@
 				(owned ? '<span class="csr-buyitem__owned">OWNED</span>' : '<span class="csr-buyitem__price' + (!free && money < price ? ' is-short' : '') + '">' + (free ? 'FREE' : fmtMoney(price)) + '</span>') +
 				'</div>' +
 				'<div class="csr-buyitem__stat">' + stats + '</div>' +
-				'<span class="csr-buyitem__buy">' + (owned ? 'EQUIPPED' : money >= price ? 'BUY  [ ' + item.key + ' ]' : 'NOT ENOUGH CASH') + '</span>' +
+				'<span class="csr-buyitem__buy">' + (owned ? 'EQUIPPED' : money >= price ? (item.key ? 'BUY  [ ' + item.key + ' ]' : 'BUY') : 'NOT ENOUGH CASH') + '</span>' +
 				'<div class="csr-buyitem__icon' + (def && (def.icon === 'pistol' || def.icon === 'knife') ? ' is-pistol' : '') + '">' + icon + '</div>' +
 				'</button>';
 		}
@@ -3846,10 +5571,18 @@
 		if (!this.buyOpen || !this.match) return;
 		var item = null;
 		for (var i = 0; i < C.BUY_ITEMS.length; i++) if (C.BUY_ITEMS[i].id === id) item = C.BUY_ITEMS[i];
-		if (!item) return;
+		if (!item || !this.canBuyItem(item)) return;
 		var free = this.practice;
 		if (!free && this.match.money < item.price) { this.toast('Not enough cash.'); return; }
-		if (item.kind === 'armor') {
+		if (item.kind === 'kit') {
+			if (this.playerTeam !== 'CT') { this.toast('Terrorists cannot buy a defuse kit.'); return; }
+			if (this.defuseKit && !free) { this.toast('Defuse kit already equipped.'); return; }
+			this.defuseKit = true;
+			if (!free) this.match.money -= item.price;
+			this.sound.buy();
+			this.toast('Defuse kit acquired.');
+			this.updateBombHUD();
+		} else if (item.kind === 'armor') {
 			if (this.player.armor >= 100 && !free) { this.toast('Armour is already full.'); return; }
 			this.player.armor = 100;
 			if (!free) this.match.money -= item.price;
@@ -3895,18 +5628,20 @@
 			text(this.el.boardCt, this.match.ct);
 			text(this.el.boardT, this.match.t);
 		}
-		var ct = '<div class="csr-board__row is-player' + (this.player.alive ? '' : ' is-dead') + '">' +
-			'<span>PLAYER</span><span>' + this.match.kills + '</span><span>' + this.match.deaths + '</span><span>' + this.match.hs + '</span><span>LOCAL</span></div>';
-		this.el.boardCtRows.innerHTML = ct;
-		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.el.boardCtRows);
-		var html = '';
+		var playerRow = '<div class="csr-board__row is-player' + (this.player.alive ? '' : ' is-dead') + '">' +
+			'<span>YOU <small style="opacity:.5">' + this.playerTeam + '</small></span><span>' + this.match.kills + '</span><span>' + this.match.deaths + '</span><span>' + this.match.hs + '</span><span>LOCAL</span></div>';
+		var ctBots = '';
+		var tBots = '';
 		for (var i = 0; i < this.bots.length; i++) {
 			var b = this.bots[i];
-			html += '<div class="csr-board__row' + (b.alive ? '' : ' is-dead') + '">' +
-				'<span>' + escapeHTML(b.name) + ' <small style="opacity:.5">' + b.type.label + '</small></span>' +
-				'<span>' + b.kills + '</span><span>' + b.deaths + '</span><span>0</span><span>' + b.ping + '</span></div>';
+			var row = '<div class="csr-board__row' + (b.alive ? '' : ' is-dead') + '">' +
+				'<span>' + escapeHTML(b.name) + ' <small style="opacity:.5">' + escapeHTML(b.role || b.type.label) + '</small></span>' +
+				'<span>' + b.kills + '</span><span>' + b.deaths + '</span><span>' + (b.hs || 0) + '</span><span>' + b.ping + '</span></div>';
+			if (b.team === 'CT') ctBots += row; else tBots += row;
 		}
-		this.el.boardTRows.innerHTML = html;
+		this.el.boardCtRows.innerHTML = (this.playerTeam === 'CT' ? playerRow : '') + ctBots;
+		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.el.boardCtRows);
+		this.el.boardTRows.innerHTML = (this.playerTeam === 'T' ? playerRow : '') + tBots;
 		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.el.boardTRows);
 	};
 
@@ -4049,6 +5784,12 @@
 			return;
 		}
 
+		if (this.el.team && !this.el.team.hidden) {
+			if (k === 'Escape') { this.closeTeamSelect(); return; }
+			if (k === '1') { this.chooseTeam('CT'); return; }
+			if (k === '2') { this.chooseTeam('T'); return; }
+			return;
+		}
 		/* controls is a modal layer above menu/pause: close it with Esc / H / Enter */
 		if (this.el.controls && !this.el.controls.hidden) {
 			if (k === 'Escape' || code === 'h' || k === 'Enter') {
@@ -4072,7 +5813,9 @@
 			var n = Number(k);
 			if (n >= 1 && n <= 9) {
 				var item = null;
-				for (var bi = 0; bi < C.BUY_ITEMS.length; bi++) if (C.BUY_ITEMS[bi].key === n) item = C.BUY_ITEMS[bi];
+				for (var bi = 0; bi < C.BUY_ITEMS.length; bi++) {
+					if (C.BUY_ITEMS[bi].key === n && this.canBuyItem(C.BUY_ITEMS[bi])) item = C.BUY_ITEMS[bi];
+				}
 				if (item) this.buyItem(item.id);
 				return;
 			}
@@ -4109,7 +5852,13 @@
 				if (!ev.repeat) this.startReload();
 				break;
 			case 'e':
-				if (!ev.repeat) this.pickupNearest();
+				this.input.defuse = true;
+				if (!ev.repeat) {
+					var c4 = this.bomb;
+					var nearC4 = c4 && c4.state === 'planted' && this.player.alive &&
+						Math.hypot(this.player.x - c4.x, this.player.z - c4.z) < 2.2;
+					if (!nearC4) this.pickupNearest();
+				}
 				break;
 			case 'b':
 				if (!ev.repeat) { if (this.buyOpen) this.closeBuy(); else this.openBuy(); }
@@ -4137,6 +5886,7 @@
 
 	RangeGame.prototype.onKeyUp = function (ev) {
 		var code = ev.key.toLowerCase();
+		if (code === 'e') this.input.defuse = false;
 		if (code === 'w') this.keys.w = false;
 		else if (code === 'a') this.keys.a = false;
 		else if (code === 's') this.keys.s = false;
@@ -4160,7 +5910,16 @@
 	};
 
 	RangeGame.prototype.onCanvasMouseDown = function (ev) {
-		if (this.state !== 'playing' || !this.player.alive) return;
+		if (this.player && !this.player.alive) {
+			if (this.state === 'playing' || this.state === 'roundover') {
+				if (ev.button === 0) {
+					if (this.spectating) this.cycleSpectateTarget(1);
+					else this.beginSpectate();
+				}
+			}
+			return;
+		}
+		if (this.state !== 'playing') return;
 		if (!this.isTouch && !this.locked && !this.fallbackLook) {
 			this.requestLock();
 			return;
@@ -4190,6 +5949,12 @@
 	RangeGame.prototype.setupTouch = function () {
 		var self = this;
 		if (this.el.touch) this.el.touch.hidden = false;
+		this.on(this.el.canvas, 'pointerdown', function (ev) {
+			if (!self.isTouch || self.player.alive) return;
+			if (self.state !== 'playing' && self.state !== 'roundover') return;
+			if (self.spectating) self.cycleSpectateTarget(1);
+			else self.beginSpectate();
+		});
 		if (this.el.stick) {
 			var active = false;
 			var cx = 0, cy = 0;
@@ -4241,6 +6006,21 @@
 			self.el.touchCrouch.classList.toggle('is-active', self.input.touchCrouch);
 		});
 		if (this.el.touchScope) this.on(this.el.touchScope, 'click', function () { self.toggleScope(); });
+		if (this.el.touchUse) {
+			this.on(this.el.touchUse, 'pointerdown', function (ev) {
+				ev.preventDefault();
+				self.sound.ensure();
+				var c4 = self.bomb;
+				var nearC4 = c4 && c4.state === 'planted' && self.player.alive &&
+					Math.hypot(self.player.x - c4.x, self.player.z - c4.z) < 2.2;
+				if (!nearC4) self.pickupNearest();
+				self.input.defuse = true;
+			});
+			var useEnd = function () { self.input.defuse = false; };
+			this.on(this.el.touchUse, 'pointerup', useEnd);
+			this.on(this.el.touchUse, 'pointercancel', useEnd);
+			this.on(this.el.touchUse, 'pointerleave', useEnd);
+		}
 		if (this.el.touchBuy) this.on(this.el.touchBuy, 'click', function () {
 			if (self.buyOpen) self.closeBuy(); else self.openBuy();
 		});
@@ -4326,7 +6106,16 @@
 			armor: this.player.armor,
 			alive: this.player.alive,
 			botsAlive: this.bots.filter(function (b) { return b.alive; }).length,
-			bots: this.bots.map(function (b) { return { name: b.name, type: b.type.id, weapon: b.weaponId, weaponIndex: b.weaponIndex, loadout: (b.weapons || []).map(function (w) { return w.id; }), inventory: (b.weapons || []).map(function (w) { return { id: w.id, ammo: w.ammo, reloading: w.reloading }; }), burstMode: !!b.burstMode, burstLeft: b.burstLeft, hasSniper: !!b.hasSniper, hp: Math.round(b.hp), maxHp: b.maxHp, alive: b.alive, ammo: b.ammo, reloading: b.reloading, behavior: b.behavior, peeking: b.peeking, x: +b.x.toFixed(2), z: +b.z.toFixed(2) }; }),
+			ctAlive: this.aliveTeamCount('CT'),
+			tAlive: this.aliveTeamCount('T'),
+			bots: this.bots.map(function (b) { return { name: b.name, team: b.team, role: b.role, mode: b.mode, type: b.type.id, weapon: b.weaponId, weaponIndex: b.weaponIndex, loadout: (b.weapons || []).map(function (w) { return w.id; }), inventory: (b.weapons || []).map(function (w) { return { id: w.id, ammo: w.ammo, reloading: w.reloading }; }), burstMode: !!b.burstMode, burstLeft: b.burstLeft, hasSniper: !!b.hasSniper, hp: Math.round(b.hp), maxHp: b.maxHp, alive: b.alive, ammo: b.ammo, reloading: b.reloading, behavior: b.behavior, target: b.target ? b.target.kind : null, x: +b.x.toFixed(2), z: +b.z.toFixed(2) }; }),
+			bomb: this.bomb ? { state: this.bomb.state, site: this.bomb.site, fuse: +this.bomb.fuse.toFixed(1), carrier: this.bomb.carrier ? this.bomb.carrier.name : null, defuser: this.bomb.defuser ? this.bomb.defuser.name : null, defuse: +this.bomb.defuseProgress.toFixed(2), playerDefuse: +this.bomb.playerDefuseProgress.toFixed(2) } : null,
+			defuseKit: !!this.defuseKit,
+			playerTeam: this.playerTeam,
+			playerHasBomb: !!this.playerHasBomb,
+			playerPlanting: !!this.playerPlanting,
+			spectating: !!this.spectating,
+			spectateTarget: this.spectateTarget ? this.spectateTarget.name : null,
 			weapon: this.currentWeapon,
 			ammo: this.ammo[this.currentWeapon],
 			money: this.match ? this.match.money : 0,
@@ -4370,7 +6159,7 @@
 	};
 
 	RangeGame.prototype.debugKillAll = function () {
-		for (var i = 0; i < this.bots.length; i++) if (this.bots[i].alive) this.killBot(this.bots[i], false, 'DEBUG');
+		for (var i = 0; i < this.bots.length; i++) if (this.bots[i].alive && this.bots[i].team === this.enemyTeam) this.killBot(this.bots[i], false, 'DEBUG', 'player');
 		return this.debugState();
 	};
 

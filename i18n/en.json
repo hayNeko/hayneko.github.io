@@ -85,7 +85,7 @@
 		},
 		"range": {
 			"title": "Dust Range",
-			"desc": "A CS:GO-flavoured 3D shooting range: a procedural de_dust map, randomised robot squads, a buy menu and a working radar. Mouse and keyboard.",
+			"desc": "A CS2-flavoured single-player 5v5 bomb-defusal game on a de_dust2 layout: four CT bots plus you against five terrorists, C4 plants and defuses, a CT buy menu and a working radar. Mouse and keyboard.",
 			"badge": "3D"
 		},
 		"bay": {

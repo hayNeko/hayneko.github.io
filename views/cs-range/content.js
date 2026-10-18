@@ -2,7 +2,7 @@
  * views/cs-range/content.js — DUST RANGE content layer
  *
  * Everything that can exist without knowing about the match: the weapon table,
- * the robot catalogue, procedural textures, the de_dust-inspired map, navmesh
+ * the robot catalogue, procedural textures, the Dust 2 map, navmesh
  * grid, robot + first-person weapon models and the Web Audio synthesiser.
  * game.js owns the state machine, AI, combat and HUD.
  *
@@ -148,8 +148,25 @@
 		{ id: 'p250', kind: 'weapon', price: 300, category: 'SIDEARM', key: 0 },
 		{ id: 'deagle', kind: 'weapon', price: 700, category: 'SIDEARM', key: 0 },
 		{ id: 'armor', kind: 'armor', price: 1000, category: 'PROTECTION', key: 0,
-			name: 'KEVLAR + HELMET', desc: 'Armour absorbs half of incoming body damage.' }
+			name: 'KEVLAR + HELMET', desc: 'Armour absorbs half of incoming body damage.' },
+		{ id: 'kit', kind: 'kit', price: 400, category: 'PROTECTION', key: 0,
+			name: 'DEFUSE KIT', desc: 'Halves the time needed to defuse the bomb.' }
 	];
+
+	var BOMB = { plantTime: 3.2, fuse: 40, defuse: 10, defuseKit: 5, siteRadius: 8.4 };
+
+	var TEAM_LOADOUTS = {
+		CT: {
+			primary: ['m4a4', 'm4a4', 'mp9', 'ump45', 'sg553'],
+			sniper: ['awp', 'ssg08'],
+			secondary: ['usp', 'p250', 'deagle']
+		},
+		T: {
+			primary: ['ak47', 'ak47', 'galil', 'sg553'],
+			sniper: ['awp', 'ssg08'],
+			secondary: ['p250', 'deagle', 'usp']
+		}
+	};
 
 	var BOT_TYPES = {
 		scout: {
@@ -211,37 +228,34 @@
 	];
 
 	var BOT_SPAWNS = [
-		{ x: 0, z: -31 }, { x: -30, z: -30 }, { x: 30, z: -30 },
-		{ x: -33, z: -7 }, { x: 33, z: -6 }, { x: -13, z: -28 },
-		{ x: 13, z: -28 }, { x: 0, z: -19 }, { x: -27, z: -20 },
-		{ x: 27, z: -18 }, { x: -33, z: 14 }, { x: 33, z: 14 },
-		{ x: -8, z: -12 }, { x: 9, z: 18 }
+		{ x: -10, z: 36 }, { x: -16, z: 36 }, { x: -4, z: 36 },
+		{ x: -21, z: 35 }, { x: 4, z: 36 }
 	];
 
-	var PLAYER_SPAWN = { x: 0, z: 31 };
-	var PRACTICE_SPAWN = { x: 0, z: 34.5 };
+	var PLAYER_SPAWN = { x: 12, z: -24 };
+	var PRACTICE_SPAWN = { x: 23, z: -24 };
 
-	/* Practice boards face the shooting line at the CT end of the map. */
+	/* Practice boards stand across the open A site. */
 	var PRACTICE_TARGETS = [
-		{ x: 0, z: 24.0, type: 'paper', scale: 1.10, move: 0 },
-		{ x: -5.4, z: 23.5, type: 'paper', scale: 1.00, move: 0 },
-		{ x: 4.8, z: 22.0, type: 'steel', scale: 0.98, move: 0 },
-		{ x: -8.5, z: 25.0, type: 'paper', scale: 0.94, move: 0 },
-		{ x: 9.2, z: 24.4, type: 'steel', scale: 0.92, move: 0 },
-		{ x: 0, z: 18.4, type: 'steel', scale: 0.90, move: 0 },
-		{ x: -12.8, z: 15.5, type: 'paper', scale: 0.96, move: 0 },
-		{ x: 12.8, z: 14.5, type: 'paper', scale: 0.96, move: 0 },
-		{ x: -16.8, z: 7.5, type: 'steel', scale: 0.90, move: 0 },
-		{ x: 18.0, z: 8.0, type: 'steel', scale: 0.90, move: 0 },
-		{ x: -3.2, z: 27.5, type: 'paper', scale: 0.84, move: 1.5 },
-		{ x: 4.1, z: 27.0, type: 'steel', scale: 0.80, move: 1.1 }
+		{ x: 16.0, z: -32.0, type: 'paper', scale: 1.10, move: 0 },
+		{ x: 20.0, z: -32.0, type: 'steel', scale: 1.00, move: 0 },
+		{ x: 24.0, z: -32.0, type: 'paper', scale: 0.98, move: 0 },
+		{ x: 28.0, z: -36.0, type: 'steel', scale: 0.94, move: 0 },
+		{ x: 30.0, z: -36.0, type: 'paper', scale: 0.92, move: 0 },
+		{ x: 32.0, z: -34.0, type: 'steel', scale: 0.90, move: 0 },
+		{ x: 34.0, z: -22.0, type: 'paper', scale: 0.96, move: 0 },
+		{ x: 24.0, z: -28.0, type: 'steel', scale: 0.96, move: 0 },
+		{ x: 28.0, z: -28.0, type: 'paper', scale: 0.94, move: 0 },
+		{ x: 32.0, z: -26.0, type: 'steel', scale: 0.90, move: 0 },
+		{ x: 26.0, z: -22.0, type: 'paper', scale: 0.84, move: 1.5 },
+		{ x: 22.0, z: -20.0, type: 'steel', scale: 0.80, move: 1.1 }
 	];
 
 	var CHICKEN_SPAWNS = [
-		{ x: -4.0, z: 30.0 }, { x: 5.2, z: 26.0 }, { x: -9.0, z: 21.0 },
-		{ x: 10.5, z: 19.0 }, { x: -14.0, z: 5.0 }, { x: 14.5, z: 2.5 },
-		{ x: -6.0, z: -2.0 }, { x: 7.5, z: -11.0 }, { x: -20.0, z: 19.0 },
-		{ x: 20.0, z: -4.0 }
+		{ x: -10.0, z: 36.0 }, { x: -2.0, z: 24.0 }, { x: 18.0, z: 24.0 },
+		{ x: 32.0, z: 2.0 }, { x: -30.0, z: 14.0 }, { x: -28.0, z: 0.0 },
+		{ x: -25.0, z: -31.0 }, { x: 24.0, z: -28.0 }, { x: 12.0, z: -24.0 },
+		{ x: 5.0, z: -10.0 }
 	];
 
 	/* ======================================================================
@@ -740,21 +754,285 @@
 	}
 
 	/* ======================================================================
-	   the map — de_dust-ish sandstone training range
+	   the map — de_dust2 bomb-defusal layout
+	   ----------------------------------------------------------------------
+	   The walkable footprint is traced at 1 m resolution from the real
+	   de_dust2 radar (75 x 80 m), so every corridor, elbow, doorway and
+	   courtyard corner matches the retail map instead of a hand-waved box.
+	   Perimeter walls are generated around that footprint.
 	   ====================================================================== */
 	function createMap(scene, tex, renderer) {
+		var BOUNDS = 40;
 		var world = {
-			bounds: 38,
+			bounds: BOUNDS,
 			colliders: [],
 			meshes: [],
 			deco: [],
 			ground: null,
-			sites: [
-				{ id: 'A', x: -24, z: -21, r: 9 },
-				{ id: 'B', x: 24, z: -19, r: 8 }
-			],
-			spawn: PLAYER_SPAWN
+			areas: [],
+			callouts: [],
+			sites: [],
+			spawns: { ct: [], t: [] },
+			routes: { A: {}, B: {}, ct: {} },
+			holds: { ctA: [], ctB: [], tA: [], tB: [] },
+			plantSpots: { A: [], B: [] },
+			spawn: null,
+			grid: null
 		};
+
+		/* ----------------------------------------------------------------
+		   footprint rows, south (T spawn) at the bottom. Each string is a
+		   comma-separated list of [x0,x1) 1 m runs measured from -37.5 m;
+		   row 0 is z = -40 m, row 79 is z = 39..40 m.
+		   ---------------------------------------------------------------- */
+		var MAP_ROWS = [
+			'2-5',
+			'2-6,61-70',
+			'2-6,61-71',
+			'2-6,61-71',
+			'2-6,61-71',
+			'2-14,61-71',
+			'2-16,60-71',
+			'2-16,49-71',
+			'2-16,18-21,47-71',
+			'2-16,18-22,47-71',
+			'2-16,18-22,47-71',
+			'2-16,18-30,43-71',
+			'2-16,18-30,43-71',
+			'1-16,18-35,43-71',
+			'1-16,18-35,42-71',
+			'1-16,18-36,41-71',
+			'1-75',
+			'1-75',
+			'1-75',
+			'1-16,18-75',
+			'1-16,31-43,47-51,58-75',
+			'1-16,31-36,47-50,65-75',
+			'1-16,30-35,47-51,65-75',
+			'1-15,30-35,46-51,65-75',
+			'1-14,30-35,46-51,65-75',
+			'3-6,9-13,30-35,46-50,64-72',
+			'3-6,9-12,31-35,46-51,64-72',
+			'3-6,9-12,32-35,46-51,64-71',
+			'3-6,32-35,46-51,64-71',
+			'3-6,32-35,39-43,46-51,64-71',
+			'3-6,19-51,65-71',
+			'3-6,19-51,65-71',
+			'1-10,19-51,65-71',
+			'1-11,19-31,32-40,43-45,64-71',
+			'1-16,18-22,32-39,64-71',
+			'1-22,32-39,60-62,64-71',
+			'1-22,32-39,51-71',
+			'1-22,32-39,51-71',
+			'1-21,31-39,51-71',
+			'7-13,31-39,51-74',
+			'9-12,31-39,51-75',
+			'9-12,32-39,51-75',
+			'9-12,32-39,51-75',
+			'9-12,32-39,52-55,57-75',
+			'9-12,32-39,52-55,59-75',
+			'6-15,30-39,51-55,59-74',
+			'6-15,30-39,51-55,59-74',
+			'3-16,29-39,51-55,59-74',
+			'3-16,29-39,51-55,59-74',
+			'3-17,28-45,46-50,51-55,59-74',
+			'3-17,28-50,51-55,59-74',
+			'3-17,28-50,51-55,59-74',
+			'3-18,28-50,52-55,59-71,72-74',
+			'3-18,29-35,44-50,52-55,59-64,65-71',
+			'3-18,32-34,44-55,65-70',
+			'3-18,32-34,44-55',
+			'3-18,32-34,44-55',
+			'3-16,32-34,44-55',
+			'3-15,32-34,44-55',
+			'3-15,32-34,44-55',
+			'3-15,32-34,44-55',
+			'3-15,21-23,32-34,44-56',
+			'3-16,20-23,32-34,44-56',
+			'3-23,32-34,43-56',
+			'3-23,32-34,43-56',
+			'3-23,32-35,43-48,52-54',
+			'3-23,32-36,43-49',
+			'3-23,32-49',
+			'2-23,32-48',
+			'1-23,32-48',
+			'0-23,25-50',
+			'0-50',
+			'0-50',
+			'0-50',
+			'0-50',
+			'0-50',
+			'0-50',
+			'8-45',
+			'35-45',
+			'36-45'
+		];
+		var MAP_X0 = -37.5, MAP_Z0 = -40;
+		var GRID = { min: -BOUNDS, size: BOUNDS * 2, cells: new Uint8Array(BOUNDS * BOUNDS * 4) };
+		function gridAt(x, z) {
+			var gx = Math.floor(x + BOUNDS), gz = Math.floor(z + BOUNDS);
+			if (gx < 0 || gz < 0 || gx >= BOUNDS * 2 || gz >= BOUNDS * 2) return 0;
+			return GRID.cells[gz * GRID.size + gx];
+		}
+		var AREAS = [];
+		MAP_ROWS.forEach(function (row, z) {
+			if (!row) return;
+			var z0 = MAP_Z0 + z, z1 = z0 + 1;
+			row.split(',').forEach(function (run, i) {
+				var ab = run.split('-');
+				var x0 = parseInt(ab[0], 10), x1 = parseInt(ab[1], 10);
+				if (!(x1 > x0)) return;
+				AREAS.push({
+					id: 'f' + z + '_' + i, name: '',
+					x0: MAP_X0 + x0, x1: MAP_X0 + x1, z0: z0, z1: z1
+				});
+				/* fill the collider/nav sampling grid (cell centres at -39.5..) */
+				for (var gx = x0 + 3; gx < x1 + 3; gx++) {
+					var cell = z * GRID.size + gx;
+					if (cell >= 0 && cell < GRID.cells.length) GRID.cells[cell] = 1;
+				}
+			});
+		});
+		world.areas = AREAS;
+		world.grid = GRID;
+		function walkableAt(x, z) { return !!gridAt(x, z); }
+		world.walkableAt = walkableAt;
+
+		/* bomb sites — red bombsite tints on the radar put them here */
+		var SITE_A = { id: 'A', x: 24.5, z: -28.5, r: 5.9 };
+		var SITE_B = { id: 'B', x: -25.5, z: -31.0, r: 5.9 };
+		SITE_A.plantSpots = [
+			{ x: 23.5, z: -28.5, name: 'DEFAULT' },
+			{ x: 26.5, z: -31.0, name: 'NINJA' },
+			{ x: 20.5, z: -26.0, name: 'SHORT' },
+			{ x: 28.5, z: -24.5, name: 'LONG' }
+		];
+		SITE_B.plantSpots = [
+			{ x: -25.0, z: -31.0, name: 'DEFAULT' },
+			{ x: -33.0, z: -36.0, name: 'BACK PLAT' },
+			{ x: -19.5, z: -27.5, name: 'B DOORS' },
+			{ x: -31.5, z: -29.0, name: 'BOX' }
+		];
+		world.sites = [SITE_A, SITE_B];
+		world.plantSpots.A = SITE_A.plantSpots;
+		world.plantSpots.B = SITE_B.plantSpots;
+
+		/* Spawns. Bot yaw faces +z at 0; the player yaw is offset by PI. */
+		world.spawns.ct = [
+			{ x: 12, z: -24, yaw: Math.PI / 2 },
+			{ x: 6,  z: -23, yaw: 0 },
+			{ x: 18, z: -22, yaw: 0 },
+			{ x: 4,  z: -23, yaw: 0 },
+			{ x: 20, z: -26, yaw: 0 }
+		];
+		world.spawns.t = [
+			{ x: -4, z: 36, yaw: Math.PI },
+			{ x: -10, z: 36, yaw: Math.PI },
+			{ x: -16, z: 36, yaw: Math.PI },
+			{ x: -21, z: 35, yaw: Math.PI },
+			{ x: 4,   z: 36, yaw: Math.PI }
+		];
+		world.spawn = world.spawns.ct[0];
+
+		/* Attack routes: real lanes, sampled from the footprint's A* mesh. */
+		world.routes.A = {
+			main: [
+				{ x: -4, z: 34 }, { x: 5, z: 35 }, { x: 10, z: 35 }, { x: 10, z: 30 },
+				{ x: 13, z: 25 }, { x: 17, z: 23 }, { x: 17, z: 18 }, { x: 17, z: 13 },
+				{ x: 17, z: 8 }, { x: 17, z: 3 }, { x: 21, z: 2 }, { x: 26, z: 2 },
+				{ x: 26, z: 8 }, { x: 29, z: 5 }, { x: 29, z: 0 }, { x: 29, z: -6 },
+				{ x: 28, z: -12 }, { x: 26, z: -19 }, { x: 24, z: -23 }, { x: 24, z: -27 }
+			],
+			flank: [
+				{ x: -4, z: 34 }, { x: -4, z: 27 }, { x: -4, z: 21 }, { x: -4, z: 15 },
+				{ x: -1, z: 12 }, { x: 1, z: 8 }, { x: 1, z: 2 }, { x: 1, z: -4 },
+				{ x: 4, z: -7 }, { x: 9, z: -7 }, { x: 12, z: -10 }, { x: 12, z: -15 },
+				{ x: 13, z: -19 }, { x: 18, z: -20 }, { x: 22, z: -20 }, { x: 24, z: -23 },
+				{ x: 24, z: -27 }
+			]
+		};
+		world.routes.B = {
+			main: [
+				{ x: -15, z: 35 }, { x: -20, z: 35 }, { x: -25, z: 35 }, { x: -28, z: 32 },
+				{ x: -28, z: 27 }, { x: -28, z: 22 }, { x: -28, z: 17 }, { x: -28, z: 12 },
+				{ x: -28, z: 7 }, { x: -28, z: 2 }, { x: -29, z: -1 }, { x: -32, z: -4 },
+				{ x: -32, z: -9 }, { x: -32, z: -13 }, { x: -30, z: -15 }, { x: -25, z: -16 },
+				{ x: -25, z: -21 }, { x: -25, z: -26 }, { x: -25, z: -30 }
+			],
+			flank: [
+				{ x: -4, z: 34 }, { x: -5, z: 28 }, { x: -5, z: 22 }, { x: -5, z: 16 },
+				{ x: -5, z: 10 }, { x: -5, z: 4 }, { x: -5, z: -2 }, { x: -5, z: -8 },
+				{ x: -5, z: -13 }, { x: -6, z: -17 }, { x: -9, z: -20 }, { x: -15, z: -21 },
+				{ x: -20, z: -21 }, { x: -25, z: -22 }, { x: -25, z: -27 }, { x: -25, z: -30 }
+			]
+		};
+		world.routes.ct = {
+			A: [
+				{ x: 12, z: -24 }, { x: 16, z: -24 }, { x: 20, z: -24 },
+				{ x: 24, z: -24 }, { x: 24, z: -27 }
+			],
+			B: [
+				{ x: 12, z: -24 }, { x: 8, z: -24 }, { x: 4, z: -24 }, { x: 0, z: -23 },
+				{ x: -4, z: -23 }, { x: -8, z: -23 }, { x: -12, z: -23 }, { x: -16, z: -23 },
+				{ x: -20, z: -23 }, { x: -23, z: -24 }, { x: -25, z: -27 }
+			],
+			mid: [
+				{ x: 12, z: -23 }, { x: 10, z: -20 }, { x: 9, z: -16 }, { x: 9, z: -11 },
+				{ x: 6, z: -9 }, { x: 1, z: -9 }, { x: 1, z: -4 }, { x: 1, z: 0 },
+				{ x: 2, z: 9 }
+			]
+		};
+
+		/* Defensive spots; lx/lz is what the bot watches while holding. */
+		world.holds.ctA = [
+			{ x: 24.0, z: -28.0, lx: 24.0, lz: -22.0 },
+			{ x: 29.0, z: -24.0, lx: 33.0, lz: -18.0 },
+			{ x: 20.0, z: -31.0, lx: 14.0, lz: -26.0 },
+			{ x: 31.0, z: -31.0, lx: 36.0, lz: -26.0 }
+		];
+		world.holds.ctB = [
+			{ x: -25.0, z: -28.0, lx: -25.0, lz: -22.0 },
+			{ x: -32.0, z: -27.0, lx: -35.0, lz: -22.0 },
+			{ x: -29.0, z: -35.0, lx: -22.0, lz: -32.0 },
+			{ x: -20.0, z: -25.0, lx: -18.0, lz: -20.0 }
+		];
+		world.holds.tA = [
+			{ x: 24.0, z: -26.0, lx: 18.0, lz: -24.0 },
+			{ x: 29.0, z: -25.0, lx: 35.0, lz: -20.0 },
+			{ x: 27.0, z: -31.0, lx: 20.0, lz: -29.0 },
+			{ x: 21.0, z: -30.0, lx: 14.0, lz: -25.0 }
+		];
+		world.holds.tB = [
+			{ x: -25.0, z: -28.0, lx: -19.0, lz: -24.0 },
+			{ x: -31.0, z: -26.0, lx: -35.0, lz: -21.0 },
+			{ x: -28.0, z: -35.0, lx: -22.0, lz: -31.0 },
+			{ x: -21.0, z: -31.0, lx: -15.0, lz: -28.0 }
+		];
+
+		world.callouts = [
+			{ name: 'T SPAWN', x: -10, z: 36, big: true },
+			{ name: 'CT SPAWN', x: 12, z: -24, big: true },
+			{ name: 'A SITE', x: 24.5, z: -28.5, big: true },
+			{ name: 'B SITE', x: -25.5, z: -31, big: true },
+			{ name: 'MID', x: 1, z: 8 },
+			{ name: 'TOP MID', x: -2, z: 25 },
+			{ name: 'MID DOORS', x: 1, z: -16 },
+			{ name: 'XBOX', x: 0, z: -7 },
+			{ name: 'CATWALK', x: 8, z: -6 },
+			{ name: 'SHORT', x: 12, z: -14 },
+			{ name: 'LONG A', x: 33, z: 1 },
+			{ name: 'LONG DOORS', x: 26, z: 8 },
+			{ name: 'OUTSIDE LONG', x: 18, z: 24 },
+			{ name: 'PIT', x: 35, z: 9 },
+			{ name: 'LONG CORNER', x: 29, z: -7 },
+			{ name: 'B DOORS', x: -21, z: -19 },
+			{ name: 'UPPER TUNNELS', x: -30, z: -2 },
+			{ name: 'OUTSIDE TUNNELS', x: -29, z: 15 },
+			{ name: 'B TUNNELS', x: -27, z: 3 },
+			{ name: 'A RAMP', x: 17, z: -25 },
+			{ name: 'GOOSE', x: 31, z: -32 },
+			{ name: 'CT MID', x: 6, z: -21 }
+		];
 
 		var mats = {
 			sand: new THREE.MeshStandardMaterial({ map: tex.sand, color: 0xffffff, roughness: 0.98, metalness: 0 }),
@@ -766,19 +1044,22 @@
 			container: new THREE.MeshStandardMaterial({ map: tex.container, color: 0xffffff, roughness: 0.56, metalness: 0.34 }),
 			containerRust: new THREE.MeshStandardMaterial({ map: tex.containerRust, color: 0xffffff, roughness: 0.62, metalness: 0.3 }),
 			metal: new THREE.MeshStandardMaterial({ map: tex.metal, color: 0xffffff, roughness: 0.52, metalness: 0.55 }),
+			niche: new THREE.MeshStandardMaterial({ color: 0x33434e, roughness: 0.82, metalness: 0.08 }),
 			barrel: new THREE.MeshStandardMaterial({ map: tex.barrel, color: 0xffffff, roughness: 0.64, metalness: 0.3 }),
 			sandbag: new THREE.MeshStandardMaterial({ color: 0xa8916b, roughness: 1, metalness: 0 }),
 			wood: new THREE.MeshStandardMaterial({ color: 0x7f5b36, roughness: 0.9, metalness: 0 }),
+			woodDark: new THREE.MeshStandardMaterial({ color: 0x5c3f25, roughness: 0.94, metalness: 0 }),
 			concrete: new THREE.MeshStandardMaterial({ color: 0x9a907d, roughness: 0.95, metalness: 0 }),
+			roof: new THREE.MeshStandardMaterial({ color: 0x8c7c64, roughness: 0.98, metalness: 0 }),
 			dark: new THREE.MeshStandardMaterial({ color: 0x262421, roughness: 0.9, metalness: 0.1 })
 		};
 
 		/* ---- ground ---- */
 		var gTex = tex.sand.clone();
 		gTex.needsUpdate = true;
-		gTex.repeat.set(16, 16);
+		gTex.repeat.set(18, 18);
 		var ground = new THREE.Mesh(
-			new THREE.PlaneGeometry(82, 82, 1, 1),
+			new THREE.PlaneGeometry(96, 96, 1, 1),
 			new THREE.MeshStandardMaterial({ map: gTex, color: 0xffffff, roughness: 1, metalness: 0 })
 		);
 		ground.rotation.x = -Math.PI / 2;
@@ -802,22 +1083,63 @@
 			});
 		}
 
+		/* Static boxes are collected here and merged into one mesh per
+		   material at the end of map construction. This keeps the detailed
+		   Dust 2 geometry at ~40 draw calls instead of thousands. */
+		var boxBatch = {};
 		function addBox(w, h, d, x, z, mat, opts) {
 			opts = opts || {};
-			var geo = boxGeo(w, h, d, opts.unit || 2);
-			var mesh = new THREE.Mesh(geo, mat);
-			mesh.position.set(x, (opts.y || 0) + h / 2, z);
-			if (opts.rotY) mesh.rotation.y = opts.rotY;
-			mesh.castShadow = opts.cast !== false;
-			mesh.receiveShadow = true;
-			scene.add(mesh);
-			if (opts.collide !== false) {
-				world.meshes.push(mesh);
-				addCollider(x, z, w, d, opts.y || 0, (opts.y || 0) + h, opts.rotY || 0);
-			} else {
-				world.deco.push(mesh);
+			var collide = opts.collide !== false;
+			var key = mat.uuid + (collide ? '_c' : '_d');
+			var batch = boxBatch[key];
+			if (!batch) {
+				batch = boxBatch[key] = { mat: mat, collide: collide, items: [] };
 			}
-			return mesh;
+			batch.items.push({
+				w: w, h: h, d: d, x: x, z: z,
+				y: opts.y || 0, rotY: opts.rotY || 0, unit: opts.unit || 2
+			});
+			if (collide) addCollider(x, z, w, d, opts.y || 0, (opts.y || 0) + h, opts.rotY || 0);
+			return null;
+		}
+
+		function mergeBoxBatches() {
+			Object.keys(boxBatch).forEach(function (key) {
+				var batch = boxBatch[key];
+				if (!batch.items.length) return;
+				var positions = [], normals = [], uvs = [], indices = [];
+				var vertOffset = 0;
+				for (var i = 0; i < batch.items.length; i++) {
+					var it = batch.items[i];
+					var geo = boxGeo(it.w, it.h, it.d, it.unit);
+					var mtx = new THREE.Matrix4().makeRotationY(it.rotY || 0);
+					mtx.setPosition(it.x, it.y + it.h / 2, it.z);
+					geo.applyMatrix4(mtx);
+					var pa = geo.attributes.position.array;
+					var na = geo.attributes.normal.array;
+					var ua = geo.attributes.uv.array;
+					var ia = geo.index.array;
+					for (var p = 0; p < pa.length; p++) positions.push(pa[p]);
+					for (var n = 0; n < na.length; n++) normals.push(na[n]);
+					for (var u = 0; u < ua.length; u++) uvs.push(ua[u]);
+					for (var k = 0; k < ia.length; k++) indices.push(ia[k] + vertOffset);
+					vertOffset += pa.length / 3;
+					geo.dispose();
+				}
+				var merged = new THREE.BufferGeometry();
+				merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+				merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+				merged.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+				merged.setIndex(indices);
+				merged.computeBoundingSphere();
+				var mesh = new THREE.Mesh(merged, batch.mat);
+				mesh.castShadow = batch.collide;
+				mesh.receiveShadow = true;
+				scene.add(mesh);
+				if (batch.collide) world.meshes.push(mesh);
+				else world.deco.push(mesh);
+			});
+			boxBatch = {};
 		}
 
 		function addCylinder(rt, rb, h, x, z, mat, opts) {
@@ -825,7 +1147,7 @@
 			var geo = new THREE.CylinderGeometry(rt, rb, h, opts.segments || 14);
 			var mesh = new THREE.Mesh(geo, mat);
 			mesh.position.set(x, (opts.y || 0) + h / 2, z);
-			mesh.castShadow = opts.cast !== false;
+			mesh.castShadow = opts.cast !== false && opts.collide !== false;
 			mesh.receiveShadow = true;
 			scene.add(mesh);
 			if (opts.collide !== false) {
@@ -853,15 +1175,27 @@
 
 		function addSign(letter, x, y, z, rotY, size) {
 			var t = letter === 'A' ? tex.signA : tex.signB;
-			var mat = new THREE.MeshStandardMaterial({ map: t, roughness: 0.9, metalness: 0.02 });
+			var group = new THREE.Group();
+			var mat = new THREE.MeshStandardMaterial({ map: t, roughness: 0.9, metalness: 0.02, side: THREE.DoubleSide });
 			var m = new THREE.Mesh(new THREE.PlaneGeometry(size || 3, size || 3), mat);
-			m.position.set(x, y, z);
-			m.rotation.y = rotY;
-			scene.add(m);
-			world.deco.push(m);
-			return m;
+			m.position.y = y;
+			group.add(m);
+			var frame = new THREE.Mesh(new THREE.BoxGeometry((size || 3) + 0.35, (size || 3) + 0.35, 0.16), mats.woodDark);
+			frame.position.set(0, y, -0.1);
+			group.add(frame);
+			for (var s = -1; s <= 1; s += 2) {
+				var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, y + 0.4, 6), mats.metal);
+				pole.position.set(s * (size || 3) * 0.38, (y + 0.4) / 2 - 0.2, -0.12);
+				group.add(pole);
+			}
+			group.position.set(x, 0, z);
+			group.rotation.y = rotY;
+			scene.add(group);
+			world.deco.push(group);
+			return group;
 		}
 
+		/* thin plywood boards: bullets pass, bodies do not */
 		function addThinPanel(w, h, d, x, z) {
 			addBox(w, h, d, x, z, mats.plywood, { unit: 2.4 });
 			addBox(w + 0.12, 0.08, d + 0.08, x, z, mats.metal, { y: h - 0.02, collide: false });
@@ -877,56 +1211,187 @@
 			}
 		}
 
-		var B = world.bounds;
-		/* ---- outer walls ---- */
-		addBox(B * 2 + 3, 6.2, 1.6, 0, -B - 0.2, mats.brick);
-		addBox(B * 2 + 3, 6.2, 1.6, 0, B + 0.2, mats.brick);
-		addBox(1.6, 6.2, B * 2 + 3, -B - 0.2, 0, mats.brick);
-		addBox(1.6, 6.2, B * 2 + 3, B + 0.2, 0, mats.brick);
+		/* ----------------------------------------------------------------
+		   perimeter walls. The wall box is offset *outward* so the
+		   playable side of the footprint keeps its full width: this is
+		   what lets the narrow 1–2 m Dust 2 elbows stay walkable.
+		   ---------------------------------------------------------------- */
+		function wallRunX(x0, x1, z, outward, dark) {
+			var len = x1 - x0;
+			if (len < 0.05) return;
+			var h = (len > 14 ? 5.5 : 4.5) + ((Math.abs(Math.round(x0 * 5 + z * 7)) % 3) * 0.28);
+			var cx = (x0 + x1) / 2;
+			var cz = z + outward * 0.37;
+			addBox(len + 0.02, h, 0.74, cx, cz, dark ? mats.brickDark : mats.brick, { unit: 2.35 });
+			addBox(len + 0.06, 0.28, 1.04, cx, cz, mats.concrete, { y: h - 0.14, collide: false, unit: 2.6 });
+			addBox(len, 0.55, 0.94, cx, cz, mats.brickDark, { y: 0, collide: false, unit: 2.4 });
+			addBox(len, 0.12, 0.9, cx, cz, mats.concrete, { y: 2.2, collide: false, unit: 2.4 });
+			if (len > 4) {
+				for (var nx = x0 + 2.2; nx < x1 - 1.6; nx += 9.2) {
+					addBox(1.15, 1.7, 0.05, nx, z - outward * 0.06, mats.niche, { y: 1.4, collide: false, unit: 1.4 });
+					addBox(1.5, 0.1, 0.16, nx, z - outward * 0.08, mats.concrete, { y: 1.3, collide: false, unit: 1.4 });
+					addBox(1.45, 0.14, 0.14, nx, z - outward * 0.08, mats.concrete, { y: 3.12, collide: false, unit: 1.4 });
+					addBox(0.1, 2.35, 0.08, nx - 0.75, z - outward * 0.1, mats.wood, { y: 1.05, collide: false, unit: 1.2 });
+					addBox(0.1, 2.35, 0.08, nx + 0.75, z - outward * 0.1, mats.wood, { y: 1.05, collide: false, unit: 1.2 });
+				}
+			}
+			if (len > 7) {
+				for (var px = x0 + 3.2; px < x1 - 1.6; px += 6.5) {
+					addBox(0.85, h + 0.34, 1.08, px, cz, mats.brickDark, { unit: 2.4 });
+					addBox(1.1, 0.2, 1.3, px, cz, mats.concrete, { y: h + 0.14, collide: false, unit: 2.4 });
+				}
+			}
+		}
+		function wallRunZ(x, z0, z1, outward, dark) {
+			var len = z1 - z0;
+			if (len < 0.05) return;
+			var h = (len > 14 ? 5.5 : 4.5) + ((Math.abs(Math.round(z0 * 5 + x * 7)) % 3) * 0.28);
+			var cz = (z0 + z1) / 2;
+			var cx = x + outward * 0.37;
+			addBox(0.74, h, len + 0.02, cx, cz, dark ? mats.brickDark : mats.brick, { unit: 2.35 });
+			addBox(1.04, 0.28, len + 0.06, cx, cz, mats.concrete, { y: h - 0.14, collide: false, unit: 2.6 });
+			addBox(0.94, 0.55, len, cx, cz, mats.brickDark, { y: 0, collide: false, unit: 2.4 });
+			addBox(0.9, 0.12, len, cx, cz, mats.concrete, { y: 2.2, collide: false, unit: 2.4 });
+			if (len > 4) {
+				for (var nz = z0 + 2.2; nz < z1 - 1.6; nz += 9.2) {
+					addBox(0.05, 1.7, 1.15, x - outward * 0.06, nz, mats.niche, { y: 1.4, collide: false, unit: 1.4 });
+					addBox(0.16, 0.1, 1.5, x - outward * 0.08, nz, mats.concrete, { y: 1.3, collide: false, unit: 1.4 });
+					addBox(0.14, 0.14, 1.45, x - outward * 0.08, nz, mats.concrete, { y: 3.12, collide: false, unit: 1.4 });
+					addBox(0.08, 2.35, 0.1, x - outward * 0.1, nz - 0.75, mats.wood, { y: 1.05, collide: false, unit: 1.2 });
+					addBox(0.08, 2.35, 0.1, x - outward * 0.1, nz + 0.75, mats.wood, { y: 1.05, collide: false, unit: 1.2 });
+				}
+			}
+			if (len > 7) {
+				for (var pz = z0 + 3.2; pz < z1 - 1.6; pz += 6.5) {
+					addBox(1.08, h + 0.34, 0.85, cx, pz, mats.brickDark, { unit: 2.4 });
+					addBox(1.3, 0.2, 1.1, cx, pz, mats.concrete, { y: h + 0.14, collide: false, unit: 2.4 });
+				}
+			}
+		}
 
-		/* ---- mid arch / doors ---- */
-		addBox(9, 3.9, 1.5, -8, 0, mats.brickDark);
-		addBox(9, 3.9, 1.5, 8, 0, mats.brickDark);
-		addBox(25, 1.5, 1.7, 0, 0, mats.brickDark, { y: 3.9 });
-		addBox(1.1, 0.35, 1.9, -8, 0, mats.dark, { y: 3.55, collide: false });
-		addBox(1.1, 0.35, 1.9, 8, 0, mats.dark, { y: 3.55, collide: false });
+		function buildBoundaryWalls() {
+			var z, x, run;
+			for (z = -BOUNDS; z < BOUNDS; z++) {
+				/* north face */
+				run = null;
+				for (x = -BOUNDS; x < BOUNDS; x++) {
+					var w = walkableAt(x + 0.5, z + 0.5);
+					var n = walkableAt(x + 0.5, z - 0.5);
+					if (w && !n) { if (run === null) run = x; }
+					else if (run !== null) { wallRunX(run, x, z, -1, (run + z) % 3 === 0); run = null; }
+				}
+				if (run !== null) wallRunX(run, BOUNDS, z, -1, (run + z) % 3 === 0);
+				/* south face */
+				run = null;
+				for (x = -BOUNDS; x < BOUNDS; x++) {
+					var w2 = walkableAt(x + 0.5, z + 0.5);
+					var s2 = walkableAt(x + 0.5, z + 1.5);
+					if (w2 && !s2) { if (run === null) run = x; }
+					else if (run !== null) { wallRunX(run, x, z + 1, 1, (run + z) % 4 === 0); run = null; }
+				}
+				if (run !== null) wallRunX(run, BOUNDS, z + 1, 1, (run + z) % 4 === 0);
+			}
+			for (x = -BOUNDS; x < BOUNDS; x++) {
+				/* west face */
+				run = null;
+				for (z = -BOUNDS; z < BOUNDS; z++) {
+					var w3 = walkableAt(x + 0.5, z + 0.5);
+					var ww = walkableAt(x - 0.5, z + 0.5);
+					if (w3 && !ww) { if (run === null) run = z; }
+					else if (run !== null) { wallRunZ(x, run, z, -1, (x + run) % 3 === 0); run = null; }
+				}
+				if (run !== null) wallRunZ(x, run, BOUNDS, -1, (x + BOUNDS) % 3 === 0);
+				/* east face */
+				run = null;
+				for (z = -BOUNDS; z < BOUNDS; z++) {
+					var w4 = walkableAt(x + 0.5, z + 0.5);
+					var ee = walkableAt(x + 1.5, z + 0.5);
+					if (w4 && !ee) { if (run === null) run = z; }
+					else if (run !== null) { wallRunZ(x + 1, run, z, 1, (x + z) % 4 === 0); run = null; }
+				}
+				if (run !== null) wallRunZ(x + 1, run, BOUNDS, 1, (x + BOUNDS) % 4 === 0);
+			}
+		}
+		buildBoundaryWalls();
 
-		/* ---- long A wall (west) with a doorway ---- */
-		addBox(1.5, 4.6, 17, -22, 10.5, mats.brick);
-		addBox(1.5, 4.6, 15, -22, -21.5, mats.brick);
-		addBox(1.5, 4.6, 5, -22, -3.5, mats.brick);
-		addBox(1.5, 4.6, 4.5, -22, 22.3, mats.brick);
-		addBox(1.4, 1.0, 3.0, -22, -14, mats.brick, { collide: false, y: 3.6 });
+		/* ---- door frames, arches and windows at the real chokepoints ---- */
+		function addDoorFrame(x, z, width, alongX, wood) {
+			var post = 0.62, h = 3.6;
+			if (alongX) {
+				addBox(post, h, 0.92, x - width / 2 - post / 2, z, mats.brickDark, { unit: 2 });
+				addBox(post, h, 0.92, x + width / 2 + post / 2, z, mats.brickDark, { unit: 2 });
+				addBox(width + post * 2, 0.58, 1.02, x, z, mats.brickDark, { y: h, unit: 2 });
+				addBox(width + post * 2, 0.16, 1.14, x, z, mats.concrete, { y: h + 0.58, unit: 2, collide: false });
+				if (wood) {
+					addBox(0.16, 2.55, width / 2 - 0.33, x - width / 2 + 0.38, z + 0.66, mats.wood, { y: 0, rotY: 0.42, collide: false });
+					addBox(0.16, 2.55, width / 2 - 0.33, x + width / 2 - 0.38, z + 0.66, mats.wood, { y: 0, rotY: -0.42, collide: false });
+					addBox(0.1, 2.55, 0.1, x - width / 2 + 0.22, z + 0.98, mats.gold, { y: 0.1, collide: false });
+					addBox(0.1, 2.55, 0.1, x + width / 2 - 0.22, z + 0.98, mats.gold, { y: 0.1, collide: false });
+				}
+			} else {
+				addBox(0.92, h, post, x, z - width / 2 - post / 2, mats.brickDark, { unit: 2 });
+				addBox(0.92, h, post, x, z + width / 2 + post / 2, mats.brickDark, { unit: 2 });
+				addBox(1.02, 0.58, width + post * 2, x, z, mats.brickDark, { y: h, unit: 2 });
+				addBox(1.14, 0.16, width + post * 2, x, z, mats.concrete, { y: h + 0.58, unit: 2, collide: false });
+				if (wood) {
+					addBox(width / 2 - 0.33, 2.55, 0.16, x + 0.66, z - width / 2 + 0.38, mats.wood, { y: 0, rotY: 0.42, collide: false });
+					addBox(width / 2 - 0.33, 2.55, 0.16, x + 0.66, z + width / 2 - 0.38, mats.wood, { y: 0, rotY: -0.42, collide: false });
+				}
+			}
+		}
+		function addArch(x, z, width, alongX) {
+			var post = 0.72, h = 4.15;
+			if (alongX) {
+				addBox(post, h, 0.86, x - width / 2 - post / 2, z, mats.brickDark, { unit: 2 });
+				addBox(post, h, 0.86, x + width / 2 + post / 2, z, mats.brickDark, { unit: 2 });
+				addBox(width + post * 2, 0.56, 0.96, x, z, mats.brickDark, { y: h, unit: 2 });
+				addBox(width + post * 2, 0.2, 1.1, x, z, mats.concrete, { y: h + 0.56, collide: false, unit: 2 });
+			} else {
+				addBox(0.86, h, post, x, z - width / 2 - post / 2, mats.brickDark, { unit: 2 });
+				addBox(0.86, h, post, x, z + width / 2 + post / 2, mats.brickDark, { unit: 2 });
+				addBox(0.96, 0.56, width + post * 2, x, z, mats.brickDark, { y: h, unit: 2 });
+				addBox(1.1, 0.2, width + post * 2, x, z, mats.concrete, { y: h + 0.56, collide: false, unit: 2 });
+			}
+		}
+		function addWindow(x, z, rotY, width, height) {
+			var group = new THREE.Group();
+			var frame = new THREE.Mesh(new THREE.BoxGeometry(width + 0.3, height + 0.3, 0.22), mats.woodDark);
+			group.add(frame);
+			var pane = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.1), mats.dark);
+			pane.position.z = 0.08;
+			group.add(pane);
+			var bar1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, height, 0.14), mats.wood);
+			group.add(bar1);
+			var bar2 = new THREE.Mesh(new THREE.BoxGeometry(width, 0.1, 0.14), mats.wood);
+			group.add(bar2);
+			group.position.set(x, height / 2 + 1.2, z);
+			group.rotation.y = rotY || 0;
+			scene.add(group);
+			world.deco.push(group);
+			return group;
+		}
 
-		/* ---- B tunnels wall (east) with a doorway ---- */
-		addBox(1.5, 4.6, 18, 22, 11, mats.brick);
-		addBox(1.5, 4.6, 14, 22, -22, mats.brick);
-		addBox(1.5, 4.6, 4, 22, -5, mats.brick);
-		addBox(1.5, 4.6, 5, 22, 25, mats.brick);
+		/* mid doors, long doors, B doors, tunnel arches */
+		addDoorFrame(1.0, -16.0, 5.6, true, true);
+		addDoorFrame(26.0, 8.0, 5.2, true, true);
+		addDoorFrame(-22.0, -19.0, 6.0, true, true);
+		addDoorFrame(-21.0, -31.0, 3.8, false, false);
+		addArch(-28.0, 16.0, 5.2, true);
+		addArch(-28.0, 6.0, 4.6, true);
+		addArch(-29.0, -3.0, 4.4, true);
+		addArch(-2.0, 27.0, 5.2, true);
+		addArch(12.0, -33.0, 4.4, true);
+		/* tunnel roof ribs: the left-hand tunnels read as covered passages */
+		addBox(7.0, 0.42, 1.4, -28.0, 16.0, mats.brickDark, { y: 4.25, collide: false, unit: 2.4 });
+		addBox(6.4, 0.42, 1.4, -28.0, 6.0, mats.brickDark, { y: 4.25, collide: false, unit: 2.4 });
+		addBox(6.2, 0.42, 1.4, -29.0, -3.0, mats.brickDark, { y: 4.25, collide: false, unit: 2.4 });
+		addBox(7.0, 0.42, 1.4, -2.0, 27.0, mats.brickDark, { y: 4.25, collide: false, unit: 2.4 });
+		addBox(6.0, 0.42, 1.4, 12.0, -33.0, mats.brickDark, { y: 4.25, collide: false, unit: 2.4 });
+		wallLamp(-31.0, 10.0, Math.PI / 2);
+		wallLamp(-30.0, -5.0, Math.PI / 2);
+		pipeRun(-25.8, 12.0, 18.0, false, 3.6);
 
-		/* ---- A site compound ---- */
-		addBox(1.4, 5.2, 15, -32, -18, mats.brickDark);
-		addBox(12, 5.2, 1.4, -27, -30, mats.brickDark);
-		addBox(7, 5.2, 1.4, -25, -11.5, mats.brickDark);
-		addBox(1.4, 5.2, 7, -33, -9, mats.brickDark);
-		/* ---- B site compound ---- */
-		addBox(1.4, 5.0, 14, 32, -17, mats.brickDark);
-		addBox(11, 5.0, 1.4, 27.5, -29, mats.brickDark);
-		addBox(6, 5.0, 1.4, 26, -10, mats.brickDark);
-		addBox(1.4, 5.0, 8, 34.5, -22, mats.brickDark);
-
-		/* ---- CT spawn shelter: side walls only, so the opening shot has a clear lane ---- */
-		addBox(1.2, 2.4, 5, -6.2, 28.5, mats.concrete);
-		addBox(1.2, 2.4, 5, 6.2, 28.5, mats.concrete);
-		addBox(2.2, 1.05, 1.1, -8.6, 34, mats.concrete);
-		addBox(2.2, 1.05, 1.1, 8.6, 34, mats.concrete);
-
-		/* ---- T spawn cover ---- */
-		addBox(1.4, 3.2, 6, -7, -30, mats.crate);
-		addBox(1.4, 3.2, 6, 7, -30, mats.crate);
-		addBox(10, 1.1, 1.2, 0, -24.5, mats.concrete);
-
-		/* ---- crates / cover in mid ---- */
+		/* ---- cover helpers ---- */
 		function crate(x, z, s, stack, rot) {
 			s = s || 1.7;
 			stack = stack || 1;
@@ -936,180 +1401,294 @@
 				});
 			}
 		}
-		crate(0, 16, 2.1, 1);
-		crate(5.2, 12.5, 1.8, 2, 0.12);
-		crate(-6.2, 9.2, 1.7, 1, -0.08);
-		crate(7.5, 3.5, 1.6, 1);
-		crate(-7.2, -6.5, 1.8, 2, 0.06);
-		crate(3.2, -8.5, 1.7, 1);
-		crate(-3.5, -13.5, 2.0, 1, -0.1);
-		crate(7.8, -18, 1.6, 1);
-		crate(-10.5, 18, 1.5, 1);
-		crate(10.8, 19.5, 1.7, 2);
-
-		/* long A cover */
-		crate(-28.5, 17, 1.8, 1, 0.1);
-		crate(-30, 7, 1.6, 2);
-		crate(-27.5, -1, 1.7, 1, -0.12);
-		crate(-29.5, -12.5, 1.8, 1);
-		crate(-27.2, -24.5, 2.0, 2);
-		/* B tunnel cover */
-		crate(28.5, 18, 1.7, 1, -0.06);
-		crate(29.5, 6, 1.6, 1);
-		crate(27.2, -2.5, 1.8, 2, 0.1);
-		crate(29, -14, 1.7, 1);
-		crate(26.8, -24, 1.9, 1);
-		/* site A crates */
-		crate(-26.5, -19.5, 2.0, 2, 0.08);
-		crate(-21.5, -24, 1.7, 1);
-		crate(-28.5, -26.5, 1.6, 1, -0.1);
-		crate(-19.8, -18.2, 1.4, 1);
-		/* site B crates */
-		crate(26.5, -19, 2.0, 2, -0.05);
-		crate(21.5, -23.5, 1.6, 1);
-		crate(29.5, -25, 1.7, 1);
-		crate(19.8, -17.5, 1.4, 1);
-
-		/* ---- barrels ---- */
 		function barrel(x, z) {
 			addCylinder(0.48, 0.48, 1.15, x, z, mats.barrel, { unit: 1.2 });
 		}
-		barrel(2.2, 7.4);
-		barrel(-2.8, 4.6);
-		barrel(6.5, -3.8);
-		barrel(-8.5, -18.5);
-		barrel(-18.5, 14.5);
-		barrel(19.5, 12.5);
-		barrel(-29.5, -22);
-		barrel(28.5, -11);
-		barrel(12.5, -13.5);
-
-		/* ---- low sandbag cover ---- */
-		function sandbags(x, z, w, d, rot) {
-			addBox(w, 1.05, d, x, z, mats.sandbag, { unit: 1.2, rotY: rot || 0 });
-			for (var i = 0; i < Math.floor(w / 0.9); i++) {
-				var bx = x - w / 2 + 0.45 + i * 0.9;
-				var m = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 6), mats.sandbag);
-				m.scale.set(1, 0.52, 0.7);
-				m.position.set(bx, 1.0, z + (i % 2 ? 0.1 : -0.1));
-				m.castShadow = true;
-				m.receiveShadow = true;
-				scene.add(m);
-				world.deco.push(m);
+	function container(x, z, w, h, d, mat, rot) {
+			addBox(w, h, d, x, z, mat, { unit: 2.7, rotY: rot || 0 });
+			var along = w >= d;
+			var len = along ? w : d;
+			for (var i = 0; i < Math.floor(len / 1.4); i++) {
+				var off = -len / 2 + 0.7 + i * 1.4;
+				addBox(along ? 0.12 : w + 0.08, h - 0.15, along ? d + 0.08 : 0.12,
+					along ? x + off : x, along ? z : z + off, mats.metal,
+					{ y: 0.05, collide: false, unit: 2.2, rotY: rot || 0 });
 			}
 		}
-		sandbags(0, 7.5, 5.8, 1.1);
-		sandbags(-12, 1.5, 1.2, 5.5, Math.PI / 2);
-		sandbags(13, -6, 1.2, 5.5, Math.PI / 2);
-		sandbags(-15, -11, 5.5, 1.1);
-		sandbags(17, 6, 5, 1.1);
-		sandbags(-25.5, -6.5, 5, 1.1);
-
-		/* ---- containers ---- */
-		addBox(6.2, 2.65, 2.7, 13.5, 24, mats.container, { unit: 2.7, rotY: 0.04 });
-		addBox(6.2, 2.65, 2.7, -14, -2, mats.containerRust, { unit: 2.7 });
-		addBox(6.2, 2.65, 2.7, 27.5, 3, mats.container, { unit: 2.7, rotY: -0.03 });
-		addBox(4.3, 2.3, 2.4, -18.5, 25.5, mats.containerRust, { unit: 2.4 });
-
-		/* ---- extra high cover: stacked containers and tall concrete walls ---- */
-		addBox(6.2, 3.35, 2.7, -17.5, 12.5, mats.containerRust, { unit: 2.7, rotY: -0.04 });
-		addBox(6.2, 3.35, 2.7, 17.5, 15.5, mats.container, { unit: 2.7, rotY: 0.04 });
-		addBox(5.4, 3.15, 1.15, 0, -5.6, mats.concrete, { rotY: 0.02 });
-		addBox(1.2, 3.8, 6.4, 16.5, -15.5, mats.brickDark);
-		addBox(1.2, 3.8, 6.4, -16.5, -15.5, mats.brickDark);
-		addBox(3.8, 3.0, 1.1, -11.5, 26.5, mats.concrete, { rotY: -0.06 });
-		addBox(3.8, 3.0, 1.1, 11.5, 26.5, mats.concrete, { rotY: 0.06 });
-
-		/* ---- thin penetrable partitions (pass through; thicker walls stop bullets) ---- */
-		addThinPanel(4.2, 2.2, 0.24, 8.5, 6.5);
-		addThinPanel(0.24, 2.2, 4.0, -11.5, 18.5);
-		addThinPanel(3.6, 2.2, 0.24, 24.0, -8.0);
-
-		/* ---- jumpable low blocks / pallets ---- */
-		addBox(2.2, 0.55, 1.4, 19.0, 24.5, mats.crate, { unit: 1.4 });
-		addBox(2.2, 0.55, 1.4, -19.0, 9.5, mats.crate, { unit: 1.4 });
-		addBox(2.0, 0.55, 1.4, 8.0, 1.5, mats.wood, { unit: 1.4 });
-
-		/* ---- high overlooks with walkable staircases ---- */
-		function addOverlook(cx, cz, w, d, top, stairSide) {
-			var slab = 0.25;
-			addBox(w, slab, d, cx, cz, mats.metal, { y: top - slab, unit: 2.7 });
-			/* support posts (visual + collision under the slab) */
-			var px = w / 2 - 0.35, pz = d / 2 - 0.35;
-			[[-px, -pz], [px, -pz], [-px, pz], [px, pz]].forEach(function (o) {
-				addBox(0.35, top - slab, 0.35, cx + o[0], cz + o[1], mats.metal, { unit: 1.2 });
+		function car(x, z, rot) {
+			addBox(4.2, 0.85, 1.9, x, z, mats.container, { unit: 2.2, rotY: rot || 0 });
+			addBox(2.3, 0.72, 1.7, x - 0.2, z, mats.containerRust, { unit: 2.2, rotY: rot || 0, y: 0.85 });
+			var sx = Math.cos(rot || 0), sz = -Math.sin(rot || 0);
+			[[-1.35, -0.95], [1.35, -0.95], [-1.35, 0.95], [1.35, 0.95]].forEach(function (o) {
+				var wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 12), mats.dark);
+				wheel.rotation.z = Math.PI / 2;
+				wheel.position.set(x + o[0] * sx + o[1] * sz, 0.44, z + o[0] * sz - o[1] * sx);
+				wheel.castShadow = true;
+				scene.add(wheel);
+				world.deco.push(wheel);
 			});
-			/* airy post-and-rail edges; decorative only */
-			var railMat = mats.metal;
-			function railAlongX(rx, rz, len) {
-				addBox(len, 0.06, 0.06, rx, rz, railMat, { y: top + 0.7, collide: false });
-				for (var rp = 0; rp < 4; rp++) {
-					addBox(0.075, 0.72, 0.075, rx - len / 2 + 0.18 + rp * (len - 0.36) / 3, rz, railMat, { y: top, collide: false });
-				}
+		}
+		function planter(x, z) {
+			addBox(1.7, 0.4, 0.9, x, z, mats.concrete, { unit: 1.6 });
+			addBox(1.45, 0.18, 0.7, x, z, mats.sandbag, { y: 0.4, collide: false, unit: 1.6 });
+			for (var i = 0; i < 3; i++) {
+				var bush = new THREE.Mesh(new THREE.SphereGeometry(0.42, 7, 5), new THREE.MeshStandardMaterial({ color: 0x526b39, roughness: 1 }));
+				bush.position.set(x + (i - 1) * 0.45, 0.72, z + rand(-0.1, 0.1));
+				bush.scale.y = 0.72;
+				bush.castShadow = true;
+				scene.add(bush);
+				world.deco.push(bush);
 			}
-			function railAlongZ(rx, rz, len) {
-				addBox(0.06, 0.06, len, rx, rz, railMat, { y: top + 0.7, collide: false });
-				for (var rp2 = 0; rp2 < 4; rp2++) {
-					addBox(0.075, 0.72, 0.075, rx, rz - len / 2 + 0.18 + rp2 * (len - 0.36) / 3, railMat, { y: top, collide: false });
-				}
-			}
-			if (stairSide === 'south') {
-				railAlongX(cx, cz - d / 2 + 0.08, w);
-				railAlongZ(cx - w / 2 + 0.08, cz, d);
-				railAlongZ(cx + w / 2 - 0.08, cz, d);
-			} else {
-				railAlongZ(cx - w / 2 + 0.08, cz, d);
-				railAlongX(cx, cz + d / 2 - 0.08, w);
-				railAlongX(cx, cz - d / 2 + 0.08, w);
-			}
-			var stepCount = 6;
-			var stepDepth = 0.5;
-			var stepHeight = top / stepCount;
-			for (var s = 0; s < stepCount; s++) {
-				if (stairSide === 'south') {
-					addBox(2.4, stepHeight * (s + 1), stepDepth, cx, 36.0 - s * stepDepth, mats.concrete, { unit: 1.2 });
-				} else {
-					addBox(stepDepth, stepHeight * (s + 1), 2.4, 22.5 - s * stepDepth, cz, mats.concrete, { unit: 1.2 });
-				}
-			}
-			/* low side rails on the staircase, visual only */
-			for (var r = 0; r < stepCount; r += 2) {
-				if (stairSide === 'south') {
-					addBox(0.08, 0.65, stepDepth, cx - 1.22, 36.0 - r * stepDepth, railMat, { y: stepHeight * (r + 1), collide: false });
-					addBox(0.08, 0.65, stepDepth, cx + 1.22, 36.0 - r * stepDepth, railMat, { y: stepHeight * (r + 1), collide: false });
-				} else {
-					addBox(stepDepth, 0.65, 0.08, 22.5 - r * stepDepth, cz - 1.22, railMat, { y: stepHeight * (r + 1), collide: false });
-					addBox(stepDepth, 0.65, 0.08, 22.5 - r * stepDepth, cz + 1.22, railMat, { y: stepHeight * (r + 1), collide: false });
+		}
+		function lampPost(x, z) {
+			addCylinder(0.07, 0.09, 4.2, x, z, mats.metal, { unit: 1.2 });
+			addBox(0.85, 0.12, 0.12, x + 0.4, z, mats.metal, { y: 4.0, collide: false });
+			addBox(0.34, 0.24, 0.34, x + 0.8, z, mats.gold, { y: 3.78, collide: false });
+		}
+		function pallet(x, z, rot) {
+			addBox(1.5, 0.18, 1.1, x, z, mats.wood, { unit: 1.2, rotY: rot || 0 });
+			addBox(1.3, 0.5, 0.9, x, z, mats.crate, { y: 0.18, rotY: rot || 0 });
+		}
+		function acUnit(x, z, y) {
+			addBox(1.15, 0.82, 0.95, x, z, mats.metal, { y: y || 0, unit: 1.6 });
+			addBox(0.9, 0.1, 0.7, x, z, mats.dark, { y: (y || 0) + 0.84, collide: false, unit: 1.6 });
+		}
+
+		function awning(x, z, w, d, color, rot) {
+			var cloth = new THREE.MeshStandardMaterial({ color: color || 0x9b6b4a, roughness: 0.92, side: THREE.DoubleSide });
+			var roof = new THREE.Mesh(new THREE.BoxGeometry(w, 0.07, d), cloth);
+			roof.position.set(x, 3.15, z);
+			roof.rotation.y = rot || 0;
+			roof.rotation.x = 0.1;
+			roof.castShadow = true;
+			scene.add(roof);
+			world.deco.push(roof);
+			for (var sx = -1; sx <= 1; sx += 2) {
+				for (var sz = -1; sz <= 1; sz += 2) {
+					var post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 3.1, 5), mats.metal);
+					post.position.set(x + sx * (w / 2 - 0.25), 1.55, z + sz * (d / 2 - 0.2));
+					post.castShadow = true;
+					scene.add(post);
+					world.deco.push(post);
 				}
 			}
 		}
-		addOverlook(-16, 31, 6, 5, 2.4, 'south');
-		addOverlook(17, 31, 6, 5, 2.25, 'east');
 
-		/* ---- low concrete barriers ---- */
-		addBox(3.2, 1.15, 0.65, 9, -7, mats.concrete, { rotY: 0.2 });
-		addBox(3.2, 1.15, 0.65, -11.5, 12, mats.concrete, { rotY: -0.3 });
-		addBox(3.2, 1.15, 0.65, -3, 21.5, mats.concrete, { rotY: 0.15 });
-		addBox(3.2, 1.15, 0.65, 3.4, -21.5, mats.concrete, { rotY: -0.1 });
+		function pipeRun(x, z, len, alongX, h) {
+			var pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, len, 6), mats.metal);
+			pipe.rotation.z = alongX ? Math.PI / 2 : 0;
+			if (!alongX) pipe.rotation.x = Math.PI / 2;
+			pipe.position.set(x, h || 2.9, z);
+			pipe.castShadow = true;
+			scene.add(pipe);
+			world.deco.push(pipe);
+			for (var i = -1; i <= 1; i++) {
+				var band = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.025, 5, 8), mats.dark);
+				band.rotation.y = alongX ? Math.PI / 2 : 0;
+				if (!alongX) band.rotation.x = Math.PI / 2;
+				band.position.set(alongX ? x + i * len * 0.3 : x, h || 2.9, alongX ? z : z + i * len * 0.3);
+				scene.add(band);
+				world.deco.push(band);
+			}
+		}
 
-		/* ---- site markers and signs ---- */
-		addDecal(tex.siteA, -24, -21, 13, 0.08);
-		addDecal(tex.siteB, 24, -19, 12, -0.04);
-		addSign('A', -32.1, 2.7, -18, Math.PI / 2, 3.4);
-		addSign('B', 32.1, 2.6, -17, -Math.PI / 2, 3.4);
-		addSign('A', -27, 2.3, -29.1, 0, 2.6);
-		addSign('B', 27.5, 2.2, -28.1, 0, 2.6);
+		function hangingCloth(x, z, w, h, color, rot) {
+			var cloth = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({
+				color: color || 0x8f3f30, roughness: 0.96, side: THREE.DoubleSide
+			}));
+			cloth.position.set(x, 2.6, z);
+			cloth.rotation.y = rot || 0;
+			cloth.castShadow = true;
+			scene.add(cloth);
+			world.deco.push(cloth);
+		}
 
-		/* spawn markings */
-		addDecal(tex.spawnCT, 0, 31, 8.5, 0);
-		addDecal(tex.spawnT, 0, -31, 8.5, Math.PI);
+		function roofTank(x, z, y) {
+			addCylinder(0.65, 0.65, 1.25, x, z, mats.metal, { y: y || 0, collide: false, unit: 1.4 });
+			addBox(1.5, 0.18, 1.5, x, z, mats.dark, { y: (y || 0) + 1.25, collide: false, unit: 1.4 });
+		}
+
+		function wallLamp(x, z, rot) {
+			var arm = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.08, 0.08), mats.metal);
+			arm.position.set(x, 3.1, z);
+			arm.rotation.y = rot || 0;
+			scene.add(arm);
+			world.deco.push(arm);
+			var lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.22, 0.3), mats.gold);
+			lamp.position.set(x + Math.cos(rot || 0) * 0.32, 3.0, z - Math.sin(rot || 0) * 0.32);
+			scene.add(lamp);
+			world.deco.push(lamp);
+		}
+
+		/* ---- buildings over the non-walkable blocks (visual skyline) ---- */
+		function building(x, z, w, d, h, roofM) {
+			if (walkableAt(x - w / 2 + 0.6, z - d / 2 + 0.6) || walkableAt(x + w / 2 - 0.6, z - d / 2 + 0.6) ||
+				walkableAt(x - w / 2 + 0.6, z + d / 2 - 0.6) || walkableAt(x + w / 2 - 0.6, z + d / 2 - 0.6) ||
+				walkableAt(x, z)) return null;
+			addBox(w, h, d, x, z, mats.brick, { collide: false, unit: 3.8 });
+			addBox(w + 0.35, 0.5, d + 0.35, x, z, mats.concrete, { y: h, collide: false, unit: 3.8 });
+			addBox(w - 0.9, 0.34, d - 0.9, x, z, roofM || mats.roof, { y: h + 0.5, collide: false, unit: 3.8 });
+			/* windows on the south face */
+			for (var i = -1; i <= 1; i++) {
+				addBox(0.82, 1.0, 0.12, x + i * (w / 3.2), z + d / 2 + 0.03, mats.dark, { y: h * 0.55, collide: false, unit: 1.6 });
+				addBox(0.94, 1.12, 0.06, x + i * (w / 3.2), z + d / 2 + 0.09, mats.woodDark, { y: h * 0.55 - 0.06, collide: false, unit: 1.6 });
+			}
+			acUnit(x + w / 4, z - d / 4, h + 0.84);
+			if (Math.abs(Math.round(x + z)) % 3 === 0) roofTank(x - w / 4, z + d / 4, h + 0.5);
+			return true;
+		}
+		building(-15, -6, 9, 7, 7.2);
+		building(-6, 0, 6, 7, 6.0);
+		building(12, -1, 8, 8, 7.6);
+		building(24, -15, 10, 7, 8.0);
+		building(-6, -31, 9, 8, 7.0);
+		building(3, 15, 9, 8, 6.4);
+		building(-16, 18, 9, 8, 7.4);
+		building(22, 12, 8, 7, 6.8);
+		building(-34, -21, 5, 6, 5.4);
+		building(33, -39, 8, 6, 6.2);
+		building(-33, 41, 9, 5, 5.2);
+		building(14, 41, 10, 5, 5.6);
+
+		/* ---- thin penetrable boards: wallbang lanes ---- */
+		addThinPanel(3.6, 2.3, 0.24, 30.5, -3.2);
+		addThinPanel(0.24, 2.3, 3.8, -19.6, -27.0);
+		addThinPanel(3.8, 2.3, 0.24, -8.0, -12.0);
+
+		/* ---- T spawn ---- */
+		crate(-20.0, 37.2, 1.7, 1, 0.1);
+		crate(2.5, 37.0, 1.6, 1, -0.12);
+		barrel(-22.5, 34.0);
+		barrel(5.0, 34.5);
+		planter(-6.0, 32.0);
+		planter(8.0, 33.5);
+		lampPost(-24.0, 31.0);
+		lampPost(10.0, 31.0);
+		addDecal(tex.spawnT, -10, 37.5, 9, Math.PI);
+		awning(-18.0, 33.0, 6.5, 3.0, 0x9b6b4a, 0);
+		awning(7.0, 32.5, 6.0, 2.8, 0x50606b, 0);
+		wallLamp(-27.0, 31.5, 0);
+		wallLamp(9.0, 34.0, Math.PI);
+		pipeRun(-26.0, 30.0, 9.0, false, 3.4);
+		pipeRun(8.0, 33.0, 7.0, true, 3.3);
+
+		/* ---- T ramp / outside long ---- */
+		crate(13.0, 31.0, 1.6, 1, 0.08);
+		crate(17.0, 28.0, 1.5, 1);
+		crate(20.0, 24.0, 1.7, 1, -0.06);
+		container(23.0, 27.5, 2.6, 2.2, 2.0, mats.containerRust, 0.04);
+		barrel(18.0, 19.5);
+		barrel(19.1, 19.0);
+		pallet(26.0, 22.0, 0.15);
+		lampPost(28.0, 26.0);
+		awning(20.0, 27.5, 5.5, 2.6, 0x7d5f45, 0.2);
+		pipeRun(15.0, 19.0, 10.0, false, 3.5);
+		wallLamp(31.0, 21.0, Math.PI);
+
+		/* ---- vertical mid / suicide ---- */
+		crate(-2.0, 24.0, 1.4, 1, 0.06);
+		crate(-2.2, 18.0, 1.3, 1);
+		crate(0.0, 12.0, 1.35, 1, -0.05);
+		barrel(2.6, 15.0);
+		crate(2.6, 5.0, 1.4, 1, 0.04);
+		crate(-1.8, 1.5, 1.45, 1);
+		/* xbox */
+		crate(0.0, -7.0, 1.75, 1, 0.03);
+		crate(0.2, -5.2, 1.2, 1, -0.1);
+		crate(4.0, -16.0, 1.4, 1);
+		addThinPanel(0.24, 2.2, 3.0, -2.2, 3.0);
+		awning(-4.5, 12.5, 2.0, 4.2, 0x51616d, Math.PI / 2);
+		wallLamp(-4.0, 20.0, -Math.PI / 2);
+		pipeRun(-4.0, 6.0, 12.0, false, 3.6);
+
+		/* ---- catwalk / short ---- */
+		crate(7.0, -7.0, 1.45, 1, 0.1);
+		crate(9.5, -9.0, 1.3, 1);
+		crate(12.0, -15.0, 1.5, 1, -0.04);
+		container(14.0, -10.0, 2.2, 2.0, 1.8, mats.containerRust, 0.02);
+		barrel(10.0, -4.5);
+		crate(13.0, -20.0, 1.4, 1);
+
+		/* ---- CT spawn ---- */
+		container(18.0, -27.0, 4.2, 2.3, 2.2, mats.containerRust, 0.02);
+		crate(6.0, -22.0, 1.5, 1);
+		crate(18.0, -22.0, 1.4, 1, 0.03);
+		addDecal(tex.spawnCT, 12, -23.0, 9, 0);
+		lampPost(20.0, -27.0);
+		planter(4.0, -27.0);
+		pipeRun(2.0, -22.0, 12.0, true, 3.6);
+		wallLamp(21.0, -22.0, Math.PI);
+
+		/* ---- A site ---- */
+		crate(22.0, -30.0, 1.7, 1, 0.06);
+		crate(27.0, -32.0, 1.6, 1);
+		crate(29.0, -26.0, 1.5, 2, -0.05);
+		barrel(31.5, -24.5);
+		barrel(30.2, -24.0);
+		crate(20.5, -26.5, 1.35, 1, 0.1);
+		car(34.0, -18.0, 0.04);                     /* A car */
+		addDecal(tex.siteA, 24.5, -28.5, 11, 0.06);
+		addSign('A', 18.0, 2.9, -33.0, Math.PI / 2, 3.2);
+		addSign('A', 32.0, 2.7, -25.0, -Math.PI / 2, 3.2);
+		addSign('A', 24.0, 2.4, -22.4, Math.PI, 2.8);
+		pallet(26.0, -24.0, 0.2);
+		planter(21.0, -35.0);
+
+		/* ---- long A / pit ---- */
+		container(29.4, -4.0, 2.2, 2.4, 4.4, mats.container, 0.02);  /* blue */
+		crate(33.0, 3.0, 1.55, 1, 0.06);
+		crate(29.0, 5.0, 1.45, 1);
+		crate(35.0, -1.5, 1.4, 2, -0.04);
+		crate(28.5, 12.0, 1.35, 1);
+		barrel(36.8, 11.2);
+		barrel(35.9, 12.0);
+		crate(24.0, 16.0, 1.55, 1);
+		crate(21.0, 13.0, 1.5, 2);
+		pallet(33.0, -8.0, -0.1);
+		lampPost(27.0, 10.0);
+
+		/* ---- tunnels ---- */
+		crate(-30.0, 22.0, 1.55, 1);
+		crate(-32.0, 18.0, 1.5, 2, 0.04);
+		crate(-26.0, 12.0, 1.35, 1);
+		crate(-31.0, 8.0, 1.35, 1);
+		barrel(-31.6, 20.5);
+		barrel(-26.0, 6.0);
+		crate(-26.5, -6.0, 1.4, 1);
+		crate(-32.0, -9.0, 1.45, 2);
+		container(-29.0, -16.0, 3.4, 2.2, 2.2, mats.container, 0.03);  /* B car */
+		crate(-18.5, -4.0, 1.4, 1);
+		crate(-20.0, -11.0, 1.4, 1);
+		pallet(-29.0, 24.0, 0.2);
+
+		/* ---- B site ---- */
+		crate(-24.0, -33.0, 1.7, 2, 0.04);
+		crate(-28.0, -36.0, 1.6, 1);
+		crate(-34.0, -32.0, 1.5, 2);
+		barrel(-31.0, -33.5);
+		barrel(-32.0, -32.8);
+		crate(-31.5, -28.5, 1.5, 1);
+		crate(-18.5, -35.0, 1.4, 1);
+		crate(-19.0, -24.0, 1.3, 1);
+		addDecal(tex.siteB, -25.5, -31, 11, -0.05);
+		addSign('B', -18.0, 2.8, -33.0, -Math.PI / 2, 3.2);
+		addSign('B', -35.0, 2.6, -27.0, Math.PI / 2, 3.2);
+		addSign('B', -22.0, 2.3, -19.6, Math.PI, 2.8);
+		planter(-20.0, -36.0);
+
+		/* ---- lower mid / CT rotation ---- */
+		container(-9.6, -10.4, 3.4, 2.2, 2.2, mats.container, 0.03);  /* truck */
+		crate(-16.4, -8.4, 1.4, 1);
+		crate(-3.4, -17.4, 1.35, 1);
+		crate(-12.0, -23.0, 1.4, 1);
+		container(2.0, -21.5, 2.6, 2.0, 1.9, mats.containerRust, -0.02);
 
 		/* ---- distant city / skyline (visual only) ---- */
 		var distantMat = new THREE.MeshStandardMaterial({ color: 0xb9a181, roughness: 1, metalness: 0 });
 		var distantDark = new THREE.MeshStandardMaterial({ color: 0x9a8164, roughness: 1, metalness: 0 });
-		for (var i = 0; i < 26; i++) {
-			var ang = (i / 26) * Math.PI * 2 + rand(-0.08, 0.08);
-			var dist = rand(55, 95);
+		for (var i = 0; i < 30; i++) {
+			var ang = (i / 30) * Math.PI * 2 + rand(-0.08, 0.08);
+			var dist = rand(58, 100);
 			var bw = rand(4, 13), bh = rand(5, 20), bd = rand(4, 12);
 			var bmesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), i % 3 ? distantMat : distantDark);
 			bmesh.position.set(Math.cos(ang) * dist, bh / 2 - 1, Math.sin(ang) * dist);
@@ -1117,15 +1696,13 @@
 			scene.add(bmesh);
 			world.deco.push(bmesh);
 		}
-		/* domes and a minaret-ish tower */
 		for (var dI = 0; dI < 4; dI++) {
-			var angle = rand(0, Math.PI * 2), dist2 = rand(60, 88);
+			var angle = rand(0, Math.PI * 2), dist2 = rand(62, 92);
 			var dome = new THREE.Mesh(new THREE.SphereGeometry(rand(3, 6), 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), distantMat);
 			dome.position.set(Math.cos(angle) * dist2, rand(8, 14), Math.sin(angle) * dist2);
 			scene.add(dome);
 			world.deco.push(dome);
 		}
-		/* palms at the edges of the range */
 		function palm(x, z, scale) {
 			scale = scale || 1;
 			var trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4c2e, roughness: 1 });
@@ -1146,32 +1723,33 @@
 				world.deco.push(leaf);
 			}
 		}
-		palm(-34, 31, 1.1);
-		palm(34, -32, 1.0);
-		palm(-35, -34, 0.9);
-		palm(35, 33, 1.0);
-		palm(-15, 35.5, 0.8);
+		palm(-42, 34, 1.1);
+		palm(42, -35, 1.0);
+		palm(-43, -37, 0.9);
+		palm(43, 36, 1.0);
+		palm(-28, 43, 0.8);
+		palm(31, 43, 0.85);
 
 		/* ---- lighting ---- */
 		var hemi = new THREE.HemisphereLight(0xdce7f2, 0x7d6547, 0.85);
 		scene.add(hemi);
 		var sun = new THREE.DirectionalLight(0xffe6c0, 2.4);
-		sun.position.set(-38, 56, 26);
+		sun.position.set(-42, 60, 30);
 		sun.castShadow = true;
 		sun.shadow.mapSize.set(2048, 2048);
-		sun.shadow.camera.left = -48;
-		sun.shadow.camera.right = 48;
-		sun.shadow.camera.top = 48;
-		sun.shadow.camera.bottom = -48;
+		sun.shadow.camera.left = -56;
+		sun.shadow.camera.right = 56;
+		sun.shadow.camera.top = 56;
+		sun.shadow.camera.bottom = -56;
 		sun.shadow.camera.near = 1;
-		sun.shadow.camera.far = 180;
+		sun.shadow.camera.far = 200;
 		sun.shadow.bias = -0.0006;
 		sun.shadow.normalBias = 0.025;
 		scene.add(sun);
 		scene.add(sun.target);
 		sun.target.position.set(0, 0, 0);
 		var fill = new THREE.DirectionalLight(0x9fc0e0, 0.35);
-		fill.position.set(30, 22, -36);
+		fill.position.set(32, 22, -38);
 		scene.add(fill);
 		world.lights = { hemi: hemi, sun: sun, fill: fill };
 
@@ -1211,16 +1789,16 @@
 		scene.add(sky);
 		world.sky = sky;
 
-		scene.fog = new THREE.Fog(0xd8c5a4, 55, 190);
+		scene.fog = new THREE.Fog(0xd8c5a4, 62, 200);
 		scene.background = new THREE.Color(0xd8c5a4);
 
 		/* ---- ambient dust motes ---- */
-		var dustCount = 220;
+		var dustCount = 260;
 		var dustPos = new Float32Array(dustCount * 3);
 		for (var d2 = 0; d2 < dustCount; d2++) {
-			dustPos[d2 * 3] = rand(-45, 45);
+			dustPos[d2 * 3] = rand(-46, 46);
 			dustPos[d2 * 3 + 1] = rand(0.3, 5.5);
-			dustPos[d2 * 3 + 2] = rand(-45, 45);
+			dustPos[d2 * 3 + 2] = rand(-46, 46);
 		}
 		var dustGeo = new THREE.BufferGeometry();
 		dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
@@ -1231,8 +1809,56 @@
 		scene.add(dust);
 		world.dust = dust;
 
+		mergeBoxBatches();
 		world.materials = mats;
 		return world;
+	}
+
+	/* ======================================================================
+	   the bomb
+	   ====================================================================== */
+	function buildBomb() {
+		var root = new THREE.Group();
+		var caseMat = new THREE.MeshStandardMaterial({ color: 0x3b4034, roughness: 0.62, metalness: 0.25 });
+		var lidMat = new THREE.MeshStandardMaterial({ color: 0x23261f, roughness: 0.58, metalness: 0.35 });
+		var wireMat = new THREE.MeshStandardMaterial({ color: 0xd2b04a, roughness: 0.4, metalness: 0.3 });
+		var redMat = new THREE.MeshBasicMaterial({ color: 0xff3b22 });
+		var greenMat = new THREE.MeshBasicMaterial({ color: 0x7dffb0 });
+		var body = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.22, 0.42), caseMat);
+		body.position.y = 0.13;
+		body.castShadow = true;
+		root.add(body);
+		var lid = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.06, 0.46), lidMat);
+		lid.position.y = 0.27;
+		lid.castShadow = true;
+		root.add(lid);
+		var keypad = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.012), lidMat);
+		keypad.position.set(-0.12, 0.15, 0.216);
+		root.add(keypad);
+		var led = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.05, 0.02), redMat);
+		led.position.set(0.17, 0.2, 0.216);
+		root.add(led);
+		var antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.4, 6), lidMat);
+		antenna.position.set(0.24, 0.46, -0.12);
+		root.add(antenna);
+		var strap = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.05, 0.06), wireMat);
+		strap.position.set(0, 0.13, -0.24);
+		root.add(strap);
+		for (var i = 0; i < 3; i++) {
+			var wire = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.025 + i * 0.012, 0.025), i === 1 ? redMat : wireMat);
+			wire.position.set(-0.19, 0.29 + i * 0.02, -0.02 + i * 0.12);
+			root.add(wire);
+		}
+		var beacon = new THREE.Group();
+		var beaconRing = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 24), new THREE.MeshBasicMaterial({
+			color: 0xff5a3a, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false
+		}));
+		beaconRing.rotation.x = -Math.PI / 2;
+		beaconRing.position.y = 0.012;
+		beacon.add(beaconRing);
+		root.add(beacon);
+		root.userData = { led: led, ledMat: redMat, greenMat: greenMat, beacon: beacon, beaconRing: beaconRing };
+		return { group: root, led: led, ledMat: redMat, greenMat: greenMat, beacon: beacon, beaconRing: beaconRing };
 	}
 
 	/* ======================================================================
@@ -1252,8 +1878,10 @@
 				for (var i = 0; i < colliders.length; i++) {
 					var c = colliders[i];
 					if (c.maxY < 0.25 || c.minY > 1.7) continue;
-					if (wx > c.minX - radius && wx < c.maxX + radius &&
-						wz > c.minZ - radius && wz < c.maxZ + radius) {
+					var nx = wx < c.minX ? c.minX : (wx > c.maxX ? c.maxX : wx);
+					var nz = wz < c.minZ ? c.minZ : (wz > c.maxZ ? c.maxZ : wz);
+					var ddx = wx - nx, ddz = wz - nz;
+					if (ddx * ddx + ddz * ddz < radius * radius) {
 						hit = true;
 						break;
 					}
@@ -1337,7 +1965,11 @@
 		var size = nav.size;
 		var startKey = start.z * size + start.x;
 		var goalKey = goal.z * size + goal.x;
-		if (startKey === goalKey) return [{ x: tx, z: tz }];
+		if (startKey === goalKey) {
+			var sameCell = cellCenter(nav, goal);
+			if (cellFree(nav, toCell(nav, tx, tz).x, toCell(nav, tx, tz).z)) return [{ x: tx, z: tz }];
+			return [sameCell];
+		}
 
 		var g = new Float32Array(size * size);
 		var came = new Int32Array(size * size);
@@ -1353,7 +1985,7 @@
 			[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1],
 			[1, 1, 1.4142], [1, -1, 1.4142], [-1, 1, 1.4142], [-1, -1, 1.4142]
 		];
-		while (!open.empty() && guard++ < 6000) {
+		while (!open.empty() && guard++ < 20000) {
 			var node = open.pop();
 			var nk = node.z * size + node.x;
 			if (closed[nk]) continue;
@@ -1400,7 +2032,15 @@
 			}
 			idx = furthest;
 		}
-		if (out.length) out[out.length - 1] = { x: tx, z: tz };
+		if (out.length) {
+			var last = out[out.length - 1];
+			var tcell = toCell(nav, tx, tz);
+			/* Only finish on the exact target when it is free and line-of-sight
+			   from the last path cell; otherwise stop on the free cell centre. */
+			if (cellFree(nav, tcell.x, tcell.z) && navLineFree(nav, last.x, last.z, tx, tz)) {
+				out[out.length - 1] = { x: tx, z: tz };
+			}
+		}
 		return out;
 	}
 
@@ -1430,7 +2070,7 @@
 		var pct = clamp(robot.hp / robot.maxHp, 0, 1);
 		ctx.fillStyle = 'rgba(8,10,12,0.8)';
 		ctx.fillRect(6, 36, 244, 11);
-		ctx.fillStyle = pct > 0.55 ? robot.accent : pct > 0.25 ? '#e2a23c' : '#d6442f';
+		ctx.fillStyle = robot.healthFriendly ? '#4f9edb' : '#d94a35';
 		ctx.fillRect(6, 36, 244 * pct, 11);
 		ctx.strokeStyle = 'rgba(232,226,212,0.28)';
 		ctx.lineWidth = 1;
@@ -2679,6 +3319,8 @@
 		choice: choice, shuffle: shuffle, angleDelta: angleDelta,
 		WEAPONS: WEAPONS, BUY_ITEMS: BUY_ITEMS, BOT_TYPES: BOT_TYPES,
 		DIFFICULTY: DIFFICULTY, BOT_LOADOUTS: BOT_LOADOUTS, BOT_NAMES: BOT_NAMES, BOT_SPAWNS: BOT_SPAWNS,
+		BOMB: BOMB, TEAM_LOADOUTS: TEAM_LOADOUTS,
+		buildBomb: buildBomb,
 		PLAYER_SPAWN: PLAYER_SPAWN, PRACTICE_SPAWN: PRACTICE_SPAWN,
 		PRACTICE_TARGETS: PRACTICE_TARGETS, CHICKEN_SPAWNS: CHICKEN_SPAWNS,
 		makeTextures: makeTextures,
