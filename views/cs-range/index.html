@@ -6,6 +6,7 @@
 		<div class="csr__fx csr__fx--vignette" aria-hidden="true"></div>
 		<div class="csr__fx csr__fx--grain" aria-hidden="true"></div>
 		<div class="csr__flash" data-csr-flash aria-hidden="true"></div>
+		<div class="csr-blind" data-csr-blind aria-hidden="true"></div>
 		<div class="csr__damage" data-csr-damage aria-hidden="true"></div>
 
 		<!-- ============================================================ loading -->
@@ -108,6 +109,7 @@
 								<button type="button" data-value="regular" class="is-active">REGULAR</button>
 								<button type="button" data-value="veteran">VETERAN</button>
 								<button type="button" data-value="elite">ELITE</button>
+								<button type="button" data-value="ace">ACE</button>
 							</div>
 						</div>
 
@@ -118,6 +120,7 @@
 								<button type="button" data-value="regular" class="is-active">REGULAR</button>
 								<button type="button" data-value="veteran">VETERAN</button>
 								<button type="button" data-value="elite">ELITE</button>
+								<button type="button" data-value="ace">ACE</button>
 							</div>
 						</div>
 
@@ -182,7 +185,7 @@
 						<span class="csr-team__body">
 							<b>TERRORISTS</b>
 							<small>TAKE A / B · PLANT THE C4</small>
-							<em>You carry the C4 with four T robots. Hold E at a site to plant.</em>
+							<em>The C4 is randomly given to you or one of the four T robots each round. Hold E at a site to plant when you have it.</em>
 						</span>
 						<span class="csr-team__go">DEPLOY ▸</span>
 					</button>
@@ -323,6 +326,7 @@
 						<span data-csr-slot-ind="2" class="is-empty">2</span>
 						<span data-csr-slot-ind="3">3</span>
 					</div>
+					<div class="csr-utils" data-csr-utils hidden aria-label="Utility inventory"></div>
 				</div>
 			</div>
 
@@ -333,6 +337,7 @@
 				<span><kbd>CTRL</kbd> CROUCH</span>
 				<span><kbd>SPACE</kbd> JUMP</span>
 				<span><kbd>R</kbd> RELOAD</span>
+				<span><kbd>4</kbd> UTILITY</span>
 				<span><kbd>B</kbd> BUY</span>
 				<span><kbd>E</kbd> <span data-csr-use-hint>PICK UP / DEFUSE</span></span>
 				<span><kbd>TAB</kbd> SCORE</span>
@@ -358,6 +363,7 @@
 					<button type="button" data-csr-touch-jump aria-label="Jump">↑</button>
 					<button type="button" data-csr-touch-crouch aria-label="Crouch">↓</button>
 					<button type="button" data-csr-touch-scope aria-label="Scope">◎</button>
+					<button type="button" data-csr-touch-grenade aria-label="Grenades">4</button>
 					<button type="button" data-csr-touch-use aria-label="Use / defuse">E</button>
 				</div>
 			</div>
@@ -478,6 +484,9 @@
 					<div class="csr-keyrow"><kbd>RMB</kbd><span>Scope (scoped rifles)</span></div>
 					<div class="csr-keyrow"><kbd>R</kbd><span>Reload</span></div>
 					<div class="csr-keyrow"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>Pistol / primary / knife</span></div>
+					<div class="csr-keyrow"><kbd>4</kbd><span>Cycle grenades (HE / flash / smoke / fire / decoy)</span></div>
+					<div class="csr-keyrow"><kbd>5</kbd><span>Zeus x27 (one-shot)</span></div>
+					<div class="csr-keyrow"><kbd>G</kbd><span>Quick-throw the selected grenade</span></div>
 					<div class="csr-keyrow"><kbd>SHIFT</kbd><span>Walk (quieter, steadier)</span></div>
 					<div class="csr-keyrow"><kbd>CTRL</kbd><span>Crouch</span></div>
 					<div class="csr-keyrow"><kbd>SPACE</kbd><span>Jump</span></div>

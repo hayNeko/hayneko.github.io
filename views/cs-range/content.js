@@ -131,40 +131,315 @@
 			category: 'MELEE', damage: 55, head: 2.2, rpm: 100, mag: 1, reserve: 0,
 			reload: 0, spread: 0, moveSpread: 0, airSpread: 0,
 			recoil: { pitch: 0.005, yaw: 0.003 }, auto: false, range: 2.2,
-			sound: 'knife', scope: false, icon: 'knife'
+			sound: 'knife', scope: false, icon: 'knife', armorPen: 1, killReward: 1500, teams: ['CT', 'T']
+		},
+
+		/* ---- expanded CS2 armoury (pistols, SMGs, rifles, snipers, shotguns, MGs) ---- */
+		glock: {
+			id: 'glock', name: 'GLOCK-18', slot: 'secondary', price: 200, buyKey: 0,
+			category: 'SIDEARM', damage: 30, head: 4, rpm: 400, mag: 20, reserve: 60,
+			reload: 2.2, spread: 0.0062, moveSpread: 0.02, airSpread: 0.075,
+			recoil: { pitch: 0.013, yaw: 0.0045 }, auto: false, range: 110,
+			sound: 'pistol', scope: false, icon: 'pistol', armorPen: 0.47,
+			killReward: 300, teams: ['T']
+		},
+		p2000: {
+			id: 'p2000', name: 'P2000', slot: 'secondary', price: 200, buyKey: 0,
+			category: 'SIDEARM', damage: 35, head: 4, rpm: 352, mag: 13, reserve: 52,
+			reload: 2.2, spread: 0.0058, moveSpread: 0.018, airSpread: 0.07,
+			recoil: { pitch: 0.013, yaw: 0.0045 }, auto: false, range: 120,
+			sound: 'pistol', scope: false, icon: 'pistol', armorPen: 0.5,
+			killReward: 300, teams: ['CT']
+		},
+		r8: {
+			id: 'r8', name: 'R8 REVOLVER', slot: 'secondary', price: 600, buyKey: 0,
+			category: 'SIDEARM', damage: 86, head: 4, rpm: 120, mag: 8, reserve: 24,
+			reload: 2.9, spread: 0.004, moveSpread: 0.032, airSpread: 0.12,
+			recoil: { pitch: 0.04, yaw: 0.01 }, auto: false, range: 110,
+			sound: 'deagle', scope: false, icon: 'pistol', armorPen: 0.932,
+			killReward: 300, teams: ['CT', 'T']
+		},
+		fiveseven: {
+			id: 'fiveseven', name: 'FIVE-SEVEN', slot: 'secondary', price: 500, buyKey: 0,
+			category: 'SIDEARM', damage: 32, head: 4, rpm: 400, mag: 20, reserve: 60,
+			reload: 2.3, spread: 0.0052, moveSpread: 0.017, airSpread: 0.065,
+			recoil: { pitch: 0.011, yaw: 0.004 }, auto: false, range: 120,
+			sound: 'pistol', scope: false, icon: 'pistol', armorPen: 0.9115,
+			killReward: 300, teams: ['CT']
+		},
+		tec9: {
+			id: 'tec9', name: 'TEC-9', slot: 'secondary', price: 500, buyKey: 0,
+			category: 'SIDEARM', damage: 33, head: 4, rpm: 500, mag: 18, reserve: 54,
+			reload: 2.15, spread: 0.008, moveSpread: 0.022, airSpread: 0.085,
+			recoil: { pitch: 0.017, yaw: 0.006 }, auto: false, range: 110,
+			sound: 'pistol', scope: false, icon: 'pistol', armorPen: 0.9,
+			killReward: 300, teams: ['T']
+		},
+		cz75: {
+			id: 'cz75', name: 'CZ75-AUTO', slot: 'secondary', price: 500, buyKey: 0,
+			category: 'SIDEARM', damage: 31, head: 4, rpm: 600, mag: 12, reserve: 48,
+			reload: 2.3, spread: 0.0075, moveSpread: 0.021, airSpread: 0.08,
+			recoil: { pitch: 0.012, yaw: 0.005 }, auto: true, range: 110,
+			sound: 'pistol', scope: false, icon: 'pistol', armorPen: 0.776,
+			killReward: 300, teams: ['CT', 'T']
+		},
+		dualies: {
+			id: 'dualies', name: 'DUAL BERETTAS', slot: 'secondary', price: 300, buyKey: 0,
+			category: 'SIDEARM', damage: 38, head: 4, rpm: 480, mag: 30, reserve: 60,
+			reload: 2.7, spread: 0.009, moveSpread: 0.024, airSpread: 0.09,
+			recoil: { pitch: 0.014, yaw: 0.007 }, auto: false, range: 100,
+			sound: 'pistol', scope: false, icon: 'pistol', armorPen: 0.575,
+			killReward: 300, teams: ['CT', 'T']
+		},
+		mac10: {
+			id: 'mac10', name: 'MAC-10', slot: 'primary', price: 1050, buyKey: 0,
+			category: 'SMG', damage: 29, head: 3.6, rpm: 800, mag: 30, reserve: 90,
+			reload: 2.05, spread: 0.0075, moveSpread: 0.014, airSpread: 0.075,
+			recoil: { pitch: 0.012, yaw: 0.005 }, auto: true, range: 100,
+			sound: 'smg', scope: false, icon: 'smg', armorPen: 0.575,
+			killReward: 600, teams: ['T'], moveSpeed: 240
+		},
+		mp7: {
+			id: 'mp7', name: 'MP7', slot: 'primary', price: 1500, buyKey: 0,
+			category: 'SMG', damage: 29, head: 3.6, rpm: 800, mag: 30, reserve: 90,
+			reload: 2.15, spread: 0.0062, moveSpread: 0.017, airSpread: 0.08,
+			recoil: { pitch: 0.012, yaw: 0.0045 }, auto: true, range: 110,
+			sound: 'smg', scope: false, icon: 'smg', armorPen: 0.625,
+			killReward: 600, teams: ['CT', 'T'], moveSpeed: 220
+		},
+		mp5sd: {
+			id: 'mp5sd', name: 'MP5-SD', slot: 'primary', price: 1500, buyKey: 0,
+			category: 'SMG', damage: 27, head: 3.6, rpm: 750, mag: 30, reserve: 120,
+			reload: 2.15, spread: 0.0058, moveSpread: 0.016, airSpread: 0.078,
+			recoil: { pitch: 0.011, yaw: 0.004 }, auto: true, range: 115,
+			sound: 'smg', scope: false, icon: 'smg', armorPen: 0.625,
+			killReward: 600, teams: ['CT', 'T'], moveSpeed: 235
+		},
+		p90: {
+			id: 'p90', name: 'P90', slot: 'primary', price: 2350, buyKey: 0,
+			category: 'SMG', damage: 26, head: 3.6, rpm: 850, mag: 50, reserve: 100,
+			reload: 3.3, spread: 0.0068, moveSpread: 0.018, airSpread: 0.082,
+			recoil: { pitch: 0.01, yaw: 0.0045 }, auto: true, range: 110,
+			sound: 'smg', scope: false, icon: 'smg', armorPen: 0.69,
+			killReward: 600, teams: ['CT', 'T'], moveSpeed: 230
+		},
+		bizon: {
+			id: 'bizon', name: 'PP-BIZON', slot: 'primary', price: 1400, buyKey: 0,
+			category: 'SMG', damage: 27, head: 3.6, rpm: 750, mag: 64, reserve: 128,
+			reload: 2.4, spread: 0.0082, moveSpread: 0.02, airSpread: 0.09,
+			recoil: { pitch: 0.009, yaw: 0.004 }, auto: true, range: 100,
+			sound: 'smg', scope: false, icon: 'smg', armorPen: 0.63,
+			killReward: 600, teams: ['CT', 'T'], moveSpeed: 240
+		},
+		m4a1s: {
+			id: 'm4a1s', name: 'M4A1-S', slot: 'primary', price: 2900, buyKey: 0,
+			category: 'RIFLE', damage: 38, head: 3.475, rpm: 600, mag: 20, reserve: 80,
+			reload: 3.1, spread: 0.0028, moveSpread: 0.021, airSpread: 0.105,
+			recoil: { pitch: 0.013, yaw: 0.005 }, auto: true, range: 170,
+			sound: 'silenced', scope: false, icon: 'rifle', armorPen: 0.7,
+			killReward: 300, teams: ['CT'], moveSpeed: 225, suppressed: true
+		},
+		famas: {
+			id: 'famas', name: 'FAMAS', slot: 'primary', price: 2050, buyKey: 0,
+			category: 'RIFLE', damage: 30, head: 4, rpm: 666, mag: 25, reserve: 90,
+			reload: 3.1, spread: 0.0048, moveSpread: 0.025, airSpread: 0.115,
+			recoil: { pitch: 0.016, yaw: 0.006 }, auto: true, range: 150,
+			sound: 'rifle2', scope: true, scopeFov: 40, icon: 'rifle', armorPen: 0.7,
+			killReward: 300, teams: ['CT'], moveSpeed: 220
+		},
+		aug: {
+			id: 'aug', name: 'AUG', slot: 'primary', price: 3300, buyKey: 0,
+			category: 'RIFLE', damage: 28, head: 4, rpm: 600, mag: 30, reserve: 90,
+			reload: 3.15, spread: 0.0034, moveSpread: 0.021, airSpread: 0.105,
+			scopedSpread: 0.0011, recoil: { pitch: 0.014, yaw: 0.005 }, auto: true, range: 180,
+			sound: 'rifle2', scope: true, scopeFov: 40, icon: 'rifle', armorPen: 0.9,
+			killReward: 300, teams: ['CT'], moveSpeed: 220
+		},
+		scar20: {
+			id: 'scar20', name: 'SCAR-20', slot: 'primary', price: 5000, buyKey: 0,
+			category: 'SNIPER', damage: 80, head: 4, rpm: 240, mag: 20, reserve: 90,
+			reload: 3.4, spread: 0.007, moveSpread: 0.055, airSpread: 0.15,
+			scopedSpread: 0.0012, recoil: { pitch: 0.04, yaw: 0.009 }, auto: false, range: 240,
+			sound: 'sniper', scope: true, scopeFov: 40, icon: 'sniper', armorPen: 0.825,
+			killReward: 300, teams: ['CT'], moveSpeed: 205
+		},
+		g3sg1: {
+			id: 'g3sg1', name: 'G3SG1', slot: 'primary', price: 5000, buyKey: 0,
+			category: 'SNIPER', damage: 80, head: 4, rpm: 240, mag: 20, reserve: 90,
+			reload: 3.4, spread: 0.0072, moveSpread: 0.056, airSpread: 0.15,
+			scopedSpread: 0.0012, recoil: { pitch: 0.04, yaw: 0.009 }, auto: false, range: 240,
+			sound: 'sniper', scope: true, scopeFov: 40, icon: 'sniper', armorPen: 0.825,
+			killReward: 300, teams: ['T'], moveSpeed: 205
+		},
+		xm1014: {
+			id: 'xm1014', name: 'XM1014', slot: 'primary', price: 2000, buyKey: 0,
+			category: 'SHOTGUN', damage: 13, head: 4, rpm: 171, mag: 7, reserve: 32,
+			reload: 3.4, spread: 0.017, moveSpread: 0.042, airSpread: 0.145,
+			recoil: { pitch: 0.038, yaw: 0.012 }, auto: false, range: 55,
+			sound: 'shotgun', scope: false, pellets: 8, icon: 'shotgun', armorPen: 0.8,
+			killReward: 600, teams: ['CT', 'T']
+		},
+		mag7: {
+			id: 'mag7', name: 'MAG-7', slot: 'primary', price: 1300, buyKey: 0,
+			category: 'SHOTGUN', damage: 18, head: 4, rpm: 85, mag: 5, reserve: 32,
+			reload: 3.2, spread: 0.016, moveSpread: 0.038, airSpread: 0.13,
+			recoil: { pitch: 0.042, yaw: 0.011 }, auto: false, range: 52,
+			sound: 'shotgun', scope: false, pellets: 8, icon: 'shotgun', armorPen: 0.75,
+			killReward: 900, teams: ['CT'], moveSpeed: 225
+		},
+		sawedoff: {
+			id: 'sawedoff', name: 'SAWED-OFF', slot: 'primary', price: 1100, buyKey: 0,
+			category: 'SHOTGUN', damage: 20, head: 4, rpm: 85, mag: 7, reserve: 32,
+			reload: 3.4, spread: 0.019, moveSpread: 0.044, airSpread: 0.15,
+			recoil: { pitch: 0.045, yaw: 0.012 }, auto: false, range: 48,
+			sound: 'shotgun', scope: false, pellets: 8, icon: 'shotgun', armorPen: 0.75,
+			killReward: 900, teams: ['T'], moveSpeed: 210
+		},
+		m249: {
+			id: 'm249', name: 'M249', slot: 'primary', price: 5200, buyKey: 0,
+			category: 'MG', damage: 32, head: 4, rpm: 750, mag: 100, reserve: 200,
+			reload: 5.7, spread: 0.0045, moveSpread: 0.035, airSpread: 0.16,
+			recoil: { pitch: 0.02, yaw: 0.008 }, auto: true, range: 150,
+			sound: 'rifle', scope: false, icon: 'mg', armorPen: 0.8,
+			killReward: 300, teams: ['CT', 'T'], moveSpeed: 195
+		},
+		negev: {
+			id: 'negev', name: 'NEGEV', slot: 'primary', price: 1700, buyKey: 0,
+			category: 'MG', damage: 35, head: 4, rpm: 800, mag: 150, reserve: 300,
+			reload: 5.7, spread: 0.006, moveSpread: 0.036, airSpread: 0.17,
+			recoil: { pitch: 0.018, yaw: 0.009 }, auto: true, range: 140,
+			sound: 'rifle', scope: false, icon: 'mg', armorPen: 0.71,
+			killReward: 300, teams: ['CT', 'T'], moveSpeed: 195
+		},
+		zeus: {
+			id: 'zeus', name: 'ZEUS X27', slot: 'equipment', price: 200, buyKey: 0,
+			category: 'EQUIPMENT', damage: 500, head: 1, rpm: 60, mag: 1, reserve: 0,
+			reload: 0, spread: 0.04, moveSpread: 0.04, airSpread: 0.04,
+			recoil: { pitch: 0.008, yaw: 0.003 }, auto: false, range: 3.4,
+			sound: 'zeus', scope: false, icon: 'zeus', armorPen: 1,
+			killReward: 300, teams: ['CT', 'T'], oneShot: true
 		}
 	};
 
-		var BUY_ITEMS = [
-		{ id: 'ak47', kind: 'weapon', price: 2700, category: 'RIFLE', key: 1 },
-		{ id: 'm4a4', kind: 'weapon', price: 3100, category: 'RIFLE', key: 2 },
-		{ id: 'galil', kind: 'weapon', price: 1800, category: 'RIFLE', key: 3 },
-		{ id: 'sg553', kind: 'weapon', price: 3000, category: 'RIFLE', key: 4 },
-		{ id: 'awp', kind: 'weapon', price: 4750, category: 'SNIPER', key: 5 },
-		{ id: 'ssg08', kind: 'weapon', price: 1700, category: 'SNIPER', key: 6 },
-		{ id: 'mp9', kind: 'weapon', price: 1250, category: 'SMG', key: 7 },
-		{ id: 'ump45', kind: 'weapon', price: 1200, category: 'SMG', key: 8 },
-		{ id: 'nova', kind: 'weapon', price: 1050, category: 'SHOTGUN', key: 9 },
-		{ id: 'p250', kind: 'weapon', price: 300, category: 'SIDEARM', key: 0 },
-		{ id: 'deagle', kind: 'weapon', price: 700, category: 'SIDEARM', key: 0 },
-		{ id: 'armor', kind: 'armor', price: 1000, category: 'PROTECTION', key: 0,
+	/* Fill the fields the expanded catalogue does not repeat on every entry. */
+	var WEAPON_TEAM_LOCK = {
+		ak47: ['T'], galil: ['T'], sg553: ['T'], g3sg1: ['T'], mac10: ['T'], tec9: ['T'], glock: ['T'], sawedoff: ['T'],
+		m4a4: ['CT'], m4a1s: ['CT'], famas: ['CT'], aug: ['CT'], scar20: ['CT'], mp9: ['CT'], p2000: ['CT'], fiveseven: ['CT'], mag7: ['CT']
+	};
+	Object.keys(WEAPONS).forEach(function (id) {
+		var def = WEAPONS[id];
+		if (!def.killReward) {
+			def.killReward = def.category === 'SMG' ? 600
+				: def.category === 'SHOTGUN' ? 900
+				: def.category === 'MELEE' ? 1500
+				: def.category === 'SNIPER' ? 300 : 300;
+		}
+		if (def.armorPen == null) def.armorPen = def.category === 'SNIPER' ? 0.9 : def.category === 'RIFLE' ? 0.775 : 0.6;
+		if (!def.teams) def.teams = WEAPON_TEAM_LOCK[id] || ['CT', 'T'];
+		if (def.reserve == null && def.slot !== 'melee') def.reserve = def.mag * 3;
+		if (def.moveSpeed == null) def.moveSpeed = 250 - (def.category === 'SNIPER' ? 45 : def.category === 'MG' ? 55 : def.category === 'RIFLE' ? 30 : 20);
+	});
+	if (WEAPONS.awp) WEAPONS.awp.killReward = 100;
+
+	var UTILITIES = {
+		he: {
+			id: 'he', name: 'HE GRENADE', slot: 'grenade', price: 300,
+			category: 'GRENADE', max: 1, fuse: 1.6, radius: 8.2, damage: 98,
+			icon: 'grenade', desc: 'Area damage with distance falloff.'
+		},
+		flash: {
+			id: 'flash', name: 'FLASHBANG', slot: 'grenade', price: 200,
+			category: 'GRENADE', max: 2, fuse: 1.5, radius: 12, damage: 0, blind: 5,
+			icon: 'grenade', desc: 'Blinds anyone looking at the burst. Two can be carried.'
+		},
+		smoke: {
+			id: 'smoke', name: 'SMOKE GRENADE', slot: 'grenade', price: 300,
+			category: 'GRENADE', max: 1, fuse: 1.8, radius: 3.6, duration: 18,
+			icon: 'grenade', desc: 'Deploys an 18-second sight-blocking cloud.'
+		},
+		molotov: {
+			id: 'molotov', name: 'INCENDIARY', slot: 'grenade', price: 400, priceCT: 500,
+			category: 'GRENADE', max: 1, fuse: 2.0, radius: 4.2, duration: 7, dps: 40,
+			icon: 'grenade', desc: 'Burns a patch of ground for seven seconds.'
+		},
+		decoy: {
+			id: 'decoy', name: 'DECOY GRENADE', slot: 'grenade', price: 50,
+			category: 'GRENADE', max: 1, fuse: 1.5, duration: 15, radius: 2.2, damage: 5,
+			icon: 'grenade', desc: 'Fake gunshots, then a small pop.'
+		}
+	};
+
+	var UTIL_ORDER = ['he', 'flash', 'smoke', 'molotov', 'decoy'];
+
+
+	var BUY_ITEMS = [
+		/* rifles */
+		{ id: 'ak47', kind: 'weapon', price: 2700, category: 'RIFLE', section: 'RIFLES', key: 1 },
+		{ id: 'm4a4', kind: 'weapon', price: 3100, category: 'RIFLE', section: 'RIFLES', key: 2 },
+		{ id: 'm4a1s', kind: 'weapon', price: 2900, category: 'RIFLE', section: 'RIFLES' },
+		{ id: 'galil', kind: 'weapon', price: 1800, category: 'RIFLE', section: 'RIFLES', key: 3 },
+		{ id: 'famas', kind: 'weapon', price: 2050, category: 'RIFLE', section: 'RIFLES' },
+		{ id: 'sg553', kind: 'weapon', price: 3000, category: 'RIFLE', section: 'RIFLES', key: 4 },
+		{ id: 'aug', kind: 'weapon', price: 3300, category: 'RIFLE', section: 'RIFLES' },
+		/* snipers */
+		{ id: 'awp', kind: 'weapon', price: 4750, category: 'SNIPER', section: 'SNIPERS', key: 5 },
+		{ id: 'ssg08', kind: 'weapon', price: 1700, category: 'SNIPER', section: 'SNIPERS', key: 6 },
+		{ id: 'scar20', kind: 'weapon', price: 5000, category: 'SNIPER', section: 'SNIPERS' },
+		{ id: 'g3sg1', kind: 'weapon', price: 5000, category: 'SNIPER', section: 'SNIPERS' },
+		/* smgs */
+		{ id: 'mp9', kind: 'weapon', price: 1250, category: 'SMG', section: 'SMGS', key: 7 },
+		{ id: 'mac10', kind: 'weapon', price: 1050, category: 'SMG', section: 'SMGS' },
+		{ id: 'mp7', kind: 'weapon', price: 1500, category: 'SMG', section: 'SMGS' },
+		{ id: 'mp5sd', kind: 'weapon', price: 1500, category: 'SMG', section: 'SMGS' },
+		{ id: 'ump45', kind: 'weapon', price: 1200, category: 'SMG', section: 'SMGS', key: 8 },
+		{ id: 'p90', kind: 'weapon', price: 2350, category: 'SMG', section: 'SMGS' },
+		{ id: 'bizon', kind: 'weapon', price: 1400, category: 'SMG', section: 'SMGS' },
+		/* shotguns */
+		{ id: 'nova', kind: 'weapon', price: 1050, category: 'SHOTGUN', section: 'SHOTGUNS', key: 9 },
+		{ id: 'xm1014', kind: 'weapon', price: 2000, category: 'SHOTGUN', section: 'SHOTGUNS' },
+		{ id: 'mag7', kind: 'weapon', price: 1300, category: 'SHOTGUN', section: 'SHOTGUNS' },
+		{ id: 'sawedoff', kind: 'weapon', price: 1100, category: 'SHOTGUN', section: 'SHOTGUNS' },
+		/* machine guns */
+		{ id: 'm249', kind: 'weapon', price: 5200, category: 'MG', section: 'MACHINE GUNS' },
+		{ id: 'negev', kind: 'weapon', price: 1700, category: 'MG', section: 'MACHINE GUNS' },
+		/* pistols */
+		{ id: 'glock', kind: 'weapon', price: 200, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'p2000', kind: 'weapon', price: 200, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'usp', kind: 'weapon', price: 200, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'p250', kind: 'weapon', price: 300, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'deagle', kind: 'weapon', price: 700, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'r8', kind: 'weapon', price: 600, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'fiveseven', kind: 'weapon', price: 500, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'tec9', kind: 'weapon', price: 500, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'cz75', kind: 'weapon', price: 500, category: 'SIDEARM', section: 'PISTOLS' },
+		{ id: 'dualies', kind: 'weapon', price: 300, category: 'SIDEARM', section: 'PISTOLS' },
+		/* utility + equipment */
+		{ id: 'he', kind: 'grenade', price: 300, category: 'GRENADE', section: 'UTILITY', util: 'he' },
+		{ id: 'flash', kind: 'grenade', price: 200, category: 'GRENADE', section: 'UTILITY', util: 'flash' },
+		{ id: 'smoke', kind: 'grenade', price: 300, category: 'GRENADE', section: 'UTILITY', util: 'smoke' },
+		{ id: 'molotov', kind: 'grenade', price: 400, category: 'GRENADE', section: 'UTILITY', util: 'molotov' },
+		{ id: 'decoy', kind: 'grenade', price: 50, category: 'GRENADE', section: 'UTILITY', util: 'decoy' },
+		{ id: 'zeus', kind: 'weapon', price: 200, category: 'EQUIPMENT', section: 'EQUIPMENT' },
+		{ id: 'armor', kind: 'armor', price: 1000, category: 'PROTECTION', section: 'EQUIPMENT',
 			name: 'KEVLAR + HELMET', desc: 'Armour absorbs half of incoming body damage.' },
-		{ id: 'kit', kind: 'kit', price: 400, category: 'PROTECTION', key: 0,
+		{ id: 'kit', kind: 'kit', price: 400, category: 'PROTECTION', section: 'EQUIPMENT',
 			name: 'DEFUSE KIT', desc: 'Halves the time needed to defuse the bomb.' }
 	];
+
+	var BUY_SECTION_ORDER = ['RIFLES', 'SNIPERS', 'SMGS', 'SHOTGUNS', 'MACHINE GUNS', 'PISTOLS', 'UTILITY', 'EQUIPMENT'];
 
 	var BOMB = { plantTime: 3.2, fuse: 40, defuse: 10, defuseKit: 5, siteRadius: 8.4 };
 
 	var TEAM_LOADOUTS = {
 		CT: {
-			primary: ['m4a4', 'm4a4', 'mp9', 'ump45', 'sg553'],
-			sniper: ['awp', 'ssg08'],
-			secondary: ['usp', 'p250', 'deagle']
+			primary: ['m4a4', 'm4a1s', 'aug', 'famas', 'mp9', 'mp7', 'mp5sd', 'ump45', 'p90', 'bizon', 'xm1014', 'mag7', 'nova', 'm249', 'negev', 'scar20'],
+			sniper: ['awp', 'ssg08', 'scar20'],
+			secondary: ['usp', 'p2000', 'p250', 'fiveseven', 'deagle', 'r8', 'cz75', 'dualies']
 		},
 		T: {
-			primary: ['ak47', 'ak47', 'galil', 'sg553'],
-			sniper: ['awp', 'ssg08'],
-			secondary: ['p250', 'deagle', 'usp']
+			primary: ['ak47', 'galil', 'sg553', 'mac10', 'mp7', 'mp5sd', 'ump45', 'p90', 'bizon', 'xm1014', 'sawedoff', 'nova', 'm249', 'negev', 'g3sg1'],
+			sniper: ['awp', 'ssg08', 'g3sg1'],
+			secondary: ['glock', 'p250', 'tec9', 'deagle', 'r8', 'cz75', 'dualies']
 		}
 	};
 
@@ -221,24 +496,29 @@
 		   perception. planning controls how strongly a robot trusts its own
 		   accumulated route/death memory. */
 		recruit: {
-			label: 'RECRUIT', accuracy: 0.72, reaction: 0.95, damage: 0.9,
-			fire: 1.05, speed: 0.95, missChance: 0.24,
-			sight: 0.85, think: 1.15, hearing: 5, planning: 0.35
+			label: 'RECRUIT', accuracy: 0.85, reaction: 0.85, damage: 1.0,
+			fire: 0.95, speed: 0.98, missChance: 0.18,
+			sight: 0.95, think: 1.0, hearing: 7, planning: 0.4
 		},
 		regular: {
-			label: 'REGULAR', accuracy: 0.96, reaction: 0.64, damage: 1.15,
-			fire: 0.85, speed: 1.05, missChance: 0.11,
-			sight: 1.05, think: 0.8, hearing: 10, planning: 0.6
+			label: 'REGULAR', accuracy: 1.08, reaction: 0.52, damage: 1.35,
+			fire: 0.72, speed: 1.1, missChance: 0.065,
+			sight: 1.15, think: 0.65, hearing: 12, planning: 0.65
 		},
 		veteran: {
-			label: 'VETERAN', accuracy: 1.12, reaction: 0.42, damage: 1.42,
-			fire: 0.7, speed: 1.12, missChance: 0.05,
-			sight: 1.2, think: 0.64, hearing: 16, planning: 0.8
+			label: 'VETERAN', accuracy: 1.28, reaction: 0.32, damage: 1.7,
+			fire: 0.54, speed: 1.2, missChance: 0.025,
+			sight: 1.35, think: 0.48, hearing: 19, planning: 0.85
 		},
 		elite: {
-			label: 'ELITE', accuracy: 1.26, reaction: 0.28, damage: 1.7,
-			fire: 0.55, speed: 1.2, missChance: 0.015,
-			sight: 1.4, think: 0.5, hearing: 24, planning: 1.0
+			label: 'ELITE', accuracy: 1.5, reaction: 0.18, damage: 2.05,
+			fire: 0.4, speed: 1.32, missChance: 0.005,
+			sight: 1.6, think: 0.34, hearing: 27, planning: 1.1
+		},
+		ace: {
+			label: 'ACE', accuracy: 1.8, reaction: 0.1, damage: 2.6,
+			fire: 0.3, speed: 1.42, missChance: 0.001,
+			sight: 1.85, think: 0.25, hearing: 34, planning: 1.3
 		}
 	};
 
@@ -700,6 +980,19 @@
 		return canvasTexture(c, { anisotropy: 2 });
 	}
 
+	function makeSmokeTexture() {
+		var c = makeCanvas(128, 128);
+		var ctx = c.getContext('2d');
+		var g = ctx.createRadialGradient(64, 64, 2, 64, 64, 64);
+		g.addColorStop(0, 'rgba(245,248,246,0.92)');
+		g.addColorStop(0.35, 'rgba(225,231,228,0.66)');
+		g.addColorStop(0.7, 'rgba(200,208,204,0.28)');
+		g.addColorStop(1, 'rgba(190,198,194,0)');
+		ctx.fillStyle = g;
+		ctx.fillRect(0, 0, 128, 128);
+		return canvasTexture(c, { anisotropy: 2 });
+	}
+
 	function makeSignTexture(letter) {
 		var c = makeCanvas(512, 512);
 		var ctx = c.getContext('2d');
@@ -740,6 +1033,7 @@
 			spawnCT: makeSpawnTexture('CT SPAWN'),
 			spawnT: makeSpawnTexture('T SPAWN'),
 			glow: makeGlowTexture(),
+			smoke: makeSmokeTexture(),
 			signA: makeSignTexture('A'),
 			signB: makeSignTexture('B')
 		};
@@ -2225,27 +2519,55 @@
 		armR.add(handR);
 		root.add(armR);
 
-		/* rifle */
+		/* held weapon: silhouette follows the robot's actual purchase */
+		var weaponDef = opts.weaponDef || null;
+		var wcat = weaponDef ? weaponDef.category : 'RIFLE';
+		var pocket = wcat === 'SIDEARM';
+		var barrelLen = pocket ? 0.16
+			: wcat === 'SNIPER' ? 0.78
+			: wcat === 'SHOTGUN' ? 0.52
+			: wcat === 'SMG' ? 0.33
+			: wcat === 'MG' ? 0.58
+			: 0.46;
+		var bodyLen = pocket ? 0.2 : wcat === 'SNIPER' ? 0.46 : wcat === 'SMG' ? 0.32 : wcat === 'SHOTGUN' ? 0.38 : 0.46;
 		var gun = new THREE.Group();
-		gun.position.set(0.18, 1.32, 0.28);
+		gun.position.set(pocket ? 0.24 : 0.18, pocket ? 1.34 : 1.32, pocket ? 0.22 : 0.28);
 		gun.rotation.x = -0.04;
-		var receiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.13, 0.5), gunMat);
+		var receiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, pocket ? 0.1 : 0.13, bodyLen), gunMat);
 		receiver.position.z = 0.02;
 		gun.add(receiver);
-		var barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, type.barrel || 0.45, 8), gunMat);
+		var barrel = new THREE.Mesh(new THREE.CylinderGeometry(pocket ? 0.018 : 0.024, pocket ? 0.018 : 0.024, barrelLen, 8), gunMat);
 		barrel.rotation.x = Math.PI / 2;
-		barrel.position.z = (type.barrel || 0.45) / 2 + 0.24;
+		barrel.position.z = bodyLen / 2 + barrelLen / 2 - 0.02;
 		gun.add(barrel);
-		var handguard = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.12, 0.32), plateMat);
-		handguard.position.z = (type.barrel || 0.45) / 2 + 0.08;
+		var handguard = new THREE.Mesh(new THREE.BoxGeometry(0.11, pocket ? 0.08 : 0.12, pocket ? 0.12 : 0.32), plateMat);
+		handguard.position.z = bodyLen / 2 + 0.08;
 		gun.add(handguard);
-		var mag = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.22, 0.12), jointMat);
-		mag.position.set(0, -0.14, 0.02);
-		gun.add(mag);
-		var stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.24), gunMat);
-		stock.position.z = -0.31;
-		gun.add(stock);
-		if (type.id === 'sniper') {
+		if (!pocket) {
+			var mag = new THREE.Mesh(new THREE.BoxGeometry(0.07, wcat === 'MG' ? 0.24 : 0.2, 0.12), jointMat);
+			mag.position.set(0, -0.14, 0.02);
+			gun.add(mag);
+			var stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.24), gunMat);
+			stock.position.z = -bodyLen / 2 - 0.09;
+			gun.add(stock);
+		} else {
+			var pocketGrip = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.16, 0.08), jointMat);
+			pocketGrip.position.set(0, -0.11, 0.02);
+			pocketGrip.rotation.x = -0.2;
+			gun.add(pocketGrip);
+		}
+		if (wcat === 'SHOTGUN') {
+			var tube = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, barrelLen * 0.78, 8), gunMat);
+			tube.rotation.x = Math.PI / 2;
+			tube.position.set(0, -0.05, bodyLen / 2 + barrelLen * 0.35);
+			gun.add(tube);
+		}
+		if (wcat === 'MG') {
+			var boxMag = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.14), jointMat);
+			boxMag.position.set(0, -0.17, 0.02);
+			gun.add(boxMag);
+		}
+		if ((weaponDef && weaponDef.scope) || type.id === 'sniper') {
 			var scope = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.28, 10), gunMat);
 			scope.rotation.x = Math.PI / 2;
 			scope.position.set(0, 0.12, 0.02);
@@ -2254,9 +2576,17 @@
 			lens.position.set(0, 0.12, 0.165);
 			lens.rotation.y = Math.PI;
 			gun.add(lens);
+		} else if (wcat === 'SMG' || wcat === 'MG') {
+			var dot = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.03, 0.07), gunMat);
+			dot.position.set(0, 0.115, 0.0);
+			gun.add(dot);
+			var dotLens = new THREE.Mesh(new THREE.CircleGeometry(0.022, 8), accentMat);
+			dotLens.position.set(0, 0.115, -0.038);
+			dotLens.rotation.y = Math.PI;
+			gun.add(dotLens);
 		}
 		var muzzle = new THREE.Object3D();
-		muzzle.position.z = (type.barrel || 0.45) + 0.28;
+		muzzle.position.z = bodyLen / 2 + barrelLen + 0.02;
 		gun.add(muzzle);
 		root.add(gun);
 		armR.rotation.x = -0.55;
@@ -2320,46 +2650,158 @@
 	   first-person weapon models
 	   ====================================================================== */
 	function buildViewWeapons() {
-		var metal = new THREE.MeshStandardMaterial({ color: 0x6a7076, roughness: 0.5, metalness: 0.24 });
-		var metalDark = new THREE.MeshStandardMaterial({ color: 0x3a4046, roughness: 0.55, metalness: 0.22 });
-		var wood = new THREE.MeshStandardMaterial({ color: 0xb5723a, roughness: 0.58, metalness: 0.02 });
-		var woodDark = new THREE.MeshStandardMaterial({ color: 0x84502a, roughness: 0.66, metalness: 0.02 });
-		var polymer = new THREE.MeshStandardMaterial({ color: 0x41474d, roughness: 0.72, metalness: 0.08 });
-		var tan = new THREE.MeshStandardMaterial({ color: 0xb59a6b, roughness: 0.7, metalness: 0.12 });
-		var green = new THREE.MeshStandardMaterial({ color: 0x5b6a4e, roughness: 0.66, metalness: 0.08 });
-		var glove = new THREE.MeshStandardMaterial({ color: 0x4a443a, roughness: 0.88, metalness: 0.02 });
-		var sleeve = new THREE.MeshStandardMaterial({ color: 0x7b7a60, roughness: 0.95, metalness: 0 });
-		var brass = new THREE.MeshStandardMaterial({ color: 0xd0aa5c, roughness: 0.36, metalness: 0.6 });
-		var lens = new THREE.MeshBasicMaterial({ color: 0x7fc7e8 });
-		var silver = new THREE.MeshStandardMaterial({ color: 0xc4c8cc, roughness: 0.38, metalness: 0.38 });
+		/* A small procedural gun-foundry: shared materials, rails, sights,
+		   trigger guards and hands. Every weapon gets a silhouette built from
+		   the same vocabulary so the armoury reads as one coherent set. */
+		var metal = new THREE.MeshStandardMaterial({ color: 0x7c848b, roughness: 0.4, metalness: 0.65 });
+		var steel = new THREE.MeshStandardMaterial({ color: 0x3b4248, roughness: 0.36, metalness: 0.72 });
+		var metalDark = new THREE.MeshStandardMaterial({ color: 0x252a2e, roughness: 0.46, metalness: 0.56 });
+		var polymer = new THREE.MeshStandardMaterial({ color: 0x30353a, roughness: 0.74, metalness: 0.06 });
+		var polymerTan = new THREE.MeshStandardMaterial({ color: 0x9a835b, roughness: 0.76, metalness: 0.05 });
+		var polymerGreen = new THREE.MeshStandardMaterial({ color: 0x4d5847, roughness: 0.72, metalness: 0.06 });
+		var wood = new THREE.MeshStandardMaterial({ color: 0x8a5427, roughness: 0.6, metalness: 0.03 });
+		var woodDark = new THREE.MeshStandardMaterial({ color: 0x5e381b, roughness: 0.68, metalness: 0.02 });
+		var green = new THREE.MeshStandardMaterial({ color: 0x5a624f, roughness: 0.68, metalness: 0.08 });
+		var silver = new THREE.MeshStandardMaterial({ color: 0xb9bec3, roughness: 0.26, metalness: 0.82 });
+		var glove = new THREE.MeshStandardMaterial({ color: 0x3a342b, roughness: 0.9, metalness: 0.02 });
+		var sleeve = new THREE.MeshStandardMaterial({ color: 0x6d6c54, roughness: 0.95 });
+		var sleeveTan = new THREE.MeshStandardMaterial({ color: 0x857858, roughness: 0.95 });
+		var lens = new THREE.MeshBasicMaterial({ color: 0x8fd8f2 });
+		var lensDark = new THREE.MeshStandardMaterial({ color: 0x0c161b, roughness: 0.08, metalness: 0.9 });
+		var brass = new THREE.MeshStandardMaterial({ color: 0xc9a45a, roughness: 0.32, metalness: 0.75 });
+		var accentBlue = new THREE.MeshBasicMaterial({ color: 0x6ec8ff });
+		var accentRed = new THREE.MeshBasicMaterial({ color: 0xff6047 });
 
 		function box(mat, w, h, d, x, y, z) {
 			var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
 			m.position.set(x || 0, y || 0, z || 0);
 			return m;
 		}
-		function cyl(mat, rt, rb, h, x, y, z, seg) {
-			var m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 10), mat);
+		function add(g, mesh) { g.add(mesh); return mesh; }
+		function cylZ(mat, r, len, x, y, z, seg) {
+			var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg || 12), mat);
+			m.rotation.x = Math.PI / 2;
 			m.position.set(x || 0, y || 0, z || 0);
 			return m;
 		}
-		function hand(mat, x, y, z, sx, sy, sz) {
+		function cylY(mat, r, len, x, y, z, seg) {
+			var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, seg || 10), mat);
+			m.position.set(x || 0, y || 0, z || 0);
+			return m;
+		}
+		function hand(mat, x, y, z, sx, sy, sz, rz) {
 			var g = new THREE.Group();
+			sx *= 0.8; sy *= 0.8; sz *= 0.8;
 			g.position.set(x, y, z);
-			var palm = box(glove, sx, sy, sz);
+			if (rz) g.rotation.z = rz;
+			var palm = box(mat, sx, sy, sz);
 			g.add(palm);
 			for (var f = 0; f < 3; f++) {
-				var finger = box(glove, sx * 0.24, sy * 0.5, sz * 1.1);
-				finger.position.set((f - 1) * sx * 0.28, sy * 0.28, -sz * 0.45);
+				var finger = box(mat, sx * 0.22, sy * 0.62, sz * 0.94);
+				finger.position.set((f - 1) * sx * 0.27, sy * 0.3, -sz * 0.42);
 				g.add(finger);
 			}
 			return g;
 		}
 		function addSleeve(g, mat, x, y, z, rx) {
-			var s = box(mat, 0.11, 0.11, 0.28);
+			var s = box(mat, 0.082, 0.082, 0.25);
 			s.position.set(x, y, z);
 			s.rotation.x = rx || 0;
 			g.add(s);
+			var cuff = box(mat, 0.09, 0.09, 0.03);
+			cuff.position.set(x, y, z + 0.14);
+			cuff.rotation.x = rx || 0;
+			g.add(cuff);
+		}
+		function rail(g, mat, len, y, z, teeth) {
+			add(g, box(mat, 0.052, 0.016, len, 0, y, z));
+			var n = teeth || Math.max(3, Math.round(len / 0.035));
+			for (var i = 0; i < n; i++) {
+				add(g, box(mat, 0.058, 0.012, 0.014, 0, y + 0.013, z - len / 2 + 0.02 + i * (len - 0.04) / Math.max(1, n - 1)));
+			}
+		}
+		function sights(g, frontZ, rearZ, y, mat) {
+			mat = mat || metalDark;
+			add(g, box(mat, 0.012, 0.025, 0.014, 0, y + 0.018, frontZ));
+			add(g, box(mat, 0.016, 0.03, 0.016, 0, y + 0.018, frontZ - 0.004));
+			var rear = box(mat, 0.045, 0.022, 0.016, 0, y + 0.017, rearZ);
+			add(g, rear);
+			add(g, box(mat, 0.012, 0.014, 0.02, -0.017, y + 0.02, rearZ));
+			add(g, box(mat, 0.012, 0.014, 0.02, 0.017, y + 0.02, rearZ));
+		}
+		function guard(g, mat, y, z, width) {
+			width = width || 0.07;
+			add(g, box(mat, width, 0.012, 0.15, 0, y - 0.065, z));
+			add(g, box(mat, 0.012, 0.07, 0.014, -width / 2, y - 0.03, z + 0.065));
+			add(g, box(mat, 0.012, 0.07, 0.014, width / 2, y - 0.03, z + 0.065));
+			add(g, box(mat, 0.012, 0.09, 0.014, -width / 2, y - 0.025, z - 0.065));
+			add(g, box(mat, 0.012, 0.09, 0.014, width / 2, y - 0.025, z - 0.065));
+			add(g, box(mat, 0.014, 0.012, 0.05, 0, y - 0.02, z - 0.01));
+		}
+		function grip(g, mat, x, y, z, rot) {
+			var gr = box(mat, 0.062, 0.17, 0.105, x, y, z);
+			gr.rotation.x = rot || -0.22;
+			add(g, gr);
+			for (var i = 0; i < 3; i++) {
+				var ridge = box(mat, 0.066, 0.012, 0.09, x, y - 0.045 + i * 0.035, z + 0.015);
+				ridge.rotation.x = gr.rotation.x;
+				add(g, ridge);
+			}
+			add(g, hand(glove, x, y - 0.06, z, 0.1, 0.09, 0.14, 0.04));
+			addSleeve(g, sleeve, x + 0.012, y - 0.18, z + 0.18, -0.4);
+			return gr;
+		}
+		function magStraight(g, mat, x, y, z, h, w, d, rot) {
+			var m = box(mat, w || 0.062, h || 0.2, d || 0.1, x || 0, y || -0.15, z || -0.04);
+			m.rotation.x = rot || 0.05;
+			add(g, m);
+			var floor = box(metalDark, (w || 0.062) + 0.008, 0.018, (d || 0.1) + 0.008, x || 0, (y || -0.15) - (h || 0.2) / 2 + 0.006, z || -0.04);
+			floor.rotation.x = m.rotation.x;
+			add(g, floor);
+			return m;
+		}
+		function magCurved(g, mat, x, y, z, n, h, w, d, stepX) {
+			var parts = [];
+			for (var i = 0; i < n; i++) {
+				var seg = box(mat, w, h, d, x, y - i * h * 0.74, z + i * (stepX == null ? 0.022 : stepX));
+				seg.rotation.x = 0.12 + i * 0.07;
+				add(g, seg);
+				parts.push(seg);
+			}
+			return parts;
+		}
+		function scope(g, y, z, len, radius, baseMat) {
+			var tube = cylZ(baseMat || metalDark, radius || 0.045, len || 0.32, 0, y, z, 14);
+			add(g, tube);
+			add(g, cylZ(metal, (radius || 0.045) + 0.014, 0.04, 0, y, z + (len || 0.32) / 2 - 0.02, 14));
+			add(g, cylZ(metal, (radius || 0.045) + 0.02, 0.045, 0, y, z - (len || 0.32) / 2 + 0.02, 14));
+			add(g, cylZ(lensDark, radius || 0.045, 0.012, 0, y, z - (len || 0.32) / 2 - 0.001, 14));
+			add(g, cylZ(metalDark, 0.026, 0.05, 0, y + (radius || 0.045) + 0.022, z + 0.03, 10));
+			add(g, cylZ(metalDark, 0.024, 0.04, 0.05, y, z - 0.02, 10));
+			add(g, box(metalDark, 0.05, 0.03, 0.06, 0, y - (radius || 0.045) - 0.012, z + (len || 0.32) * 0.28));
+			add(g, box(metalDark, 0.05, 0.03, 0.06, 0, y - (radius || 0.045) - 0.012, z - (len || 0.32) * 0.28));
+			return tube;
+		}
+		function redDot(g, y, z) {
+			add(g, box(metalDark, 0.05, 0.03, 0.08, 0, y, z));
+			add(g, cylZ(metal, 0.026, 0.07, 0, y + 0.03, z, 12));
+			add(g, cylZ(lensDark, 0.021, 0.008, 0, y + 0.03, z - 0.036, 12));
+			add(g, box(accentRed, 0.006, 0.006, 0.004, 0, y + 0.03, z - 0.041));
+		}
+		function muzzleDevice(g, mat, z, r, len) {
+			add(g, cylZ(mat || metalDark, (r || 0.018) + 0.006, 0.055, 0, 0.045, z, 10));
+			add(g, cylZ(mat || metalDark, r || 0.018, len || 0.09, 0, 0.045, z - 0.04, 10));
+			for (var i = 0; i < 3; i++) add(g, box(mat || metalDark, (r || 0.018) * 2.2, 0.012, 0.014, 0, 0.058, z - 0.01 - i * 0.018));
+		}
+		function stockFixed(g, mat, z, y) {
+			add(g, box(mat, 0.075, 0.1, 0.22, 0, y || -0.035, z, 0));
+			add(g, box(mat, 0.085, 0.13, 0.045, 0, (y || -0.035) - 0.01, z + 0.115));
+			add(g, box(mat, 0.085, 0.035, 0.16, 0, (y || -0.035) + 0.06, z - 0.01));
+		}
+		function boltHandle(g, x, y, z) {
+			add(g, cylZ(metal, 0.014, 0.11, x, y, z, 8));
+			add(g, box(metal, 0.02, 0.02, 0.08, x + 0.05, y, z + 0.01));
+			add(g, cylY(metalDark, 0.02, 0.035, x + 0.085, y, z + 0.02, 8));
 		}
 		function finish(group, muzzleZ, extra) {
 			var muzzle = new THREE.Object3D();
@@ -2369,318 +2811,439 @@
 			return Object.assign({ group: group, muzzle: muzzle }, extra || {});
 		}
 
-		/* ---- USP-S ---- */
-		function makeUSP() {
+		/* ---------------------------------------------------------- pistols */
+		function makePistol(o) {
+			o = o || {};
 			var g = new THREE.Group();
-			g.add(box(metalDark, 0.075, 0.085, 0.33, 0, 0.01, -0.16));
-			g.add(box(metal, 0.06, 0.05, 0.3, 0, 0.07, -0.17));
-			g.add(cyl(metalDark, 0.026, 0.026, 0.24, 0, 0.05, -0.43));
-			g.add(cyl(metal, 0.034, 0.034, 0.15, 0, 0.05, -0.55));
-			var grip1 = box(polymer, 0.06, 0.18, 0.16, 0, -0.1, 0.0); grip1.rotation.x = -0.18; g.add(grip1);
-			g.add(box(polymer, 0.05, 0.06, 0.14, 0, -0.06, -0.08));
-			g.add(box(metal, 0.02, 0.035, 0.03, 0, 0.11, -0.31));
-			g.add(box(metal, 0.04, 0.025, 0.035, 0, 0.1, 0.02));
-			var h = hand(glove, 0, -0.12, 0.0, 0.1, 0.09, 0.14);
-			g.add(h);
-			addSleeve(g, sleeve, 0.01, -0.22, 0.18, -0.4);
-			var h2 = hand(glove, -0.02, -0.15, -0.03, 0.1, 0.085, 0.13);
-			h2.rotation.z = 0.3;
-			g.add(h2);
-			g.position.set(0.19, -0.17, -0.42);
-			g.rotation.set(0.03, -0.04, 0);
-			return finish(g, -0.63);
-		}
-
-		/* ---- P250 ---- */
-		function makeP250() {
-			var g = new THREE.Group();
-			g.add(box(polymer, 0.078, 0.09, 0.32, 0, 0.01, -0.15));
-			g.add(box(metal, 0.066, 0.052, 0.29, 0, 0.08, -0.16));
-			g.add(cyl(metalDark, 0.02, 0.02, 0.1, 0, 0.07, -0.34));
-			var grip2 = box(polymer, 0.06, 0.19, 0.16, 0, -0.11, 0.01); grip2.rotation.x = -0.2; g.add(grip2);
-			g.add(box(metal, 0.02, 0.04, 0.03, 0, 0.115, -0.28));
-			g.add(hand(glove, 0, -0.12, 0.0, 0.1, 0.09, 0.14));
-			addSleeve(g, sleeve, 0.01, -0.22, 0.18, -0.4);
-			g.position.set(0.19, -0.17, -0.42);
-			return finish(g, -0.46);
-		}
-
-		/* ---- Desert Eagle ---- */
-		function makeDeagle() {
-			var g = new THREE.Group();
-			g.add(box(silver, 0.09, 0.11, 0.38, 0, 0.02, -0.17));
-			g.add(box(metalDark, 0.075, 0.055, 0.33, 0, -0.06, -0.16));
-			g.add(cyl(metalDark, 0.028, 0.028, 0.08, 0, 0.05, -0.4));
-			var grip3 = box(polymer, 0.065, 0.2, 0.16, 0, -0.14, 0.01); grip3.rotation.x = -0.18; g.add(grip3);
-			g.add(box(metal, 0.02, 0.045, 0.035, 0, 0.13, -0.32));
-			g.add(box(metalDark, 0.055, 0.02, 0.16, 0, 0.09, -0.2));
-			g.add(hand(glove, 0, -0.14, 0.0, 0.105, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.01, -0.24, 0.19, -0.4);
-			g.position.set(0.2, -0.18, -0.44);
-			g.rotation.set(0.03, -0.05, 0);
-			return finish(g, -0.48);
-		}
-
-		/* ---- AK-47 ---- */
-		function makeAK() {
-			var g = new THREE.Group();
-			g.add(box(metal, 0.085, 0.1, 0.42, 0, 0.0, -0.18));
-			g.add(box(metalDark, 0.09, 0.06, 0.34, 0, 0.065, -0.19));
-			g.add(cyl(metalDark, 0.015, 0.015, 0.4, 0, 0.04, -0.56));
-			g.add(box(wood, 0.09, 0.1, 0.3, 0, 0.01, -0.42));
-			g.add(box(woodDark, 0.08, 0.055, 0.26, 0, 0.075, -0.43));
-			g.add(cyl(metalDark, 0.018, 0.018, 0.11, 0, 0.07, -0.32));
-			/* magazine: three tilted blocks */
-			var mag1 = box(metalDark, 0.07, 0.16, 0.11, 0, -0.15, -0.05); mag1.rotation.x = 0.18; g.add(mag1);
-			var mag2 = box(metalDark, 0.065, 0.15, 0.1, 0, -0.26, -0.02); mag2.rotation.x = 0.44; g.add(mag2);
-			var mag3 = box(metalDark, 0.06, 0.12, 0.09, 0, -0.34, 0.04); mag3.rotation.x = 0.7; g.add(mag3);
-			var akGrip = box(polymer, 0.065, 0.17, 0.13, 0, -0.12, 0.09); akGrip.rotation.x = -0.22; g.add(akGrip);
-			var akStock = box(wood, 0.08, 0.11, 0.3, 0, -0.04, 0.24); akStock.rotation.x = 0.06; g.add(akStock);
-			g.add(box(woodDark, 0.07, 0.08, 0.2, 0, -0.1, 0.24));
+			var frameMat = o.frameMat || polymer;
+			var slideMat = o.slideMat || metalDark;
+			var len = o.len || 0.3, muzzleZ = o.muzzle || -0.52;
+			/* frame + beavertail + dust cover */
+			add(g, box(frameMat, 0.072, 0.072, len, 0, 0, -len * 0.5 + 0.02));
+			add(g, box(frameMat, 0.06, 0.04, 0.09, 0, 0.039, 0.02));
+			add(g, box(frameMat, 0.064, 0.026, 0.08, 0, -0.046, -0.19));
+			/* slide */
+			var slide = box(slideMat, 0.078, 0.08, len + 0.02, 0, 0.058, -len * 0.5);
+			add(g, slide);
+			add(g, box(slideMat, 0.084, 0.028, 0.075, 0, 0.065, 0.02));
+			for (var i = 0; i < 5; i++) {
+				add(g, box(metal, 0.006, 0.04, 0.012, -0.038, 0.058, 0.01 + i * 0.016));
+				add(g, box(metal, 0.006, 0.04, 0.012, 0.038, 0.058, 0.01 + i * 0.016));
+			}
+			add(g, box(lensDark, 0.05, 0.012, 0.012, 0, 0.021, -len - 0.005));
+			/* barrel + recoil spring */
+			add(g, cylZ(o.barrelMat || metalDark, 0.021, 0.11, 0, 0.045, -len - 0.02, 12));
+			if (o.suppressor) add(g, cylZ(metalDark, 0.032, 0.14, 0, 0.045, -len - 0.11, 14));
 			/* sights */
-			g.add(box(metalDark, 0.02, 0.05, 0.025, 0, 0.12, -0.66));
-			g.add(box(metalDark, 0.05, 0.03, 0.04, 0, 0.1, 0.0));
-			/* hands */
-			g.add(hand(glove, 0, -0.15, 0.08, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.27, 0.26, -0.4);
-			g.add(hand(glove, 0, -0.08, -0.37, 0.1, 0.085, 0.15));
-			addSleeve(g, woodDark, -0.01, -0.1, -0.54, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			/* keep references to the mag pieces for reload */
-			return finish(g, -0.78, { mag: [mag1, mag2, mag3] });
+			add(g, box(metalDark, 0.012, 0.022, 0.015, 0, 0.108, -len + 0.028));
+			add(g, box(metalDark, 0.045, 0.018, 0.016, 0, 0.108, 0.005));
+			add(g, box(metalDark, 0.012, 0.012, 0.02, -0.019, 0.112, 0.005));
+			add(g, box(metalDark, 0.012, 0.012, 0.02, 0.019, 0.112, 0.005));
+			/* trigger guard + trigger */
+			guard(g, frameMat, 0.005, -0.01, 0.065);
+			/* grip */
+			grip(g, o.gripMat || frameMat, 0, -0.115, 0.055, -0.2);
+			/* magazine base */
+			var mag = box(o.magMat || metalDark, 0.058, 0.09, 0.1, 0, -0.19, 0.06);
+			mag.rotation.x = -0.2;
+			add(g, mag);
+			/* hammer / striker */
+			add(g, box(metal, 0.022, 0.05, 0.025, 0, 0.088, 0.045));
+			if (o.revolver) {
+				add(g, cylZ(silver, 0.045, 0.095, 0, 0.045, -0.09, 12));
+				for (var c = 0; c < 6; c++) {
+					var ang = c / 6 * Math.PI * 2;
+					add(g, cylZ(metalDark, 0.009, 0.098, Math.cos(ang) * 0.028, Math.sin(ang) * 0.028 + 0.045, -0.09, 8));
+				}
+				add(g, box(metal, 0.02, 0.04, 0.07, 0, 0.085, 0.015));
+			}
+			if (o.dual) {
+				var second = g.clone();
+				second.position.x = -0.16;
+				second.rotation.y = 0.08;
+				g.add(second);
+				add(g, hand(glove, -0.19, -0.12, 0.08, 0.1, 0.09, 0.14, -0.25));
+				addSleeve(g, sleeve, -0.2, -0.23, 0.27, -0.4);
+			}
+			g.position.set(o.px || 0.19, o.py || -0.17, o.pz || -0.42);
+			g.rotation.set(o.rx || 0.03, o.ry || -0.04, o.rz || 0);
+			return finish(g, muzzleZ, { mag: [mag] });
 		}
 
-		/* ---- M4A4 ---- */
-		function makeM4() {
+		/* -------------------------------------------------------------- SMGs */
+		function makeSMG(o) {
+			o = o || {};
 			var g = new THREE.Group();
-			g.add(box(metalDark, 0.075, 0.11, 0.44, 0, 0, -0.18));
-			g.add(box(polymer, 0.07, 0.075, 0.4, 0, 0.085, -0.16));
-			g.add(cyl(metalDark, 0.014, 0.014, 0.34, 0, 0.045, -0.54));
-			g.add(box(polymer, 0.085, 0.095, 0.3, 0, 0.02, -0.4));
-			g.add(cyl(metalDark, 0.02, 0.02, 0.08, 0, 0.045, -0.32));
-			/* carry handle / optic */
-			g.add(box(polymer, 0.04, 0.05, 0.24, 0, 0.14, -0.18));
-			g.add(box(metal, 0.06, 0.06, 0.08, 0, 0.16, -0.26));
-			g.add(box(metalDark, 0.05, 0.07, 0.05, 0, 0.16, -0.11));
-			var mag = box(metalDark, 0.065, 0.22, 0.1, 0, -0.15, -0.04); mag.rotation.x = 0.05; g.add(mag);
-			var m4Grip = box(polymer, 0.06, 0.16, 0.12, 0, -0.12, 0.1); m4Grip.rotation.x = -0.22; g.add(m4Grip);
-			g.add(box(polymer, 0.075, 0.1, 0.28, 0, -0.03, 0.25));
-			g.add(hand(glove, 0, -0.15, 0.1, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.27, 0.28, -0.4);
-			g.add(hand(glove, 0, -0.08, -0.35, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.1, -0.52, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -0.73, { mag: [mag] });
+			var body = o.bodyMat || metalDark;
+			var len = o.len || 0.34;
+			add(g, box(body, 0.082, 0.1, len, 0, 0, -0.14));
+			add(g, box(o.upperMat || steel, 0.07, 0.045, len * 0.85, 0, 0.068, -0.15));
+			rail(g, metalDark, len * 0.8, 0.098, -0.16, 7);
+			add(g, box(metal, 0.03, 0.04, 0.12, 0, 0.02, -0.03));
+			add(g, cylZ(metal, 0.014, 0.2, 0, 0.03, -len - 0.06, 10));
+			muzzleDevice(g, metalDark, -len - 0.14, 0.013, 0.06);
+			if (o.suppressor) add(g, cylZ(metalDark, 0.04, 0.2, 0, 0.045, -len - 0.14, 14));
+			add(g, box(o.handguardMat || polymer, 0.075, 0.07, o.handguard || 0.18, 0, -0.005, -len * 0.72));
+			for (var v = 0; v < 3; v++) add(g, box(metalDark, 0.08, 0.014, 0.018, 0, 0.005, -len * 0.72 - 0.045 + v * 0.045));
+			/* magazine */
+			var mags;
+			if (o.magType === 'drum') {
+				mags = [add(g, cylZ(metalDark, 0.09, 0.08, 0, -0.14, -0.02, 16))];
+			} else if (o.magType === 'top') {
+				mags = [add(g, box(metalDark, 0.07, 0.035, 0.22, 0, 0.105, -0.08))];
+			} else {
+				mags = [magStraight(g, o.magMat || metalDark, 0, -0.14, -0.04, o.magH || 0.2, 0.058, 0.1, 0.06)];
+			}
+			/* grip */
+			grip(g, o.gripMat || polymer, 0, -0.12, 0.1, -0.24);
+			/* stock */
+			if (o.stock === 'folding') {
+				add(g, box(metal, 0.02, 0.075, 0.22, 0.035, -0.01, 0.2));
+				add(g, box(metal, 0.02, 0.075, 0.22, -0.035, -0.01, 0.2));
+				add(g, box(o.stockMat || polymer, 0.08, 0.1, 0.04, 0, -0.01, 0.32));
+			} else if (o.stock === 'skeleton') {
+				add(g, box(metal, 0.02, 0.02, 0.24, -0.045, 0.05, 0.2));
+				add(g, box(metal, 0.02, 0.02, 0.24, 0.045, 0.05, 0.2));
+				add(g, box(metal, 0.02, 0.02, 0.24, -0.045, -0.06, 0.2));
+				add(g, box(metal, 0.02, 0.02, 0.24, 0.045, -0.06, 0.2));
+				add(g, box(o.stockMat || polymer, 0.09, 0.15, 0.035, 0, -0.005, 0.33));
+			} else if (o.stock !== 'none') {
+				stockFixed(g, o.stockMat || polymer, 0.27, -0.02);
+			}
+			/* optic */
+			if (o.optic === 'scope') scope(g, 0.14, -0.08, 0.2, 0.036);
+			else if (o.optic === 'reddot') redDot(g, 0.1, -0.12);
+			else sights(g, -len - 0.02, 0.03, 0.1);
+			/* charging handle / ejection port */
+			add(g, box(metal, 0.02, 0.015, 0.05, 0.05, 0.075, 0.02));
+			add(g, box(lensDark, 0.008, 0.03, 0.07, 0.041, 0.035, -0.16));
+			/* support hand */
+			add(g, hand(glove, -0.03, -0.09, -len * 0.64, 0.1, 0.085, 0.14, 0.12));
+			addSleeve(g, sleeveTan, -0.02, -0.16, -len * 0.44, -0.15);
+			g.position.set(o.px || 0.2, o.py || -0.18, o.pz || -0.4);
+			g.rotation.set(o.rx || 0.02, o.ry || -0.03, o.rz || 0);
+			return finish(g, o.muzzleZ || (-len - 0.2), { mag: mags });
 		}
 
-		/* ---- MP9 ---- */
-		function makeMP9() {
+		/* ------------------------------------------------------------- rifles */
+		function makeRifle(o) {
+			o = o || {};
 			var g = new THREE.Group();
-			g.add(box(metalDark, 0.08, 0.095, 0.34, 0, 0, -0.14));
-			g.add(box(metal, 0.07, 0.05, 0.28, 0, 0.075, -0.16));
-			g.add(cyl(metalDark, 0.013, 0.013, 0.2, 0, 0.04, -0.39));
-			var mp9Mag = box(metalDark, 0.055, 0.18, 0.1, 0, -0.14, -0.04); mp9Mag.rotation.x = 0.06; g.add(mp9Mag);
-			var mp9Grip = box(polymer, 0.06, 0.16, 0.12, 0, -0.12, 0.09); mp9Grip.rotation.x = -0.24; g.add(mp9Grip);
-			g.add(box(polymer, 0.07, 0.09, 0.22, 0, -0.02, 0.22));
-			g.add(box(metalDark, 0.02, 0.04, 0.025, 0, 0.12, -0.44));
-			g.add(hand(glove, 0, -0.15, 0.08, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.27, 0.26, -0.4);
-			g.add(hand(glove, 0, -0.08, -0.3, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.1, -0.46, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -0.52, { mag: [mp9Mag] });
+			var body = o.bodyMat || metalDark;
+			var len = o.len || 0.44;
+			/* receiver, upper, dust cover */
+			add(g, box(body, 0.078, 0.11, len, 0, 0, -0.18));
+			add(g, box(o.upperMat || steel, 0.068, 0.04, len * 0.9, 0, 0.073, -0.18));
+			add(g, box(metal, 0.082, 0.012, len * 0.85, 0, -0.058, -0.18));
+			rail(g, metalDark, len * 0.92, 0.096, -0.2, 9);
+			/* handguard with vents */
+			var hgLen = o.handguard || 0.3;
+			add(g, box(o.wood ? wood : (o.handguardMat || polymer), 0.083, 0.09, hgLen, 0, 0.005, -len - hgLen * 0.35));
+			for (var v = 0; v < 4; v++) {
+				add(g, box(metalDark, 0.087, 0.014, 0.024, 0, 0.008, -len - 0.06 - v * 0.055));
+			}
+			add(g, box(metalDark, 0.088, 0.026, hgLen * 0.8, 0, 0.045, -len - hgLen * 0.35));
+			/* barrel + gas block + brake */
+			var barrelLen = o.barrel || 0.4;
+			add(g, cylZ(steel, o.barrelR || 0.014, barrelLen, 0, 0.038, -len - barrelLen * 0.35, 12));
+			add(g, box(metalDark, 0.045, 0.055, 0.07, 0, 0.05, -len - barrelLen * 0.2));
+			add(g, box(metalDark, 0.018, 0.06, 0.02, 0, 0.095, -len - barrelLen * 0.2));
+			if (o.suppressor) add(g, cylZ(metalDark, 0.032, 0.22, 0, 0.038, -len - barrelLen * 0.78, 14));
+			else muzzleDevice(g, metalDark, -len - barrelLen * 0.78, o.barrelR || 0.014, 0.08);
+			/* magazine */
+			var mags;
+			if (o.magType === 'drum') {
+				mags = [add(g, cylZ(metalDark, 0.11, 0.09, 0, -0.15, -0.02, 16))];
+			} else if (o.magType === 'box') {
+				mags = [magStraight(g, metalDark, 0, -0.16, -0.04, 0.22, 0.07, 0.12, 0.03)];
+			} else {
+				mags = magCurved(g, o.magMat || metalDark, 0, -0.15, -0.05, o.magSegs || 3, o.magH || 0.12, 0.062, 0.1, o.magStep == null ? 0.024 : o.magStep);
+			}
+			/* grip + trigger */
+			grip(g, o.gripMat || polymer, 0, -0.12, 0.1, -0.22);
+			guard(g, metal, 0.0, -0.02, 0.07);
+			/* stock */
+			if (o.stock === 'skeleton') {
+				add(g, box(metal, 0.02, 0.025, 0.24, -0.045, 0.045, 0.2));
+				add(g, box(metal, 0.02, 0.025, 0.24, 0.045, 0.045, 0.2));
+				add(g, box(metal, 0.02, 0.025, 0.24, -0.045, -0.06, 0.2));
+				add(g, box(metal, 0.02, 0.025, 0.24, 0.045, -0.06, 0.2));
+				add(g, box(polymer, 0.09, 0.16, 0.035, 0, -0.01, 0.32));
+			} else if (o.stock === 'wood') {
+				add(g, box(wood, 0.085, 0.12, 0.25, 0, -0.035, 0.25));
+				add(g, box(woodDark, 0.075, 0.07, 0.17, 0, -0.09, 0.23));
+				add(g, box(wood, 0.11, 0.055, 0.07, 0, -0.03, 0.37));
+			} else if (o.stock === 'folding') {
+				add(g, box(metal, 0.02, 0.08, 0.2, 0.04, -0.01, 0.18));
+				add(g, box(metal, 0.02, 0.08, 0.2, -0.04, -0.01, 0.18));
+				add(g, box(polymer, 0.08, 0.12, 0.035, 0, -0.01, 0.28));
+			} else {
+				add(g, box(o.stockMat || polymer, 0.075, 0.11, 0.23, 0, -0.025, 0.24));
+				add(g, box(o.stockMat || polymer, 0.085, 0.14, 0.035, 0, -0.02, 0.36));
+				add(g, box(o.stockMat || polymer, 0.085, 0.04, 0.18, 0, 0.06, 0.24));
+			}
+			/* optic */
+			if (o.optic === 'scope') scope(g, 0.14, -0.16, o.scopeLen || 0.3, 0.045);
+			else if (o.optic === 'reddot') redDot(g, 0.1, -0.18);
+			else if (o.optic !== 'none') sights(g, -len - barrelLen * 0.7, 0.06, 0.1);
+			/* bolt / charging handle + ejection port */
+			if (o.bolt) boltHandle(g, 0.05, 0.04, -0.08);
+			else add(g, box(metal, 0.02, 0.016, 0.06, 0.05, 0.073, 0.03));
+			add(g, box(lensDark, 0.01, 0.032, 0.09, 0.041, 0.028, -0.22));
+			/* support hand */
+			add(g, hand(glove, -0.035, -0.08, -len - hgLen * 0.32, 0.1, 0.085, 0.14, 0.12));
+			addSleeve(g, o.tan ? sleeveTan : sleeve, -0.025, -0.15, -len - hgLen * 0.12, -0.15);
+			g.position.set(o.px || 0.2, o.py || -0.18, o.pz || -0.4);
+			g.rotation.set(o.rx || 0.02, o.ry || -0.03, o.rz || 0);
+			return finish(g, o.muzzleZ || (-len - barrelLen * 0.9), { mag: mags });
 		}
 
-		/* ---- UMP-45 ---- */
-		function makeUMP() {
+		/* ------------------------------------------------------------ snipers */
+		function makeSniper(o) {
+			o = o || {};
 			var g = new THREE.Group();
-			g.add(box(metalDark, 0.09, 0.11, 0.4, 0, 0, -0.16));
-			g.add(box(polymer, 0.08, 0.06, 0.3, 0, 0.085, -0.18));
-			g.add(cyl(metalDark, 0.015, 0.015, 0.24, 0, 0.045, -0.46));
-			var umpMag = box(metalDark, 0.06, 0.2, 0.11, 0, -0.16, -0.05); umpMag.rotation.x = 0.04; g.add(umpMag);
-			var umpGrip = box(polymer, 0.065, 0.17, 0.13, 0, -0.12, 0.11); umpGrip.rotation.x = -0.22; g.add(umpGrip);
-			g.add(box(polymer, 0.08, 0.1, 0.26, 0, -0.02, 0.27));
-			g.add(box(metal, 0.03, 0.05, 0.11, 0, 0.14, -0.18));
-			g.add(box(metalDark, 0.02, 0.04, 0.025, 0, 0.11, -0.52));
-			g.add(hand(glove, 0, -0.15, 0.09, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.27, 0.28, -0.4);
-			g.add(hand(glove, 0, -0.08, -0.35, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.1, -0.52, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -0.62, { mag: [umpMag] });
-		}
-
-		/* ---- Galil AR ---- */
-		function makeGalil() {
-			var g = new THREE.Group();
-			g.add(box(metalDark, 0.085, 0.1, 0.42, 0, 0, -0.18));
-			g.add(box(metal, 0.075, 0.06, 0.3, 0, 0.07, -0.2));
-			g.add(cyl(metalDark, 0.015, 0.015, 0.42, 0, 0.04, -0.57));
-			g.add(box(polymer, 0.09, 0.1, 0.3, 0, 0.01, -0.43));
-			var galilMag = box(metalDark, 0.07, 0.2, 0.11, 0, -0.16, -0.04); galilMag.rotation.x = 0.1; g.add(galilMag);
-			var galilGrip = box(polymer, 0.065, 0.17, 0.13, 0, -0.12, 0.1); galilGrip.rotation.x = -0.22; g.add(galilGrip);
-			g.add(box(polymer, 0.08, 0.11, 0.28, 0, -0.03, 0.25));
-			g.add(box(metalDark, 0.02, 0.05, 0.025, 0, 0.12, -0.72));
-			g.add(box(metalDark, 0.05, 0.03, 0.04, 0, 0.1, 0.0));
-			g.add(hand(glove, 0, -0.15, 0.08, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.27, 0.26, -0.4);
-			g.add(hand(glove, 0, -0.08, -0.37, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.1, -0.54, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -0.8, { mag: [galilMag] });
-		}
-
-		/* ---- SG 553 ---- */
-		function makeSG553() {
-			var g = new THREE.Group();
-			g.add(box(metalDark, 0.08, 0.1, 0.44, 0, 0, -0.18));
-			g.add(box(polymer, 0.075, 0.065, 0.34, 0, 0.085, -0.2));
-			g.add(cyl(metalDark, 0.014, 0.014, 0.34, 0, 0.045, -0.55));
-			g.add(box(polymer, 0.09, 0.1, 0.3, 0, 0.01, -0.42));
-			var sgMag = box(metalDark, 0.065, 0.2, 0.1, 0, -0.15, -0.04); sgMag.rotation.x = 0.06; g.add(sgMag);
-			var sgGrip = box(polymer, 0.06, 0.16, 0.12, 0, -0.12, 0.1); sgGrip.rotation.x = -0.22; g.add(sgGrip);
-			g.add(box(polymer, 0.075, 0.1, 0.28, 0, -0.02, 0.25));
-			g.add(cyl(metalDark, 0.04, 0.04, 0.26, 0, 0.17, -0.18, 12));
-			g.add(cyl(metal, 0.05, 0.04, 0.06, 0, 0.17, 0.0, 12));
-			var sgLens = new THREE.Mesh(new THREE.CircleGeometry(0.036, 12), lens);
-			sgLens.position.set(0, 0.17, -0.315);
-			sgLens.rotation.y = Math.PI;
-			g.add(sgLens);
-			g.add(hand(glove, 0, -0.15, 0.08, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.27, 0.26, -0.4);
-			g.add(hand(glove, 0, -0.08, -0.36, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.1, -0.53, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -0.74, { mag: [sgMag] });
-		}
-
-		/* ---- SSG 08 ---- */
-		function makeSSG08() {
-			var g = new THREE.Group();
-			g.add(box(green, 0.09, 0.11, 0.52, 0, -0.01, -0.16));
-			g.add(box(metalDark, 0.08, 0.065, 0.4, 0, 0.075, -0.2));
-			g.add(cyl(metalDark, 0.017, 0.017, 0.55, 0, 0.04, -0.73));
-			g.add(cyl(metalDark, 0.023, 0.023, 0.09, 0, 0.04, -0.96));
-			g.add(box(green, 0.1, 0.15, 0.22, 0, -0.05, 0.27));
-			g.add(box(green, 0.09, 0.1, 0.2, 0, 0.04, 0.25));
-			g.add(box(green, 0.1, 0.07, 0.28, 0, 0.12, -0.16));
-			g.add(cyl(metalDark, 0.045, 0.045, 0.32, 0, 0.17, -0.18, 12));
-			g.add(cyl(metal, 0.052, 0.045, 0.06, 0, 0.17, 0.0, 12));
-			var ssgLens = new THREE.Mesh(new THREE.CircleGeometry(0.036, 12), lens);
-			ssgLens.position.set(0, 0.17, -0.325);
-			ssgLens.rotation.y = Math.PI;
-			g.add(ssgLens);
-			var ssgBolt = cyl(metal, 0.016, 0.016, 0.13, 0.08, 0.055, -0.06, 8);
-			ssgBolt.rotation.z = Math.PI / 2;
-			g.add(ssgBolt);
-			g.add(box(metalDark, 0.085, 0.07, 0.12, 0, -0.01, 0.14));
-			g.add(hand(glove, 0, -0.12, 0.1, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.23, 0.28, -0.4);
-			g.add(hand(glove, 0, -0.07, -0.46, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.09, -0.63, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -1.02);
-		}
-
-		/* ---- Nova ---- */
-		function makeNova() {
-			var g = new THREE.Group();
-			g.add(box(metalDark, 0.085, 0.105, 0.4, 0, 0, -0.16));
-			g.add(box(wood, 0.09, 0.1, 0.26, 0, 0.01, -0.38));
-			g.add(cyl(metalDark, 0.025, 0.025, 0.44, 0, 0.04, -0.62));
-			g.add(cyl(metalDark, 0.028, 0.028, 0.55, 0, 0.04, -0.6));
-			var novaPump = box(woodDark, 0.095, 0.11, 0.2, 0, -0.02, -0.52); novaPump.rotation.x = 0.02; g.add(novaPump);
-			var novaGrip = box(polymer, 0.06, 0.17, 0.12, 0, -0.13, 0.09); novaGrip.rotation.x = -0.22; g.add(novaGrip);
-			g.add(box(wood, 0.08, 0.12, 0.3, 0, -0.04, 0.26));
-			g.add(box(metal, 0.02, 0.045, 0.03, 0, 0.12, -0.78));
-			g.add(hand(glove, 0, -0.15, 0.09, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.27, 0.28, -0.4);
-			g.add(hand(glove, 0, -0.08, -0.48, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.1, -0.64, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -0.87);
-		}
-
-		/* ---- AWP ---- */
-		function makeAWP() {
-			var g = new THREE.Group();
-			g.add(box(green, 0.09, 0.12, 0.55, 0, -0.01, -0.18));
-			g.add(box(metalDark, 0.08, 0.07, 0.42, 0, 0.075, -0.2));
-			g.add(cyl(metalDark, 0.019, 0.019, 0.62, 0, 0.04, -0.78));
-			g.add(cyl(metalDark, 0.027, 0.027, 0.1, 0, 0.04, -1.06));
-			g.add(box(green, 0.1, 0.16, 0.22, 0, -0.06, 0.25));
-			g.add(box(green, 0.09, 0.11, 0.2, 0, 0.04, 0.24));
-			g.add(box(green, 0.11, 0.07, 0.3, 0, 0.12, -0.18));
+			var body = o.bodyMat || green;
+			var len = o.len || 0.52;
+			add(g, box(body, 0.085, 0.11, len, 0, -0.005, -0.17));
+			add(g, box(o.upperMat || metalDark, 0.07, 0.05, len * 0.9, 0, 0.08, -0.18));
+			add(g, box(body, 0.07, 0.08, 0.23, 0, 0.005, 0.24));
+			add(g, box(body, 0.1, 0.14, 0.14, 0, -0.05, 0.31));
+			add(g, box(body, 0.09, 0.045, 0.17, 0, 0.11, 0.2));
+			add(g, box(metalDark, 0.06, 0.07, 0.13, 0, -0.055, 0.2));
+			/* barrel */
+			var bl = o.barrel || 0.6;
+			add(g, cylZ(steel, 0.017, bl, 0, 0.035, -len - bl * 0.3, 12));
+			add(g, cylZ(metalDark, 0.024, 0.08, 0, 0.035, -len - bl * 0.72, 12));
+			add(g, cylZ(metalDark, 0.02, 0.06, 0, 0.035, -len - bl * 0.78, 12));
 			/* scope */
-			g.add(cyl(metalDark, 0.05, 0.05, 0.38, 0, 0.17, -0.18, 12));
-			g.add(cyl(metal, 0.06, 0.05, 0.08, 0, 0.17, 0.02, 12));
-			g.add(cyl(metal, 0.058, 0.058, 0.02, 0, 0.17, -0.38, 12));
-			/* lens orientation: put a small disk at the front; easier as a box */
-			var lensFront = new THREE.Mesh(new THREE.CircleGeometry(0.045, 12), lens);
-			lensFront.position.set(0, 0.17, -0.385);
-			lensFront.rotation.y = Math.PI;
-			g.add(lensFront);
+			scope(g, 0.17, -0.18, o.scopeLen || 0.36, 0.048);
 			/* bolt */
-			var bolt = cyl(metal, 0.018, 0.018, 0.14, 0.08, 0.06, -0.08, 8);
-			bolt.rotation.z = Math.PI / 2;
-			g.add(bolt);
-			g.add(box(metalDark, 0.09, 0.07, 0.12, 0, -0.01, 0.15));
-			g.add(hand(glove, 0, -0.12, 0.1, 0.1, 0.09, 0.15));
-			addSleeve(g, sleeve, 0.02, -0.23, 0.28, -0.4);
-			g.add(hand(glove, 0, -0.07, -0.48, 0.1, 0.085, 0.15));
-			addSleeve(g, tan, -0.01, -0.09, -0.65, -0.15);
-			g.position.set(0.2, -0.18, -0.4);
-			g.rotation.set(0.02, -0.03, 0);
-			return finish(g, -1.12);
+			boltHandle(g, 0.085, 0.04, -0.06);
+			/* magazine */
+			var mag = magStraight(g, metalDark, 0, -0.19, -0.06, 0.13, 0.065, 0.11, 0.03);
+			/* grip */
+			grip(g, o.gripMat || body, 0, -0.12, 0.1, -0.22);
+			/* bipod */
+			if (o.bipod) {
+				add(g, box(metal, 0.015, 0.13, 0.015, -0.06, -0.08, -len - bl * 0.5));
+				add(g, box(metal, 0.015, 0.13, 0.015, 0.06, -0.08, -len - bl * 0.5));
+				add(g, box(metal, 0.15, 0.012, 0.02, 0, -0.14, -len - bl * 0.5));
+			}
+			/* hands */
+			add(g, hand(glove, -0.04, -0.08, -len - bl * 0.28, 0.1, 0.085, 0.14, 0.12));
+			addSleeve(g, sleeveTan, -0.03, -0.15, -len - bl * 0.08, -0.15);
+			g.position.set(o.px || 0.2, o.py || -0.18, o.pz || -0.4);
+			g.rotation.set(o.rx || 0.02, o.ry || -0.03, o.rz || 0);
+			return finish(g, o.muzzleZ || (-len - bl * 0.82), { mag: [mag] });
 		}
 
-		/* ---- knife ---- */
+		/* ----------------------------------------------------------- shotguns */
+		function makeShotgun(o) {
+			o = o || {};
+			var g = new THREE.Group();
+			var body = o.bodyMat || metalDark;
+			var len = o.len || 0.4;
+			add(g, box(body, 0.085, 0.105, len, 0, 0, -0.16));
+			add(g, box(o.wood ? wood : (o.handguardMat || polymer), 0.09, 0.1, 0.26, 0, 0.005, -0.38));
+			var barrel = o.barrel || 0.44;
+			add(g, cylZ(steel, o.barrelR || 0.026, barrel, 0, 0.035, -0.16 - barrel * 0.55, 12));
+			add(g, cylZ(metalDark, 0.03, 0.06, 0, 0.035, -0.16 - barrel * 0.83, 12));
+			/* tube magazine */
+			add(g, cylZ(metalDark, 0.02, barrel * 0.8, 0, -0.015, -0.16 - barrel * 0.48, 10));
+			/* pump with ribs */
+			if (o.pump !== false) {
+				var pump = box(o.pumpMat || woodDark, 0.095, 0.095, 0.19, 0, -0.025, -0.16 - barrel * 0.42);
+				add(g, pump);
+				for (var i = 0; i < 5; i++) add(g, box(metalDark, 0.1, 0.012, 0.018, 0, -0.025, -0.16 - barrel * 0.42 - 0.07 + i * 0.035));
+			}
+			/* shell carrier */
+			for (var s = 0; s < 3; s++) add(g, cylZ(brass, 0.012, 0.055, 0.055, -0.01, -0.05 + s * 0.04, 8));
+			/* grip + stock */
+			grip(g, o.gripMat || polymer, 0, -0.13, 0.09, -0.22);
+			if (o.stock === 'wood') {
+				add(g, box(wood, 0.08, 0.12, 0.24, 0, -0.04, 0.24));
+				add(g, box(woodDark, 0.07, 0.07, 0.16, 0, -0.09, 0.23));
+			} else {
+				add(g, box(o.stockMat || polymer, 0.08, 0.12, 0.24, 0, -0.03, 0.24));
+				add(g, box(o.stockMat || polymer, 0.09, 0.14, 0.03, 0, -0.025, 0.36));
+			}
+			/* bead sight */
+			add(g, box(brass, 0.012, 0.012, 0.012, 0, 0.078, -0.16 - barrel * 0.8));
+			/* support hand on pump */
+			add(g, hand(glove, -0.02, -0.09, -0.16 - barrel * 0.42, 0.1, 0.085, 0.14, 0.12));
+			addSleeve(g, sleeveTan, -0.01, -0.16, -0.16 - barrel * 0.25, -0.15);
+			g.position.set(o.px || 0.2, o.py || -0.18, o.pz || -0.4);
+			g.rotation.set(o.rx || 0.02, o.ry || -0.03, o.rz || 0);
+			return finish(g, o.muzzleZ || (-0.16 - barrel * 0.86), { mag: [] });
+		}
+
+		/* ------------------------------------------------------ machine guns */
+		function makeMG(o) {
+			o = o || {};
+			var g = new THREE.Group();
+			var body = o.bodyMat || green;
+			var len = o.len || 0.46;
+			add(g, box(body, 0.1, 0.14, len, 0, -0.005, -0.16));
+			add(g, box(metalDark, 0.09, 0.05, len * 0.9, 0, 0.085, -0.18));
+			add(g, box(metal, 0.06, 0.08, 0.14, 0, 0.13, -0.1));
+			add(g, box(metal, 0.05, 0.1, 0.18, 0, 0.0, -len * 0.9));
+			/* heat shield + barrel */
+			var bl = o.barrel || 0.48;
+			add(g, cylZ(steel, 0.022, bl, 0, 0.04, -len - bl * 0.3, 12));
+			for (var i = 0; i < 4; i++) add(g, box(metalDark, 0.048, 0.012, 0.05, 0, 0.04, -len - 0.03 - i * 0.06));
+			muzzleDevice(g, metalDark, -len - bl * 0.72, 0.02, 0.08);
+			/* box magazine */
+			var mag = box(metalDark, 0.12, 0.23, 0.15, 0, -0.2, -0.03);
+			mag.rotation.x = 0.05;
+			add(g, mag);
+			add(g, box(metal, 0.13, 0.02, 0.16, 0, -0.32, -0.02));
+			/* grip + stock */
+			grip(g, o.gripMat || polymer, 0, -0.13, 0.1, -0.24);
+			stockFixed(g, polymer, 0.3, -0.02);
+			/* bipod + carry handle */
+			add(g, box(metal, 0.02, 0.15, 0.02, -0.09, -0.14, -len - 0.06));
+			add(g, box(metal, 0.02, 0.15, 0.02, 0.09, -0.14, -len - 0.06));
+			add(g, box(metal, 0.2, 0.015, 0.02, 0, -0.21, -len - 0.06));
+			add(g, box(metal, 0.02, 0.06, 0.14, 0, 0.18, -0.02));
+			add(g, box(metal, 0.12, 0.02, 0.02, 0, 0.21, -0.02));
+			/* hand */
+			add(g, hand(glove, -0.04, -0.09, -len - 0.12, 0.1, 0.09, 0.14, 0.12));
+			addSleeve(g, sleeveTan, -0.03, -0.17, -len + 0.06, -0.15);
+			g.position.set(o.px || 0.2, o.py || -0.18, o.pz || -0.4);
+			g.rotation.set(o.rx || 0.02, o.ry || -0.03, o.rz || 0);
+			return finish(g, o.muzzleZ || (-len - bl * 0.78), { mag: [mag] });
+		}
+
+		/* ---------------------------------------------------------------- zeus */
+		function makeZeus() {
+			var g = new THREE.Group();
+			add(g, box(metalDark, 0.085, 0.1, 0.34, 0, 0, -0.1));
+			add(g, box(accentBlue, 0.055, 0.018, 0.24, 0, 0.055, -0.12));
+			add(g, box(metal, 0.06, 0.05, 0.15, 0, 0.075, -0.04));
+			add(g, cylZ(metal, 0.018, 0.22, 0, 0.045, -0.34, 10));
+			add(g, cylZ(accentBlue, 0.026, 0.06, 0, 0.045, -0.46, 12));
+			add(g, cylZ(metal, 0.01, 0.16, -0.035, 0.045, -0.44, 8));
+			add(g, cylZ(metal, 0.01, 0.16, 0.035, 0.045, -0.44, 8));
+			add(g, box(metal, 0.11, 0.014, 0.02, 0, 0.045, -0.53));
+			add(g, box(accentBlue, 0.002, 0.12, 0.12, 0.043, 0.0, -0.16));
+			grip(g, polymer, 0, -0.12, 0.06, -0.22);
+			add(g, box(metalDark, 0.06, 0.15, 0.1, 0, -0.13, 0.07));
+			g.position.set(0.2, -0.18, -0.42);
+			g.rotation.set(0.02, -0.03, 0);
+			return finish(g, -0.56, { mag: [] });
+		}
+
+		/* --------------------------------------------------------------- knife */
 		function makeKnife() {
 			var g = new THREE.Group();
-			g.add(box(metalDark, 0.035, 0.06, 0.16, 0, 0, 0.1));
-			g.add(box(polymer, 0.04, 0.07, 0.05, 0, 0, 0.19));
+			add(g, box(metalDark, 0.035, 0.055, 0.14, 0, 0, 0.11));
+			add(g, box(polymer, 0.045, 0.07, 0.05, 0, 0, 0.19));
+			add(g, box(metal, 0.055, 0.012, 0.03, 0, 0.03, 0.03));
 			var bladeShape = new THREE.Shape();
-			bladeShape.moveTo(0, 0.02);
-			bladeShape.lineTo(0, -0.02);
-			bladeShape.lineTo(-0.28, -0.045);
-			bladeShape.lineTo(-0.34, 0.0);
-			bladeShape.lineTo(-0.28, 0.032);
-			bladeShape.lineTo(0, 0.02);
-			var blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: 0.008, bevelEnabled: false }), silver);
+			bladeShape.moveTo(0, 0.03);
+			bladeShape.lineTo(0, -0.025);
+			bladeShape.lineTo(-0.26, -0.055);
+			bladeShape.lineTo(-0.36, -0.012);
+			bladeShape.lineTo(-0.27, 0.035);
+			bladeShape.lineTo(0, 0.03);
+			var blade = new THREE.Mesh(new THREE.ExtrudeGeometry(bladeShape, { depth: 0.009, bevelEnabled: true, bevelSize: 0.002, bevelThickness: 0.002, bevelSegments: 1 }), silver);
 			blade.rotation.y = Math.PI / 2;
 			blade.position.set(0, 0.03, -0.02);
-			g.add(blade);
-			g.add(hand(glove, 0, -0.03, 0.16, 0.1, 0.09, 0.14));
+			add(g, blade);
+			var edge = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.006, 0.42), steel);
+			edge.position.set(0.005, 0.012, -0.16);
+			add(g, edge);
+			add(g, hand(glove, 0, -0.03, 0.16, 0.1, 0.09, 0.14));
 			addSleeve(g, sleeve, 0.01, -0.14, 0.28, -0.3);
 			g.position.set(0.22, -0.2, -0.4);
 			g.rotation.set(0.05, -0.1, 0.1);
-			return finish(g, -0.4);
+			return finish(g, -0.4, { mag: [] });
 		}
 
-		var defs = {
-			usp: makeUSP(),
-			p250: makeP250(),
-			deagle: makeDeagle(),
-			ak47: makeAK(),
-			m4a4: makeM4(),
-			mp9: makeMP9(),
-			ump45: makeUMP(),
-			galil: makeGalil(),
-			sg553: makeSG553(),
-			ssg08: makeSSG08(),
-			nova: makeNova(),
-			awp: makeAWP(),
-			knife: makeKnife()
+		/* ----------------------------------------------------------- grenades */
+		function makeGrenade(kind, color) {
+			var g = new THREE.Group();
+			var bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.62, metalness: 0.3 });
+			var capMat = new THREE.MeshStandardMaterial({ color: 0x8e969c, roughness: 0.4, metalness: 0.65 });
+			if (kind === 'molotov') {
+				add(g, cylZ(bodyMat, 0.065, 0.2, 0, 0.0, -0.05, 14));
+				add(g, cylZ(metalDark, 0.025, 0.08, 0, 0.0, 0.12, 10));
+				add(g, box(accentRed, 0.02, 0.1, 0.02, 0.055, 0.08, 0.1));
+				add(g, hand(glove, 0, -0.07, 0.1, 0.1, 0.09, 0.14));
+				addSleeve(g, sleeve, 0.01, -0.18, 0.24, -0.4);
+				g.position.set(0.2, -0.2, -0.42);
+				return finish(g, -0.2, { mag: [] });
+			}
+			add(g, cylZ(bodyMat, 0.05, 0.11, 0, 0, -0.03, 12));
+			add(g, cylZ(capMat, 0.028, 0.04, 0, 0.03, 0.03, 10));
+			add(g, box(metalDark, 0.06, 0.018, 0.02, 0, 0.05, 0.03));
+			add(g, box(metalDark, 0.018, 0.05, 0.018, 0.035, 0.02, 0.03));
+			add(g, hand(glove, 0, -0.06, 0.1, 0.1, 0.09, 0.14));
+			addSleeve(g, sleeve, 0.01, -0.17, 0.24, -0.4);
+			g.position.set(0.2, -0.2, -0.42);
+			g.rotation.set(0.02, -0.04, 0);
+			return finish(g, -0.22, { mag: [] });
+		}
+
+		/* ---------------------------------------------------- weapon catalogue */
+		var specs = {
+			usp: { kind: 'pistol', slideMat: metalDark, suppressor: true, len: 0.31, muzzle: -0.63 },
+			glock: { kind: 'pistol', frameMat: polymer, slideMat: metalDark, len: 0.3, muzzle: -0.52 },
+			p2000: { kind: 'pistol', slideMat: silver, len: 0.31, muzzle: -0.56 },
+			p250: { kind: 'pistol', frameMat: polymerTan, slideMat: steel, len: 0.3, muzzle: -0.53 },
+			deagle: { kind: 'pistol', slideMat: silver, frameMat: steel, len: 0.36, muzzle: -0.62, barrelMat: silver, px: 0.2, py: -0.18, pz: -0.44 },
+			r8: { kind: 'pistol', slideMat: steel, revolver: true, len: 0.34, muzzle: -0.6, barrelMat: silver },
+			fiveseven: { kind: 'pistol', frameMat: polymerTan, slideMat: metalDark, len: 0.31, muzzle: -0.55 },
+			tec9: { kind: 'pistol', frameMat: polymer, slideMat: steel, len: 0.36, muzzle: -0.6, magMat: metalDark },
+			cz75: { kind: 'pistol', frameMat: steel, slideMat: metalDark, len: 0.32, muzzle: -0.56 },
+			dualies: { kind: 'pistol', dual: true, slideMat: silver, len: 0.32, muzzle: -0.56 },
+			mac10: { kind: 'smg', len: 0.3, stock: 'folding', magH: 0.2, optic: 'none', handguard: 0.13 },
+			mp9: { kind: 'smg', len: 0.32, stock: 'folding', optic: 'none', handguard: 0.15, magH: 0.19 },
+			mp7: { kind: 'smg', len: 0.33, stock: 'skeleton', optic: 'reddot', handguard: 0.16, magH: 0.2 },
+			mp5sd: { kind: 'smg', len: 0.35, stock: 'fixed', suppressor: true, optic: 'none', handguard: 0.17, magH: 0.21 },
+			ump45: { kind: 'smg', len: 0.36, stock: 'folding', optic: 'none', handguard: 0.17, magH: 0.21, bodyMat: polymerGreen },
+			p90: { kind: 'smg', len: 0.3, stock: 'none', optic: 'reddot', magType: 'top', handguard: 0.12 },
+			bizon: { kind: 'smg', len: 0.33, stock: 'folding', optic: 'none', magType: 'drum', handguard: 0.12 },
+			ak47: { kind: 'rifle', len: 0.44, wood: true, stock: 'wood', bodyMat: metalDark, magSegs: 3, optic: 'iron' },
+			m4a4: { kind: 'rifle', len: 0.44, stock: 'adjustable', stockMat: polymerTan, gripMat: polymerTan, handguardMat: polymerTan, tan: true, optic: 'iron', magSegs: 2 },
+			m4a1s: { kind: 'rifle', len: 0.44, stock: 'adjustable', suppressor: true, stockMat: polymerTan, gripMat: polymerTan, handguardMat: polymerTan, tan: true, optic: 'reddot', magSegs: 2, magH: 0.13, barrel: 0.34 },
+			galil: { kind: 'rifle', len: 0.42, stock: 'folding', bodyMat: steel, gripMat: polymer, optic: 'iron', magSegs: 3 },
+			famas: { kind: 'rifle', len: 0.44, stock: 'fixed', bodyMat: polymer, optic: 'scope', scopeLen: 0.24, magSegs: 2, barrel: 0.36 },
+			sg553: { kind: 'rifle', len: 0.44, stock: 'folding', bodyMat: polymer, optic: 'scope', scopeLen: 0.28, magSegs: 2, barrel: 0.36 },
+			aug: { kind: 'rifle', len: 0.46, stock: 'fixed', bodyMat: polymerGreen, optic: 'scope', scopeLen: 0.3, magSegs: 2, barrel: 0.38 },
+			awp: { kind: 'sniper', len: 0.55, barrel: 0.62, bodyMat: green, scopeLen: 0.38, bipod: true },
+			ssg08: { kind: 'sniper', len: 0.5, barrel: 0.55, bodyMat: polymerGreen, scopeLen: 0.34, bipod: true },
+			scar20: { kind: 'sniper', len: 0.53, barrel: 0.5, bodyMat: polymerTan, scopeLen: 0.32 },
+			g3sg1: { kind: 'sniper', len: 0.54, barrel: 0.52, bodyMat: metalDark, scopeLen: 0.34 },
+			nova: { kind: 'shotgun', len: 0.4, barrel: 0.44, wood: true, stock: 'wood', pumpMat: woodDark },
+			xm1014: { kind: 'shotgun', len: 0.42, barrel: 0.46, stockMat: polymer, pumpMat: polymer },
+			mag7: { kind: 'shotgun', len: 0.34, barrel: 0.38, stockMat: polymer, pumpMat: metalDark },
+			sawedoff: { kind: 'shotgun', len: 0.32, barrel: 0.26, wood: true, stock: 'wood', pump: false },
+			m249: { kind: 'mg', len: 0.48, barrel: 0.5, bodyMat: green, gripMat: polymer },
+			negev: { kind: 'mg', len: 0.46, barrel: 0.46, bodyMat: metalDark, gripMat: polymerGreen },
+			zeus: { kind: 'zeus' },
+			knife: { kind: 'knife' }
 		};
-		/* muzzle flash sprites + lights are created by the game */
+		var defs = {};
+		Object.keys(specs).forEach(function (id) {
+			var s = specs[id];
+			var model;
+			if (s.kind === 'pistol') model = makePistol(s);
+			else if (s.kind === 'smg') model = makeSMG(s);
+			else if (s.kind === 'rifle') model = makeRifle(s);
+			else if (s.kind === 'sniper') model = makeSniper(s);
+			else if (s.kind === 'shotgun') model = makeShotgun(s);
+			else if (s.kind === 'mg') model = makeMG(s);
+			else if (s.kind === 'zeus') model = makeZeus();
+			else model = makeKnife();
+			defs[id] = model;
+		});
+		/* utility viewmodels share the grenade rig */
+		defs.he = makeGrenade('he', 0x4b5d3c);
+		defs.flash = makeGrenade('flash', 0x8b8f93);
+		defs.smoke = makeGrenade('smoke', 0x5c6a66);
+		defs.molotov = makeGrenade('molotov', 0x8a4a25);
+		defs.decoy = makeGrenade('decoy', 0x655f4e);
 		return defs;
 	}
 
@@ -2793,6 +3356,40 @@
 			labelTex: labelTex,
 			materials: [metal, dark, accent, ringMat, beamMat, labelMat]
 		};
+	}
+
+
+	function buildGrenadeProjectile(kind) {
+		var util = UTILITIES[kind] || UTILITIES.he;
+		var group = new THREE.Group();
+		var colors = { he: 0x49563a, flash: 0x9a9d9f, smoke: 0x60716c, molotov: 0x8a4a25, decoy: 0x6b6452 };
+		var bodyMat = new THREE.MeshStandardMaterial({ color: colors[kind] || 0x49563a, roughness: 0.55, metalness: 0.35 });
+		var capMat = new THREE.MeshStandardMaterial({ color: 0x9aa1a6, roughness: 0.35, metalness: 0.75 });
+		var body;
+		if (kind === 'molotov') {
+			body = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.22, 12), bodyMat);
+			body.rotation.z = Math.PI / 2;
+			var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.09, 10), capMat);
+			neck.rotation.z = Math.PI / 2;
+			neck.position.x = 0.15;
+			group.add(neck);
+			var rag = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.012, 0.03), new THREE.MeshBasicMaterial({ color: 0xff7a3c }));
+			rag.position.x = 0.22;
+			group.add(rag);
+		} else {
+			body = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.062, 0.14, 12), bodyMat);
+			body.rotation.z = Math.PI / 2;
+			var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.05, 10), capMat);
+			cap.rotation.z = Math.PI / 2;
+			cap.position.x = -0.09;
+			group.add(cap);
+			var pin = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.006, 5, 10), capMat);
+			pin.position.set(-0.05, 0.07, 0);
+			group.add(pin);
+		}
+		group.add(body);
+		group.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = false; } });
+		return { group: group, body: body, util: util, materials: [bodyMat, capMat] };
 	}
 
 	/* ======================================================================
@@ -3032,6 +3629,30 @@
 	   weapon silhouette icons for the buy menu
 	   ====================================================================== */
 	function weaponIcon(kind) {
+		if (kind === 'mg') {
+			return '<svg viewBox="0 0 120 54" fill="currentColor" aria-hidden="true">' +
+				'<path d="M10 24h18l6-7h38l4 5h18l3-2h7v7h-8l-2 3H66l-7 5H49l-4 14H34l5-14H25l-6 4H10z"/>' +
+				'<path d="M49 36h22v9H49z" opacity=".6"/><path d="M83 23h31v3H83z"/>' +
+				'<circle cx="38" cy="31" r="4" fill="#0a0e12"/><circle cx="75" cy="31" r="3" fill="#0a0e12"/>' +
+				'</svg>';
+		}
+		if (kind === 'zeus') {
+			return '<svg viewBox="0 0 120 54" fill="currentColor" aria-hidden="true">' +
+				'<path d="M18 22h46v10H18z"/><path d="M64 25h22v4H64z"/><path d="M86 21h6v12h-6z"/>' +
+				'<path d="M96 25l10 2-10 2z"/><path d="M22 32h20v12H22z" opacity=".7"/>' +
+				'<path d="M24 20h34v3H24z" opacity=".5"/></svg>';
+		}
+		if (kind === 'grenade') {
+			return '<svg viewBox="0 0 120 54" fill="currentColor" aria-hidden="true">' +
+				'<rect x="34" y="18" width="26" height="26" rx="7"/><rect x="46" y="10" width="14" height="9" rx="2"/>' +
+				'<path d="M58 12h16v4H58z"/><circle cx="76" cy="14" r="4" opacity=".65"/>' +
+				'<path d="M28 43h38v4H28z" opacity=".5"/></svg>';
+		}
+		if (kind === 'gear') {
+			return '<svg viewBox="0 0 120 54" fill="currentColor" aria-hidden="true">' +
+				'<path d="M60 8l24 10v10c0 11-10 18-24 20-14-2-24-9-24-20V18z"/>' +
+				'<path d="M52 27l6 7 13-14" fill="none" stroke="#0a0e12" stroke-width="4"/></svg>';
+		}
 		if (kind === 'rifle') {
 			return '<svg viewBox="0 0 120 54" fill="currentColor" aria-hidden="true">' +
 				'<path d="M6 26h13l6-7h38l3 5h19l2-3h8v7h-9l-2 3H63l-9 5H43l-4 13H28l6-13H20l-6 4H6z"/>' +
@@ -3227,6 +3848,12 @@
 			this.burst({ dur: 0.24, type: 'lowpass', freq: 900, q: 0.55, gain: 0.56 * att, pan: pan, wet: 0.26 });
 			this.burst({ dur: 0.12, type: 'bandpass', freq: 1500, q: 0.7, gain: 0.24 * att, pan: pan });
 			this.tone({ freq: 95, to: 38, dur: 0.24, gain: 0.34 * att, type: 'triangle' });
+		} else if (id === 'silenced') {
+			this.burst({ dur: 0.06, type: 'bandpass', freq: 2100, q: 0.9, gain: 0.16 * att, pan: pan, wet: 0.05 });
+			this.tone({ freq: 220, to: 90, dur: 0.06, gain: 0.08 * att, type: 'triangle' });
+		} else if (id === 'zeus') {
+			this.burst({ dur: 0.22, type: 'highpass', freq: 3200, q: 0.4, gain: 0.22 * att, pan: pan, wet: 0.2 });
+			this.tone({ freq: 1800, to: 220, dur: 0.2, gain: 0.18 * att, type: 'sawtooth' });
 		} else if (id === 'knife') {
 			this.burst({ dur: 0.08, type: 'highpass', freq: 2600, q: 0.5, gain: 0.16 * att, pan: pan, wet: 0.1 });
 			this.tone({ freq: 900, to: 1600, dur: 0.08, gain: 0.06, type: 'sawtooth' });
@@ -3338,7 +3965,9 @@
 		THREE: THREE,
 		clamp: clamp, lerp: lerp, damp: damp, rand: rand, randi: randi,
 		choice: choice, shuffle: shuffle, angleDelta: angleDelta,
-		WEAPONS: WEAPONS, BUY_ITEMS: BUY_ITEMS, BOT_TYPES: BOT_TYPES,
+		WEAPONS: WEAPONS, UTILITIES: UTILITIES, UTIL_ORDER: UTIL_ORDER,
+		BUY_ITEMS: BUY_ITEMS, BUY_SECTION_ORDER: BUY_SECTION_ORDER,
+		WEAPON_TEAM_LOCK: WEAPON_TEAM_LOCK, BOT_TYPES: BOT_TYPES,
 		DIFFICULTY: DIFFICULTY, BOT_LOADOUTS: BOT_LOADOUTS, BOT_NAMES: BOT_NAMES, BOT_SPAWNS: BOT_SPAWNS,
 		BOMB: BOMB, TEAM_LOADOUTS: TEAM_LOADOUTS,
 		buildBomb: buildBomb,
@@ -3357,6 +3986,7 @@
 		robotName: robotName,
 		buildViewWeapons: buildViewWeapons,
 		buildWeaponPickup: buildWeaponPickup,
+		buildGrenadeProjectile: buildGrenadeProjectile,
 		buildPracticeTarget: buildPracticeTarget,
 		buildChicken: buildChicken,
 		buildPlayerBody: buildPlayerBody,

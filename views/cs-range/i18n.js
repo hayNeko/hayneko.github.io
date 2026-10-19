@@ -27,7 +27,7 @@
 			'Headshots do four times damage. Robot heads pop. Use cover.': '爆头造成四倍伤害。机器人会被爆头。利用掩体。',
 			'Defeated robots drop their weapon. Press': '被击败的机器人会掉落武器。按',
 			'on the field to pick it up.': '在场上拾取。',
-			'OPERATION SETUP': '行动设置', 'SET': '设置', 'BOT DIFFICULTY': '机器人难度', 'RECRUIT': '新兵', 'REGULAR': '普通', 'VETERAN': '老兵', 'ELITE': '精英',
+			'OPERATION SETUP': '行动设置', 'SET': '设置', 'BOT DIFFICULTY': '机器人难度', 'RECRUIT': '新兵', 'REGULAR': '普通', 'VETERAN': '老兵', 'ELITE': '精英', 'ACE': '王牌',
 			'SQUAD SIZE': '小队规模', 'AUTO': '自动', 'GRAPHICS': '画面', 'LOW': '低', 'BALANCED': '均衡', 'HIGH': '高',
 			'MOUSE SENSITIVITY': '鼠标灵敏度', 'VOLUME': '音量', 'SERVICE RECORD': '服役记录', 'LOCAL': '本地', 'BEST MATCH': '最佳对局', 'ROUNDS WON': '获胜回合', 'MOST KILLS': '最多击杀',
 			'RENDERER READY': '渲染器就绪', 'THREE.JS / PROCEDURAL ASSETS': 'THREE.JS / 程序化资源',
@@ -98,7 +98,7 @@
 			'Headshots do four times damage. Robot heads pop. Use cover.': '爆頭造成四倍傷害。機器人會被爆頭。利用掩體。',
 			'Defeated robots drop their weapon. Press': '被擊敗的機器人會掉落武器。按',
 			'on the field to pick it up.': '在場上拾取。',
-			'OPERATION SETUP': '行動設定', 'SET': '設定', 'BOT DIFFICULTY': '機器人難度', 'RECRUIT': '新兵', 'REGULAR': '普通', 'VETERAN': '老兵', 'ELITE': '菁英',
+			'OPERATION SETUP': '行動設定', 'SET': '設定', 'BOT DIFFICULTY': '機器人難度', 'RECRUIT': '新兵', 'REGULAR': '普通', 'VETERAN': '老兵', 'ELITE': '菁英', 'ACE': '王牌',
 			'SQUAD SIZE': '小隊規模', 'AUTO': '自動', 'GRAPHICS': '畫面', 'LOW': '低', 'BALANCED': '均衡', 'HIGH': '高',
 			'MOUSE SENSITIVITY': '滑鼠靈敏度', 'VOLUME': '音量', 'SERVICE RECORD': '服役記錄', 'LOCAL': '本機', 'BEST MATCH': '最佳對局', 'ROUNDS WON': '獲勝回合', 'MOST KILLS': '最多擊殺',
 			'RENDERER READY': '渲染器就緒', 'THREE.JS / PROCEDURAL ASSETS': 'THREE.JS / 程序化資源',
@@ -169,7 +169,7 @@
 			'Headshots do four times damage. Robot heads pop. Use cover.': 'ヘッドショットは4倍ダメージ。ロボットの頭は吹き飛ぶ。掩体を使え。',
 			'Defeated robots drop their weapon. Press': '倒したロボットは武器を落とす。フィールドで',
 			'on the field to pick it up.': '拾う。',
-			'OPERATION SETUP': '作戦設定', 'SET': '設定', 'BOT DIFFICULTY': 'ボット難易度', 'RECRUIT': '新兵', 'REGULAR': '一般', 'VETERAN': 'ベテラン', 'ELITE': 'エリート',
+			'OPERATION SETUP': '作戦設定', 'SET': '設定', 'BOT DIFFICULTY': 'ボット難易度', 'RECRUIT': '新兵', 'REGULAR': '一般', 'VETERAN': 'ベテラン', 'ELITE': 'エリート', 'ACE': 'エース',
 			'SQUAD SIZE': '分隊規模', 'AUTO': '自動', 'GRAPHICS': 'グラフィック', 'LOW': '低', 'BALANCED': 'バランス', 'HIGH': '高',
 			'MOUSE SENSITIVITY': 'マウス感度', 'VOLUME': '音量', 'SERVICE RECORD': '戦績', 'LOCAL': 'ローカル', 'BEST MATCH': 'ベストマッチ', 'ROUNDS WON': '勝利ラウンド', 'MOST KILLS': '最多キル',
 			'RENDERER READY': 'レンダラー準備完了', 'THREE.JS / PROCEDURAL ASSETS': 'THREE.JS / プロシージャル素材',
@@ -240,7 +240,7 @@
 			'Headshots do four times damage. Robot heads pop. Use cover.': '헤드샷은 4배 피해. 로봇 머리가 터진다. 엄폐물을 활용하세요.',
 			'Defeated robots drop their weapon. Press': '쓰러진 로봇은 무기를 떨어뜨립니다. 필드에서',
 			'on the field to pick it up.': '주우세요.',
-			'OPERATION SETUP': '작전 설정', 'SET': '설정', 'BOT DIFFICULTY': '봇 난이도', 'RECRUIT': '신병', 'REGULAR': '일반', 'VETERAN': '베테랑', 'ELITE': '엘리트',
+			'OPERATION SETUP': '작전 설정', 'SET': '설정', 'BOT DIFFICULTY': '봇 난이도', 'RECRUIT': '신병', 'REGULAR': '일반', 'VETERAN': '베테랑', 'ELITE': '엘리트', 'ACE': '에이스',
 			'SQUAD SIZE': '분대 규모', 'AUTO': '자동', 'GRAPHICS': '그래픽', 'LOW': '낮음', 'BALANCED': '균형', 'HIGH': '높음',
 			'MOUSE SENSITIVITY': '마우스 감도', 'VOLUME': '음량', 'SERVICE RECORD': '전적', 'LOCAL': '로컬', 'BEST MATCH': '최고 경기', 'ROUNDS WON': '승리 라운드', 'MOST KILLS': '최다 킬',
 			'RENDERER READY': '렌더러 준비 완료', 'THREE.JS / PROCEDURAL ASSETS': 'THREE.JS / 절차적 에셋',
@@ -413,7 +413,7 @@
 		'CHOOSE YOUR SIDE': '选择你的阵营', 'OPERATION DEPLOYMENT': '行动部署', 'SIDE SELECT': '阵营选择',
 		'HOLD A / B · DEFUSE THE C4': '守住 A / B · 拆除 C4', 'TAKE A / B · PLANT THE C4': '进攻 A / B · 安放 C4',
 		'You spawn at CT spawn with four CT robots.': '你与四名 CT 机器人一起在 CT 出生点出生。',
-		'You carry the C4 with four T robots. Hold E at a site to plant.': '你与四名 T 机器人携带 C4。在包点按住 E 安放。',
+		'The C4 is randomly given to you or one of the four T robots each round. Hold E at a site to plant when you have it.': 'C4 每回合随机分配给你或四名 T 机器人之一。拿到后到包点按住 E 安放。',
 		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2，5v5 拆弹模式。你与四名机器人队友加入同一阵营。选择 CT 守点拆弹，或选择 T 进攻安放 C4。',
 		'BACK TO MENU': '返回主菜单', 'FIRST-PERSON SPECTATING': '第一人称观战', 'NEXT ROBOT': '切换机器人',
 		'ALLIES ALIVE': '队友存活', 'C4 CARRIER': 'C4 携带者', 'HOLD E TO PLANT': '按住 E 安放', 'HOLD USE TO PLANT': '按住使用键安放',
@@ -427,14 +427,14 @@
 		'While dead: switch spectated robot': '阵亡后：切换观战机器人',
 		'As T: hold at a site to plant the C4': '作为 T：在包点按住以安放 C4',
 		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '拾取掉落武器 / 按住拆弹（CT）或安放（T）',
-		'T ALIVE': 'T 存活', 'ALLY ROTATING': '队友转点支援', 'PLANT C4': '安放 C4',
+		'T ALIVE': 'T 存活', 'ALLY ROTATING': '队友转点支援', 'PLANT C4': '安放 C4', 'PICK UP C4': '拾取 C4', 'SUPPORT C4': '支援 C4',
 		'ALLY ROBOT SKILL': '队友机器人能力', 'ENEMY ROBOT SKILL': '敌人机器人能力'
 	});
 	Object.assign(MESSAGES['zh-TW'], {
 		'CHOOSE YOUR SIDE': '選擇你的陣營', 'OPERATION DEPLOYMENT': '行動部署', 'SIDE SELECT': '陣營選擇',
 		'HOLD A / B · DEFUSE THE C4': '守住 A / B · 拆除 C4', 'TAKE A / B · PLANT THE C4': '進攻 A / B · 安放 C4',
 		'You spawn at CT spawn with four CT robots.': '你與四名 CT 機器人一起在 CT 出生點出生。',
-		'You carry the C4 with four T robots. Hold E at a site to plant.': '你與四名 T 機器人攜帶 C4。在包點按住 E 安放。',
+		'The C4 is randomly given to you or one of the four T robots each round. Hold E at a site to plant when you have it.': 'C4 每回合隨機分配給你或四名 T 機器人之一。拿到後到包點按住 E 安放。',
 		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2，5v5 拆彈模式。你與四名機器人隊友加入同一陣營。選擇 CT 守點拆彈，或選擇 T 進攻安放 C4。',
 		'BACK TO MENU': '返回主選單', 'FIRST-PERSON SPECTATING': '第一人稱觀戰', 'NEXT ROBOT': '切換機器人',
 		'ALLIES ALIVE': '隊友存活', 'C4 CARRIER': 'C4 攜帶者', 'HOLD E TO PLANT': '按住 E 安放', 'HOLD USE TO PLANT': '按住使用鍵安放',
@@ -448,14 +448,14 @@
 		'While dead: switch spectated robot': '陣亡後：切換觀戰機器人',
 		'As T: hold at a site to plant the C4': '作為 T：在包點按住以安放 C4',
 		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '拾取掉落武器 / 按住拆彈（CT）或安放（T）',
-		'T ALIVE': 'T 存活', 'ALLY ROTATING': '隊友轉點支援', 'PLANT C4': '安放 C4',
+		'T ALIVE': 'T 存活', 'ALLY ROTATING': '隊友轉點支援', 'PLANT C4': '安放 C4', 'PICK UP C4': '拾取 C4', 'SUPPORT C4': '支援 C4',
 		'ALLY ROBOT SKILL': '隊友機器人能力', 'ENEMY ROBOT SKILL': '敵人機器人能力'
 	});
 	Object.assign(MESSAGES['ja'], {
 		'CHOOSE YOUR SIDE': '陣営を選択', 'OPERATION DEPLOYMENT': '作戦展開', 'SIDE SELECT': '陣営選択',
 		'HOLD A / B · DEFUSE THE C4': 'A / B を防衛 · C4 を解除', 'TAKE A / B · PLANT THE C4': 'A / B を攻撃 · C4 を設置',
 		'You spawn at CT spawn with four CT robots.': 'CT スポーンで CT ロボット4体と共に出撃します。',
-		'You carry the C4 with four T robots. Hold E at a site to plant.': 'T ロボット4体と C4 を運びます。サイトで E を長押しして設置。',
+		'The C4 is randomly given to you or one of the four T robots each round. Hold E at a site to plant when you have it.': 'C4 は毎ラウンド、あなたか T ロボット4体のいずれかにランダムで渡されます。持っている時にサイトで E 長押しで設置。',
 		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2、5v5 のボム解除。ロボット4体と共にどちらかの陣営へ。CT はサイトを守って解除、T はサイトを攻めて C4 を設置します。',
 		'BACK TO MENU': 'メニューへ戻る', 'FIRST-PERSON SPECTATING': '一人称観戦', 'NEXT ROBOT': 'ロボット切替',
 		'ALLIES ALIVE': '味方生存', 'C4 CARRIER': 'C4 所持者', 'HOLD E TO PLANT': 'E を長押しで設置', 'HOLD USE TO PLANT': '使用キー長押しで設置',
@@ -469,14 +469,14 @@
 		'While dead: switch spectated robot': '死亡時：観戦ロボットを切替',
 		'As T: hold at a site to plant the C4': 'T 側：サイトで長押しして C4 を設置',
 		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '武器を拾う / 長押しで解除（CT）または設置（T）',
-		'T ALIVE': 'T 生存', 'ALLY ROTATING': '味方ローテート', 'PLANT C4': 'C4 設置',
+		'T ALIVE': 'T 生存', 'ALLY ROTATING': '味方ローテート', 'PLANT C4': 'C4 設置', 'PICK UP C4': 'C4 拾う', 'SUPPORT C4': 'C4 支援',
 		'ALLY ROBOT SKILL': '味方ロボット能力', 'ENEMY ROBOT SKILL': '敵ロボット能力'
 	});
 	Object.assign(MESSAGES['ko'], {
 		'CHOOSE YOUR SIDE': '진영 선택', 'OPERATION DEPLOYMENT': '작전 전개', 'SIDE SELECT': '진영 선택',
 		'HOLD A / B · DEFUSE THE C4': 'A / B 사수 · C4 해체', 'TAKE A / B · PLANT THE C4': 'A / B 공격 · C4 설치',
 		'You spawn at CT spawn with four CT robots.': 'CT 스폰에서 CT 로봇 4명과 함께 시작합니다.',
-		'You carry the C4 with four T robots. Hold E at a site to plant.': 'T 로봇 4명과 C4를 운반합니다. 사이트에서 E를 길게 눌러 설치하세요.',
+		'The C4 is randomly given to you or one of the four T robots each round. Hold E at a site to plant when you have it.': 'C4는 매 라운드 당신 또는 T 로봇 4명 중 한 명에게 무작위로 주어집니다. 가지고 있을 때 사이트에서 E를 길게 눌러 설치하세요.',
 		'Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.': 'Dust 2, 5v5 폭탄 해체. 로봇 4명과 한 진영에 합류합니다. CT는 사이트를 지키고 해체하며, T는 사이트를 공격해 C4를 설치합니다.',
 		'BACK TO MENU': '메뉴로', 'FIRST-PERSON SPECTATING': '1인칭 관전', 'NEXT ROBOT': '로봇 전환',
 		'ALLIES ALIVE': '아군 생존', 'C4 CARRIER': 'C4 소지자', 'HOLD E TO PLANT': 'E를 길게 눌러 설치', 'HOLD USE TO PLANT': '사용 키를 길게 눌러 설치',
@@ -490,7 +490,7 @@
 		'While dead: switch spectated robot': '사망 시: 관전 로봇 전환',
 		'As T: hold at a site to plant the C4': 'T 진영: 사이트에서 길게 눌러 C4 설치',
 		'Pick up dropped weapon / hold to defuse (CT) or plant (T)': '무기 줍기 / 길게 눌러 해체(CT) 또는 설치(T)',
-		'T ALIVE': 'T 생존', 'ALLY ROTATING': '아군 로테이션', 'PLANT C4': 'C4 설치',
+		'T ALIVE': 'T 생존', 'ALLY ROTATING': '아군 로테이션', 'PLANT C4': 'C4 설치', 'PICK UP C4': 'C4 줍기', 'SUPPORT C4': 'C4 지원',
 		'ALLY ROBOT SKILL': '아군 로봇 능력', 'ENEMY ROBOT SKILL': '적 로봇 능력'
 	});
 

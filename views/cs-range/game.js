@@ -40,7 +40,7 @@
 	}
 	function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 	function emptyAIMemory() {
-		return { version: 1, routes: {}, groupBias: { CT: 0.15, T: 0.15 }, teamFear: { CT: 0, T: 0 }, deaths: [] };
+		return { version: 1, routes: {}, groupBias: { CT: 0.15, T: 0.15 }, teamFear: { CT: 0, T: 0 }, behavior: { CT: null, T: null }, deaths: [] };
 	}
 
 	RangeGame.prototype.normalizeAIMemory = function (raw) {
@@ -54,6 +54,10 @@
 		if (m.teamFear && typeof m.teamFear === 'object') {
 			out.teamFear.CT = clamp(Number(m.teamFear.CT) || 0, 0, 1);
 			out.teamFear.T = clamp(Number(m.teamFear.T) || 0, 0, 1);
+		}
+		if (m.behavior && typeof m.behavior === 'object') {
+			out.behavior.CT = m.behavior.CT || null;
+			out.behavior.T = m.behavior.T || null;
 		}
 		if (Array.isArray(m.deaths)) out.deaths = m.deaths.slice(-40);
 		return out;
@@ -210,6 +214,27 @@
 		this.saveAIMemory();
 	};
 
+	RangeGame.prototype.botAutoReload = function (bot) {
+		if (!bot || bot.reloading || bot.planting || this.criticalRole(bot)) return false;
+		if (bot.hasBomb && this.bomb && this.bomb.state === 'carried') return false;
+		if (this.bomb && this.bomb.state === 'dropped') {
+			var rank = this.bombRecoveryRank(bot);
+			if (rank >= 0 && rank < 3) return false;
+		}
+		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
+		if (!rec || rec.melee) return false;
+		if ((bot.reserve || 0) <= 0) return false;
+		var ratio = bot.ammo / Math.max(1, bot.magSize);
+		var threshold = (bot.genome && bot.genome.reloadThreshold) || 0.24;
+		if (ratio > threshold) return false;
+		var enemyPlayer = this.player.alive && this.playerTeam !== bot.team;
+		var tx = bot.lastSeen ? bot.lastSeen.x : (enemyPlayer ? this.player.x : bot.x);
+		var tz = bot.lastSeen ? bot.lastSeen.z : (enemyPlayer ? this.player.z : bot.z);
+		this.startBotReload(bot, tx, 1.4, tz);
+		bot.mode = 'reload';
+		return true;
+	};
+
 	RangeGame.prototype.botReplanObjective = function (bot, dt) {
 		if (!bot.replanUntil) return false;
 		if (this.now >= bot.replanUntil) { bot.replanUntil = 0; bot.replanPoint = null; return false; }
@@ -226,12 +251,37 @@
 	RangeGame.prototype.botPanicObjective = function (bot, dt) {
 		var fear = this.teamFearValue(bot.team);
 		var panicking = fear >= 0.4 || (this.panicUntil && this.now < (this.panicUntil[bot.team] || 0));
-		if (!panicking) return false;
-		if (bot.planting || this.criticalRole(bot) || bot.hasBomb) return false;
-		if (this.bomb && (this.bomb.state === 'planted' || this.bomb.state === 'planting')) return false;
+		if (!panicking) {
+			bot.panicUntil = 0;
+			bot.panicRally = null;
+			return false;
+		}
+		if (bot.planting || this.criticalRole(bot) || bot.hasBomb) {
+			bot.panicUntil = 0;
+			return false;
+		}
+		if (this.bomb && (this.bomb.state === 'planted' || this.bomb.state === 'planting')) {
+			bot.panicUntil = 0;
+			return false;
+		}
 		if (this.bomb && this.bomb.state === 'dropped') {
 			var rank = this.bombRecoveryRank(bot);
-			if (rank >= 0 && rank < 3) return false;
+			if (rank >= 0 && rank < 3) { bot.panicUntil = 0; return false; }
+		}
+		/* Panic is a short, intermittent rally — not a permanent override. The
+		   old always-on version made pairs of robots walk into each other's
+		   personal space and then freeze there until the round ended. */
+		if (!bot.panicUntil) {
+			if (this.now < (bot.panicNextAt || 0)) return false;
+			bot.panicUntil = this.now + C.rand(1200, 2200);
+			bot.panicNextAt = this.now + C.rand(6500, 9500);
+			bot.panicRally = null;
+			bot.panicArrivedAt = 0;
+		}
+		if (this.now >= bot.panicUntil) {
+			bot.panicUntil = 0;
+			bot.panicRally = null;
+			return false;
 		}
 		var nearest = null, nd = 1e9;
 		for (var i = 0; i < this.bots.length; i++) {
@@ -242,17 +292,42 @@
 		}
 		if (this.player.alive && this.playerTeam === bot.team) {
 			var pd = Math.hypot(this.player.x - bot.x, this.player.z - bot.z);
-			if (pd < nd) { nd = pd; nearest = { x: this.player.x, z: this.player.z }; }
+			if (pd < nd) { nd = pd; nearest = { x: this.player.x, z: this.player.z, player: true }; }
 		}
 		if (!nearest) return false;
-		if (nd > 5.4) this.botPathTo(bot, nearest.x, nearest.z, bot.speed * 0.92, dt);
-		else {
+		if (!bot.panicRally) {
+			/* Rally just beside the squad mate instead of walking into them:
+			   the lateral offset keeps two panicking robots from staring at
+			   each other from 1.2 m for the rest of the round. */
+			var nx = (nearest.x - bot.x) / Math.max(0.01, nd);
+			var nz = (nearest.z - bot.z) / Math.max(0.01, nd);
+			var side = bot.id % 2 ? 1 : -1;
+			var rx = nearest.x - nx * 2.6 + (-nz) * side * 2.2;
+			var rz = nearest.z - nz * 2.6 + nx * side * 2.2;
+			bot.panicRally = this.snapFreePoint(rx, rz, 0.46);
+			bot.panicRally.lx = nearest.x;
+			bot.panicRally.lz = nearest.z;
+		}
+		var rally = bot.panicRally;
+		var rd = Math.hypot(rally.x - bot.x, rally.z - bot.z);
+		var alert = this.teamAlerts && this.teamAlerts[bot.team];
+		if (rd > 1.0) {
+			this.botPathTo(bot, rally.x, rally.z, bot.speed * 0.9, dt);
+		} else {
 			bot.moveX = 0;
 			bot.moveZ = 0;
-			var alert = this.teamAlerts && this.teamAlerts[bot.team];
-			if (alert && this.now - alert.seenAt < 8000) bot.face = { x: alert.x, z: alert.z };
-			else bot.face = { x: nearest.x, z: nearest.z };
+			if (this.now - (bot.panicArrivedAt || 0) > 900) {
+				bot.panicUntil = Math.min(bot.panicUntil, this.now);
+			}
+			/* Face the threat (or the map), never lock eyes with the ally. */
+			if (alert && this.now - alert.seenAt < 8000) {
+				bot.face = { x: alert.x, z: alert.z };
+			} else {
+				var away = this.snapFreePoint(bot.x + (bot.x - nearest.x) * 3 + 0.01, bot.z + (bot.z - nearest.z) * 3 + 0.01, 0.46);
+				bot.face = { x: away.x, z: away.z };
+			}
 		}
+		if (rd <= 1.0 && !bot.panicArrivedAt) bot.panicArrivedAt = this.now;
 		bot.mode = 'fear';
 		return true;
 	};
@@ -395,6 +470,84 @@
 		this.saveAIMemory();
 	};
 
+
+	/* ======================================================================
+	   early-death revenge: a robot that was cut down in the opening seconds
+	   remembers the killer's position; the next round it may push that spot,
+	   but only after its side has actually earned a numerical advantage.
+	   ====================================================================== */
+	RangeGame.prototype.recordEarlyRevenge = function (team, victim, killer, kind) {
+		if (!this.round || this.round.phase !== 'live' || !killer) return;
+		if (!this.roundStartAt) return;
+		var elapsed = (this.now - this.roundStartAt) / 1000;
+		if (elapsed > 16) return;
+		var kx = killer === this.player || killer === 'player' || !killer.x ? this.player.x : killer.x;
+		var kz = killer === this.player || killer === 'player' || !killer.z ? this.player.z : killer.z;
+		var killerName = (killer && killer.name) ? killer.name : 'YOU';
+		var site = (this.nearestSite(kx, kz) || this.nearestSite(victim.x, victim.z) || {}).id || 'A';
+		var marker = {
+			round: this.match ? this.match.round : 0,
+			availableFrom: (this.match ? this.match.round : 0) + 1,
+			x: kx, z: kz, site: site,
+			killerName: killerName,
+			killerTeam: (killer && killer.team) ? killer.team : this.playerTeam,
+			reason: kind === 'player' ? 'player-early-death' : 'early-death'
+		};
+		/* The victim itself always wants the run-back; nearby squad mates only
+		   sometimes carry the grudge into the next round. */
+		if (victim && victim.slotIndex != null) {
+			var ownSlot = this.botSlot(team, victim.slotIndex);
+			ownSlot.revenge = Object.assign({}, marker, { chance: 1 });
+		}
+		var teamBots = this.teamBots(team, true);
+		for (var i = 0; i < teamBots.length; i++) {
+			var b = teamBots[i];
+			if (victim && b === victim) continue;
+			if (Math.random() > (kind === 'player' ? 0.6 : 0.35)) continue;
+			var slot = this.botSlot(team, b.slotIndex || 0);
+			slot.revenge = Object.assign({}, marker, { chance: 0.7 });
+		}
+	};
+
+	RangeGame.prototype.botRevenge = function (bot, dt) {
+		var rev = bot.revenge;
+		if (!rev) return false;
+		if (this.match && this.match.round > rev.availableFrom + 1) { bot.revenge = null; return false; }
+		if (this.teamFearValue(bot.team) > 0.72) return false;
+		/* The request is explicit: revenge is only attempted from a position of
+		   numerical strength, never as a tilt play. */
+		if (!this.teamAdvantage(bot.team)) return false;
+		if (bot.planting || bot.hasBomb || this.criticalRole(bot)) return false;
+		if (this.bomb && (this.bomb.state === 'planted' || this.bomb.state === 'planting' || this.bomb.state === 'dropped')) return false;
+		var point = this.snapFreePoint(rev.x, rev.z, 0.46);
+		if (!point || !this.world.walkableAt(point.x, point.z)) point = null;
+		if (!point) {
+			var site = this.siteById(rev.site);
+			if (!site) { bot.revenge = null; return false; }
+			point = this.snapFreePoint(site.x, site.z, 0.46);
+		}
+		var d = Math.hypot(point.x - bot.x, point.z - bot.z);
+		bot.mode = 'revenge';
+		if (d > 2.6) {
+			if (this.now - (bot.revengeStartedAt || 0) > 24000) { bot.revenge = null; return false; }
+			if (!bot.revengeStartedAt) bot.revengeStartedAt = this.now;
+			this.botPathTo(bot, point.x, point.z, bot.speed * 1.08, dt);
+			return true;
+		}
+		bot.moveX = 0;
+		bot.moveZ = 0;
+		if (!bot.revengeArrivedAt) bot.revengeArrivedAt = this.now;
+		var scan = Math.sin(this.now * 0.0013 + bot.scanPhase) * 2.8;
+		bot.face = { x: point.x + scan, z: point.z + scan };
+		if (this.now - bot.revengeArrivedAt > 2600) {
+			bot.revenge = null;
+			bot.revengeStartedAt = 0;
+			bot.revengeArrivedAt = 0;
+			return false;
+		}
+		return true;
+	};
+
 	RangeGame.prototype.aiRecordRound = function (winner) {
 		if (!this.aiMemory) return;
 		var loser = winner === 'CT' ? 'T' : 'CT';
@@ -413,6 +566,8 @@
 			}
 		}
 		this.aiMemory.groupBias[winner] = clamp((this.aiMemory.groupBias[winner] || 0) - 0.02, 0, 1);
+		this.evolveBehavior('CT', winner === 'CT');
+		this.evolveBehavior('T', winner === 'T');
 		this.saveAIMemory();
 	};
 
@@ -453,7 +608,9 @@
 	function easeOut(t) { t = clamp(t, 0, 1); return 1 - Math.pow(1 - t, 3); }
 
 	var WALL_PENETRATION_MAX = 0.5;
-	var WALL_PENETRATION_LAYERS = 2;
+	/* Only one wall may be punched. A second layer always stops the round, so
+	   no sightline can carve through the whole map from one spawn to the other. */
+	var WALL_PENETRATION_LAYERS = 1;
 	var WALL_PENETRATION_DAMAGE = 0.68;
 
 	/* ======================================================================
@@ -569,10 +726,22 @@
 		this.semiQueued = false;
 		this.currentWeapon = 'usp';
 		this.currentSlot = 'secondary';
-		this.loadout = { primary: null, secondary: 'usp', melee: 'knife' };
+		this.loadout = { primary: null, secondary: 'usp', melee: 'knife', equipment: null };
 		this.ammo = {};
+		this.grenades = {};
+		this.selectedGrenade = null;
+		this.grenadeIndex = 0;
+		this.thrown = [];
+		this.smokes = [];
+		this.fires = [];
+		this.decoys = [];
+		this.playerFlashUntil = 0;
+		this.grenadeThrowAt = 0;
 		this.scoped = false;
 		this.scopeT = 0;
+		this.sniperRescope = false;
+		this.sniperScopeAt = 0;
+		this.sniperWeapon = null;
 		this.flashUntil = 0;
 		this.resultTimer = 0;
 		this.resultReward = 0;
@@ -711,6 +880,8 @@
 			pickupHint: $(h, 'pickup-hint'),
 			debug: $(h, 'debug'),
 			flash: $(h, 'flash'),
+			blind: $(h, 'blind'),
+			utils: $(h, 'utils'),
 			damage: $(h, 'damage'),
 			toast: $(h, 'toast'),
 			touch: $(h, 'touch'),
@@ -787,6 +958,7 @@
 		e.matchExit = e.matchExit || h.querySelector('[data-csr-exit-match]');
 		e.pauseExit = e.pauseExit || h.querySelector('[data-csr-exit]');
 		e.touchScope = h.querySelector('[data-csr-touch-scope]');
+		e.touchGrenade = h.querySelector('[data-csr-touch-grenade]');
 		return e;
 	};
 
@@ -1134,21 +1306,28 @@
 			m.group.visible = false;
 			/* Camera-space rig: the gun sits low and right, yawed toward the
 			   centre so the side of the receiver and the muzzle are readable. */
-			var rig = {
-				usp:    { s: 0.52, x: 0.24, y: -0.24, z: -0.52, ry: 0.24, rx: 0.04, rz: 0.02 },
-				p250:   { s: 0.52, x: 0.24, y: -0.24, z: -0.52, ry: 0.24, rx: 0.04, rz: 0.02 },
-				deagle: { s: 0.52, x: 0.24, y: -0.24, z: -0.52, ry: 0.23, rx: 0.04, rz: 0.02 },
-				ak47:   { s: 0.52, x: 0.25, y: -0.25, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				m4a4:   { s: 0.52, x: 0.25, y: -0.25, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				mp9:    { s: 0.54, x: 0.24, y: -0.24, z: -0.48, ry: 0.22, rx: 0.03, rz: 0.01 },
-				ump45:  { s: 0.52, x: 0.25, y: -0.25, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				galil:  { s: 0.52, x: 0.25, y: -0.25, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				sg553:  { s: 0.50, x: 0.25, y: -0.24, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				ssg08:  { s: 0.49, x: 0.25, y: -0.24, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				nova:   { s: 0.51, x: 0.25, y: -0.25, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				awp:    { s: 0.49, x: 0.25, y: -0.24, z: -0.50, ry: 0.22, rx: 0.03, rz: 0.01 },
-				knife:  { s: 0.55, x: 0.23, y: -0.23, z: -0.48, ry: 0.24, rx: 0.04, rz: 0.04 }
-			}[id];
+			/* Camera-space rigs keep the weapon readable without filling the
+			   lower-right quadrant. The models are detailed enough that they can
+			   sit a little further away than the old blockout guns. */
+			var pistolRig = { s: 0.35, x: 0.18, y: -0.23, z: -0.62, ry: 0.11, rx: 0.05, rz: 0.012 };
+			var longRig = { s: 0.29, x: 0.19, y: -0.27, z: -0.65, ry: 0.09, rx: 0.06, rz: 0.008 };
+			var sniperRig = { s: 0.27, x: 0.19, y: -0.26, z: -0.67, ry: 0.09, rx: 0.06, rz: 0.008 };
+			var smgRig = { s: 0.32, x: 0.18, y: -0.25, z: -0.63, ry: 0.1, rx: 0.05, rz: 0.008 };
+			var mgRig = { s: 0.28, x: 0.19, y: -0.27, z: -0.66, ry: 0.09, rx: 0.06, rz: 0.008 };
+			var grenadeRig = { s: 0.4, x: 0.17, y: -0.22, z: -0.58, ry: 0.16, rx: 0.06, rz: 0.025 };
+			var rigMap = {
+				usp: pistolRig, glock: pistolRig, p2000: pistolRig, p250: pistolRig,
+				deagle: pistolRig, r8: pistolRig, fiveseven: pistolRig, tec9: pistolRig,
+				cz75: pistolRig, dualies: { s: 0.36, x: 0.18, y: -0.23, z: -0.62, ry: 0.1, rx: 0.05, rz: 0.012 },
+				mac10: smgRig, mp9: smgRig, mp7: smgRig, mp5sd: smgRig, ump45: smgRig, p90: smgRig, bizon: smgRig,
+				ak47: longRig, m4a4: longRig, m4a1s: longRig, galil: longRig, famas: longRig, sg553: longRig, aug: longRig,
+				awp: sniperRig, ssg08: sniperRig, scar20: sniperRig, g3sg1: sniperRig,
+				nova: longRig, xm1014: longRig, mag7: smgRig, sawedoff: smgRig,
+				m249: mgRig, negev: mgRig, zeus: pistolRig, knife: { s: 0.38, x: 0.17, y: -0.22, z: -0.58, ry: 0.16, rx: 0.05, rz: 0.03 },
+				he: grenadeRig, flash: grenadeRig, smoke: grenadeRig, molotov: grenadeRig, decoy: grenadeRig
+			};
+			var isUtility = !!(C.UTILITIES && C.UTILITIES[id]);
+			var rig = rigMap[id] || (isUtility ? grenadeRig : longRig);
 			if (rig) {
 				m.group.scale.setScalar(rig.s);
 				m.group.position.set(rig.x, rig.y, rig.z);
@@ -1388,31 +1567,17 @@
 			ctx.restore();
 		}
 
-		/* teammates, then hostiles (dim unless a CT has spotted them) */
+		/* teammates only — enemy positions are never revealed on the radar */
 		for (var i = 0; i < this.bots.length; i++) {
 			var b = this.bots[i];
 			if (!b || (!b.alive && b.deathT > 0.8)) continue;
+			if (b.team !== this.playerTeam) continue;
 			var bx = ox + (b.x + B) * s;
 			var by = oy + (b.z + B) * s;
-			if (b.team === this.playerTeam) {
-				ctx.fillStyle = b.alive ? 'rgba(104,178,255,0.95)' : 'rgba(104,178,255,0.25)';
-				ctx.beginPath();
-				ctx.arc(bx, by, b.alive ? 3.1 : 2, 0, Math.PI * 2);
-				ctx.fill();
-			} else {
-				var spotted = b.spottedUntil > now;
-				ctx.fillStyle = b.alive ? (spotted ? 'rgba(224,88,62,0.98)' : 'rgba(214,110,90,0.45)') : 'rgba(224,88,62,0.2)';
-				ctx.beginPath();
-				ctx.arc(bx, by, b.alive ? (spotted ? 3.4 : 2.4) : 1.8, 0, Math.PI * 2);
-				ctx.fill();
-				if (b.alive && spotted) {
-					ctx.strokeStyle = 'rgba(224,88,62,0.4)';
-					ctx.lineWidth = 1;
-					ctx.beginPath();
-					ctx.arc(bx, by, 5.6, 0, Math.PI * 2);
-					ctx.stroke();
-				}
-			}
+			ctx.fillStyle = b.alive ? 'rgba(104,178,255,0.95)' : 'rgba(104,178,255,0.25)';
+			ctx.beginPath();
+			ctx.arc(bx, by, b.alive ? 3.1 : 2, 0, Math.PI * 2);
+			ctx.fill();
 		}
 
 		/* the objective */
@@ -1492,8 +1657,12 @@
 			shots: 0, hits: 0, money: 800, started: 0, lossStreak: 0
 		};
 		this.roundHistory = [];
-		this.loadout = { primary: null, secondary: 'usp', melee: 'knife' };
+		this.loadout = { primary: null, secondary: this.defaultSecondary(), melee: 'knife', equipment: null };
 		this.ammo = {};
+		this.clearUtilities();
+		this.grenades = {};
+		this.selectedGrenade = null;
+		this.playerFlashUntil = 0;
 		Object.keys(C.WEAPONS).forEach(function (id) { this.ammo[id] = { mag: C.WEAPONS[id].mag, reserve: C.WEAPONS[id].reserve }; }, this);
 		this.player.health = 100;
 		this.player.armor = 0;
@@ -1506,7 +1675,8 @@
 		this.bomb = null;
 		this.hideSpectate();
 		this.matchStartedAt = this.now;
-		this.equipWeapon('usp', true);
+		this.initBotEconomy();
+		this.equipWeapon(this.defaultSecondary(), true);
 		this.updateScoreHUD();
 	};
 
@@ -1540,6 +1710,7 @@
 		this.setPracticeChrome(false);
 		this.clearTargets();
 		this.clearChickens();
+		this.clearUtilities();
 		this.hideDeathCam();
 		this.hideSpectate();
 		if (this.el.hud) this.el.hud.classList.remove('is-dead', 'is-spectating');
@@ -1556,6 +1727,7 @@
 		this.clearDrops();
 		this.clearBomb();
 		this.clearFx();
+		this.clearUtilities();
 		this.bomb = null;
 		this.defuseKit = false;
 		this.playerDefusing = false;
@@ -1589,8 +1761,11 @@
 		this.round = { phase: 'live', timer: 9999, freezeLeft: 0, ended: false };
 		this.roundStats = { kills: 0, hs: 0, shots: 0, hits: 0 };
 		this.practiceStats = { score: 0, hits: 0, targets: 0, centers: 0 };
-		this.loadout = { primary: null, secondary: 'usp', melee: 'knife' };
+		this.loadout = { primary: null, secondary: 'usp', melee: 'knife', equipment: null };
 		this.ammo = {};
+		this.grenades = {};
+		this.selectedGrenade = null;
+		this.playerFlashUntil = 0;
 		Object.keys(C.WEAPONS).forEach(function (id) {
 			this.ammo[id] = { mag: C.WEAPONS[id].mag, reserve: 999 };
 		}, this);
@@ -1605,7 +1780,7 @@
 		this.deathInfo = null;
 		this.deathTimer = 0;
 		this.recoilPitch = 0; this.recoilYaw = 0; this.shake = 0;
-		this.reloading = false; this.scoped = false; this.scopeT = 0;
+		this.reloading = false; this.scoped = false; this.scopeT = 0; this.sniperRescope = false; this.sniperScopeAt = 0; this.sniperWeapon = null;
 		this.input.fire = false; this.semiQueued = false;
 		this.keys.ctrl = false;
 		this.currentWeapon = 'usp';
@@ -1637,6 +1812,7 @@
 		this.updateChickens(dt);
 		this.updateTargets(dt);
 		this.updateFx(dt);
+		this.updateUtilities(dt);
 		this.updateRoundTimer();
 		this.updateVitalsHUD();
 		this.updateAmmoHUD();
@@ -1683,6 +1859,141 @@
 		var allies = this.aliveTeamCount(team);
 		var enemies = this.aliveTeamCount(enemyTeam);
 		return enemies > 0 && allies > enemies && (enemies <= 2 || allies - enemies >= 2);
+	};
+
+	/* ======================================================================
+	   robot economy: every robot owns a wallet, a saved loadout and a buy plan
+	   ====================================================================== */
+	RangeGame.prototype.initBotEconomy = function () {
+		this.botEconomy = { CT: [], T: [] };
+		this.teamLossStreak = { CT: 0, T: 0 };
+		['CT', 'T'].forEach(function (team) {
+			for (var i = 0; i < 5; i++) {
+				this.botEconomy[team].push({
+					money: 800, loadout: null, armor: 0, kit: false,
+					survived: false, revenge: null
+				});
+			}
+		}, this);
+	};
+
+	RangeGame.prototype.botSlot = function (team, index) {
+		if (!this.botEconomy) this.initBotEconomy();
+		var list = this.botEconomy[team] || (this.botEconomy[team] = []);
+		while (list.length <= index) {
+			list.push({ money: 800, loadout: null, armor: 0, kit: false, survived: false, revenge: null });
+		}
+		return list[index];
+	};
+
+	RangeGame.prototype.botAward = function (team, amount, index) {
+		if (!amount) return;
+		if (index == null) {
+			var list = this.botEconomy && this.botEconomy[team];
+			if (!list) return;
+			for (var i = 0; i < list.length; i++) list[i].money = clamp(list[i].money + amount, 0, 16000);
+		} else {
+			var slot = this.botSlot(team, index);
+			slot.money = clamp(slot.money + amount, 0, 16000);
+		}
+	};
+
+	RangeGame.prototype.botPriceOf = function (id) {
+		var def = C.WEAPONS[id];
+		if (def) return def.price || 0;
+		var util = C.UTILITIES && C.UTILITIES[id];
+		return util ? (util.price || 0) : 0;
+	};
+
+	RangeGame.prototype.botBuyLoadout = function (team, index, type) {
+		var slot = this.botSlot(team, index);
+		var money = clamp(slot.money || 800, 0, 16000);
+		var saved = slot.loadout;
+		var primary = null, secondary = team === 'CT' ? 'usp' : 'glock';
+		var armor = slot.armor || 0;
+		var kit = !!slot.kit;
+		var grenades = {};
+		var kept = !!(saved && slot.survived && saved.primary);
+		if (kept) {
+			primary = saved.primary;
+			secondary = saved.secondary || secondary;
+			grenades = Object.assign({}, saved.grenades || {});
+			/* refill only what the survivor did not already own */
+			if (armor < 100 && money >= 1000) { armor = 100; money -= 1000; }
+			if (team === 'CT' && !kit && money >= 400 && Math.random() < 0.4) { kit = true; money -= 400; }
+		} else {
+			armor = 0;
+			kit = false;
+			var sniperType = type && type.id === 'sniper';
+			if (sniperType && money >= 4750) {
+				primary = 'awp';
+				money -= 4750;
+			} else if (sniperType && money >= 1700) {
+				primary = 'ssg08';
+				money -= 1700;
+			} else if (type && type.id === 'heavy' && money >= 1700 && Math.random() < 0.2) {
+				primary = 'negev';
+				money -= 1700;
+			} else {
+				var rifles = team === 'CT'
+					? ['m4a4', 'm4a1s', 'aug', 'famas']
+					: ['ak47', 'sg553', 'galil'];
+				var affordable = rifles.filter(function (id) { return money >= this.botPriceOf(id); }, this);
+				if (affordable.length) {
+					primary = this.botEconomyPick(affordable, money);
+					money -= this.botPriceOf(primary);
+				} else {
+					var eco = team === 'CT'
+						? ['mp9', 'mp7', 'mp5sd', 'ump45', 'p90', 'bizon', 'xm1014', 'mag7', 'nova']
+						: ['mac10', 'mp7', 'mp5sd', 'ump45', 'p90', 'bizon', 'xm1014', 'sawedoff', 'nova'];
+					var ecoAffordable = eco.filter(function (id) { return money >= this.botPriceOf(id); }, this);
+					if (ecoAffordable.length) {
+						primary = this.botEconomyPick(ecoAffordable, money);
+						money -= this.botPriceOf(primary);
+					} else if (money >= 900 && Math.random() < 0.3) {
+						secondary = 'deagle';
+						money -= 700;
+					} else if (money >= 300) {
+						secondary = 'p250';
+						money -= 300;
+					}
+				}
+			}
+			if (armor < 100 && money >= 1000) { armor = 100; money -= 1000; }
+			if (team === 'CT' && !kit && money >= 400 && Math.random() < 0.35) { kit = true; money -= 400; }
+		}
+		/* utility buys: keep the total at four, flash capped at two */
+		var utilOrder = ['he', 'flash', 'smoke', 'molotov'];
+		var total = 0;
+		Object.keys(grenades).forEach(function (k) { total += grenades[k] || 0; });
+		for (var u = 0; u < utilOrder.length && total < 4; u++) {
+			var id = utilOrder[u];
+			var util = C.UTILITIES[id];
+			var uprice = util ? util.price : 0;
+			if (id === 'molotov' && team === 'CT') uprice = 500;
+			if (!util || money < uprice) continue;
+			var want = id === 'he' ? 0.5 : id === 'flash' ? 0.45 : id === 'smoke' ? 0.3 : 0.15;
+			if (Math.random() > want) continue;
+			if (id === 'flash' && (grenades.flash || 0) >= 2) continue;
+			grenades[id] = (grenades[id] || 0) + 1;
+			money -= uprice;
+			total++;
+		}
+		slot.money = clamp(money, 0, 16000);
+		slot.loadout = { primary: primary, secondary: secondary, grenades: grenades };
+		slot.armor = armor;
+		slot.kit = kit;
+		return { primary: primary, secondary: secondary, armor: armor, kit: kit, grenades: grenades, money: slot.money };
+	};
+
+	RangeGame.prototype.botEconomyPick = function (list, money) {
+		/* Prefer the strongest weapon the wallet can actually cover, with a
+		   little eco variety so bot squads are not five identical clones. */
+		var self = this;
+		var sorted = list.slice().sort(function (a, b) { return self.botPriceOf(b) - self.botPriceOf(a); });
+		var top = sorted.filter(function (id) { return self.botPriceOf(id) <= money; });
+		if (!top.length) return list[0];
+		return top[Math.floor(Math.random() * Math.min(top.length, 2))];
 	};
 
 	RangeGame.prototype.criticalRole = function (bot) {
@@ -1871,6 +2182,7 @@
 		this.clearDrops();
 		this.clearBomb();
 		this.clearFx();
+		this.clearUtilities();
 		this.clearChickens();
 		this.bomb = {
 			state: 'carried', carrier: null, planter: null, defuser: null,
@@ -1882,6 +2194,8 @@
 			phase: 'freeze', timer: 115, freezeLeft: 10.0,
 			ended: false
 		};
+		this.roundStartAt = this.now;
+		this.roundLiveAt = 0;
 		this.roundStats = { kills: 0, hs: 0, shots: 0, hits: 0 };
 		this.state = 'playing';
 		this.resultReward = 0;
@@ -1918,6 +2232,7 @@
 		p.eye = 1.62; p.eyeTarget = 1.62; p.height = 1.78;
 		this.recoilPitch = 0; this.recoilYaw = 0; this.shake = 0;
 		this.reloading = false; this.scoped = false; this.scopeT = 0;
+		this.sniperRescope = false; this.sniperScopeAt = 0; this.sniperWeapon = null;
 		this.input.fire = false; this.input.crouch = false; this.input.defuse = false; this.semiQueued = false;
 		this.playerHasBomb = false;
 		this.playerPlanting = false;
@@ -1928,18 +2243,25 @@
 		if (this.el.hud) this.el.hud.hidden = false;
 
 		/* dying loses the loadout; surviving keeps weapons, armour and the kit */
+		this.grenades = {};
+		this.selectedGrenade = null;
 		if (first || lostLoadout || !this.loadout.secondary) {
-			this.loadout = { primary: null, secondary: 'usp', melee: 'knife' };
+			this.loadout = { primary: null, secondary: this.defaultSecondary(), melee: 'knife', equipment: null };
 			Object.keys(C.WEAPONS).forEach(function (id) {
 				this.ammo[id] = { mag: C.WEAPONS[id].mag, reserve: C.WEAPONS[id].reserve };
 			}, this);
 			p.armor = 0;
 			this.defuseKit = false;
-			this.equipWeapon('usp', true);
+			this.equipWeapon(this.defaultSecondary(), true);
 		} else {
 			var spent = this.ammo[this.currentWeapon];
-			if (spent && spent.mag <= 0 && spent.reserve <= 0) this.equipWeapon(this.loadout.secondary, true);
-			else this.equipWeapon(this.currentWeapon, true);
+			var curDef = this.weaponDef(this.currentWeapon);
+			var invalid = !curDef || curDef.slot === 'grenade' || !this.canHave(this.currentWeapon);
+			if (invalid || (spent && spent.mag <= 0 && spent.reserve <= 0)) {
+				this.equipWeapon(this.loadout.primary || this.loadout.secondary || 'knife', true);
+			} else {
+				this.equipWeapon(this.currentWeapon, true);
+			}
 		}
 		this.updateAmmoHUD();
 		this.updateVitalsHUD();
@@ -1973,6 +2295,15 @@
 		var playerOnT = this.playerTeam === 'T';
 		var roles = playerOnT ? ['entry', 'support', 'lurk', 'support'] : ['carrier', 'entry', 'support', 'lurk', 'support'];
 		var routeNames = playerOnT ? ['main', 'main', 'flank', 'flank'] : ['main', 'main', 'main', 'flank', 'flank'];
+		var playerGetsBomb = false;
+		if (playerOnT) {
+			/* one uniform roll over the player plus the four T robots */
+			playerGetsBomb = Math.random() < 1 / (tBots.length + 1);
+			if (!playerGetsBomb && tBots.length) {
+				var carrierIndex = Math.floor(Math.random() * tBots.length);
+				roles[carrierIndex] = 'carrier';
+			}
+		}
 		var carrier = null;
 		tBots.forEach(function (bot, i) {
 			bot.site = site;
@@ -1995,12 +2326,12 @@
 			bot.think = C.rand(0.05, 0.35);
 			if (bot.role === 'carrier') carrier = bot;
 		});
-		if (!carrier && tBots.length) {
+		if (!carrier && tBots.length && (!playerOnT || !playerGetsBomb)) {
 			carrier = tBots[0];
 			carrier.role = 'carrier';
 		}
 		this.carrier = carrier;
-		if (playerOnT) this.givePlayerBomb();
+		if (playerOnT && playerGetsBomb) this.givePlayerBomb();
 		else if (carrier) this.attachBombCarrier(carrier);
 
 		var ctBots = this.teamBots('CT', true);
@@ -2045,6 +2376,72 @@
 		this.saveAIMemory();
 	};
 
+	RangeGame.prototype.newBehaviorBase = function (diff, skill) {
+		var plan = clamp((diff && diff.planning) || 0.6, 0, 1.35);
+		return {
+			skill: skill,
+			rounds: 0, wins: 0,
+			peekDuration: 0.42 + plan * 0.18,
+			hideDuration: 0.7 + plan * 0.3,
+			peekProbability: clamp(0.22 + plan * 0.38, 0.12, 0.92),
+			reloadThreshold: 0.2 + (1 - Math.min(1, plan)) * 0.1,
+			coverWeight: clamp(0.42 + plan * 0.34, 0.25, 0.92),
+			aggression: clamp(0.35 + plan * 0.42, 0.15, 0.98),
+			reactionDelay: 0.018 * Math.max(0.25, 1.2 - plan),
+			burstLength: clamp(Math.round(3.1 + plan * 3.0), 2, 8),
+			burstPause: clamp(0.16 * Math.max(0.5, 1.1 - plan * 0.45), 0.05, 0.3),
+			sprayControl: clamp(0.4 + plan * 0.5, 0.2, 1),
+			tapRange: 28
+		};
+	};
+
+	RangeGame.prototype.makeBotGenome = function (diff, team) {
+		var skill = team === this.playerTeam ? this.settings.difficultyAlly : this.settings.difficultyEnemy;
+		if (!this.aiMemory.behavior) this.aiMemory.behavior = { CT: null, T: null };
+		var base = this.aiMemory.behavior[team];
+		if (!base || base.skill !== skill) {
+			base = this.newBehaviorBase(diff, skill);
+			this.aiMemory.behavior[team] = base;
+			this.saveAIMemory();
+		}
+		return {
+			peekDuration: clamp(base.peekDuration + C.rand(-0.12, 0.12), 0.2, 1.1),
+			hideDuration: clamp(base.hideDuration + C.rand(-0.2, 0.2), 0.35, 2.2),
+			peekProbability: clamp(base.peekProbability + C.rand(-0.1, 0.1), 0.08, 0.95),
+			reloadThreshold: clamp(base.reloadThreshold + C.rand(-0.035, 0.035), 0.1, 0.5),
+			coverWeight: clamp(base.coverWeight + C.rand(-0.08, 0.08), 0.2, 0.98),
+			aggression: clamp(base.aggression + C.rand(-0.08, 0.08), 0.1, 1),
+			reactionDelay: clamp(base.reactionDelay + C.rand(-0.01, 0.01), 0, 0.08),
+			burstLength: clamp(Math.round(base.burstLength + C.rand(-1, 1)), 2, 8),
+			burstPause: clamp(base.burstPause * C.rand(0.82, 1.18), 0.04, 0.35),
+			sprayControl: clamp(base.sprayControl + C.rand(-0.06, 0.06), 0.2, 1),
+			tapRange: clamp(base.tapRange + C.rand(-3, 3), 20, 40)
+		};
+	};
+
+	RangeGame.prototype.evolveBehavior = function (team, won) {
+		if (!this.aiMemory.behavior) return;
+		var base = this.aiMemory.behavior[team];
+		if (!base) return;
+		var mut = C.rand(-0.006, 0.006);
+		if (won) {
+			base.aggression = clamp(base.aggression + 0.012 + mut, 0.1, 1);
+			base.burstLength = clamp(base.burstLength + 0.12, 2, 8);
+			base.burstPause = clamp(base.burstPause * 0.985, 0.04, 0.35);
+			base.sprayControl = clamp(base.sprayControl + 0.008, 0.2, 1);
+			base.coverWeight = clamp(base.coverWeight - 0.004, 0.2, 0.98);
+		} else {
+			base.aggression = clamp(base.aggression - 0.009 + mut, 0.1, 1);
+			base.coverWeight = clamp(base.coverWeight + 0.01, 0.2, 0.98);
+			base.reloadThreshold = clamp(base.reloadThreshold + 0.004, 0.1, 0.5);
+			base.burstPause = clamp(base.burstPause * 1.008, 0.04, 0.35);
+			base.sprayControl = clamp(base.sprayControl + 0.002, 0.2, 1);
+		}
+		base.rounds = (base.rounds || 0) + 1;
+		if (won) base.wins = (base.wins || 0) + 1;
+		this.saveAIMemory();
+	};
+
 	RangeGame.prototype.spawnBot = function (typeId, pos, team, index) {
 		var type = C.BOT_TYPES[typeId] || C.BOT_TYPES.trooper;
 		var torsos = team === 'CT'
@@ -2058,13 +2455,21 @@
 		if (this.usedBotNames) this.usedBotNames[name] = true;
 		var torsoColor = type.torso && team === 'T' ? type.torso : C.choice(torsos);
 		if (team === 'T' && Math.random() < 0.5) torsoColor = C.choice(torsos);
+		/* Buy first so the held-weapon silhouette matches what the robot
+		   actually carries. */
+		var plan = this.botBuyLoadout(team, index, type);
+		var heldDef = plan.primary ? C.WEAPONS[plan.primary] : C.WEAPONS[plan.secondary];
 		var robot = C.buildRobot({
 			type: type, name: name,
-			torso: torsoColor, accent: C.choice(accents)
+			torso: torsoColor, accent: C.choice(accents),
+			weaponDef: heldDef
 		});
 		robot.baseScale = type.scale || 1;
+		/* Only friendly overhead readouts exist now. Enemy HP is never drawn. */
 		robot.healthFriendly = (team === this.playerTeam);
+		robot.healthVisible = robot.healthFriendly;
 		C.drawHealthSprite(robot);
+		if (robot.healthSprite) robot.healthSprite.visible = robot.healthVisible;
 		robot.root.scale.setScalar(robot.baseScale * 0.05);
 		robot.root.position.set(pos.x, 0, pos.z);
 		robot.root.rotation.y = pos.yaw || 0;
@@ -2080,22 +2485,22 @@
 		robot.flash.visible = false;
 		robot.muzzle.add(robot.flash);
 
-		var teamLoadouts = C.TEAM_LOADOUTS[team] || C.TEAM_LOADOUTS.T;
-		var primary;
-		if (type.id === 'sniper') primary = C.choice(teamLoadouts.sniper);
-		else if (type.id === 'scout') primary = C.choice(team === 'CT' ? ['mp9', 'ump45', 'mp9'] : ['mp9', 'ump45', 'galil']);
-		else if (type.id === 'heavy') primary = C.choice(team === 'CT' ? ['m4a4', 'nova', 'ump45'] : ['ak47', 'nova', 'galil']);
-		else primary = C.choice(teamLoadouts.primary);
-		var secondary = C.choice(teamLoadouts.secondary);
-		var loadout = [primary, secondary];
+		var primary = plan.primary;
+		var secondary = plan.secondary;
+		var loadout = [];
+		if (primary) loadout.push(primary);
+		if (secondary) loadout.push(secondary);
 		var weapons = [];
 		for (var wi = 0; wi < loadout.length; wi++) {
 			var wDef = C.WEAPONS[loadout[wi]];
 			if (!wDef) continue;
-			var wMag = Math.max(4, Math.round(wDef.mag * C.rand(0.55, 0.82)));
-			weapons.push({ id: loadout[wi], def: wDef, magSize: wMag, ammo: wMag, reloading: false, reloadEnd: 0, melee: false });
+			var wMag = Math.max(1, wDef.mag || 1);
+			weapons.push({
+				id: loadout[wi], def: wDef, magSize: wMag, ammo: wMag,
+				reserve: wDef.reserve || 0, reloading: false, reloadEnd: 0, melee: false
+			});
 		}
-		weapons.push({ id: 'knife', def: C.WEAPONS.knife, magSize: 1, ammo: 1, reloading: false, reloadEnd: 0, melee: true });
+		weapons.push({ id: 'knife', def: C.WEAPONS.knife, magSize: 1, ammo: 1, reserve: 0, reloading: false, reloadEnd: 0, melee: true });
 		var currentWeapon = weapons[0];
 		var sniperWeapon = weapons.filter(function (w) { return w.def.category === 'SNIPER'; })[0] || null;
 		var hasRifle = weapons.some(function (w) { return w.def.category === 'RIFLE'; });
@@ -2108,6 +2513,7 @@
 			team: team,
 			diff: spawnDiff,
 			baseSpeed: baseSpeed,
+			stallProbeAt: this.now, stallProbeX: pos.x, stallProbeZ: pos.z,
 			robot: robot,
 			root: robot.root,
 			x: pos.x, z: pos.z, y: 0,
@@ -2115,6 +2521,7 @@
 			hp: robot.hp, maxHp: robot.maxHp,
 			alive: true, dead: false,
 			gamble: false, wanderUntil: 0, wanderPoint: null, stallTimer: 0, twitchPenalty: 0, roundKills: 0,
+			genome: this.makeBotGenome(spawnDiff, team), sprayShots: 0, lastShotAt: 0,
 			type: type, name: name,
 			role: '',
 			site: '',
@@ -2127,13 +2534,19 @@
 			weaponDef: currentWeapon.def,
 			magSize: currentWeapon.magSize,
 			ammo: currentWeapon.ammo,
+			reserve: currentWeapon.reserve || 0,
+			armor: plan.armor || 0,
+			kit: !!plan.kit,
+			grenades: Object.assign({}, plan.grenades || {}),
+			slotIndex: index || 0,
+			botMoney: plan.money || 0,
 			reloading: false,
 			reloadEnd: 0,
 			reloadSoundAt: 0,
 			hasRifle: hasRifle,
 			hasSmg: hasSmg,
 			hasSniper: !!sniperWeapon,
-			burstMode: hasRifle && hasSmg,
+			burstMode: !!(hasRifle || hasSmg),
 			burstLeft: 0,
 			weaponThink: 0,
 			weaponSwitchAt: 0,
@@ -2155,6 +2568,20 @@
 			nextShot: this.now + 1200,
 			reaction: 0,
 			reactionDone: false,
+			reactionDelay: 0.28,
+			targetAcquiredAt: 0,
+			fireMode: 'burst',
+			fireModeUntil: 0,
+			sprayLeft: 0,
+			aimSwayPhase: C.rand(0, 6.28),
+			aimSwayTime: 0,
+			flickAt: 0,
+			flickUntil: 0,
+			flickAmount: 0,
+			confirmUntil: 0,
+			postFireUntil: 0,
+			nextTacReloadAt: 0,
+			panicLevel: 0,
 			think: 0,
 			path: null,
 			pathIndex: 0,
@@ -2175,6 +2602,7 @@
 			kills: 0, deaths: 0, hs: 0,
 			ping: C.randi(12, 42),
 			flashUntil: 0,
+			muzzleUntil: 0,
 			footTimer: 0,
 			moveX: 0, moveZ: 0, moveSpeed: 0,
 			target: null, targetKey: '', targetThink: 0,
@@ -2184,7 +2612,7 @@
 			guardIndex: index || 0,
 			hasBomb: false, bombPack: null,
 			plantSpot: null, planting: false, plantProgress: 0,
-			defuseTime: C.BOMB ? C.BOMB.defuse : 7,
+			defuseTime: plan.kit ? ((C.BOMB && C.BOMB.defuseKit) || 5) : ((C.BOMB && C.BOMB.defuse) || 10),
 			scanPhase: C.rand(0, 6.28),
 			spottedUntil: 0,
 			lastEnemySeenAt: this.now,
@@ -2196,6 +2624,13 @@
 		robot.head.userData = { bot: bot, part: 'head', hit: true };
 		robot.torso.userData = { bot: bot, part: 'body', hit: true };
 		if (robot.bodyHit) robot.bodyHit.userData = { bot: bot, part: 'body', hit: true };
+		/* A pending early-death grudge is consumed by the next spawning slot. */
+		var slot = this.botSlot(team, index || 0);
+		if (slot.revenge && this.match && slot.revenge.availableFrom <= this.match.round &&
+			this.match.round - slot.revenge.round <= 1 && Math.random() < (slot.revenge.chance || 0.5)) {
+			bot.revenge = Object.assign({}, slot.revenge);
+		}
+		slot.revenge = null;
 		robot.hp = bot.hp;
 		robot.maxHp = bot.maxHp;
 		robot.reloading = false;
@@ -2212,6 +2647,7 @@
 		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
 		if (!rec) return;
 		rec.ammo = bot.ammo;
+		rec.reserve = bot.reserve || 0;
 		rec.reloading = bot.reloading;
 		rec.reloadEnd = bot.reloadEnd;
 	};
@@ -2226,12 +2662,14 @@
 		bot.weaponDef = rec.def;
 		bot.magSize = rec.magSize;
 		bot.ammo = rec.ammo;
+		bot.reserve = rec.reserve || 0;
 		bot.reloading = false;
 		bot.reloadEnd = 0;
 		rec.reloading = false;
 		rec.reloadEnd = 0;
 		bot.robot.reloading = false;
 		bot.burstLeft = 0;
+		bot.sprayShots = 0;
 		bot.reactionDone = false;
 		bot.reaction = 0;
 		bot.nextShot = Math.max(bot.nextShot, this.now + 240);
@@ -2293,11 +2731,12 @@
 		var current = bot.weapons[bot.weaponIndex];
 		var loaded = this.botLoadedGuns(bot);
 		if (!current) return;
+		var knife = bot.weapons.filter(function (w) { return w.melee; })[0] || null;
 		if (current.melee) {
 			if (loaded.length && dist > 2.4) {
 				var back = this.bestBotGun(bot, dist, true);
 				if (back) this.setBotWeapon(bot, bot.weapons.indexOf(back));
-			} else if (!loaded.length && dist > 3.0) {
+			} else if (!loaded.length) {
 				var empty = this.bestBotGun(bot, dist, false);
 				if (empty) {
 					this.setBotWeapon(bot, bot.weapons.indexOf(empty));
@@ -2312,11 +2751,19 @@
 				if (swap) this.setBotWeapon(bot, bot.weapons.indexOf(swap));
 				return;
 			}
-			if (dist < 3.4 && Math.random() < 0.6) {
-				var knife = bot.weapons.filter(function (w) { return w.melee; })[0];
-				if (knife) { this.setBotWeapon(bot, bot.weapons.indexOf(knife)); return; }
+			/* Empty magazine and no loaded gun: reload if reserve is left,
+			   otherwise take whatever secondary still has rounds or the knife. */
+			if ((bot.reserve || 0) > 0) {
+				this.startBotReload(bot, this.player.x, this.player.feetY + this.player.eye, this.player.z);
+				return;
 			}
-			this.startBotReload(bot, this.player.x, this.player.feetY + this.player.eye, this.player.z);
+			var reserveGun = this.botGuns(bot).filter(function (w) { return (w.reserve || 0) > 0; })[0];
+			if (reserveGun) {
+				this.setBotWeapon(bot, bot.weapons.indexOf(reserveGun));
+				this.startBotReload(bot, this.player.x, this.player.feetY + this.player.eye, this.player.z);
+				return;
+			}
+			if (knife) this.setBotWeapon(bot, bot.weapons.indexOf(knife));
 			return;
 		}
 		/* keep the most appropriate loaded weapon in hand */
@@ -2331,6 +2778,114 @@
 		if (current.def.category === 'RIFLE' && dist < 9 && best.def.category === 'SMG') mustSwap = true;
 		if (current.def.category === 'SMG' && dist > 16 && best.def.category === 'RIFLE') mustSwap = true;
 		if (mustSwap) this.setBotWeapon(bot, bot.weapons.indexOf(best));
+	};
+
+
+	RangeGame.prototype.botPickupDrop = function (bot, drop) {
+		if (!drop || !drop.def || drop.def.slot === 'melee') return false;
+		var def = drop.def;
+		var existing = null;
+		for (var i = 0; i < bot.weapons.length; i++) {
+			if (!bot.weapons[i].melee && bot.weapons[i].id === drop.weaponId) { existing = bot.weapons[i]; break; }
+		}
+		if (existing) {
+			existing.ammo = Math.min(def.mag, (existing.ammo || 0) + (drop.ammo.mag || 0));
+			existing.reserve = Math.min((def.reserve || 0) * 2, (existing.reserve || 0) + (drop.ammo.reserve || 0));
+			if (existing === bot.weapons[bot.weaponIndex]) {
+				bot.ammo = existing.ammo;
+				bot.reserve = existing.reserve;
+			}
+		} else {
+			var rec = {
+				id: drop.weaponId, def: def, magSize: def.mag,
+				ammo: Math.min(def.mag, drop.ammo.mag || def.mag),
+				reserve: drop.ammo.reserve || 0,
+				reloading: false, reloadEnd: 0, melee: false
+			};
+			var next = [rec];
+			var knife = null;
+			for (var w = 0; w < bot.weapons.length; w++) {
+				var old = bot.weapons[w];
+				if (old.melee) { knife = old; continue; }
+				if (old.def && old.def.slot === def.slot) continue;
+				if (old !== bot.weapons[bot.weaponIndex]) next.push(old);
+			}
+			if (bot.weapons[bot.weaponIndex] && bot.weapons[bot.weaponIndex].def && bot.weapons[bot.weaponIndex].def.slot !== def.slot) {
+				/* keep the gun in hand, replace the other slot */
+				next = [];
+				var kept = bot.weapons[bot.weaponIndex];
+				if (kept && !kept.melee) next.push(kept);
+				next.push(rec);
+				for (var w2 = 0; w2 < bot.weapons.length; w2++) {
+					var o2 = bot.weapons[w2];
+					if (o2.melee || o2 === kept || (o2.def && o2.def.slot === def.slot)) continue;
+					next.push(o2);
+				}
+			}
+			if (knife) next.push(knife);
+			bot.weapons = next;
+			var idx = Math.max(0, bot.weapons.indexOf(rec));
+			bot.weaponIndex = idx;
+			bot.weaponId = rec.id;
+			bot.weaponDef = rec.def;
+			bot.magSize = rec.magSize;
+			bot.ammo = rec.ammo;
+			bot.reserve = rec.reserve;
+			bot.reloading = false;
+			bot.reloadEnd = 0;
+			bot.reactionDone = false;
+			bot.reaction = 0;
+			bot.robot.reloading = false;
+			bot.burstLeft = 0;
+			bot.sprayShots = 0;
+			bot.hasRifle = bot.weapons.some(function (w) { return w.def && w.def.category === 'RIFLE'; });
+			bot.hasSmg = bot.weapons.some(function (w) { return w.def && w.def.category === 'SMG'; });
+			bot.hasSniper = bot.weapons.some(function (w) { return w.def && w.def.category === 'SNIPER'; });
+			bot.burstMode = !!(bot.hasRifle || bot.hasSmg);
+		}
+		var closeToPlayer = this.player.alive && Math.hypot(this.player.x - bot.x, this.player.z - bot.z) < 18;
+		if (closeToPlayer) this.sound.burst({ dur: 0.05, type: 'bandpass', freq: 1500, q: 1, gain: 0.03, pan: this.panFor(bot.x, bot.z) });
+		bot.mode = 'pickup';
+		bot.nextShot = Math.max(bot.nextShot || 0, this.now + 260);
+		this.removeDrop(drop);
+		return true;
+	};
+
+	RangeGame.prototype.botTryPickupWeapon = function (bot, dt) {
+		if (!bot || !bot.alive || bot.dead) return false;
+		if (bot.planting || this.criticalRole(bot) || bot.hasBomb) return false;
+		if (this.now < (bot.pickupCheckAt || 0)) return false;
+		bot.pickupCheckAt = this.now + 650;
+		if (!this.drops.length) return false;
+		var current = bot.weapons && bot.weapons[bot.weaponIndex];
+		var currentUsable = current && !current.melee && (bot.ammo > 0 || (bot.reserve || 0) > 0);
+		var best = null, bestD = 1e9, bestGain = 0;
+		for (var i = 0; i < this.drops.length; i++) {
+			var d = this.drops[i];
+			if (!d.def || d.def.slot === 'melee') continue;
+			var dist = Math.hypot(d.x - bot.x, d.z - bot.z);
+			if (dist > (currentUsable ? 8 : 15)) continue;
+			var fake = { id: d.weaponId, def: d.def, ammo: d.ammo.mag, reserve: d.ammo.reserve };
+			var score = this.botWeaponScore(bot, fake, Math.max(3, dist));
+			var currentScore = current ? this.botWeaponScore(bot, current, Math.max(3, dist)) : 0;
+			var hasPrimary = this.botGuns(bot).some(function (w) { return w.def.slot === 'primary'; });
+			var want = !currentUsable || (score > currentScore + 0.7 && (bot.ammo + (bot.reserve || 0)) < bot.magSize * 1.6);
+			/* A pistol-only robot always wants a real primary, even if its
+			   pistol is fully loaded. */
+			if (!want && d.def.slot === 'primary' && !hasPrimary) want = true;
+			if (!want) continue;
+			if (dist < bestD && score >= bestGain) {
+				best = d; bestD = dist; bestGain = score;
+			}
+		}
+		if (!best) return false;
+		if (bestD <= 1.45) return this.botPickupDrop(bot, best);
+		var path = C.findPath(this.nav, bot.x, bot.z, best.x, best.z);
+		if (!path || !path.length) return false;
+		this.botPathTo(bot, best.x, best.z, bot.speed * 0.95, dt);
+		bot.mode = 'pickup';
+		bot.face = { x: best.x, z: best.z };
+		return true;
 	};
 
 	RangeGame.prototype.clearBots = function () {
@@ -3400,6 +3955,12 @@
 		if (this.state === 'playing') {
 			if (this.practice) this.updatePractice(dt);
 			else this.updateMatch(dt);
+		} else if (this.state === 'buy') {
+			/* The armory does not stop the clock: buy time keeps draining
+			   while the player is shopping, and the menu closes itself. */
+			this.updateBuyClock(dt);
+			this.updateFx(dt);
+			this.updateViewWeapon(dt);
 		} else if (this.state === 'roundover') {
 			this.updateResult(dt);
 			this.updateBotsDeath(dt);
@@ -3424,6 +3985,41 @@
 		}
 	};
 
+	RangeGame.prototype.updateBuyClock = function (dt) {
+		if (this.practice) return;
+		if (!this.round || !this.match) { this.closeBuy(); return; }
+		if (this.round.phase === 'freeze') {
+			this.round.freezeLeft = Math.max(0, this.round.freezeLeft - dt);
+			if (this.round.freezeLeft <= 0) {
+				this.round.phase = 'live';
+				this.markRoundLive();
+				this.announce('ROUND START', this.playerTeam === 'T' ? 'PLANT THE C4 — CLEAR THE SITE' : 'DEFEND THE SITES — STOP THE C4');
+				this.sound.roundStart();
+				this.updateBuyHint();
+				this.closeBuy();
+			}
+		} else {
+			this.closeBuy();
+		}
+		this.updateRoundTimer();
+		this.updateBuyHint();
+	};
+
+	RangeGame.prototype.markRoundLive = function () {
+		this.roundLiveAt = this.now;
+		for (var i = 0; i < this.bots.length; i++) {
+			var bot = this.bots[i];
+			bot.roamNextAt = this.now + C.rand(8, 14);
+			bot.roamTarget = null;
+			bot.roamWaitUntil = 0;
+			bot.lastEnemySeenAt = this.now;
+			bot.stallTimer = 0;
+			bot.stallProbeAt = this.now;
+			bot.stallProbeX = bot.x;
+			bot.stallProbeZ = bot.z;
+		}
+	};
+
 	RangeGame.prototype.updateMatch = function (dt) {
 		var round = this.round;
 		if (!round) return;
@@ -3432,6 +4028,7 @@
 			if (round.freezeLeft <= 0) {
 				round.freezeLeft = 0;
 				round.phase = 'live';
+				this.markRoundLive();
 				this.announce('ROUND START', this.playerTeam === 'T' ? 'PLANT THE C4 — CLEAR THE SITE' : 'DEFEND THE SITES — STOP THE C4');
 				this.sound.roundStart();
 				this.updateBuyHint();
@@ -3457,6 +4054,7 @@
 		this.updateBomb(dt);
 		this.updateChickens(dt);
 		this.updateFx(dt);
+		this.updateUtilities(dt);
 		this.updateRoundTimer();
 		this.updateVitalsHUD();
 		this.updateAmmoHUD();
@@ -3515,6 +4113,8 @@
 		if (this.el.bombhud) this.el.bombhud.hidden = true;
 		if (this.el.contact) this.el.contact.hidden = true;
 		if (this.el.c4tag) this.el.c4tag.hidden = true;
+		this.playerFlashUntil = 0;
+		this.updateBlindness();
 		if (this.el.announce) {
 			this.el.announce.classList.remove('is-show', 'is-stay');
 			this.el.announce.textContent = '';
@@ -3535,6 +4135,29 @@
 		if (win) this.match.ct++; else this.match.t++;
 		this.resultReward = reward;
 		this.match.money = clamp(this.match.money + reward, 0, 16000);
+		/* robots run their own economy: team win/loss income, then keep the
+		   loadout only if they survived the round. */
+		['CT', 'T'].forEach(function (team) {
+			var teamWin = team === winner;
+			var teamReward;
+			if (teamWin) {
+				teamReward = cause === 'defuse' ? 3500 : 3250;
+				this.teamLossStreak[team] = 0;
+			} else {
+				teamReward = clamp(1400 + (this.teamLossStreak[team] || 0) * 500, 1400, 3400);
+				this.teamLossStreak[team] = (this.teamLossStreak[team] || 0) + 1;
+			}
+			this.botAward(team, teamReward);
+			this.teamBots(team).forEach(function (bot) {
+				var slot = this.botSlot(team, bot.slotIndex || 0);
+				if (bot.alive && !bot.dead) {
+					slot.survived = true;
+					slot.armor = bot.armor || 0;
+					slot.kit = !!bot.kit;
+					if (slot.loadout) slot.loadout.grenades = Object.assign({}, bot.grenades || slot.loadout.grenades || {});
+				}
+			}, this);
+		}, this);
 		this.roundHistory.push(win ? 'ct' : 't');
 		if (playerWin) this.sound.win(); else this.sound.lose();
 		this.updateScoreHUD();
@@ -3887,8 +4510,12 @@
 	/* ======================================================================
 	   weapons
 	   ====================================================================== */
+	RangeGame.prototype.defaultSecondary = function () {
+		return this.playerTeam === 'T' ? 'glock' : 'usp';
+	};
+
 	RangeGame.prototype.weaponDef = function (id) {
-		return C.WEAPONS[id] || C.WEAPONS.usp;
+		return C.WEAPONS[id] || (C.UTILITIES && C.UTILITIES[id]) || C.WEAPONS.usp;
 	};
 
 	RangeGame.prototype.equipWeapon = function (id, silent) {
@@ -3900,6 +4527,9 @@
 			this.reloading = false;
 			this.scoped = false;
 			this.scopeT = 0;
+			this.sniperRescope = false;
+			this.sniperScopeAt = 0;
+			this.sniperWeapon = null;
 			this.switching = silent ? 0 : 0.34;
 			Object.keys(this.viewWeapons || {}).forEach(function (k) {
 				var m = this.viewWeapons[k];
@@ -3914,15 +4544,18 @@
 		var def = this.weaponDef(id);
 		if (def.slot === 'primary') return this.loadout.primary === id;
 		if (def.slot === 'secondary') return !!this.loadout.secondary;
+		if (def.slot === 'equipment') return this.loadout.equipment === id;
+		if (def.slot === 'grenade') return (this.grenades[id] || 0) > 0;
 		return true;
 	};
 
 	RangeGame.prototype.cycleWeapon = function (dir) {
-		var order = ['secondary', 'primary', 'melee'];
-		var ids = [this.loadout.secondary, this.loadout.primary, this.loadout.melee];
+		var order = ['secondary', 'primary', 'melee', 'equipment'];
+		var ids = [this.loadout.secondary, this.loadout.primary, this.loadout.melee, this.loadout.equipment];
 		var idx = order.indexOf(this.currentSlot);
-		for (var i = 1; i <= 3; i++) {
-			var n = (idx + dir * i + 9) % 3;
+		if (idx < 0) idx = 0;
+		for (var i = 1; i <= order.length; i++) {
+			var n = (idx + dir * i + order.length * 2) % order.length;
 			if (ids[n]) { this.equipWeapon(ids[n]); return; }
 		}
 	};
@@ -3931,13 +4564,41 @@
 		if (!this.player.alive) return;
 		var def = this.weaponDef(this.currentWeapon);
 		var ammo = this.ammo[this.currentWeapon];
-		if (!def || !ammo || def.slot === 'melee' || this.reloading) return;
+		if (!def || !ammo || def.slot === 'melee' || def.slot === 'grenade' || def.slot === 'equipment' || this.reloading) return;
 		if (ammo.mag >= def.mag || ammo.reserve <= 0) return;
 		this.reloading = true;
 		this.reloadStart = this.now;
 		this.reloadEnd = this.now + def.reload * 1000;
+		if (def.category === 'SNIPER' && this.scoped) {
+			this.sniperRescope = true;
+			this.sniperWeapon = this.currentWeapon;
+		}
 		this.scoped = false;
+		this.spawnReloadMag();
 		this.sound.reload();
+	};
+
+	RangeGame.prototype.spawnReloadMag = function () {
+		if (!this.player.alive || !this.camera) return;
+		var dir = this.getAimDirection();
+		var right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+		var pos = this.camera.position.clone().addScaledVector(dir, 0.58).addScaledVector(right, 0.16);
+		pos.y -= 0.28;
+		var mesh = new THREE.Mesh(
+			new THREE.BoxGeometry(0.085, 0.23, 0.13),
+			new THREE.MeshStandardMaterial({ color: 0x272d31, roughness: 0.48, metalness: 0.4 })
+		);
+		mesh.position.copy(pos);
+		mesh.rotation.set(C.rand(-0.6, 0.6), C.rand(0, Math.PI * 2), C.rand(-0.5, 0.5));
+		mesh.castShadow = true;
+		this.scene.add(mesh);
+		this.debris.push({
+			mesh: mesh, life: 2.8,
+			vx: dir.x * 3.2 + right.x * 0.8,
+			vy: 1.55,
+			vz: dir.z * 3.2 + right.z * 0.8,
+			spin: C.rand(7, 14)
+		});
 	};
 
 	RangeGame.prototype.finishReload = function () {
@@ -3950,10 +4611,23 @@
 		if (!this.practice) ammo.reserve -= take;
 		this.reloading = false;
 		this.updateAmmoHUD();
+		if (this.sniperRescope && this.currentWeapon === this.sniperWeapon && def.category === 'SNIPER' && this.player.alive) {
+			this.sniperRescope = false;
+			this.scoped = true;
+			if (this.sound) this.sound.scope();
+		}
 	};
 
 	RangeGame.prototype.updateWeapon = function (dt) {
 		if (this.reloading && this.now >= this.reloadEnd) this.finishReload();
+		if (this.sniperRescope && !this.reloading && this.now >= this.sniperScopeAt && this.player.alive) {
+			var sdef = this.weaponDef(this.currentWeapon);
+			if (this.currentWeapon === this.sniperWeapon && sdef && sdef.category === 'SNIPER') {
+				this.sniperRescope = false;
+				this.scoped = true;
+				if (this.sound) this.sound.scope();
+			}
+		}
 		if (this.switching > 0) {
 			this.switching = Math.max(0, this.switching - dt);
 		}
@@ -3988,6 +4662,38 @@
 		var def = this.weaponDef(this.currentWeapon);
 		var ammo = this.ammo[this.currentWeapon];
 		if (!def) return;
+		if (this.currentSlot === 'grenade') {
+			this.throwGrenade(this.currentWeapon);
+			return;
+		}
+		if (def.oneShot) {
+			if (!ammo || ammo.mag <= 0) {
+				this.sound.dry();
+				this.nextFire = this.now + 260;
+				this.loadout.equipment = null;
+				this.equipWeapon(this.loadout.primary || this.loadout.secondary || 'knife', true);
+				return;
+			}
+			ammo.mag--;
+			this.nextFire = this.now + 620;
+			this.weaponKick = 1.2;
+			this.weaponKickRot = 0.9;
+			this.shake = Math.min(1, this.shake + 0.25);
+			this.sound.shot('zeus', 0);
+			this.spawnSparks(this.camera.position.clone(), 0x88ddff, 18, 3.6);
+			var zres = this.resolvePlayerShot(def, 1);
+			if (zres.hit) {
+				this.match.hits++;
+				this.roundStats.hits++;
+				this.showHitmarker(zres.head, zres.killed);
+				this.sound.hit(zres.head);
+			}
+			this.loadout.equipment = null;
+			this.equipWeapon(this.loadout.primary || this.loadout.secondary || 'knife', true);
+			this.updateAmmoHUD();
+			this.renderUtilityHUD();
+			return;
+		}
 		if (def.slot === 'melee') {
 			this.nextFire = this.now + 1000 * 60 / def.rpm;
 			this.fireMelee(def);
@@ -4032,6 +4738,12 @@
 			this.sound.hit(anyHead);
 			if (anyHead) this.showHeadshot(anyKill);
 		}
+		if (def.category === 'SNIPER' && this.scoped) {
+			this.scoped = false;
+			this.sniperRescope = true;
+			this.sniperWeapon = this.currentWeapon;
+			this.sniperScopeAt = this.now + Math.max(360, (60000 / Math.max(20, def.rpm)) * 0.55 + 180);
+		}
 		this.updateAmmoHUD();
 		this.semiQueued = false;
 	};
@@ -4050,7 +4762,7 @@
 			var hit = hits[0];
 			var data = hit.object.userData;
 			if (data && data.bot && data.bot.alive) {
-				this.damageBot(data.bot, def.damage * (data.part === 'head' ? def.head : 1), data.part === 'head', 'KNIFE');
+				this.damageBot(data.bot, def.damage * (data.part === 'head' ? def.head : 1), data.part === 'head', 'KNIFE', def.armorPen);
 			} else {
 				this.spawnImpact(hit.point, hit.face ? hit.face.normal : new THREE.Vector3(0, 1, 0), hit.object);
 			}
@@ -4161,7 +4873,7 @@
 				this.raiseAlert(data.bot.team, data.bot.x, data.bot.z, 'player');
 				var dmg = def.damage * damageScale * (data.part === 'head' ? def.head : 1);
 				if (def.pellets && hit.distance > 16) dmg *= clamp(1 - (hit.distance - 16) / 45, 0.32, 1);
-				var killed = this.damageBot(data.bot, dmg, data.part === 'head', def.name);
+				var killed = this.damageBot(data.bot, dmg, data.part === 'head', def.name, def.armorPen);
 				this.spawnSparks(hit.point.clone(), 0xffd27a, def.pellets ? 4 : 8, 3.2);
 				result.hit = true;
 				result.head = data.part === 'head';
@@ -4397,8 +5109,9 @@
 			var total = Math.max(1, this.reloadEnd - this.reloadStart);
 			reloadP = clamp((this.now - this.reloadStart) / total, 0, 1);
 		}
-		var reloadDrop = Math.sin(reloadP * Math.PI) * 0.2;
-		var reloadRot = Math.sin(reloadP * Math.PI) * 0.65;
+		var reloadT = Math.sin(reloadP * Math.PI);
+		var reloadDrop = reloadT * 0.31;
+		var reloadRot = reloadT * 0.92;
 		var switchDrop = this.switching > 0 ? Math.sin((this.switching / 0.34) * Math.PI) * 0.32 : 0;
 
 		var swayTargetX = clamp(this.swayX, -0.02, 0.02);
@@ -4414,15 +5127,25 @@
 			base.rot.y + swayTargetX * 1.4,
 			base.rot.z + swayTargetX * 2.2 + reloadRot * 0.5
 		);
+		/* grenade throw: drop the hand out of frame and snap back */
+		if (this.currentSlot === 'grenade' && this.grenadeThrowAt) {
+			var throwT = clamp(1 - (this.now - this.grenadeThrowAt) / 320, 0, 1);
+			if (throwT > 0) {
+				g.position.y -= throwT * 0.24;
+				g.position.z -= throwT * 0.06;
+				g.rotation.x += throwT * 0.55;
+			}
+		}
 		/* magazine drop during reload */
 		if (model.mag && Array.isArray(model.mag)) {
 			model.mag.forEach(function (m, i) {
 				if (!m) return;
 				if (!m.userData.base) m.userData.base = m.position.clone();
 				var bp = m.userData.base;
-				var drop = Math.sin(reloadP * Math.PI) * 0.12;
+				var drop = Math.sin(reloadP * Math.PI) * 0.27;
 				m.position.y = bp.y - drop;
-				m.position.z = bp.z + drop * 0.4;
+				m.position.z = bp.z + drop * 0.75;
+				m.rotation.x = -drop * 0.8;
 			});
 		}
 		/* muzzle flash */
@@ -4471,7 +5194,9 @@
 		var def = this.weaponDef(this.currentWeapon);
 		if (!def.scope) return;
 		if (this.reloading) return;
+		if (this.sniperRescope && this.now < this.sniperScopeAt) return;
 		this.scoped = !this.scoped;
+		this.sniperRescope = false;
 		if (this.sound) this.sound.scope();
 		this.updateScopeVisual();
 	};
@@ -4643,6 +5368,9 @@
 
 	RangeGame.prototype.botMaybeRoam = function (bot, post, dt) {
 		var now = this.now;
+		/* Nobody starts an idle patrol in the first seconds of a round; they
+		   first take their real post. */
+		if (!this.roundLiveAt || now - this.roundLiveAt < 5000) return false;
 		if (bot.supportTarget && now < bot.supportUntil) return false;
 		if (now < (bot.roamNextAt || 0)) return false;
 		if (this.bomb && this.bomb.state === 'planting') return false;
@@ -4706,6 +5434,13 @@
 		var dir = new THREE.Vector3().subVectors(to, from);
 		var dist = dir.length();
 		if (dist < 0.1) return true;
+		/* Smoke is a real sight blocker for robot perception, not just a visual. */
+		if (this.smokes && this.smokes.length) {
+			for (var si = 0; si < this.smokes.length; si++) {
+				var sm = this.smokes[si];
+				if (this.segmentHitsSphere(fx, fy, fz, px, py, pz, sm.x, sm.y, sm.z, sm.radius)) return false;
+			}
+		}
 		dir.normalize();
 		this.raycaster.set(from, dir);
 		this.raycaster.far = dist - 0.15;
@@ -4745,6 +5480,7 @@
 
 	RangeGame.prototype.botCanSee = function (bot, target) {
 		if (!target || !target.alive) return false;
+		if (this.now < (bot.flashUntil || 0)) return false;
 		var dx = target.x - bot.x, dz = target.z - bot.z;
 		var diff = bot.diff || this.difficultyFor(bot.team);
 		var maxRange = ((bot.weaponDef && bot.weaponDef.category === 'SNIPER') ? 42 : 34) * (diff.sight || 1);
@@ -4810,6 +5546,20 @@
 		}
 	};
 
+	RangeGame.prototype.botReactionDelay = function (bot, target, diff, alreadyEngaged) {
+		diff = diff || bot.diff || this.difficultyFor(bot.team);
+		var base = (bot.type.reaction || 0.5) * (diff.reaction || 1);
+		if (bot.genome && bot.genome.reactionDelay) base += bot.genome.reactionDelay;
+		/* Far, moving or partially covered targets take longer to identify. */
+		var dist = target ? Math.hypot(target.x - bot.x, target.z - bot.z) : 10;
+		base += Math.min(0.12, dist * 0.0035);
+		if (target && target.speed > 2.2) base += 0.06;
+		if (alreadyEngaged) base *= 0.72;
+		if (bot.hp < bot.maxHp * 0.3) base *= 0.85;
+		base += C.rand(-0.035, 0.045);
+		return clamp(base, 0.075, 0.85);
+	};
+
 	RangeGame.prototype.botUpdatePerception = function (bot, dt) {
 		var diff = bot.diff || this.difficultyFor(bot.team);
 		bot.think -= dt;
@@ -4823,8 +5573,16 @@
 			bot.reaction = 0;
 			bot.reactionDone = false;
 			if (t) {
-				/* High skill snaps onto a fresh target and fires much sooner. */
-				var firstDelay = (bot.type.reaction * diff.reaction + C.rand(0, 0.08)) * 1000;
+				var firstDelay = this.botReactionDelay(bot, t, diff, false) * 1000;
+				bot.reactionDelay = firstDelay / 1000;
+				bot.targetAcquiredAt = this.now;
+				/* A fresh target triggers an overshooting flick; the first shots
+				   are deliberately less settled than the follow-up. */
+				bot.flickAt = this.now;
+				bot.flickUntil = this.now + C.rand(180, 320);
+				bot.flickAmount = C.rand(1.8, 7.0);
+				bot.flickDir = Math.random() < 0.5 ? -1 : 1;
+				bot.aimSwayTime = 0;
 				bot.nextShot = Math.min(bot.nextShot || 1e9, this.now + firstDelay);
 			}
 		}
@@ -5001,19 +5759,23 @@
 		if (bot.reloading) return;
 		if (!bot.weaponDef || bot.weaponDef.slot === 'melee') return;
 		if (!bot.ammo && !(bot.weapons && bot.weapons[bot.weaponIndex])) return;
+		if ((bot.reserve || 0) <= 0) return;
+		if (bot.ammo >= bot.magSize) return;
 		bot.reloading = true;
 		var def = bot.weaponDef || C.WEAPONS.ak47;
 		bot.reloadEnd = this.now + def.reload * 1000 * C.rand(0.9, 1.15);
 		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
 		if (rec) { rec.reloading = true; rec.reloadEnd = bot.reloadEnd; }
 		bot.burstLeft = 0;
+		bot.sprayShots = 0;
 		bot.behavior = 'reload';
 		bot.mode = 'reload';
 		bot.reactionDone = false;
 		bot.reaction = 0;
 		bot.robot.reloading = true;
 		bot.reloadGoal = null;
-		if (px != null) {
+		var coverWeight = (bot.genome && bot.genome.coverWeight) || 0.55;
+		if (px != null && Math.random() < coverWeight) {
 			var cover = this.findCoverPoint(bot, px, py, pz);
 			if (cover && Math.hypot(cover.x - bot.x, cover.z - bot.z) > 0.8) bot.reloadGoal = cover;
 		}
@@ -5025,10 +5787,15 @@
 
 	RangeGame.prototype.finishBotReload = function (bot) {
 		bot.reloading = false;
-		bot.ammo = bot.magSize;
+		var need = Math.max(0, bot.magSize - bot.ammo);
+		var take = Math.min(need, bot.reserve || 0);
+		bot.ammo += take;
+		bot.reserve = Math.max(0, (bot.reserve || 0) - take);
 		var rec = bot.weapons && bot.weapons[bot.weaponIndex];
-		if (rec) { rec.ammo = bot.ammo; rec.reloading = false; rec.reloadEnd = 0; }
+		if (rec) { rec.ammo = bot.ammo; rec.reserve = bot.reserve; rec.reloading = false; rec.reloadEnd = 0; }
 		bot.behavior = 'advance';
+		bot.burstLeft = 0;
+		bot.sprayShots = 0;
 		bot.reactionDone = false;
 		bot.reaction = 0;
 		bot.robot.reloading = false;
@@ -5053,7 +5820,7 @@
 		if (Math.random() < clamp(0.55 + (2.35 - dist) * 0.2, 0.4, 0.9)) {
 			var dmg = bot.damage * 0.7 * diff.damage * C.rand(0.85, 1.15);
 			if (target.kind === 'player') this.applyPlayerDamage(dmg, bot, false);
-			else this.damageBotByBot(target.bot, dmg, bot, false, 'KNIFE');
+			else this.damageBotByBot(target.bot, dmg, bot, false, 'KNIFE', 1);
 		}
 	};
 
@@ -5063,9 +5830,18 @@
 		bot.mode = 'fight';
 		bot.behavior = 'attack';
 		bot.face = { x: target.x, z: target.z };
+		bot.panicLevel = clamp(
+			(bot.hp < bot.maxHp * 0.3 ? 0.75 : 0) +
+			Math.max(0, this.teamFearValue(bot.team) - 0.55) * 0.8,
+			0, 1
+		);
 		if (!bot.reactionDone) {
 			bot.reaction += dt;
-			if (bot.reaction >= bot.type.reaction * diff.reaction) bot.reactionDone = true;
+			var needReaction = bot.reactionDelay || this.botReactionDelay(bot, target, diff, true);
+			if (bot.reaction >= needReaction) {
+				bot.reactionDone = true;
+				bot.reaction = 0;
+			}
 		}
 		bot.weaponThink = Math.max(0, bot.weaponThink - dt);
 		if (!bot.reloading) this.updateBotWeaponChoice(bot, dist);
@@ -5084,11 +5860,30 @@
 		}
 
 		if (bot.ammo <= 0) {
-			this.startBotReload(bot, target.x, target.eye, target.z);
+			if ((bot.reserve || 0) > 0) {
+				this.startBotReload(bot, target.x, target.eye, target.z);
+			} else if (!this.botTryPickupWeapon(bot, dt)) {
+				var blade = bot.weapons.filter(function (w) { return w.melee; })[0];
+				if (blade) this.setBotWeapon(bot, bot.weapons.indexOf(blade));
+			}
 			return true;
 		}
 
-		var canFire = bot.reactionDone && now >= bot.nextShot;
+		/* Tactical reload: with a low magazine and some distance, a human
+		   tops up before the dry click. It is deliberately probabilistic. */
+		if (!bot.reloading && dist > 10 && (bot.reserve || 0) > 0 &&
+			bot.ammo < bot.magSize * 0.42 && now > (bot.nextTacReloadAt || 0)) {
+			bot.nextTacReloadAt = now + C.rand(3600, 6400);
+			if (Math.random() < 0.42) {
+				this.startBotReload(bot, target.x, target.eye, target.z);
+				return true;
+			}
+		}
+
+		/* A kill is followed by a short confirmation beat before the robot
+		   snaps to the next target. */
+		var canFire = bot.reactionDone && now >= bot.nextShot &&
+			now >= (bot.confirmUntil || 0) && now >= (bot.postFireUntil || 0);
 		if (canFire) {
 			this.botShoot(bot, target, dist, diff);
 		}
@@ -5105,22 +5900,23 @@
 			   doorway is not a straight ground path */
 			bot.strafeTimer -= dt;
 			if (bot.strafeTimer <= 0) {
-				bot.strafeTimer = C.rand(0.7, 1.8);
-				if (Math.random() < 0.45) bot.strafe *= -1;
+				bot.strafeTimer = C.rand(0.55, 1.55) * (1.2 - ((bot.genome && bot.genome.aggression) || 0.5) * 0.35);
+				if (Math.random() < 0.35 + ((bot.genome && bot.genome.peekProbability) || 0.4) * 0.3) bot.strafe *= -1;
 			}
-			this.botPathTo(bot, target.x, target.z, bot.speed * (canFire ? 0.62 : 0.92), dt);
+			this.botPathTo(bot, target.x, target.z, bot.speed * (canFire ? 0.62 : 0.92) * (0.9 + ((bot.genome && bot.genome.aggression) || 0.5) * 0.18), dt);
 			var sx = -nz * bot.strafe * bot.speed * 0.25;
 			var sz = nx * bot.strafe * bot.speed * 0.25;
 			bot.moveX += sx;
 			bot.moveZ += sz;
 		} else {
 			var prefMin = bot.type.preferMin, prefMax = bot.type.preferMax;
-			var approach = dist > prefMax ? 1 : dist < prefMin ? -1 : 0;
-			var strafeSpeed = bot.speed * 0.55;
+			var aggr = (bot.genome && bot.genome.aggression) || 0.5;
+			var approach = dist > prefMax ? (0.55 + aggr * 0.75) : dist < prefMin ? -1 : 0;
+			var strafeSpeed = bot.speed * (0.48 + aggr * 0.18);
 			bot.strafeTimer -= dt;
 			if (bot.strafeTimer <= 0) {
-				bot.strafeTimer = C.rand(0.7, 1.8);
-				if (Math.random() < 0.45) bot.strafe *= -1;
+				bot.strafeTimer = C.rand(0.55, 1.55) * (1.2 - aggr * 0.35) * (0.85 + ((bot.genome && bot.genome.peekDuration) || 0.5) * 0.25);
+				if (Math.random() < 0.35 + ((bot.genome && bot.genome.peekProbability) || 0.4) * 0.3) bot.strafe *= -1;
 			}
 			bot.moveX = -nz * bot.strafe * strafeSpeed + nx * approach * bot.speed * 0.9;
 			bot.moveZ = nx * bot.strafe * strafeSpeed + nz * approach * bot.speed * 0.9;
@@ -5143,6 +5939,27 @@
 		return true;
 	};
 
+	RangeGame.prototype.botChooseFireMode = function (bot, target, dist) {
+		var now = this.now;
+		if (now < (bot.fireModeUntil || 0) && bot.fireMode) return bot.fireMode;
+		var def = bot.weaponDef || C.WEAPONS.ak47;
+		var mode = 'burst';
+		if (!def.auto || def.slot === 'secondary' || def.category === 'SNIPER' || def.category === 'SHOTGUN') {
+			mode = 'single';
+		} else if (bot.panicLevel > 0.5 || dist < 9) {
+			mode = 'spray';
+		} else if (dist > 28) {
+			mode = 'single';
+		} else if (dist < 16 && ((bot.genome && bot.genome.aggression) || 0.5) > 0.5) {
+			mode = 'spray';
+		}
+		bot.fireMode = mode;
+		bot.fireModeUntil = now + C.rand(900, 1900);
+		if (mode !== 'burst') bot.burstLeft = 0;
+		if (mode !== 'spray') bot.sprayLeft = 0;
+		return mode;
+	};
+
 	RangeGame.prototype.botShoot = function (bot, target, dist, diff) {
 		if (!target || !target.alive || bot.reloading || bot.ammo <= 0) return;
 		if (!bot.weaponDef || bot.weaponDef.slot === 'melee') return;
@@ -5157,45 +5974,109 @@
 		else if (def.category === 'SHOTGUN') baseGap *= 1.08;
 		else if (def.category === 'SNIPER') baseGap *= 1.34;
 
-		var bursting = bot.burstMode && (def.category === 'RIFLE' || def.category === 'SMG');
-		if (bursting) {
-			if (bot.burstLeft <= 0) bot.burstLeft = C.randi(3, 5);
-			bot.burstLeft--;
-			if (bot.burstLeft > 0) {
-				bot.nextShot = now + C.rand(80, 130);
+		var g = bot.genome || {};
+		var mode = this.botChooseFireMode(bot, target, dist);
+		if (mode === 'single') {
+			/* Taps at range: one shot, then a deliberate re-settle. */
+			bot.nextShot = now + Math.max(235, baseGap * 1000 * diff.fire * C.rand(1.22, 2.05));
+			bot.reactionDone = false;
+			bot.postFireUntil = now + C.rand(80, 240);
+			bot.sprayShots = 0;
+			bot.burstLeft = 0;
+		} else if (mode === 'spray') {
+			if (bot.sprayLeft <= 0) bot.sprayLeft = clamp(Math.round(C.rand(8, 13) * (1 + (bot.panicLevel || 0) * 0.25)), 6, 16);
+			bot.sprayLeft--;
+			if (bot.sprayLeft > 0) {
+				bot.nextShot = now + C.rand(48, 90) * clamp(1.12 - (diff.accuracy - 0.8) * 0.1, 0.82, 1.12);
 				bot.reactionDone = true;
 				bot.reaction = 0;
 			} else {
-				bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
+				/* Forced reset after a long spray, even if the target is still
+				   visible. Good players stop before the pattern falls apart. */
+				bot.nextShot = now + C.rand(420, 760);
 				bot.reactionDone = false;
+				bot.postFireUntil = now + C.rand(120, 300);
+				bot.sprayShots = 0;
 			}
 		} else {
-			bot.nextShot = now + baseGap * diff.fire * C.rand(0.88, 1.18) * 1000;
-			bot.reactionDone = false;
+			if (bot.burstLeft <= 0) {
+				var distFactor = dist > (g.tapRange || 28) ? 0.55 : dist < 10 ? 1.2 : 1.0;
+				bot.burstLeft = clamp(Math.round((g.burstLength || 3) * distFactor + C.rand(-1, 1)), 2, 5);
+			}
+			bot.burstLeft--;
+			if (bot.burstLeft > 0) {
+				bot.nextShot = now + C.rand(52, 96) * clamp(1.12 - (diff.accuracy - 0.8) * 0.1, 0.82, 1.12);
+				bot.reactionDone = true;
+				bot.reaction = 0;
+			} else {
+				var pause = (g.burstPause || 0.16) * 1000 * C.rand(1.6, 3.2);
+				bot.nextShot = now + pause;
+				bot.reactionDone = false;
+				bot.postFireUntil = now + C.rand(100, 280);
+				bot.sprayShots = 0;
+			}
 		}
-		bot.stationaryUntil = now + 300;
+		bot.stationaryUntil = now + 280;
 
 		var origin = this.tmpB.set(bot.x, 1.42 * bot.baseScale, bot.z);
 		var aim = new THREE.Vector3(target.x, target.eye - C.rand(0.12, 0.42), target.z);
+		/* Physiological sway and a fresh-target flick overshoot. Neither is
+		   random noise per shot: they drift smoothly and recover, which reads
+		   as a hand on a mouse rather than a turret. */
+		var aimTime = Math.max(0, (now - (bot.targetAcquiredAt || now)) / 1000);
+		var swayDeg = (0.35 + Math.min(1.05, aimTime * 0.16)) *
+			(bot.panicLevel ? 1.4 : 1) *
+			clamp(1.22 - (diff.accuracy - 0.8) * 0.24, 0.62, 1.14);
+		var swayX = (Math.sin(now * 0.0063 + bot.aimSwayPhase) + 0.55 * Math.sin(now * 0.0107 + bot.aimSwayPhase * 1.7)) * swayDeg;
+		var swayY = Math.cos(now * 0.0051 + bot.aimSwayPhase * 0.8) * swayDeg * 0.6;
+		var flickDeg = 0;
+		if (now < (bot.flickUntil || 0)) {
+			var flickT = (bot.flickUntil - now) / Math.max(1, bot.flickUntil - (bot.flickAt || now));
+			flickDeg = (bot.flickAmount || 0) * flickT * (bot.flickDir || 1);
+		}
+		var flatDir = new THREE.Vector3(target.x - origin.x, 0, target.z - origin.z);
+		if (flatDir.lengthSq() < 0.0001) flatDir.set(0, 0, 1);
+		flatDir.normalize();
+		var right = new THREE.Vector3(-flatDir.z, 0, flatDir.x);
+		var lateralM = clamp(Math.tan((swayX + flickDeg) * Math.PI / 180) * dist, -2.4, 2.4);
+		var verticalM = clamp(Math.tan(swayY * Math.PI / 180) * dist, -1.3, 1.3);
+		aim.addScaledVector(right, lateralM);
+		aim.y += verticalM;
 		var dir = new THREE.Vector3().subVectors(aim, origin).normalize();
 		var tracerEnd = aim.clone();
+
+		if (now - (bot.lastShotAt || 0) > 520) bot.sprayShots = 0;
+		bot.lastShotAt = now;
+		bot.sprayShots = (bot.sprayShots || 0) + 1;
+		var spray = bot.sprayShots;
+		var sprayControl = g.sprayControl != null ? g.sprayControl : 0.6;
 
 		var missChance = diff.missChance != null ? diff.missChance : 0.22;
 		if (target.speed > 2.2) missChance *= 1.1;
 		if (dist > 34) missChance *= 1.12;
+		if (spray <= 1) missChance *= 0.62;
 		var deliberateMiss = Math.random() < missChance;
 
 		var chance = bot.accuracy * diff.accuracy;
 		chance *= clamp(1.18 - dist / 48, 0.25, 1);
 		if (target.speed > 2.2) chance *= 0.84;
-		chance = clamp(chance, 0.05, 0.9);
+		/* the first round of a burst is the honest shot; sustained spray drifts */
+		if (spray <= 1) chance *= 1.15;
+		chance *= 1 - Math.min(0.32, Math.max(0, spray - 1) * 0.026 * (1.2 - sprayControl));
+		/* Aim error: sway plus the fresh-target overshoot must cost accuracy. */
+		chance *= clamp(1 - (Math.abs(swayX) + Math.abs(swayY) + Math.abs(flickDeg)) * 0.045, 0.46, 1);
+		if (bot.panicLevel) chance *= 1 - bot.panicLevel * 0.16;
+		chance = clamp(chance, 0.05, 0.97);
 
 		var hit = !deliberateMiss && Math.random() < chance;
 		var headshot = false;
 		if (hit) {
-			var scale = def.category === 'SNIPER' ? 1.35 : def.category === 'SHOTGUN' ? 1.35 : def.category === 'SMG' ? 0.62 : def.category === 'RIFLE' ? 1.0 : 0.6;
-			var dmg = bot.damage * scale * diff.damage * C.rand(0.82, 1.18);
-			var hsChance = def.category === 'SNIPER' ? clamp(0.08 + diff.accuracy * 0.12, 0.1, 0.28) : 0.05;
+			var scale = def.category === 'SNIPER' ? 1.35 : def.category === 'SHOTGUN' ? 1.35 : def.category === 'SMG' ? 0.62 : def.category === 'RIFLE' ? 1.0 : def.category === 'MG' ? 1.05 : 0.6;
+			var weaponFactor = clamp((def.damage || 34) / 34 * (def.pellets ? 1.35 : 1), 0.55, 2.4);
+			var dmg = bot.damage * scale * weaponFactor * diff.damage * C.rand(0.82, 1.18);
+			var hsChance = def.category === 'SNIPER'
+				? clamp(0.08 + diff.accuracy * 0.12, 0.1, 0.38)
+				: clamp(0.04 + diff.accuracy * 0.06, 0.05, 0.3);
 			headshot = Math.random() < hsChance;
 			if (headshot) dmg *= def.category === 'SNIPER' ? 2.3 : 1.6;
 			if (Math.random() < 0.06) dmg *= 1.45;
@@ -5203,7 +6084,7 @@
 				this.applyPlayerDamage(dmg, bot, headshot);
 				this.spawnSparks(this.camera.position.clone(), 0xff6a4a, 5, 1.8);
 			} else if (target.bot) {
-				this.damageBotByBot(target.bot, dmg * 2.15, bot, headshot, def.name);
+				this.damageBotByBot(target.bot, dmg * 2.15, bot, headshot, def.name, def.armorPen);
 				this.spawnSparks(new THREE.Vector3(target.x, 1.25, target.z), 0xff8b52, 4, 1.8);
 			}
 		} else {
@@ -5219,7 +6100,7 @@
 		if (bot.flash) {
 			bot.muzzle.updateWorldMatrix(true, false);
 			bot.flash.visible = true;
-			bot.flashUntil = now + 45;
+			bot.muzzleUntil = now + 45;
 			bot.flash.material.rotation = Math.random() * Math.PI * 2;
 		}
 		this.spawnTracer(origin.clone(), tracerEnd, 0xff9a50, 0.09);
@@ -5450,6 +6331,7 @@
 
 	RangeGame.prototype.botStallWatchdog = function (bot, dt, preX, preZ) {
 		if (!this.round || this.round.phase !== 'live' || this.state !== 'playing' || bot.dead) return;
+		if (!this.roundLiveAt || this.now - this.roundLiveAt < 1600) return;
 		if (bot.wanderUntil) { bot.stallTimer = 0; return; }
 		if (bot.planting || this.criticalRole(bot)) { bot.stallTimer = 0; return; }
 		var intended = Math.hypot(bot.moveX || 0, bot.moveZ || 0) > 0.3;
@@ -5474,6 +6356,7 @@
 
 	RangeGame.prototype.checkTeamStall = function () {
 		if (this.state !== 'playing' || !this.round || this.round.phase !== 'live') return;
+		if (!this.roundLiveAt || this.now - this.roundLiveAt < 1600) return;
 		if (this.now < (this._teamStallBreakAt || 0)) return;
 		var stalled = 0, alive = 0;
 		for (var i = 0; i < this.bots.length; i++) {
@@ -5564,6 +6447,8 @@
 		if (this.botForceWander(bot, dt)) return;
 		if (this.botReplanObjective(bot, dt)) return;
 		if (this.botPanicObjective(bot, dt)) return;
+		if (this.botTryPickupWeapon(bot, dt)) return;
+		this.botMaybeThrowUtility(bot, dt);
 		var b = this.bomb;
 		if (bot.supportTarget) {
 			if (this.now >= bot.supportUntil || (b && (b.state === 'planted' || b.state === 'planting')) || bot.hasBomb || bot.planting || (b && b.defuser === bot)) {
@@ -5595,10 +6480,12 @@
 				return;
 			}
 		}
+		if (this.botRevenge(bot, dt)) return;
 		if (this.botHunt(bot, dt)) return;
 		if (this.botGrouping(bot, dt)) return;
 		if (this.botHearObjective(bot, dt)) return;
 		if (this.botGambleObjective(bot, dt)) return;
+		if (this.botAutoReload(bot)) return;
 		if (bot.team === 'T') this.tBotObjective(bot, dt);
 		else this.ctBotObjective(bot, dt);
 	};
@@ -5786,7 +6673,7 @@
 			var fd = Math.hypot(bot.x - this.player.x, bot.z - this.player.z);
 			if (fd < 26) this.sound.burst({ dur: 0.05, type: 'lowpass', freq: 300, gain: 0.03 * (1 - fd / 30), pan: this.panFor(bot.x, bot.z) });
 		}
-		if (bot.flash && bot.flash.visible && now > bot.flashUntil) bot.flash.visible = false;
+		if (bot.flash && bot.flash.visible && now > (bot.muzzleUntil || 0)) bot.flash.visible = false;
 		this.botStallWatchdog(bot, dt, preX, preZ);
 	};
 
@@ -5837,6 +6724,7 @@
 			this.match.deaths++;
 			this.aiRecordPlayerDeath(fromBot);
 			var playerSite = (this.nearestSite(p.x, p.z) || {}).id || 'A';
+			this.recordEarlyRevenge(this.playerTeam, { name: 'YOU', x: p.x, z: p.z, site: playerSite, slotIndex: null }, fromBot, 'player');
 			this.registerTeamDeath(this.playerTeam, { name: 'YOU', x: p.x, z: p.z, site: playerSite });
 			this.playerDiedLastRound = true;
 			this.playerWasKilledLastRound = true;
@@ -5844,6 +6732,9 @@
 			this.playerHasBomb = false;
 			this.playerPlanting = false;
 			if (this.bomb && this.bomb.carrier === this.player) this.dropBomb(this.player);
+			for (var revI = 0; revI < this.bots.length; revI++) {
+				if (this.bots[revI].revenge && this.bots[revI].revenge.killerName === 'YOU') this.bots[revI].revenge = null;
+			}
 			this.deathTimer = 1.6;
 			this.spectating = false;
 			this.showDeathCam(fromBot, !!headshot);
@@ -5859,6 +6750,7 @@
 			this.semiQueued = false;
 			this.reloading = false;
 			this.scoped = false;
+			this.sniperRescope = false;
 			this.camera.fov = 74;
 			this.camera.updateProjectionMatrix();
 			this.updateVitalsHUD();
@@ -5867,9 +6759,18 @@
 		}
 	};
 
-	RangeGame.prototype.damageBot = function (bot, amount, headshot, weaponName) {
+	RangeGame.prototype.applyBotArmor = function (bot, amount, armorPen) {
+		if (!bot || !(bot.armor > 0)) return amount;
+		var pen = armorPen == null ? 0.6 : clamp(armorPen, 0, 1);
+		var absorbed = Math.min(bot.armor, amount * 0.5 * (1 - pen));
+		bot.armor = Math.max(0, bot.armor - absorbed);
+		return Math.max(0, amount - absorbed);
+	};
+
+	RangeGame.prototype.damageBot = function (bot, amount, headshot, weaponName, armorPen) {
 		if (!bot || !bot.alive || bot.team === this.playerTeam) return false;
 		var killed = false;
+		amount = this.applyBotArmor(bot, amount, armorPen);
 		bot.hp -= amount;
 		bot.robot.hp = Math.max(0, bot.hp);
 		bot.robot.maxHp = bot.maxHp;
@@ -5883,7 +6784,7 @@
 		bot.roamTarget = null;
 		this.raiseAlert(bot.team, this.player.x, this.player.z, 'player');
 		C.drawHealthSprite(bot.robot);
-		bot.robot.healthSprite.visible = bot.hp > 0;
+		bot.robot.healthSprite.visible = bot.robot.healthFriendly && bot.hp > 0;
 		if (bot.hp <= 0) {
 			this.killBot(bot, headshot, weaponName, 'player');
 			killed = true;
@@ -5894,9 +6795,10 @@
 		return killed;
 	};
 
-	RangeGame.prototype.damageBotByBot = function (bot, amount, attacker, headshot, weaponName) {
+	RangeGame.prototype.damageBotByBot = function (bot, amount, attacker, headshot, weaponName, armorPen) {
 		if (!bot || !bot.alive || bot.dead) return false;
 		if (attacker && attacker.team === bot.team) return false;
+		amount = this.applyBotArmor(bot, amount, armorPen);
 		bot.hp -= amount;
 		bot.robot.hp = Math.max(0, bot.hp);
 		bot.robot.maxHp = bot.maxHp;
@@ -5911,7 +6813,7 @@
 		bot.reactionDone = false;
 		bot.reaction = 0;
 		C.drawHealthSprite(bot.robot);
-		bot.robot.healthSprite.visible = bot.hp > 0;
+		bot.robot.healthSprite.visible = bot.robot.healthFriendly && bot.hp > 0;
 		if (bot.hp <= 0) {
 			this.killBot(bot, headshot, weaponName || 'RIFLE', attacker);
 			return true;
@@ -5933,6 +6835,12 @@
 		bot.headshotDeath = !!headshot;
 		bot.robot.healthSprite.visible = false;
 		bot.planting = false;
+		/* A dead robot loses the loadout it carried; its wallet survives. */
+		var victimSlot = this.botSlot(bot.team, bot.slotIndex || 0);
+		victimSlot.loadout = null;
+		victimSlot.armor = 0;
+		victimSlot.kit = false;
+		victimSlot.survived = false;
 		if (headshot && bot.robot.head) {
 			bot.robot.head.visible = false;
 			this.spawnRobotHead(bot);
@@ -5941,9 +6849,24 @@
 			(this.bomb.state === 'carried' || this.bomb.state === 'planting')) {
 			this.dropBomb(bot);
 		}
+		if (killer && killer !== this.player && killer.team) {
+			killer.confirmUntil = this.now + C.rand(180, 380);
+			killer.postFireUntil = this.now + C.rand(80, 180);
+			killer.reactionDone = false;
+		}
 		this.dropBotWeapon(bot);
 		this.aiRecordDeath(bot, deathCause);
-		if (killer && killer !== this.player && killer.team && killer.name) this.aiRecordRouteKill(killer);
+		this.recordEarlyRevenge(bot.team, bot, killer, 'bot');
+		/* Killing the marked killer settles the grudge for the whole squad. */
+		for (var rb = 0; rb < this.bots.length; rb++) {
+			var revBot = this.bots[rb];
+			if (revBot.revenge && revBot.revenge.killerName === bot.name) revBot.revenge = null;
+		}
+		if (killer && killer !== this.player && killer.team && killer.name) {
+			this.aiRecordRouteKill(killer);
+			var reward = (killer.weaponDef && killer.weaponDef.killReward) || 300;
+			this.botAward(killer.team, reward, killer.slotIndex);
+		}
 		this.registerTeamDeath(bot.team, bot);
 		var byPlayer = (killer === 'player' || killer == null || killer === this.player);
 		if (byPlayer) {
@@ -5952,7 +6875,8 @@
 			this.roundStats.kills++;
 			if (this.roundStats.kills === 4 || this.roundStats.kills === 5) this.teamAce(this.playerTeam, this.roundStats.kills);
 			if (headshot) { this.match.hs++; this.roundStats.hs++; }
-			var reward = 300 + (headshot ? 100 : 0);
+			var killDef = this.weaponDef(this.currentWeapon);
+			var reward = (killDef && killDef.killReward ? killDef.killReward : 300) + (headshot ? 100 : 0);
 			this.match.money = clamp(this.match.money + reward, 0, 16000);
 			this.addKillFeed('YOU', bot.name, weaponName || 'RIFLE', headshot, true);
 		} else {
@@ -6010,13 +6934,29 @@
 	};
 
 	RangeGame.prototype.dropBotWeapon = function (bot) {
-		var def = C.WEAPONS[bot.weaponId];
-		if (!def || !C.buildWeaponPickup || def.slot === 'melee') return;
-		var ammo = {
-			mag: Math.max(1, Math.round(def.mag * C.rand(0.45, 0.9))),
-			reserve: C.randi(0, def.reserve)
-		};
-		return this.createWeaponDrop(bot.weaponId, def, ammo, bot.x, bot.z, true);
+		if (!C.buildWeaponPickup || !bot.weapons) return;
+		this.saveBotWeapon(bot);
+		var made = [];
+		var guns = bot.weapons.filter(function (w) { return w && !w.melee && w.def; });
+		for (var i = 0; i < guns.length; i++) {
+			var rec = guns[i];
+			if (!rec.def || rec.def.slot === 'melee') continue;
+			var ammo = {
+				mag: Math.max(0, rec.ammo || 0),
+				reserve: Math.max(0, rec.reserve || 0)
+			};
+			if (ammo.mag + ammo.reserve <= 0) continue;
+			var ox = bot.x + C.rand(-0.24, 0.24);
+			var oz = bot.z + C.rand(-0.24, 0.24);
+			made.push(this.createWeaponDrop(rec.id, rec.def, ammo, ox, oz, true));
+		}
+		/* If every magazine was already empty, still leave the primary on the
+		   floor so the model is visible and another robot can swap to it. */
+		if (!made.length && bot.weaponId && C.WEAPONS[bot.weaponId] && C.WEAPONS[bot.weaponId].slot !== 'melee') {
+			made.push(this.createWeaponDrop(bot.weaponId, C.WEAPONS[bot.weaponId],
+				{ mag: 0, reserve: 0 }, bot.x, bot.z, true));
+		}
+		return made[0] || null;
 	};
 
 	RangeGame.prototype.removeDrop = function (drop) {
@@ -6131,6 +7071,491 @@
 		this.updatePickupPrompt();
 	};
 
+	/* ======================================================================
+	   thrown utility: grenades, smoke, fire and flash
+	   ====================================================================== */
+	RangeGame.prototype.renderUtilityHUD = function () {
+		if (!this.el.utils) return;
+		var html = '';
+		var sig = '';
+		var list = C.UTIL_ORDER || ['he', 'flash', 'smoke', 'molotov', 'decoy'];
+		var short = { he: 'HE', flash: 'FLASH', smoke: 'SMOKE', molotov: 'FIRE', decoy: 'DECOY' };
+		for (var i = 0; i < list.length; i++) {
+			var type = list[i];
+			var count = (this.grenades && this.grenades[type]) || 0;
+			if (!count) continue;
+			sig += type + count;
+			html += '<span class="csr-util' + (this.currentSlot === 'grenade' && this.currentWeapon === type ? ' is-active' : '') + '" data-util="' + type + '">' +
+				'<i></i><b>' + count + '</b><small>' + escapeHTML(short[type] || type) + '</small></span>';
+		}
+		if (this.loadout && this.loadout.equipment === 'zeus') {
+			sig += 'zeus';
+			html += '<span class="csr-util' + (this.currentSlot === 'equipment' ? ' is-active' : '') + '" data-util="zeus"><i></i><b>1</b><small>ZEUS</small></span>';
+		}
+		if (sig === this._utilSig) return;
+		this._utilSig = sig;
+		this.el.utils.innerHTML = html;
+		this.el.utils.hidden = !html;
+	};
+
+	RangeGame.prototype.equipGrenade = function (type) {
+		if (!type || !(this.grenades && this.grenades[type] > 0)) return false;
+		this.selectedGrenade = type;
+		this.currentWeapon = type;
+		this.currentSlot = 'grenade';
+		this.reloading = false;
+		this.scoped = false;
+		this.scopeT = 0;
+		this.sniperRescope = false;
+		this.switching = 0.28;
+		this.weaponKick = 0;
+		this.weaponKickRot = 0;
+		Object.keys(this.viewWeapons || {}).forEach(function (k) {
+			var m = this.viewWeapons[k];
+			if (m) m.group.visible = (k === type);
+		}, this);
+		this.updateAmmoHUD();
+		this.renderUtilityHUD();
+		this.sound.switchWeapon();
+		return true;
+	};
+
+	RangeGame.prototype.cycleGrenade = function () {
+		var list = (C.UTIL_ORDER || []).filter(function (type) {
+			return (this.grenades && this.grenades[type] > 0);
+		}, this);
+		if (!list.length) { this.toast('No grenades — buy utility during buy time.'); return false; }
+		var idx = list.indexOf(this.currentWeapon);
+		var next = list[(idx + 1 + list.length) % list.length];
+		return this.equipGrenade(next);
+	};
+
+	RangeGame.prototype.firstGrenade = function () {
+		var list = (C.UTIL_ORDER || []).filter(function (type) {
+			return (this.grenades && this.grenades[type] > 0);
+		}, this);
+		return list[0] || null;
+	};
+
+	RangeGame.prototype.throwGrenade = function (type) {
+		if (!this.player.alive || this.state !== 'playing') return false;
+		if (this.round && this.round.phase === 'freeze') return false;
+		if (this.reloading) return false;
+		type = type || (this.currentSlot === 'grenade' ? this.currentWeapon : (this.selectedGrenade || this.firstGrenade()));
+		if (!type || !(this.grenades[type] > 0)) {
+			this.toast('No grenade selected.');
+			return false;
+		}
+		if (this.now < (this.nextFire || 0)) return false;
+		var def = C.UTILITIES[type];
+		if (!def) return false;
+		var origin = this.camera.position.clone();
+		var dir = this.getAimDirection();
+		var speed = type === 'flash' ? 18.5 : type === 'smoke' ? 16.5 : 17.5;
+		var vel = dir.clone().multiplyScalar(speed);
+		vel.y += 2.5;
+		this.grenades[type]--;
+		if (this.grenades[type] <= 0) delete this.grenades[type];
+		this.spawnGrenadeProjectile(type, origin.x, origin.y - 0.06, origin.z, vel.x, vel.y, vel.z, 'player', this.playerTeam);
+		this.nextFire = this.now + 620;
+		this.grenadeThrowAt = this.now;
+		this.weaponKick = 0.9;
+		this.weaponKickRot = 0.7;
+		this.sound.burst({ dur: 0.06, type: 'bandpass', freq: 700, q: 0.8, gain: 0.05 });
+		if (!this.grenades[type] && this.currentSlot === 'grenade') {
+			this.selectedGrenade = this.firstGrenade();
+			this.equipWeapon(this.loadout.primary || this.loadout.secondary || 'knife', true);
+		}
+		this.updateAmmoHUD();
+		this.renderUtilityHUD();
+		return true;
+	};
+
+	RangeGame.prototype.spawnGrenadeProjectile = function (type, x, y, z, vx, vy, vz, owner, team) {
+		var def = C.UTILITIES[type];
+		if (!def || !C.buildGrenadeProjectile) return null;
+		var model = C.buildGrenadeProjectile(type);
+		model.group.position.set(x, y, z);
+		this.scene.add(model.group);
+		var p = {
+			type: type, def: def, x: x, y: y, z: z,
+			vx: vx, vy: vy, vz: vz,
+			owner: owner || 'player', team: team || this.playerTeam,
+			fuseAt: this.now + def.fuse * 1000,
+			age: 0, group: model.group, materials: model.materials,
+			spin: C.rand(-6, 6)
+		};
+		this.thrown.push(p);
+		return p;
+	};
+
+	RangeGame.prototype.removeThrown = function (p) {
+		var idx = this.thrown.indexOf(p);
+		if (idx >= 0) this.thrown.splice(idx, 1);
+		if (p.group && p.group.parent) p.group.parent.remove(p.group);
+		p.group.traverse(function (o) { if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} } });
+		(p.materials || []).forEach(function (m) { try { m.dispose(); } catch (e2) {} });
+	};
+
+	RangeGame.prototype.grenadeBlockedAt = function (x, y, z) {
+		var r = 0.075;
+		var cols = this.world.colliders;
+		for (var i = 0; i < cols.length; i++) {
+			var c = cols[i];
+			if (x < c.minX - r || x > c.maxX + r) continue;
+			if (z < c.minZ - r || z > c.maxZ + r) continue;
+			if (y < c.minY - r || y > c.maxY + r) continue;
+			return true;
+		}
+		return false;
+	};
+
+	RangeGame.prototype.updateUtilities = function (dt) {
+		var now = this.now;
+		/* projectiles */
+		for (var i = this.thrown.length - 1; i >= 0; i--) {
+			var p = this.thrown[i];
+			p.age += dt;
+			p.vy -= 9.8 * dt;
+			var nx = p.x + p.vx * dt;
+			var ny = p.y + p.vy * dt;
+			var nz = p.z + p.vz * dt;
+			if (this.grenadeBlockedAt(nx, p.y, p.z)) { p.vx *= -0.32; nx = p.x; }
+			if (this.grenadeBlockedAt(p.x, ny, p.z)) { p.vy *= -0.32; ny = p.y; }
+			if (this.grenadeBlockedAt(p.x, p.y, nz)) { p.vz *= -0.32; nz = p.z; }
+			p.x = nx; p.y = ny; p.z = nz;
+			if (p.y <= 0.12) {
+				p.y = 0.12;
+				if (p.type === 'molotov' && p.age > 0.18) {
+					this.detonateGrenade(p);
+					continue;
+				}
+				p.vy = Math.abs(p.vy) * 0.34;
+				p.vx *= 0.7;
+				p.vz *= 0.7;
+				if (p.vy < 0.3) p.vy = 0;
+			}
+			if (p.group) {
+				p.group.position.set(p.x, p.y, p.z);
+				p.group.rotation.x += p.spin * dt;
+				p.group.rotation.z += p.spin * 0.7 * dt;
+			}
+			if (now >= p.fuseAt || p.y < -2) {
+				if (now >= p.fuseAt) this.detonateGrenade(p);
+				else this.removeThrown(p);
+			}
+		}
+		/* smoke clouds */
+		for (var s = this.smokes.length - 1; s >= 0; s--) {
+			var sm = this.smokes[s];
+			sm.age += dt;
+			if (now >= sm.until) { this.removeSmoke(sm); continue; }
+			var grow = Math.min(1, sm.age / 0.55);
+			for (var q = 0; q < sm.puffs.length; q++) {
+				var puff = sm.puffs[q];
+				var base = puff.userData.base;
+				var wobble = Math.sin(now * 0.0009 + q * 1.7) * 0.16;
+				puff.position.set(base.x + wobble, base.y + Math.cos(now * 0.0007 + q) * 0.1, base.z + wobble * 0.7);
+				var sc = (base.scale || 2.4) * (0.35 + 0.65 * grow);
+				puff.scale.set(sc, sc, 1);
+				if (puff.material) puff.material.opacity = 0.58 * (0.45 + 0.55 * grow);
+			}
+		}
+		/* fire pools */
+		for (var f = this.fires.length - 1; f >= 0; f--) {
+			var fire = this.fires[f];
+			if (now >= fire.until) { this.removeFire(fire); continue; }
+			for (var qf = 0; qf < fire.puffs.length; qf++) {
+				var fp = fire.puffs[qf];
+				var fbase = fp.userData.base;
+				var flick = 0.75 + 0.25 * Math.abs(Math.sin(now * 0.006 + qf * 2.1));
+				fp.scale.set(fbase.scale * flick, fbase.scale * (1.2 - flick * 0.2), 1);
+				fp.position.y = fbase.y + Math.sin(now * 0.004 + qf) * 0.08;
+			}
+			if (fire.light) fire.light.intensity = 1.5 + Math.sin(now * 0.02) * 0.5;
+			if (now >= fire.nextTick) {
+				fire.nextTick = now + 260;
+				this.burnAt(fire);
+			}
+			/* a smoke resting on the flames puts them out */
+			for (var smi = 0; smi < this.smokes.length; smi++) {
+				var smk = this.smokes[smi];
+				if (Math.hypot(smk.x - fire.x, smk.z - fire.z) < smk.radius * 0.8) {
+					fire.until = Math.min(fire.until, now);
+					break;
+				}
+			}
+		}
+		/* decoys */
+		for (var d = this.decoys.length - 1; d >= 0; d--) {
+			var dec = this.decoys[d];
+			if (now >= dec.until) {
+				this.grenadeBlast(dec.x, 0.6, dec.z, 2.2, 5, dec.team, dec.owner);
+				this.removeDecoy(dec);
+				continue;
+			}
+			if (now >= dec.nextShot) {
+				dec.nextShot = now + C.rand(520, 1300);
+				var dist = Math.hypot(this.player.x - dec.x, this.player.z - dec.z);
+				if (dist < 46) this.sound.shot('rifle', this.panFor(dec.x, dec.z), Math.min(30, dist));
+				this.raiseAlert(dec.team === 'CT' ? 'T' : 'CT', dec.x, dec.z, 'decoy');
+			}
+		}
+		this.updateBlindness();
+	};
+
+	RangeGame.prototype.updateBlindness = function () {
+		var left = Math.max(0, (this.playerFlashUntil || 0) - this.now);
+		if (!this.el.blind) return;
+		if (left <= 0) {
+			this.el.blind.style.opacity = '0';
+			this.el.blind.classList.remove('is-on');
+			return;
+		}
+		var t = clamp(left / 1000, 0, 1);
+		this.el.blind.style.opacity = String(clamp(0.45 + 0.55 * t, 0, 0.94));
+		this.el.blind.classList.add('is-on');
+	};
+
+	RangeGame.prototype.detonateGrenade = function (p) {
+		var def = p.def;
+		var x = p.x, y = Math.max(0.25, p.y), z = p.z;
+		this.removeThrown(p);
+		if (p.type === 'he') {
+			this.spawnSparks(new THREE.Vector3(x, y + 0.2, z), 0xffa84a, 26, 5.2);
+			this.spawnSparks(new THREE.Vector3(x, y + 0.2, z), 0xffe0a0, 10, 2.8);
+			this.sound.explode();
+			var pdist = Math.hypot(this.player.x - x, this.player.z - z);
+			if (pdist < 18) this.shake = Math.min(1.5, this.shake + (1 - pdist / 18) * 0.5);
+			this.grenadeBlast(x, y, z, def.radius || 8, def.damage || 98, p.team, p.owner);
+		} else if (p.type === 'flash') {
+			this.spawnSparks(new THREE.Vector3(x, y + 0.3, z), 0xffffff, 30, 4.2);
+			this.sound.burst({ dur: 0.2, type: 'highpass', freq: 2400, gain: 0.18 });
+			this.flashBurst(x, y, z, def, p.team);
+		} else if (p.type === 'smoke') {
+			this.deploySmoke(x, z, p.team, p.owner);
+			this.sound.burst({ dur: 0.35, type: 'lowpass', freq: 900, gain: 0.07 });
+		} else if (p.type === 'molotov') {
+			this.deployFire(x, z, p.team, p.owner);
+			this.sound.burst({ dur: 0.22, type: 'lowpass', freq: 1200, gain: 0.1 });
+		} else {
+			this.deployDecoy(x, z, p.team, p.owner);
+			this.sound.burst({ dur: 0.08, type: 'bandpass', freq: 1000, gain: 0.05 });
+		}
+	};
+
+	RangeGame.prototype.grenadeBlast = function (x, y, z, radius, damage, team, owner) {
+		var ownerBot = owner && owner !== 'player' && owner.team ? owner : null;
+		var falloff = function (d) { return clamp(1 - d / radius, 0, 1); };
+		for (var i = 0; i < this.bots.length; i++) {
+			var bot = this.bots[i];
+			if (!bot.alive || bot.dead || bot.team === team) continue;
+			var d = Math.hypot(bot.x - x, bot.z - z);
+			if (d > radius) continue;
+			if (!this.pointHasLos(x, y + 0.4, z, bot.x, 1.15, bot.z)) continue;
+			var dmg = damage * falloff(d);
+			if (dmg <= 0) continue;
+			if (ownerBot) this.damageBotByBot(bot, dmg, ownerBot, false, 'HE GRENADE', 0.5);
+			else this.damageBot(bot, dmg, false, 'HE GRENADE', 0.5);
+		}
+		if (this.player.alive && this.playerTeam !== team) {
+			var pd = Math.hypot(this.player.x - x, this.player.z - z);
+			if (pd <= radius && this.pointHasLos(x, y + 0.4, z, this.player.x, this.player.feetY + this.player.eye, this.player.z)) {
+				this.applyPlayerDamage(damage * falloff(pd), ownerBot, false);
+			}
+		}
+	};
+
+	RangeGame.prototype.flashBurst = function (x, y, z, def, team) {
+		var radius = def.radius || 12;
+		var blind = (def.blind || 5) * 1000;
+		var p = this.player;
+		if (p.alive) {
+			var d = Math.hypot(p.x - x, p.z - z);
+			if (d <= radius && this.pointHasLos(x, y + 0.4, z, p.x, p.feetY + p.eye, p.z)) {
+				var to = new THREE.Vector3(x - p.x, y - (p.feetY + p.eye), z - p.z).normalize();
+				var facing = this.getAimDirection().dot(to);
+				var factor = facing > 0.15 ? 1 : 0.35;
+				this.playerFlashUntil = Math.max(this.playerFlashUntil || 0, this.now + blind * factor);
+				this.shake = Math.min(1.2, this.shake + 0.25);
+			}
+		}
+		for (var i = 0; i < this.bots.length; i++) {
+			var bot = this.bots[i];
+			if (!bot.alive || bot.dead) continue;
+			var bd = Math.hypot(bot.x - x, bot.z - z);
+			if (bd > radius) continue;
+			if (!this.pointHasLos(x, y + 0.4, z, bot.x, 1.3, bot.z)) continue;
+			bot.flashUntil = Math.max(bot.flashUntil || 0, this.now + blind);
+			bot.target = null;
+			bot.reactionDone = false;
+		}
+	};
+
+	RangeGame.prototype.deploySmoke = function (x, z, team, owner) {
+		var def = C.UTILITIES.smoke;
+		var group = new THREE.Group();
+		group.position.set(x, 0, z);
+		var puffs = [];
+		for (var i = 0; i < 16; i++) {
+			var mat = new THREE.SpriteMaterial({
+				map: this.tex.smoke, color: i % 3 === 0 ? 0xf2f5f3 : 0xd4dad6,
+				transparent: true, opacity: 0.58, depthWrite: false
+			});
+			var sprite = new THREE.Sprite(mat);
+			var a = C.rand(0, Math.PI * 2), r = C.rand(0.1, 2.9);
+			sprite.position.set(Math.cos(a) * r, C.rand(0.35, 2.7), Math.sin(a) * r);
+			var scale = C.rand(2.6, 4.4);
+			sprite.scale.set(scale, scale, 1);
+			sprite.userData.base = { x: sprite.position.x, y: sprite.position.y, z: sprite.position.z, scale: scale };
+			group.add(sprite);
+			puffs.push(sprite);
+		}
+		this.scene.add(group);
+		this.smokes.push({
+			x: x, z: z, y: 1.5, radius: def.radius || 3.6,
+			until: this.now + (def.duration || 18) * 1000,
+			age: 0, group: group, puffs: puffs, team: team, owner: owner
+		});
+	};
+
+	RangeGame.prototype.removeSmoke = function (sm) {
+		var idx = this.smokes.indexOf(sm);
+		if (idx >= 0) this.smokes.splice(idx, 1);
+		if (sm.group && sm.group.parent) sm.group.parent.remove(sm.group);
+		sm.puffs.forEach(function (p) { if (p.material) p.material.dispose(); });
+	};
+
+	RangeGame.prototype.deployFire = function (x, z, team, owner) {
+		var def = C.UTILITIES.molotov;
+		var group = new THREE.Group();
+		group.position.set(x, 0.02, z);
+		var puffs = [];
+		for (var i = 0; i < 14; i++) {
+			var mat = new THREE.SpriteMaterial({
+				map: this.tex.glow, color: i % 4 === 0 ? 0xffe08a : i % 3 === 0 ? 0xff8a3c : 0xff5a2a,
+				transparent: true, opacity: 0.62, depthWrite: false, blending: THREE.AdditiveBlending
+			});
+			var sprite = new THREE.Sprite(mat);
+			var a = C.rand(0, Math.PI * 2), r = C.rand(0.2, (def.radius || 4.2) * 0.78);
+			sprite.position.set(Math.cos(a) * r, C.rand(0.15, 0.55), Math.sin(a) * r);
+			var scale = C.rand(0.9, 1.9);
+			sprite.scale.set(scale, scale, 1);
+			sprite.userData.base = { x: sprite.position.x, y: sprite.position.y, z: sprite.position.z, scale: scale };
+			group.add(sprite);
+			puffs.push(sprite);
+		}
+		var light = new THREE.PointLight(0xff7a30, 1.8, 10, 2);
+		light.position.set(0, 1.1, 0);
+		group.add(light);
+		this.scene.add(group);
+		this.fires.push({
+			x: x, z: z, radius: def.radius || 4.2, until: this.now + (def.duration || 7) * 1000,
+			nextTick: 0, group: group, puffs: puffs, light: light, team: team, owner: owner,
+			dps: def.dps || 40
+		});
+	};
+
+	RangeGame.prototype.removeFire = function (fire) {
+		var idx = this.fires.indexOf(fire);
+		if (idx >= 0) this.fires.splice(idx, 1);
+		if (fire.group && fire.group.parent) fire.group.parent.remove(fire.group);
+		fire.puffs.forEach(function (p) { if (p.material) p.material.dispose(); });
+	};
+
+	RangeGame.prototype.burnAt = function (fire) {
+		var ownerBot = fire.owner && fire.owner !== 'player' && fire.owner.team ? fire.owner : null;
+		for (var i = 0; i < this.bots.length; i++) {
+			var bot = this.bots[i];
+			if (!bot.alive || bot.dead || bot.team === fire.team) continue;
+			if (Math.hypot(bot.x - fire.x, bot.z - fire.z) > fire.radius) continue;
+			if (ownerBot) this.damageBotByBot(bot, fire.dps * 0.26, ownerBot, false, 'MOLOTOV', 0.9);
+			else this.damageBot(bot, fire.dps * 0.26, false, 'MOLOTOV', 0.9);
+		}
+		if (this.player.alive && this.playerTeam !== fire.team &&
+			Math.hypot(this.player.x - fire.x, this.player.z - fire.z) <= fire.radius) {
+			this.applyPlayerDamage(fire.dps * 0.26, ownerBot, false);
+		}
+	};
+
+	RangeGame.prototype.deployDecoy = function (x, z, team, owner) {
+		var model = C.buildGrenadeProjectile('decoy');
+		model.group.position.set(x, 0.18, z);
+		this.scene.add(model.group);
+		this.decoys.push({
+			x: x, z: z, until: this.now + (C.UTILITIES.decoy.duration || 15) * 1000,
+			nextShot: this.now + 600, group: model.group, materials: model.materials,
+			team: team, owner: owner
+		});
+	};
+
+	RangeGame.prototype.removeDecoy = function (dec) {
+		var idx = this.decoys.indexOf(dec);
+		if (idx >= 0) this.decoys.splice(idx, 1);
+		if (dec.group && dec.group.parent) dec.group.parent.remove(dec.group);
+		dec.group.traverse(function (o) { if (o.isMesh && o.geometry) { try { o.geometry.dispose(); } catch (e) {} } });
+		(dec.materials || []).forEach(function (m) { try { m.dispose(); } catch (e2) {} });
+	};
+
+	RangeGame.prototype.clearUtilities = function () {
+		while (this.thrown.length) this.removeThrown(this.thrown[0]);
+		while (this.smokes.length) this.removeSmoke(this.smokes[0]);
+		while (this.fires.length) this.removeFire(this.fires[0]);
+		while (this.decoys.length) this.removeDecoy(this.decoys[0]);
+		this.playerFlashUntil = 0;
+		this._utilSig = null;
+		if (this.el.blind) { this.el.blind.style.opacity = '0'; this.el.blind.classList.remove('is-on'); }
+	};
+
+	RangeGame.prototype.segmentHitsSphere = function (ax, ay, az, bx, by, bz, cx, cy, cz, r) {
+		var dx = bx - ax, dy = by - ay, dz = bz - az;
+		var fx = ax - cx, fy = ay - cy, fz = az - cz;
+		var a = dx * dx + dy * dy + dz * dz;
+		if (a < 1e-6) return (fx * fx + fy * fy + fz * fz) <= r * r;
+		var b = 2 * (fx * dx + fy * dy + fz * dz);
+		var c = fx * fx + fy * fy + fz * fz - r * r;
+		/* Either endpoint inside the cloud means the segment is obscured even
+		   if it never crosses the sphere's surface. */
+		if (c <= 0) return true;
+		var gx = bx - cx, gy = by - cy, gz = bz - cz;
+		if (gx * gx + gy * gy + gz * gz <= r * r) return true;
+		var disc = b * b - 4 * a * c;
+		if (disc < 0) return false;
+		var t = (-b - Math.sqrt(disc)) / (2 * a);
+		var t2 = (-b + Math.sqrt(disc)) / (2 * a);
+		return t2 >= 0 && t <= 1;
+	};
+
+	RangeGame.prototype.throwGrenadeFromBot = function (bot, type, tx, tz) {
+		if (!bot || !bot.alive || !C.UTILITIES[type]) return false;
+		var y = 1.35 * bot.baseScale;
+		var dx = tx - bot.x, dz = tz - bot.z;
+		var d = Math.hypot(dx, dz);
+		var t = clamp(d / 14, 0.55, 1.5);
+		var vx = dx / t;
+		var vz = dz / t;
+		var vy = (0.18 - y + 0.5 * 9.8 * t * t) / t;
+		return !!this.spawnGrenadeProjectile(type, bot.x, y, bot.z, vx, vy, vz, bot, bot.team);
+	};
+
+	RangeGame.prototype.botMaybeThrowUtility = function (bot, dt) {
+		if (!bot || !bot.grenades || !bot.lastSeen) return false;
+		if (this.now < (bot.utilNextAt || 0)) return false;
+		if (bot.planting || bot.hasBomb || this.criticalRole(bot)) return false;
+		if (this.now - bot.lastSeen.t > 4500) return false;
+		var d = Math.hypot(bot.lastSeen.x - bot.x, bot.lastSeen.z - bot.z);
+		if (d < 7 || d > 26) return false;
+		if (this.pointHasLos(bot.x, 1.4, bot.z, bot.lastSeen.x, 1.2, bot.lastSeen.z)) return false;
+		var type = bot.grenades.he > 0 ? 'he' : (bot.grenades.flash > 0 ? 'flash' : null);
+		if (!type) return false;
+		if (Math.random() > 0.02) return false;
+		if (!this.throwGrenadeFromBot(bot, type, bot.lastSeen.x, bot.lastSeen.z)) return false;
+		bot.grenades[type] = Math.max(0, (bot.grenades[type] || 0) - 1);
+		bot.utilNextAt = this.now + C.rand(7000, 11000);
+		bot.mode = 'utility';
+		return true;
+	};
+
 	RangeGame.prototype.spawnRobotHead = function (bot) {
 		var geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
 		var mat = new THREE.MeshStandardMaterial({
@@ -6152,7 +7577,13 @@
 	   HUD
 	   ====================================================================== */
 	RangeGame.prototype.updateHUD = function () {
-		if (this.el.useHint) text(this.el.useHint, (this.playerTeam === 'T' && !this.practice) ? 'PLANT C4' : 'PICK UP / DEFUSE');
+		if (this.el.useHint) {
+			var hint = 'PICK UP / DEFUSE';
+			if (this.playerTeam === 'T' && !this.practice) {
+				hint = this.playerHasBomb ? 'PLANT C4' : (this.bomb && this.bomb.state === 'dropped' ? 'PICK UP C4' : 'SUPPORT C4');
+			}
+			text(this.el.useHint, hint);
+		}
 		if (this.el.roundNo) text(this.el.roundNo, this.practice ? '' : (this.match ? this.match.round : 1));
 		if (this.match) {
 			text(this.el.health, Math.max(0, Math.round(this.player.health)));
@@ -6184,17 +7615,26 @@
 		if (this.spectating) { this.updateSpectateHUD(); return; }
 		var def = this.weaponDef(this.currentWeapon);
 		var ammo = this.ammo[this.currentWeapon];
-		text(this.el.weapon, def.name);
-		text(this.el.slot, def.category || def.slot);
-		if (def.slot === 'melee') {
-			text(this.el.ammo, '—');
+		if (this.currentSlot === 'grenade') {
+			var util = C.UTILITIES[this.currentWeapon] || { name: 'GRENADE', category: 'UTILITY' };
+			text(this.el.weapon, util.name);
+			text(this.el.slot, 'UTILITY');
+			text(this.el.ammo, this.grenades[this.currentWeapon] || 0);
 			text(this.el.reserve, '—');
+			if (this.el.ammo && this.el.ammo.parentNode) this.el.ammo.parentNode.classList.remove('is-low');
 		} else {
-			text(this.el.ammo, ammo ? ammo.mag : def.mag);
-			text(this.el.reserve, this.practice ? '∞' : (ammo ? ammo.reserve : def.reserve));
-		}
-		if (this.el.ammo && this.el.ammo.parentNode) {
-			this.el.ammo.parentNode.classList.toggle('is-low', !!ammo && ammo.mag <= Math.max(1, Math.floor(def.mag * 0.2)));
+			text(this.el.weapon, def.name);
+			text(this.el.slot, def.category || def.slot);
+			if (def.slot === 'melee') {
+				text(this.el.ammo, '—');
+				text(this.el.reserve, '—');
+			} else {
+				text(this.el.ammo, ammo ? ammo.mag : def.mag);
+				text(this.el.reserve, this.practice ? '∞' : (ammo ? ammo.reserve : def.reserve));
+			}
+			if (this.el.ammo && this.el.ammo.parentNode) {
+				this.el.ammo.parentNode.classList.toggle('is-low', !!ammo && def.mag && ammo.mag <= Math.max(1, Math.floor(def.mag * 0.2)));
+			}
 		}
 		var inds = this.el.slotInds || [];
 		var slots = inds[1] || [];
@@ -6205,6 +7645,7 @@
 			s.classList.toggle('is-empty', !has);
 			s.classList.toggle('is-active', active);
 		}.bind(this));
+		this.renderUtilityHUD();
 	};
 
 	RangeGame.prototype.flashDamage = function () {
@@ -6324,15 +7765,53 @@
 		if (!this.isTouch) this.requestLock();
 	};
 
+	RangeGame.prototype.itemPrice = function (item) {
+		if (!item) return 0;
+		if (item.kind === 'grenade' && item.id === 'molotov' && this.playerTeam === 'CT') return 500;
+		return item.price || 0;
+	};
+
+	RangeGame.prototype.grenadeTotal = function () {
+		var n = 0;
+		var g = this.grenades || {};
+		Object.keys(g).forEach(function (k) { n += g[k] || 0; });
+		return n;
+	};
+
 	RangeGame.prototype.canBuyItem = function (item) {
 		if (!item) return false;
 		if (this.practice) return true;
 		if (item.kind === 'kit') return this.playerTeam === 'CT';
-		if (item.kind !== 'weapon') return true;
-		var pool = this.playerTeam === 'CT'
-			? ['m4a4', 'mp9', 'ump45', 'awp', 'ssg08', 'nova', 'p250', 'deagle']
-			: ['ak47', 'galil', 'sg553', 'mp9', 'ump45', 'awp', 'ssg08', 'nova', 'p250', 'deagle'];
-		return pool.indexOf(item.id) !== -1;
+		if (item.kind === 'armor') return true;
+		if (item.kind === 'grenade') {
+			var util = C.UTILITIES[item.util || item.id];
+			if (!util) return false;
+			if (this.grenadeTotal() >= 4) return false;
+			return (this.grenades[util.id] || 0) < util.max;
+		}
+		var def = C.WEAPONS[item.id];
+		if (!def) return false;
+		if (def.slot === 'equipment') return true;
+		return (def.teams || ['CT', 'T']).indexOf(this.playerTeam) !== -1;
+	};
+
+	RangeGame.prototype.buyItemStats = function (item, def) {
+		if (def) {
+			return '<span>DMG <b>' + def.damage + (def.pellets ? '×' + def.pellets : '') + '</b></span>' +
+				'<span>RPM <b>' + def.rpm + '</b></span><span>MAG <b>' + def.mag + '</b></span>' +
+				'<span>PEN <b>' + Math.round((def.armorPen || 0.5) * 100) + '%</b></span>';
+		}
+		if (item.kind === 'grenade') {
+			var util = C.UTILITIES[item.util || item.id];
+			if (!util) return '';
+			if (util.id === 'he') return '<span>DMG <b>' + util.damage + '</b></span><span>RAD <b>' + util.radius + 'm</b></span><span>FUSE <b>' + util.fuse + 's</b></span>';
+			if (util.id === 'flash') return '<span>BLIND <b>' + util.blind + 's</b></span><span>RAD <b>' + util.radius + 'm</b></span><span>CARRY <b>2</b></span>';
+			if (util.id === 'smoke') return '<span>DURATION <b>' + util.duration + 's</b></span><span>RAD <b>' + util.radius + 'm</b></span>';
+			if (util.id === 'molotov') return '<span>DPS <b>' + util.dps + '</b></span><span>DURATION <b>' + util.duration + 's</b></span><span>RAD <b>' + util.radius + 'm</b></span>';
+			return '<span>LURE <b>' + util.duration + 's</b></span><span>DMG <b>' + util.damage + '</b></span>';
+		}
+		if (item.kind === 'kit') return '<span>DEFUSE <b>5.0s</b></span><span>KIT <b>FAST</b></span>';
+		return '<span>ARMOR <b>+100</b></span><span>HEAD <b>PROTECTED</b></span>';
 	};
 
 	RangeGame.prototype.renderBuy = function () {
@@ -6340,42 +7819,66 @@
 		var free = this.practice;
 		var money = this.match ? this.match.money : 0;
 		text(this.el.buyMoney, free ? 'FREE' : fmtMoney(money));
-		var html = '';
+		var groups = {};
+		var order = [];
 		for (var i = 0; i < C.BUY_ITEMS.length; i++) {
 			var item = C.BUY_ITEMS[i];
 			if (!this.canBuyItem(item)) continue;
-			var def = item.kind === 'weapon' ? C.WEAPONS[item.id] : null;
-			var name = def ? def.name : item.name;
-			var cat = def ? def.category : item.category;
-			var price = item.price;
-			var owned = false;
-			if (!free) {
-				if (item.kind === 'armor') owned = this.player.armor >= 100;
-				else if (item.kind === 'kit') owned = !!this.defuseKit;
-				else if (def) {
-					if (def.slot === 'primary') owned = this.loadout.primary === item.id;
-					else owned = this.loadout.secondary === item.id;
+			var section = item.section || item.category || 'GEAR';
+			if (!groups[section]) { groups[section] = []; order.push(section); }
+			groups[section].push(item);
+		}
+		var preferred = C.BUY_SECTION_ORDER || [];
+		order.sort(function (a, b) {
+			var ai = preferred.indexOf(a), bi = preferred.indexOf(b);
+			if (ai < 0) ai = 99;
+			if (bi < 0) bi = 99;
+			return ai - bi;
+		});
+		var html = '';
+		var keepScroll = this.el.buyGrid.scrollTop;
+		for (var s = 0; s < order.length; s++) {
+			var sectionName = order[s];
+			var list = groups[sectionName];
+			if (!list || !list.length) continue;
+			html += '<section class="csr-buysection"><h3 class="csr-buysection__head">' + escapeHTML(sectionName) + '</h3><div class="csr-buysection__grid">';
+			for (var k = 0; k < list.length; k++) {
+				var it = list[k];
+				var def = it.kind === 'weapon' ? C.WEAPONS[it.id] : null;
+				var util = it.kind === 'grenade' ? C.UTILITIES[it.util || it.id] : null;
+				var name = def ? def.name : (util ? util.name : it.name);
+				var cat = def ? def.category : (util ? util.category : it.category);
+				var price = this.itemPrice(it);
+				var owned = false;
+				if (!free) {
+					if (it.kind === 'armor') owned = this.player.armor >= 100;
+					else if (it.kind === 'kit') owned = !!this.defuseKit;
+					else if (it.kind === 'grenade' && util) owned = (this.grenades[util.id] || 0) >= util.max;
+					else if (def) {
+						if (def.slot === 'primary') owned = this.loadout.primary === it.id;
+						else if (def.slot === 'secondary') owned = this.loadout.secondary === it.id;
+						else if (def.slot === 'equipment') owned = this.loadout.equipment === it.id;
+					}
 				}
+				var can = free || (money >= price && !owned);
+				var icon = C.weaponIcon(def ? def.icon : (it.kind === 'grenade' ? 'grenade' : it.kind === 'kit' ? 'gear' : 'armor'));
+				var count = util ? (this.grenades[util.id] || 0) : 0;
+				var countTag = util && count > 0 ? ' ×' + count : '';
+				html += '<button type="button" class="csr-buyitem' + (owned ? ' is-owned' : '') + (!can && !owned ? ' is-locked' : '') + '" data-buy-id="' + it.id + '">' +
+					'<div class="csr-buyitem__top"><div><span class="csr-buyitem__key">' + (it.key ? it.key : '·') + '</span>' +
+					'<p class="csr-buyitem__name">' + escapeHTML(name) + countTag + '</p>' +
+					'<p class="csr-buyitem__cat">' + escapeHTML(cat) + '</p></div>' +
+					(owned ? '<span class="csr-buyitem__owned">OWNED</span>' : '<span class="csr-buyitem__price' + (!free && money < price ? ' is-short' : '') + '">' + (free ? 'FREE' : fmtMoney(price)) + '</span>') +
+					'</div>' +
+					'<div class="csr-buyitem__stat">' + this.buyItemStats(it, def) + '</div>' +
+					'<span class="csr-buyitem__buy">' + (owned ? 'EQUIPPED' : money >= price ? (it.key ? 'BUY  [ ' + it.key + ' ]' : 'BUY') : 'NOT ENOUGH CASH') + '</span>' +
+					'<div class="csr-buyitem__icon' + (def && (def.icon === 'pistol' || def.icon === 'knife') ? ' is-pistol' : '') + '">' + icon + '</div>' +
+					'</button>';
 			}
-			var can = free || (money >= price && !owned);
-			var icon = C.weaponIcon(def ? def.icon : 'armor');
-			var stats = def
-				? '<span>DMG <b>' + def.damage + (def.pellets ? '×' + def.pellets : '') + '</b></span><span>RPM <b>' + def.rpm + '</b></span><span>MAG <b>' + def.mag + '</b></span>'
-				: item.kind === 'kit'
-					? '<span>DEFUSE <b>5.0s</b></span><span>KIT <b>FAST</b></span>'
-					: '<span>ARMOR <b>+100</b></span><span>HEAD <b>PROTECTED</b></span>';
-			html += '<button type="button" class="csr-buyitem' + (owned ? ' is-owned' : '') + (!can && !owned ? ' is-locked' : '') + '" data-buy-id="' + item.id + '">' +
-				'<div class="csr-buyitem__top"><div><span class="csr-buyitem__key">' + (item.key ? item.key : '·') + '</span>' +
-				'<p class="csr-buyitem__name">' + escapeHTML(name) + '</p>' +
-				'<p class="csr-buyitem__cat">' + escapeHTML(cat) + '</p></div>' +
-				(owned ? '<span class="csr-buyitem__owned">OWNED</span>' : '<span class="csr-buyitem__price' + (!free && money < price ? ' is-short' : '') + '">' + (free ? 'FREE' : fmtMoney(price)) + '</span>') +
-				'</div>' +
-				'<div class="csr-buyitem__stat">' + stats + '</div>' +
-				'<span class="csr-buyitem__buy">' + (owned ? 'EQUIPPED' : money >= price ? (item.key ? 'BUY  [ ' + item.key + ' ]' : 'BUY') : 'NOT ENOUGH CASH') + '</span>' +
-				'<div class="csr-buyitem__icon' + (def && (def.icon === 'pistol' || def.icon === 'knife') ? ' is-pistol' : '') + '">' + icon + '</div>' +
-				'</button>';
+			html += '</div></section>';
 		}
 		this.el.buyGrid.innerHTML = html;
+		this.el.buyGrid.scrollTop = keepScroll;
 		if (global.CSRangeI18n) global.CSRangeI18n.apply(this.el.buyGrid);
 	};
 
@@ -6385,30 +7888,45 @@
 		for (var i = 0; i < C.BUY_ITEMS.length; i++) if (C.BUY_ITEMS[i].id === id) item = C.BUY_ITEMS[i];
 		if (!item || !this.canBuyItem(item)) return;
 		var free = this.practice;
-		if (!free && this.match.money < item.price) { this.toast('Not enough cash.'); return; }
+		var price = this.itemPrice(item);
+		if (!free && this.match.money < price) { this.toast('Not enough cash.'); return; }
 		if (item.kind === 'kit') {
 			if (this.playerTeam !== 'CT') { this.toast('Terrorists cannot buy a defuse kit.'); return; }
 			if (this.defuseKit && !free) { this.toast('Defuse kit already equipped.'); return; }
 			this.defuseKit = true;
-			if (!free) this.match.money -= item.price;
+			if (!free) this.match.money -= price;
 			this.sound.buy();
 			this.toast('Defuse kit acquired.');
 			this.updateBombHUD();
 		} else if (item.kind === 'armor') {
 			if (this.player.armor >= 100 && !free) { this.toast('Armour is already full.'); return; }
 			this.player.armor = 100;
-			if (!free) this.match.money -= item.price;
+			if (!free) this.match.money -= price;
 			this.sound.buy();
 			this.toast(free ? 'Armour refilled.' : 'Kevlar + helmet equipped.');
+		} else if (item.kind === 'grenade') {
+			var util = C.UTILITIES[item.util || item.id];
+			if (!util) return;
+			var count = this.grenades[util.id] || 0;
+			if (count >= util.max) { this.toast('Carry limit reached for ' + util.name + '.'); return; }
+			if (this.grenadeTotal() >= 4) { this.toast('Four utility slots are already full.'); return; }
+			if (!free) this.match.money -= price;
+			this.grenades[util.id] = count + 1;
+			this.sound.buy();
+			this.toast(util.name + ' acquired.');
+			this.renderUtilityHUD();
+			this.updateAmmoHUD();
 		} else {
 			var def = C.WEAPONS[item.id];
 			if (!def) return;
 			if (!free && def.slot === 'primary' && this.loadout.primary === item.id) { this.toast('Already equipped.'); return; }
 			if (!free && def.slot === 'secondary' && this.loadout.secondary === item.id) { this.toast('Already equipped.'); return; }
-			if (!free) this.match.money -= item.price;
+			if (!free && def.slot === 'equipment' && this.loadout.equipment === item.id) { this.toast('Already equipped.'); return; }
+			if (!free) this.match.money -= price;
 			if (def.slot === 'primary') this.loadout.primary = item.id;
-			else this.loadout.secondary = item.id;
-			this.ammo[item.id] = { mag: def.mag, reserve: free ? 999 : def.reserve };
+			else if (def.slot === 'secondary') this.loadout.secondary = item.id;
+			else if (def.slot === 'equipment') this.loadout.equipment = item.id;
+			this.ammo[item.id] = { mag: def.mag, reserve: free ? 999 : (def.reserve || 0) };
 			this.sound.buy();
 			this.equipWeapon(item.id, true);
 			this.toast(free ? def.name + ' loaded.' : def.name + ' acquired.');
@@ -6573,7 +8091,7 @@
 		   the page. Gameplay keys still fall through: holding CTRL to crouch and
 		   pressing S must crouch-walk backwards, not open the Save dialog. */
 		if (combo) {
-			var gameKeyForCombo = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', 'enter', '1', '2', '3', 'e', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+			var gameKeyForCombo = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', 'enter', '1', '2', '3', '4', '5', 'g', 'e', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
 			var isGameKey = gameKeyForCombo.indexOf(k === ' ' ? ' ' : code) !== -1;
 			ev.preventDefault();
 			ev.stopPropagation();
@@ -6612,7 +8130,7 @@
 			return;
 		}
 		if (this.state === 'menu' || this.state === 'boot' || this.state === 'error') return;
-		var gameKeys = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', '1', '2', '3', 'e', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+		var gameKeys = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', '1', '2', '3', '4', '5', 'g', 'e', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
 		if (this.state !== 'playing' && this.state !== 'paused' && this.state !== 'roundover' && this.state !== 'buy' && this.state !== 'matchover') return;
 		if (gameKeys.indexOf(k === ' ' ? ' ' : code) !== -1) {
 			if (ev.target && ev.target.tagName === 'INPUT') return;
@@ -6684,6 +8202,15 @@
 			case '1': this.equipWeapon(this.loadout.secondary); break;
 			case '2': this.equipWeapon(this.loadout.primary || this.loadout.secondary); break;
 			case '3': this.equipWeapon(this.loadout.melee); break;
+			case '4':
+				if (!ev.repeat) this.cycleGrenade();
+				break;
+			case '5':
+				if (!ev.repeat && this.loadout.equipment) this.equipWeapon(this.loadout.equipment);
+				break;
+			case 'g':
+				if (!ev.repeat) this.throwGrenade();
+				break;
 			case 'm':
 				if (!ev.repeat) this.toggleMute();
 				break;
@@ -6818,6 +8345,10 @@
 			self.el.touchCrouch.classList.toggle('is-active', self.input.touchCrouch);
 		});
 		if (this.el.touchScope) this.on(this.el.touchScope, 'click', function () { self.toggleScope(); });
+		if (this.el.touchGrenade) this.on(this.el.touchGrenade, 'click', function () {
+			if (self.currentSlot === 'grenade') self.throwGrenade();
+			else self.cycleGrenade();
+		});
 		if (this.el.touchUse) {
 			this.on(this.el.touchUse, 'pointerdown', function (ev) {
 				ev.preventDefault();
@@ -6901,6 +8432,7 @@
 			try { this.renderer.dispose(); } catch (e) {}
 			try { this.renderer.forceContextLoss(); } catch (e2) {}
 		}
+		this.clearUtilities();
 		this.clearDrops();
 		this.clearTargets();
 		this.clearChickens();
@@ -6920,7 +8452,7 @@
 			botsAlive: this.bots.filter(function (b) { return b.alive; }).length,
 			ctAlive: this.aliveTeamCount('CT'),
 			tAlive: this.aliveTeamCount('T'),
-			bots: this.bots.map(function (b) { return { name: b.name, team: b.team, role: b.role, mode: b.mode, type: b.type.id, weapon: b.weaponId, weaponIndex: b.weaponIndex, loadout: (b.weapons || []).map(function (w) { return w.id; }), inventory: (b.weapons || []).map(function (w) { return { id: w.id, ammo: w.ammo, reloading: w.reloading }; }), burstMode: !!b.burstMode, burstLeft: b.burstLeft, hasSniper: !!b.hasSniper, hp: Math.round(b.hp), maxHp: b.maxHp, alive: b.alive, ammo: b.ammo, reloading: b.reloading, behavior: b.behavior, target: b.target ? b.target.kind : null, x: +b.x.toFixed(2), z: +b.z.toFixed(2) }; }),
+			bots: this.bots.map(function (b) { return { name: b.name, team: b.team, role: b.role, mode: b.mode, type: b.type.id, weapon: b.weaponId, weaponIndex: b.weaponIndex, loadout: (b.weapons || []).map(function (w) { return w.id; }), inventory: (b.weapons || []).map(function (w) { return { id: w.id, ammo: w.ammo, reserve: w.reserve, reloading: w.reloading }; }), reserve: b.reserve, armor: b.armor, money: b.botMoney, slotIndex: b.slotIndex, grenades: b.grenades, fireMode: b.fireMode, panicUntil: b.panicUntil ? +((b.panicUntil - this.now) / 1000).toFixed(1) : 0, revenge: b.revenge ? { site: b.revenge.site, killer: b.revenge.killerName } : null, burstMode: !!b.burstMode, burstLeft: b.burstLeft, hasSniper: !!b.hasSniper, hp: Math.round(b.hp), maxHp: b.maxHp, alive: b.alive, ammo: b.ammo, reloading: b.reloading, behavior: b.behavior, target: b.target ? b.target.kind : null, x: +b.x.toFixed(2), z: +b.z.toFixed(2) }; }, this),
 			bomb: this.bomb ? { state: this.bomb.state, site: this.bomb.site, fuse: +this.bomb.fuse.toFixed(1), carrier: this.bomb.carrier ? this.bomb.carrier.name : null, defuser: this.bomb.defuser ? this.bomb.defuser.name : null, defuse: +this.bomb.defuseProgress.toFixed(2), playerDefuse: +this.bomb.playerDefuseProgress.toFixed(2) } : null,
 			defuseKit: !!this.defuseKit,
 			playerTeam: this.playerTeam,
@@ -6931,6 +8463,10 @@
 			weapon: this.currentWeapon,
 			ammo: this.ammo[this.currentWeapon],
 			money: this.match ? this.match.money : 0,
+			fear: this.teamFear ? { CT: +this.teamFearValue('CT').toFixed(2), T: +this.teamFearValue('T').toFixed(2) } : null,
+			botEconomy: this.botEconomy, grenades: this.grenades, grenadeTotal: this.grenadeTotal ? this.grenadeTotal() : 0,
+			thrown: this.thrown ? this.thrown.length : 0, smokes: this.smokes ? this.smokes.length : 0, fires: this.fires ? this.fires.length : 0, decoys: this.decoys ? this.decoys.length : 0,
+			loadoutEquipment: this.loadout ? this.loadout.equipment : null,
 			drops: this.drops.map(function (d) { return { weapon: d.weaponId, x: +d.x.toFixed(2), z: +d.z.toFixed(2), mag: d.ammo.mag, reserve: d.ammo.reserve, life: +d.life.toFixed(1) }; }),
 			locked: this.locked,
 			practice: !!this.practice,
@@ -6940,6 +8476,53 @@
 			death: this.deathInfo ? { killedBy: this.deathInfo.name, weapon: this.deathInfo.weapon, timer: +this.deathTimer.toFixed(2), body: !!(this.playerBody && this.playerBody.visible), camera: { x: +this.camera.position.x.toFixed(2), y: +this.camera.position.y.toFixed(2), z: +this.camera.position.z.toFixed(2) } } : null,
 			player: { x: +this.player.x.toFixed(2), z: +this.player.z.toFixed(2), yaw: +this.player.yaw.toFixed(2) }
 		};
+	};
+
+	RangeGame.prototype.debugSimulate = function (seconds, step) {
+		if (this.raf) { global.cancelAnimationFrame(this.raf); this.raf = null; }
+		step = step || 1 / 60;
+		var n = Math.max(1, Math.round((seconds || 1) / step));
+		for (var i = 0; i < n; i++) {
+			this.now += step * 1000;
+			this.gameTime += step;
+			this.update(step);
+		}
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugSetMoney = function (n) {
+		if (this.match) this.match.money = clamp(n || 0, 0, 16000);
+		this.updateVitalsHUD();
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugAddGrenade = function (type, count) {
+		type = type || 'he';
+		if (!C.UTILITIES[type]) return this.debugState();
+		this.grenades[type] = clamp((this.grenades[type] || 0) + (count == null ? 1 : count), 0, C.UTILITIES[type].max);
+		this.renderUtilityHUD();
+		this.updateAmmoHUD();
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugFear = function (team, value) {
+		team = team || this.playerTeam;
+		this.teamFear[team] = clamp(value == null ? 1 : value, 0, 1);
+		this.aiMemory.teamFear[team] = this.teamFear[team];
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugStartRound = function () {
+		this.startRound(false);
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugThrow = function (type) {
+		type = type || this.currentWeapon;
+		if (!this.grenades[type]) this.grenades[type] = 1;
+		this.equipGrenade(type);
+		this.throwGrenade(type);
+		return this.debugState();
 	};
 
 	RangeGame.prototype.debugStart = function () {
@@ -7035,7 +8618,13 @@
 			lookAt: function (x, z) { return current ? current.debugLookAt(x, z) : null; },
 			killAll: function () { return current ? current.debugKillAll() : null; },
 			shoot: function () { return current ? current.debugShoot() : null; },
-			endRound: function (win) { return current ? current.debugEndRound(win) : null; }
+			endRound: function (win) { return current ? current.debugEndRound(win) : null; },
+			simulate: function (seconds, step) { return current ? current.debugSimulate(seconds, step) : null; },
+			setMoney: function (n) { return current ? current.debugSetMoney(n) : null; },
+			addGrenade: function (type, count) { return current ? current.debugAddGrenade(type, count) : null; },
+			fear: function (team, value) { return current ? current.debugFear(team, value) : null; },
+			startRound: function () { return current ? current.debugStartRound() : null; },
+			throwGrenade: function (type) { return current ? current.debugThrow(type) : null; }
 		}
 	};
 })(window);
