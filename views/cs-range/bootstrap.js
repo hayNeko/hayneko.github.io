@@ -9,7 +9,7 @@
 	'use strict';
 
 	var doc = global.document;
-	var BUILD = '20261020n';
+	var BUILD = '20261020o';
 	var ASSETS = [
 		'views/cs-range/vendor/three.min.js',
 		'views/cs-range/content.js?v=' + BUILD,

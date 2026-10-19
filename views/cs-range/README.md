@@ -123,11 +123,9 @@ hand-waved box. Walls are generated around that footprint and offset
 
 Perimeter walls carry pilasters, stone trim courses, shuttered wall niches and
 concrete caps; the empty blocks are filled with low-rise buildings, rooftop
-tanks and AC units so the skyline reads as Dust 2 from every angle. Large
-non-walkable building cores are now **solid volumes** (walls, brick, collision)
-rather than hollow visual blocks, so a round cannot cross a whole building and
-emerge in the courtyard behind it; thin boards, narrow corners and ordinary
-wall segments keep their sub-0.5 m collider and remain wallbangable. All static
+tanks and AC units so the skyline reads as Dust 2 from every angle. Those
+skyline blocks are visual volumes, not extra playable fill; thin boards, narrow
+corners and ordinary wall segments keep their wallbang behaviour. All static
 boxes are merged per material at load time, keeping the detailed geometry at a
 few hundred draw calls.
 

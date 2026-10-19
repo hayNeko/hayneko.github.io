@@ -1965,14 +1965,8 @@
 			var clipsLane = walkableAt(x - w / 2 + 0.6, z - d / 2 + 0.6) || walkableAt(x + w / 2 - 0.6, z - d / 2 + 0.6) ||
 				walkableAt(x - w / 2 + 0.6, z + d / 2 - 0.6) || walkableAt(x + w / 2 - 0.6, z + d / 2 - 0.6) ||
 				walkableAt(x, z);
-			if (clipsLane) {
-				solidFillRect(x, z, w, d);
-				return null;
-			}
-			/* The skyline block is not a thin wall: make the whole volume a
-			   bullet collider so rounds cannot cross the building and emerge in
-			   the courtyard behind it. Thin wall corners stay penetrable. */
-			addBox(w, h, d, x, z, mats.brick, { collide: true, unit: 3.8 });
+			if (clipsLane) return null;
+			addBox(w, h, d, x, z, mats.brick, { collide: false, unit: 3.8 });
 			addBox(w + 0.35, 0.5, d + 0.35, x, z, mats.concrete, { y: h, collide: false, unit: 3.8 });
 			addBox(w - 0.9, 0.34, d - 0.9, x, z, roofM || mats.roof, { y: h + 0.5, collide: false, unit: 3.8 });
 			/* windows on the south face */
