@@ -169,7 +169,7 @@
 			<div class="csr-team__panel">
 				<p class="csr-kicker">OPERATION DEPLOYMENT <span>//</span> SIDE SELECT</p>
 				<h2 class="csr-team__title">CHOOSE YOUR SIDE</h2>
-				<p class="csr-team__copy">Dust 2, 5v5 bomb defusal. You join one side with four robot teammates. Pick CT to hold the sites and defuse, or T to take a site and plant the C4.</p>
+				<p class="csr-team__copy">Dust 2, 5v5 bomb defusal. Pick CT to hold the sites and defuse, T to take a site and plant the C4, or Spectate to watch five CT robots against five T robots with a free-fly camera.</p>
 				<div class="csr-team__options">
 					<button type="button" class="csr-team__card csr-team__card--ct" data-csr-join-ct>
 						<span class="csr-team__badge">CT</span>
@@ -188,6 +188,15 @@
 							<em>The C4 is randomly given to you or one of the four T robots each round. Hold E at a site to plant when you have it.</em>
 						</span>
 						<span class="csr-team__go">DEPLOY ▸</span>
+					</button>
+					<button type="button" class="csr-team__card csr-team__card--spec" data-csr-join-spec>
+						<span class="csr-team__badge">◎</span>
+						<span class="csr-team__body">
+							<b>SPECTATOR</b>
+							<small>WATCH 5 CT ROBOTS vs 5 T ROBOTS</small>
+							<em>Free-fly camera. Enter any robot's first-person view with E or a click, cycle robots with LMB, and keep moving freely after a side is wiped.</em>
+						</span>
+						<span class="csr-team__go">WATCH ▸</span>
 					</button>
 				</div>
 				<button type="button" class="csr-btn csr-btn--ghost csr-team__back" data-csr-team-back>BACK TO MENU</button>
@@ -251,6 +260,7 @@
 					<div class="csr-killfeed" data-csr-killfeed aria-live="polite"></div>
 				</div>
 			</div>
+			<div class="csr-sharedkills" data-csr-sharedkills aria-live="polite"></div>
 
 			<div class="csr-bombhud" data-csr-bombhud hidden aria-live="polite">
 				<span class="csr-bombhud__tag">C4</span>
@@ -341,6 +351,11 @@
 				<span><kbd>B</kbd> BUY</span>
 				<span><kbd>E</kbd> <span data-csr-use-hint>PICK UP / DEFUSE</span></span>
 				<span><kbd>TAB</kbd> SCORE</span>
+			</div>
+			<div class="csr-spectator" data-csr-spectator hidden aria-live="polite">
+				<span class="csr-spectator__tag">SPECTATOR</span>
+				<b data-csr-spectator-mode>FREE CAMERA</b>
+				<small data-csr-spectator-info>WASD FLY · SPACE UP · CTRL DOWN · SHIFT FAST · E ENTER ROBOT · TAB SCORE</small>
 			</div>
 			<button type="button" class="csr-buyhint" data-csr-buyhint aria-label="Open buy menu"><span>BUY PHASE</span><b><kbd>B</kbd> OPEN BUY MENU</b></button>
 			<button type="button" class="csr-pickup" data-csr-pickup hidden>
@@ -495,6 +510,10 @@
 					<div class="csr-keyrow"><kbd>TAB</kbd><span>Scoreboard</span></div>
 					<div class="csr-keyrow"><kbd>LMB</kbd><span>While dead: switch spectated robot</span></div>
 					<div class="csr-keyrow"><kbd>E</kbd><span>As T: hold at a site to plant the C4</span></div>
+					<div class="csr-keyrow"><kbd>E</kbd><span>Spectator: enter a robot's view / return to free camera</span></div>
+					<div class="csr-keyrow"><kbd>LMB</kbd><span>Spectator: select a robot, or cycle while watching one</span></div>
+					<div class="csr-keyrow"><kbd>F</kbd><span>Spectator: leave robot view for the free-fly camera</span></div>
+					<div class="csr-keyrow"><kbd>W A S D</kbd><kbd>SPACE</kbd><kbd>CTRL</kbd><span>Spectator: fly / rise / descend (Shift to boost)</span></div>
 					<div class="csr-keyrow"><kbd>M</kbd><span>Mute audio</span></div>
 					<div class="csr-keyrow"><kbd>ESC</kbd><span>Pause / release mouse</span></div>
 					<div class="csr-keyrow"><kbd>H</kbd><span>Toggle this manual</span></div>

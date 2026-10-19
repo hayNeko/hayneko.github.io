@@ -349,7 +349,7 @@
 		},
 		flash: {
 			id: 'flash', name: 'FLASHBANG', slot: 'grenade', price: 200,
-			category: 'GRENADE', max: 2, fuse: 1.5, radius: 12, damage: 0, blind: 5,
+			category: 'GRENADE', max: 2, fuse: 1.5, radius: 12, damage: 0, blind: 3,
 			icon: 'grenade', desc: 'Blinds anyone looking at the burst. Two can be carried.'
 		},
 		smoke: {
@@ -1629,6 +1629,99 @@
 		}
 		buildBoundaryWalls();
 
+		/* Large enclosed non-walkable blocks are building volumes, not thin
+		   walls. Fill them with real solid boxes so a round that passes a thin
+		   board cannot cross the whole block and emerge in the courtyard.
+		   Small wall corners keep their thin collider and remain wallbangable. */
+		function buildSolidBlocks() {
+			world.solidBlocks = [];
+			var W = BOUNDS * 2, H = BOUNDS * 2;
+			var outside = new Uint8Array(W * H);
+			var stack = [];
+			for (var x = 0; x < W; x++) {
+				for (var z = 0; z < H; z++) {
+					var edge = (x === 0 || z === 0 || x === W - 1 || z === H - 1);
+					if (!edge) continue;
+					var ix = z * W + x;
+					if (!walkableAt(x - BOUNDS + 0.5, z - BOUNDS + 0.5)) { outside[ix] = 1; stack.push(ix); }
+				}
+			}
+			while (stack.length) {
+				var ci = stack.pop();
+				var cx = ci % W, cz = (ci / W) | 0;
+				var nb = [ci - 1, ci + 1, ci - W, ci + W];
+				for (var n = 0; n < 4; n++) {
+					var ni = nb[n];
+					if (ni < 0 || ni >= W * H) continue;
+					var nx = ni % W, nz = (ni / W) | 0;
+					if (Math.abs(nx - cx) + Math.abs(nz - cz) !== 1) continue;
+					if (outside[ni]) continue;
+					if (walkableAt(nx - BOUNDS + 0.5, nz - BOUNDS + 0.5)) continue;
+					outside[ni] = 1; stack.push(ni);
+				}
+			}
+			var seen = new Uint8Array(W * H);
+			for (var sx = 0; sx < W; sx++) {
+				for (var sz = 0; sz < H; sz++) {
+					var si = sz * W + sx;
+					if (seen[si] || outside[si] || walkableAt(sx - BOUNDS + 0.5, sz - BOUNDS + 0.5)) continue;
+					var comp = [si], head = 0;
+					seen[si] = 1;
+					while (head < comp.length) {
+						var pi = comp[head++];
+						var px = pi % W, pz = (pi / W) | 0;
+						var pnb = [pi - 1, pi + 1, pi - W, pi + W];
+						for (var pn = 0; pn < 4; pn++) {
+							var qi = pnb[pn];
+							if (qi < 0 || qi >= W * H) continue;
+							var qx = qi % W, qz = (qi / W) | 0;
+							if (Math.abs(qx - px) + Math.abs(qz - pz) !== 1) continue;
+							if (seen[qi] || outside[qi] || walkableAt(qx - BOUNDS + 0.5, qz - BOUNDS + 0.5)) continue;
+							seen[qi] = 1; comp.push(qi);
+						}
+					}
+					if (comp.length < 12) continue;
+					var bminX = 1e9, bmaxX = -1e9, bminZ = 1e9, bmaxZ = -1e9;
+					for (var bi = 0; bi < comp.length; bi++) {
+						var bcx = comp[bi] % W, bcz = (comp[bi] / W) | 0;
+						if (bcx < bminX) bminX = bcx; if (bcx > bmaxX) bmaxX = bcx;
+						if (bcz < bminZ) bminZ = bcz; if (bcz > bmaxZ) bmaxZ = bcz;
+					}
+					world.solidBlocks.push({
+						area: comp.length,
+						x0: bminX - BOUNDS, x1: bmaxX - BOUNDS + 1,
+						z0: bminZ - BOUNDS, z1: bmaxZ - BOUNDS + 1,
+						cx: (bminX + bmaxX) / 2 - BOUNDS + 0.5,
+						cz: (bminZ + bmaxZ) / 2 - BOUNDS + 0.5
+					});
+					/* one solid box per horizontal run; this preserves doors and
+					   keeps the collider count low enough for ray tests */
+					var rows = {};
+					for (var k = 0; k < comp.length; k++) {
+						var cell = comp[k];
+						var cxx = cell % W, czz = (cell / W) | 0;
+						if (!rows[czz]) rows[czz] = [];
+						rows[czz].push(cxx);
+					}
+					Object.keys(rows).forEach(function (rz) {
+						var xs = rows[rz].sort(function (a, b) { return a - b; });
+						var run = 1;
+						for (var q = 0; q <= xs.length; q++) {
+							if (q < xs.length && q > 0 && xs[q] === xs[q - 1] + 1) { run++; continue; }
+							if (q > 0) {
+								var end = xs[q - 1], start = end - run + 1;
+								var runLen = run;
+								addBox(runLen, 5.2, 1.0,
+									start - BOUNDS + runLen / 2,
+									+rz - BOUNDS + 0.5,
+									mats.brickDark, { collide: true, unit: 2.6 });
+							}
+							run = 1;
+						}
+					});
+				}
+			}
+		}
 		/* ---- door frames, arches and windows at the real chokepoints ---- */
 		function addDoorFrame(x, z, width, alongX, wood) {
 			var post = 0.62, h = 3.6;
@@ -1836,11 +1929,50 @@
 		}
 
 		/* ---- buildings over the non-walkable blocks (visual skyline) ---- */
+		/* A rejected skyline footprint (its corners clip a playable lane) still
+		   gets a solid inner core. Only non-walkable cells are filled, so the
+		   lane stays open while the building body stops bullets. */
+		function solidFillRect(x, z, w, d) {
+			var gx0 = Math.floor(x - w / 2 + BOUNDS);
+			var gx1 = Math.floor(x + w / 2 - 0.001 + BOUNDS);
+			var gz0 = Math.floor(z - d / 2 + BOUNDS);
+			var gz1 = Math.floor(z + d / 2 - 0.001 + BOUNDS);
+			var cells = 0;
+			for (var gz = gz0; gz <= gz1; gz++) {
+				var run = 0;
+				for (var gx = gx0; gx <= gx1 + 1; gx++) {
+					var solid = false;
+					if (gx <= gx1) {
+						var wx = gx - BOUNDS + 0.5, wz = gz - BOUNDS + 0.5;
+						solid = !walkableAt(wx, wz);
+					}
+					if (solid) { run++; cells++; }
+					else if (run > 0) {
+						var end = gx - 1;
+						addBox(run, 5.2, 1.0,
+							end - run + 1 - BOUNDS + run / 2,
+							gz - BOUNDS + 0.5,
+							mats.brickDark, { collide: true, unit: 2.6 });
+						run = 0;
+					}
+				}
+			}
+			if (cells >= 6) return true;
+			return cells > 0;
+		}
+
 		function building(x, z, w, d, h, roofM) {
-			if (walkableAt(x - w / 2 + 0.6, z - d / 2 + 0.6) || walkableAt(x + w / 2 - 0.6, z - d / 2 + 0.6) ||
+			var clipsLane = walkableAt(x - w / 2 + 0.6, z - d / 2 + 0.6) || walkableAt(x + w / 2 - 0.6, z - d / 2 + 0.6) ||
 				walkableAt(x - w / 2 + 0.6, z + d / 2 - 0.6) || walkableAt(x + w / 2 - 0.6, z + d / 2 - 0.6) ||
-				walkableAt(x, z)) return null;
-			addBox(w, h, d, x, z, mats.brick, { collide: false, unit: 3.8 });
+				walkableAt(x, z);
+			if (clipsLane) {
+				solidFillRect(x, z, w, d);
+				return null;
+			}
+			/* The skyline block is not a thin wall: make the whole volume a
+			   bullet collider so rounds cannot cross the building and emerge in
+			   the courtyard behind it. Thin wall corners stay penetrable. */
+			addBox(w, h, d, x, z, mats.brick, { collide: true, unit: 3.8 });
 			addBox(w + 0.35, 0.5, d + 0.35, x, z, mats.concrete, { y: h, collide: false, unit: 3.8 });
 			addBox(w - 0.9, 0.34, d - 0.9, x, z, roofM || mats.roof, { y: h + 0.5, collide: false, unit: 3.8 });
 			/* windows on the south face */
@@ -2385,7 +2517,7 @@
 		var pct = clamp(robot.hp / robot.maxHp, 0, 1);
 		ctx.fillStyle = 'rgba(8,10,12,0.8)';
 		ctx.fillRect(6, 36, 244, 11);
-		ctx.fillStyle = robot.healthFriendly ? '#4f9edb' : '#d94a35';
+		ctx.fillStyle = robot.healthColor || (robot.healthFriendly ? '#4f9edb' : '#d94a35');
 		ctx.fillRect(6, 36, 244 * pct, 11);
 		ctx.strokeStyle = 'rgba(232,226,212,0.28)';
 		ctx.lineWidth = 1;

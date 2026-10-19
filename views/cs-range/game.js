@@ -702,7 +702,7 @@
 			eye: 1.62, eyeTarget: 1.62, height: 1.78,
 			alive: true, health: 100, armor: 0, onGround: true,
 			speed: 0, vx: 0, vz: 0, bobPhase: 0, stepTimer: 0,
-			deathRoll: 0, deathT: 0
+			deathRoll: 0, deathT: 0, damageContributors: {}
 		};
 		this.input = {
 			forward: 0, strafe: 0, fire: false, defuse: false,
@@ -750,6 +750,10 @@
 		this.controlsFrom = 'menu';
 		this.scoreboardOpen = false;
 		this.gameTime = 0;
+		this.spectatorMode = false;
+		this.specFollow = null;
+		this.specCam = null;
+		this._specLookInit = false;
 	}
 
 	RangeGame.prototype.init = function () {
@@ -790,6 +794,11 @@
 			team: $(h, 'team'),
 			joinCt: $(h, 'join-ct'),
 			joinT: $(h, 'join-t'),
+			joinSpec: $(h, 'join-spec'),
+			sharedKills: $(h, 'sharedkills'),
+			spectator: $(h, 'spectator'),
+			spectatorMode: $(h, 'spectator-mode'),
+			spectatorInfo: $(h, 'spectator-info'),
 			teamBack: $(h, 'team-back'),
 			deploy: $(h, 'deploy'),
 			menuExit: $(h, 'menu-exit'),
@@ -984,6 +993,7 @@
 		this.on(e.deploy, 'click', function () { self.openTeamSelect(); });
 		this.on(e.joinCt, 'click', function () { self.chooseTeam('CT'); });
 		this.on(e.joinT, 'click', function () { self.chooseTeam('T'); });
+		if (e.joinSpec) this.on(e.joinSpec, 'click', function () { self.chooseSpectate(); });
 		this.on(e.teamBack, 'click', function () { self.closeTeamSelect(); });
 		this.on(e.practice, 'click', function () { self.startPractice(); });
 		this.on(e.menuExit, 'click', function () { self.exitToGames(); });
@@ -1140,6 +1150,11 @@
 
 	RangeGame.prototype.showMenu = function () {
 		this.clearPractice();
+		this.clearSharedKills();
+		this.spectatorMode = false;
+		this.specFollow = null;
+		if (this.el.hud) this.el.hud.classList.remove('is-spectator');
+		if (this.el.spectator) this.el.spectator.hidden = true;
 		this.state = 'menu';
 		doc.documentElement.classList.add('csr-lock');
 		if (this.el.hud) this.el.hud.hidden = true;
@@ -1167,10 +1182,25 @@
 	};
 
 	RangeGame.prototype.chooseTeam = function (team) {
+		this.spectatorMode = false;
+		this.specFollow = null;
 		this.playerTeam = team === 'T' ? 'T' : 'CT';
 		this.enemyTeam = this.playerTeam === 'CT' ? 'T' : 'CT';
 		this.pendingTeam = this.playerTeam;
 		if (this.el.team) this.el.team.hidden = true;
+		this.startMatch();
+	};
+
+	RangeGame.prototype.chooseSpectate = function () {
+		this.spectatorMode = true;
+		this.specFollow = null;
+		this.playerTeam = 'CT';
+		this.enemyTeam = 'T';
+		this.pendingTeam = 'SPEC';
+		this.specCam = { x: 0, y: 18, z: 18, yaw: 0, pitch: -0.22 };
+		this._specLookInit = false;
+		if (this.el.team) this.el.team.hidden = true;
+		if (this.fallbackLook) this.toast('Spectator free look: drag to look; E or click a robot to watch.');
 		this.startMatch();
 	};
 
@@ -1550,7 +1580,32 @@
 		var py = oy + (this.player.z + B) * s;
 
 		/* view cone */
-		if (this.player.alive) {
+		var coneX = px, coneY = py, coneYaw = this.player.yaw;
+		if (this.spectatorMode) {
+			var sc = this.specCam || { x: 0, z: 0, yaw: 0 };
+			coneX = ox + ((this.specFollow ? this.specFollow.x : sc.x) + B) * s;
+			coneY = oy + ((this.specFollow ? this.specFollow.z : sc.z) + B) * s;
+			coneYaw = sc.yaw;
+			ctx.save();
+			ctx.translate(coneX, coneY);
+			ctx.rotate(-coneYaw);
+			var sgrad = ctx.createLinearGradient(0, 0, 0, -78);
+			sgrad.addColorStop(0, 'rgba(215,162,74,0.28)');
+			sgrad.addColorStop(1, 'rgba(215,162,74,0)');
+			ctx.fillStyle = sgrad;
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(-42, -80);
+			ctx.lineTo(42, -80);
+			ctx.closePath();
+			ctx.fill();
+			ctx.restore();
+			ctx.strokeStyle = 'rgba(232,226,212,0.8)';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			ctx.arc(coneX, coneY, 2.6, 0, Math.PI * 2);
+			ctx.stroke();
+		} else if (this.player.alive) {
 			ctx.save();
 			ctx.translate(px, py);
 			ctx.rotate(-this.player.yaw);
@@ -1567,17 +1622,26 @@
 			ctx.restore();
 		}
 
-		/* teammates only — enemy positions are never revealed on the radar */
+		/* In a normal match only teammates are drawn; a spectator gets both
+		   squads because there is no team to protect. */
 		for (var i = 0; i < this.bots.length; i++) {
 			var b = this.bots[i];
 			if (!b || (!b.alive && b.deathT > 0.8)) continue;
-			if (b.team !== this.playerTeam) continue;
+			if (!this.spectatorMode && b.team !== this.playerTeam) continue;
 			var bx = ox + (b.x + B) * s;
 			var by = oy + (b.z + B) * s;
-			ctx.fillStyle = b.alive ? 'rgba(104,178,255,0.95)' : 'rgba(104,178,255,0.25)';
+			var dot = b.team === 'CT' ? '104,178,255' : '255,106,85';
+			ctx.fillStyle = b.alive ? 'rgba(' + dot + ',0.95)' : 'rgba(' + dot + ',0.3)';
 			ctx.beginPath();
 			ctx.arc(bx, by, b.alive ? 3.1 : 2, 0, Math.PI * 2);
 			ctx.fill();
+			if (this.spectatorMode && b === this.specFollow) {
+				ctx.strokeStyle = 'rgba(215,162,74,0.95)';
+				ctx.lineWidth = 1.4;
+				ctx.beginPath();
+				ctx.arc(bx, by, 6.5, 0, Math.PI * 2);
+				ctx.stroke();
+			}
 		}
 
 		/* the objective */
@@ -1599,7 +1663,7 @@
 			}
 		}
 
-		var alert = this.teamAlerts && this.teamAlerts[this.playerTeam];
+		var alert = !this.spectatorMode && this.teamAlerts && this.teamAlerts[this.playerTeam];
 		if (alert && now - alert.seenAt < 6000) {
 			var ax = ox + (alert.x + B) * s;
 			var ay = oy + (alert.z + B) * s;
@@ -1718,6 +1782,11 @@
 
 	RangeGame.prototype.startPractice = function () {
 		if (!this.renderer) return;
+		this.spectatorMode = false;
+		this.specFollow = null;
+		this.clearSharedKills();
+		if (this.el.hud) this.el.hud.classList.remove('is-spectator');
+		if (this.el.spectator) this.el.spectator.hidden = true;
 		this.clearPractice();
 		this.sound.ensure();
 		this.sound.setVolume(this.settings.volume);
@@ -1804,6 +1873,209 @@
 		this.sound.roundStart();
 		this.focusField();
 		if (!this.isTouch) this.requestLock();
+	};
+
+	/* ======================================================================
+	   spectator mode: free-fly camera plus first-person robot follows
+	   ====================================================================== */
+	RangeGame.prototype.initSpectatorCamera = function () {
+		if (!this.specCam) this.specCam = { x: 0, y: 18, z: 18, yaw: 0, pitch: -0.22 };
+		return this.specCam;
+	};
+
+	RangeGame.prototype.updateSpectator = function (dt) {
+		if (!this.spectatorMode) return;
+		var cam = this.initSpectatorCamera();
+		if (this.specFollow) {
+			var fb = this.specFollow;
+			if (!fb.alive || fb.dead) {
+				this.exitSpecFollow(true);
+			} else {
+				this.player.x = fb.x;
+				this.player.z = fb.z;
+				this.player.yaw = cam.yaw;
+				this.player.pitch = cam.pitch;
+				return;
+			}
+		}
+		if (this.state !== 'playing' && this.state !== 'roundover') return;
+		var forward = (this.keys.w ? 1 : 0) - (this.keys.s ? 1 : 0) + (this.input.touchMoveY || 0);
+		var strafe = (this.keys.d ? 1 : 0) - (this.keys.a ? 1 : 0) + (this.input.touchMoveX || 0);
+		forward = clamp(forward, -1, 1);
+		strafe = clamp(strafe, -1, 1);
+		var len = Math.hypot(forward, strafe);
+		if (len > 1) { forward /= len; strafe /= len; }
+		var speed = this.keys.shift ? 14 : 6.5;
+		var sin = Math.sin(cam.yaw), cos = Math.cos(cam.yaw);
+		cam.x += (-sin * forward + cos * strafe) * speed * dt;
+		cam.z += (-cos * forward - sin * strafe) * speed * dt;
+		var vertical = (this.keys.space ? 1 : 0) - (this.keys.ctrl ? 1 : 0);
+		cam.y += vertical * speed * 0.8 * dt;
+		var bounds = (this.world && this.world.bounds) ? this.world.bounds : 36;
+		cam.x = clamp(cam.x, -bounds + 0.8, bounds - 0.8);
+		cam.z = clamp(cam.z, -bounds + 0.8, bounds - 0.8);
+		cam.y = clamp(cam.y, 0.6, 38);
+		this.player.x = cam.x;
+		this.player.z = cam.z;
+		this.player.yaw = cam.yaw;
+		this.player.pitch = cam.pitch;
+	};
+
+	RangeGame.prototype.updateSpectatorCamera = function () {
+		var cam = this.initSpectatorCamera();
+		if (this.specFollow && this.specFollow.alive && !this.specFollow.dead) {
+			var b = this.specFollow;
+			this.camera.position.set(b.x, 1.5 * b.baseScale, b.z);
+		} else {
+			this.camera.position.set(cam.x, cam.y, cam.z);
+		}
+		this.camera.rotation.set(cam.pitch, cam.yaw, 0);
+		if (Math.abs(this.camera.fov - 74) > 0.01) {
+			this.camera.fov = 74;
+			this.camera.updateProjectionMatrix();
+		}
+	};
+
+	RangeGame.prototype.specFollowBot = function (bot) {
+		if (!bot || !bot.alive || bot.dead) return false;
+		if (this.specFollow && this.specFollow !== bot && this.specFollow.root) this.specFollow.root.visible = true;
+		var cam = this.initSpectatorCamera();
+		var face = bot.face;
+		var dx = Math.sin(bot.yaw), dz = Math.cos(bot.yaw);
+		if (face) {
+			var fx = face.x - bot.x, fz = face.z - bot.z;
+			if (Math.hypot(fx, fz) > 0.1) { dx = fx; dz = fz; }
+		}
+		cam.yaw = Math.atan2(-dx, -dz);
+		cam.pitch = 0;
+		cam.x = bot.x;
+		cam.z = bot.z;
+		cam.y = 1.5 * bot.baseScale;
+		this.specFollow = bot;
+		if (bot.root) bot.root.visible = false;
+		this.scoped = false;
+		this.reloading = false;
+		this.player.x = bot.x;
+		this.player.z = bot.z;
+		if (this.camera) {
+			this.camera.fov = 74;
+			this.camera.updateProjectionMatrix();
+		}
+		if (this.el.spectator) this.el.spectator.style.borderLeftColor = bot.team === 'CT' ? '#6fb7ff' : '#ff6a55';
+		this.sound.tone({ freq: 760, to: 1040, dur: 0.06, gain: 0.05, type: 'triangle' });
+		this.updateSpectatorHUD();
+		return true;
+	};
+
+	RangeGame.prototype.exitSpecFollow = function (keepPosition) {
+		var bot = this.specFollow;
+		if (bot && bot.root) bot.root.visible = true;
+		if (bot && keepPosition !== false) {
+			var cam = this.initSpectatorCamera();
+			cam.x = bot.x;
+			cam.z = bot.z;
+			cam.y = Math.max(1.6, 1.5 * bot.baseScale + 0.1);
+		}
+		this.specFollow = null;
+		if (this.el.spectator) this.el.spectator.style.borderLeftColor = '';
+		this.sound.tone({ freq: 520, to: 360, dur: 0.06, gain: 0.035, type: 'triangle' });
+		this.updateSpectatorHUD();
+	};
+
+	RangeGame.prototype.specNextBot = function () {
+		var list = this.bots.filter(function (b) { return b && b.alive && !b.dead; });
+		if (!list.length) {
+			this.exitSpecFollow(true);
+			this.toast('No robots left to watch.');
+			return false;
+		}
+		var idx = list.indexOf(this.specFollow);
+		var next = list[(idx + 1 + list.length) % list.length];
+		return this.specFollowBot(next);
+	};
+
+	RangeGame.prototype.specSelectBot = function () {
+		if (this.specFollow) { this.specNextBot(); return; }
+		this.updateSpectatorCamera();
+		var origin = this.camera.position.clone();
+		var dir = this.getAimDirection();
+		this.raycaster.set(origin, dir);
+		this.raycaster.far = 160;
+		var hits = this.raycaster.intersectObjects(this.hitTargets(), false);
+		this.raycaster.far = Infinity;
+		for (var i = 0; i < hits.length; i++) {
+			var obj = hits[i].object;
+			var data = obj.userData;
+			if (data && data.bot) {
+				this.specFollowBot(data.bot);
+				return;
+			}
+			/* the first world surface hides anything behind it */
+			if (this.hitWorld && this.hitWorld.indexOf(obj) !== -1) break;
+		}
+		this.toast('Aim at a robot and press E or click to watch it.');
+	};
+
+	RangeGame.prototype.updateSpectatorHUD = function () {
+		if (!this.spectatorMode || this.state === 'matchover') {
+			if (this.el.spectator) this.el.spectator.hidden = true;
+			if (this.el.hud) this.el.hud.classList.remove('is-spectator');
+			return;
+		}
+		if (this.el.hud) this.el.hud.classList.add('is-spectator');
+		if (!this.el.spectator) return;
+		this.el.spectator.hidden = false;
+		var mode, info;
+		if (this.specFollow && this.specFollow.alive && !this.specFollow.dead) {
+			var b = this.specFollow;
+			var wname = b.weaponDef ? b.weaponDef.name : 'WEAPON';
+			mode = 'WATCHING ' + b.name + ' · ' + b.team;
+			info = 'HP ' + Math.round(b.hp) + ' / ' + b.maxHp + ' · ' + wname + ' ' + b.ammo + '/' + (b.reserve || 0) +
+				' · LMB NEXT ROBOT · E / RMB FREE CAMERA';
+		} else {
+			mode = 'FREE CAMERA';
+			info = 'WASD FLY · SPACE UP · CTRL DOWN · SHIFT BOOST · E ENTER ROBOT · LMB SELECT · TAB SCORE';
+		}
+		text(this.el.spectatorMode, mode);
+		text(this.el.spectatorInfo, info);
+		if (!this.specFollow) this.el.spectator.style.borderLeftColor = '';
+	};
+
+	RangeGame.prototype.handleSpectatorKey = function (ev, code) {
+		var repeat = ev && ev.repeat;
+		switch (code) {
+			case 'w': this.keys.w = true; this.sound.ensure(); break;
+			case 'a': this.keys.a = true; this.sound.ensure(); break;
+			case 's': this.keys.s = true; this.sound.ensure(); break;
+			case 'd': this.keys.d = true; this.sound.ensure(); break;
+			case 'shift': this.keys.shift = true; break;
+			case 'control': this.keys.ctrl = true; break;
+			case ' ': this.keys.space = true; break;
+			case 'e':
+				if (!repeat) {
+					if (this.specFollow) this.exitSpecFollow();
+					else this.specSelectBot();
+				}
+				break;
+			case 'f':
+				if (!repeat) this.exitSpecFollow();
+				break;
+			case 'tab':
+				if (!repeat) this.openScoreboard();
+				break;
+			case 'escape':
+				this.pause();
+				break;
+			case 'm':
+				if (!repeat) this.toggleMute();
+				break;
+			case 'h':
+				if (!repeat) this.openControls('pause');
+				break;
+			case 'enter':
+				if (this.state === 'roundover') this.nextRound(true);
+				break;
+		}
 	};
 
 	RangeGame.prototype.updatePractice = function (dt) {
@@ -2159,7 +2431,7 @@
 	RangeGame.prototype.spawnTeam = function (team, count) {
 		var spawnList = this.world.spawns[team === 'CT' ? 'ct' : 't'] || [];
 		var types = this.teamTypes(team);
-		var startAt = team === this.playerTeam ? 1 : 0;
+		var startAt = (!this.spectatorMode && team === this.playerTeam) ? 1 : 0;
 		for (var i = 0; i < count; i++) {
 			var raw = spawnList[(startAt + i) % spawnList.length] || { x: 0, z: 0 };
 			var pos = this.findOpenSpawn(raw, i * 0.7);
@@ -2263,14 +2535,38 @@
 				this.equipWeapon(this.currentWeapon, true);
 			}
 		}
+		this.player.damageContributors = {};
+		this.clearSharedKills();
+		if (this.spectatorMode) {
+			/* The spectator owns no slot and no body: the camera flies free
+			   while both squads are five robots. */
+			p.alive = false; p.health = 0; p.armor = 0; p.deathT = 0; p.deathRoll = 0;
+			this.playerHasBomb = false;
+			this.playerPlanting = false;
+			this.playerDefusing = false;
+			this.spectating = false;
+			this.spectateTarget = null;
+			this.specFollow = null;
+			if (!this.specCam) this.specCam = { x: 0, y: 18, z: 18, yaw: 0, pitch: -0.22 };
+			p.x = this.specCam.x; p.z = this.specCam.z;
+			this.reloading = false; this.scoped = false; this.scopeT = 0;
+			this.input.fire = false; this.input.defuse = false; this.semiQueued = false;
+			this.keys.w = false; this.keys.a = false; this.keys.s = false; this.keys.d = false;
+			this.keys.space = false; this.keys.ctrl = false; this.keys.shift = false;
+			this.input.touchMoveX = 0; this.input.touchMoveY = 0;
+			if (this.camera) { this.camera.fov = 74; this.camera.updateProjectionMatrix(); }
+			if (this.playerBody) this.playerBody.visible = false;
+			this.hideDeathCam();
+		}
 		this.updateAmmoHUD();
 		this.updateVitalsHUD();
 
-		/* 5 v 5: the player fills one slot on the chosen side */
+		/* 5 v 5: the player fills one slot on the chosen side; a spectator
+		   watches a full five-versus-five. */
 		this.usedBotNames = {};
 		this.botSeq = this.botSeq || 0;
-		this.spawnTeam('CT', this.playerTeam === 'CT' ? 4 : 5);
-		this.spawnTeam('T', this.playerTeam === 'T' ? 4 : 5);
+		this.spawnTeam('CT', this.spectatorMode ? 5 : (this.playerTeam === 'CT' ? 4 : 5));
+		this.spawnTeam('T', this.spectatorMode ? 5 : (this.playerTeam === 'T' ? 4 : 5));
 		this.setupRoundPlans();
 
 		this.spawnChickens(5);
@@ -2280,7 +2576,7 @@
 		this.updatePips();
 		this.updateBombHUD();
 		if (this.el.killfeed) { this.el.killfeed.innerHTML = ''; this.killFeed.length = 0; }
-		this.announce('ROUND ' + this.match.round, this.playerTeam === 'T' ? 'TAKE A SITE — PRESS B TO OPEN THE ARMORY' : 'BUY TIME — PRESS B TO OPEN THE ARMORY');
+		this.announce('ROUND ' + this.match.round, this.spectatorMode ? 'SPECTATING — FREE CAMERA' : (this.playerTeam === 'T' ? 'TAKE A SITE — PRESS B TO OPEN THE ARMORY' : 'BUY TIME — PRESS B TO OPEN THE ARMORY'));
 		this.sound.roundStart();
 		this.updateHUD();
 		this.focusField();
@@ -2465,8 +2761,12 @@
 			weaponDef: heldDef
 		});
 		robot.baseScale = type.scale || 1;
-		/* Only friendly overhead readouts exist now. Enemy HP is never drawn. */
-		robot.healthFriendly = (team === this.playerTeam);
+		/* Normal play: friendly readouts only (enemy HP is never drawn).
+		   Spectator: both squads show bars, CT blue and T red. */
+		robot.healthFriendly = this.spectatorMode ? true : (team === this.playerTeam);
+		robot.healthColor = this.spectatorMode
+			? (team === 'CT' ? '#4f9edb' : '#d94a35')
+			: (robot.healthFriendly ? '#4f9edb' : '#d94a35');
 		robot.healthVisible = robot.healthFriendly;
 		C.drawHealthSprite(robot);
 		if (robot.healthSprite) robot.healthSprite.visible = robot.healthVisible;
@@ -2582,6 +2882,7 @@
 			postFireUntil: 0,
 			nextTacReloadAt: 0,
 			panicLevel: 0,
+			damageContributors: {},
 			think: 0,
 			path: null,
 			pathIndex: 0,
@@ -3888,7 +4189,7 @@
 
 	RangeGame.prototype.updateBuyHint = function () {
 		if (!this.el.buyhint) return;
-		var show = this.state === 'playing' && (this.practice || (this.round && this.round.phase === 'freeze'));
+		var show = !this.spectatorMode && this.state === 'playing' && (this.practice || (this.round && this.round.phase === 'freeze'));
 		this.el.buyhint.classList.toggle('is-hidden', !show);
 		var mode = this.practice ? 'practice' : 'live';
 		if (this._buyHintMode !== mode) {
@@ -3962,6 +4263,7 @@
 			this.updateFx(dt);
 			this.updateViewWeapon(dt);
 		} else if (this.state === 'roundover') {
+			if (this.spectatorMode) this.updateSpectator(dt);
 			this.updateResult(dt);
 			this.updateBotsDeath(dt);
 			this.updateFx(dt);
@@ -4047,6 +4349,22 @@
 			}
 		}
 
+		if (this.spectatorMode) {
+			this.updateSpectator(dt);
+			this.updateBots(dt);
+			this.updateBomb(dt);
+			this.updateChickens(dt);
+			this.updateFx(dt);
+			this.updateUtilities(dt);
+			this.updateRoundTimer();
+			this.updateHUD();
+			this.updateCrosshair();
+			this.updateBuyHint();
+			this.updateBombHUD();
+			this.checkRoundEnd();
+			return;
+		}
+
 		this.updatePlayer(dt);
 		this.checkPlayerContact(dt);
 		this.updateWeapon(dt);
@@ -4100,13 +4418,14 @@
 		this.round.phase = 'over';
 		this.state = 'roundover';
 		this.closeScoreboard();
+		if (this.spectatorMode && this.specFollow) this.exitSpecFollow(true);
 		this.input.fire = false;
 		this.input.defuse = false;
 		this.semiQueued = false;
 		this.reloading = false;
 		this.scoped = false;
 		this.playerPlanting = false;
-		this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
+		if (!this.spectatorMode) this.keys.w = this.keys.a = this.keys.s = this.keys.d = false;
 		this.updateBuyHint();
 		this.playerDefusing = false;
 		if (this.el.defuse) this.el.defuse.hidden = true;
@@ -4121,11 +4440,14 @@
 		}
 
 		var winner = win ? 'CT' : 'T';
-		var playerWin = (winner === this.playerTeam);
+		var playerWin = this.spectatorMode ? true : (winner === this.playerTeam);
 		this.aiRecordRound(winner);
 		this.roundPlayerWin = playerWin;
 		var reward;
-		if (playerWin) {
+		if (this.spectatorMode) {
+			reward = 0;
+			this.match.lossStreak = 0;
+		} else if (playerWin) {
 			reward = cause === 'defuse' ? 3500 : 3250;
 			this.match.lossStreak = 0;
 		} else {
@@ -4159,7 +4481,8 @@
 			}, this);
 		}, this);
 		this.roundHistory.push(win ? 'ct' : 't');
-		if (playerWin) this.sound.win(); else this.sound.lose();
+		if (this.spectatorMode) this.sound.tone({ freq: 420, to: 620, dur: 0.18, gain: 0.07, type: 'triangle' });
+		else if (playerWin) this.sound.win(); else this.sound.lose();
 		this.updateScoreHUD();
 		this.updatePips();
 		this.updateHostiles();
@@ -4176,15 +4499,17 @@
 		var e = this.el;
 		if (!e || !e.banner) return;
 		e.banner.hidden = false;
+		var bannerSide = this.spectatorMode ? winner : this.playerTeam;
 		e.banner.classList.toggle('is-win', !!playerWin);
 		e.banner.classList.toggle('is-loss', !playerWin);
-		e.banner.classList.toggle('is-ct', this.playerTeam === 'CT');
-		e.banner.classList.toggle('is-t', this.playerTeam === 'T');
-		if (e.bannerKicker) e.bannerKicker.textContent = this.tr('ROUND') + ' ' + this.match.round + ' · ' + this.tr(this.playerTeam === 'CT' ? 'COUNTER-TERRORISTS' : 'TERRORISTS');
+		e.banner.classList.toggle('is-ct', bannerSide === 'CT');
+		e.banner.classList.toggle('is-t', bannerSide === 'T');
+		e.banner.classList.toggle('is-spectator', !!this.spectatorMode);
+		if (e.bannerKicker) e.bannerKicker.textContent = this.tr('ROUND') + ' ' + this.match.round + ' · ' + (this.spectatorMode ? 'SPECTATOR' : this.tr(this.playerTeam === 'CT' ? 'COUNTER-TERRORISTS' : 'TERRORISTS'));
 		text(e.bannerTitle, winner === 'CT' ? 'COUNTER-TERRORISTS WIN' : 'TERRORISTS WIN');
 		text(e.bannerReason, reason || '');
 		text(e.bannerScore, 'CT ' + this.match.ct + ' — ' + this.match.t + ' T');
-		text(e.bannerReward, '+' + fmtMoney(reward));
+		text(e.bannerReward, this.spectatorMode ? 'SPECTATOR' : '+' + fmtMoney(reward));
 		text(e.bannerNext, 'NEXT ROUND IN 3');
 	};
 
@@ -4196,20 +4521,25 @@
 		this.closeScoreboard();
 		this.state = 'matchover';
 		this.hideSpectate();
+		this.clearSharedKills();
 		this.hideRoundBanner();
 		var myScore = this.playerTeam === 'CT' ? this.match.ct : this.match.t;
 		var won = myScore >= MATCH_TARGET;
+		var spect = this.spectatorMode;
 		var e = this.el;
 		if (e.result) e.result.hidden = true;
 		if (e.banner) e.banner.hidden = true;
 		if (e.pause) e.pause.hidden = true;
 		if (e.buy) e.buy.hidden = true;
+		if (e.spectator) e.spectator.hidden = true;
 		if (e.scoreboard) e.scoreboard.hidden = true;
-		if (e.matchPanel) e.matchPanel.dataset.outcome = won ? 'won' : 'lost';
-		text(e.matchTitle, won ? 'VICTORY' : 'DEFEAT');
-		text(e.matchCopy, won
-			? (this.playerTeam === 'CT' ? 'The sites held. Operation complete.' : 'The sites fell. Operation complete.')
-			: (this.playerTeam === 'CT' ? 'The terrorist squad took the sites. Regroup and try again.' : 'The defence held. Regroup and try again.'));
+		if (e.matchPanel) e.matchPanel.dataset.outcome = spect ? 'spectated' : (won ? 'won' : 'lost');
+		text(e.matchTitle, spect ? 'MATCH COMPLETE' : (won ? 'VICTORY' : 'DEFEAT'));
+		text(e.matchCopy, spect
+			? 'The match is over. CT ' + this.match.ct + ' — ' + this.match.t + ' T. Watch the final scoreboard or return to the games page.'
+			: (won
+				? (this.playerTeam === 'CT' ? 'The sites held. Operation complete.' : 'The sites fell. Operation complete.')
+				: (this.playerTeam === 'CT' ? 'The terrorist squad took the sites. Regroup and try again.' : 'The defence held. Regroup and try again.')));
 		text(e.matchCt, this.match.ct);
 		text(e.matchT, this.match.t);
 		text(e.matchRounds, this.match.round);
@@ -4219,15 +4549,19 @@
 		if (e.match) e.match.hidden = false;
 		this.releaseLock();
 
-		var r = this.records;
-		r.matches = (r.matches || 0) + 1;
-		r.bestWins = Math.max(r.bestWins || 0, myScore);
-		r.totalRounds = (r.totalRounds || 0) + myScore;
-		r.bestRounds = Math.max(r.bestRounds || 0, myScore);
-		r.bestKills = Math.max(r.bestKills || 0, this.match.kills);
-		saveJSON(RECORDS_KEY, r);
-		this.updateMenuStats();
-		if (won) this.sound.win(); else this.sound.lose();
+		if (!spect) {
+			var r = this.records;
+			r.matches = (r.matches || 0) + 1;
+			r.bestWins = Math.max(r.bestWins || 0, myScore);
+			r.totalRounds = (r.totalRounds || 0) + myScore;
+			r.bestRounds = Math.max(r.bestRounds || 0, myScore);
+			r.bestKills = Math.max(r.bestKills || 0, this.match.kills);
+			saveJSON(RECORDS_KEY, r);
+			this.updateMenuStats();
+			if (won) this.sound.win(); else this.sound.lose();
+		} else {
+			this.sound.tone({ freq: 420, to: 620, dur: 0.2, gain: 0.07, type: 'triangle' });
+		}
 	};
 
 	RangeGame.prototype.playAgain = function () {
@@ -4354,6 +4688,7 @@
 
 	RangeGame.prototype.updateCamera = function () {
 		var p = this.player;
+		if (this.spectatorMode) { this.updateSpectatorCamera(); return; }
 		if (!p.alive) {
 			if (this.spectating) this.updateSpectateCamera();
 			else this.updateDeathCamera();
@@ -4561,7 +4896,7 @@
 	};
 
 	RangeGame.prototype.startReload = function () {
-		if (!this.player.alive) return;
+		if (this.spectatorMode || !this.player.alive) return;
 		var def = this.weaponDef(this.currentWeapon);
 		var ammo = this.ammo[this.currentWeapon];
 		if (!def || !ammo || def.slot === 'melee' || def.slot === 'grenade' || def.slot === 'equipment' || this.reloading) return;
@@ -4655,6 +4990,7 @@
 	};
 
 	RangeGame.prototype.tryFire = function () {
+		if (this.spectatorMode) return;
 		if (this.state !== 'playing' || !this.player.alive) return;
 		if (this.round && this.round.phase === 'freeze') return;
 		if (this.reloading) return;
@@ -5165,7 +5501,7 @@
 
 	RangeGame.prototype.updateCrosshair = function () {
 		if (!this.el.crosshair) return;
-		var scoped = this.scoped || !this.player.alive;
+		var scoped = this.scoped || (!this.player.alive && !this.spectatorMode);
 		this.el.crosshair.classList.toggle('is-hidden', scoped);
 		if (scoped) return;
 		var def = this.weaponDef(this.currentWeapon);
@@ -5191,6 +5527,7 @@
 	};
 
 	RangeGame.prototype.toggleScope = function () {
+		if (this.spectatorMode || !this.player.alive) return;
 		var def = this.weaponDef(this.currentWeapon);
 		if (!def.scope) return;
 		if (this.reloading) return;
@@ -6704,6 +7041,7 @@
 	RangeGame.prototype.applyPlayerDamage = function (amount, fromBot, headshot) {
 		var p = this.player;
 		if (!p.alive || this.state !== 'playing') return;
+		if (fromBot && fromBot.name) this.recordKillContribution(p, 'bot_' + fromBot.id, fromBot.name, fromBot.team, amount);
 		if (p.armor > 0) {
 			var armorPart = Math.min(p.armor, amount * 0.5);
 			p.armor = Math.max(0, p.armor - armorPart);
@@ -6739,6 +7077,7 @@
 			this.spectating = false;
 			this.showDeathCam(fromBot, !!headshot);
 			if (this.el.hud) this.el.hud.classList.add('is-dead');
+			this.player.damageContributors = {};
 			if (fromBot) {
 				fromBot.kills++;
 				fromBot.roundKills = (fromBot.roundKills || 0) + 1;
@@ -6770,6 +7109,7 @@
 	RangeGame.prototype.damageBot = function (bot, amount, headshot, weaponName, armorPen) {
 		if (!bot || !bot.alive || bot.team === this.playerTeam) return false;
 		var killed = false;
+		this.recordKillContribution(bot, 'player', 'YOU', this.playerTeam, amount);
 		amount = this.applyBotArmor(bot, amount, armorPen);
 		bot.hp -= amount;
 		bot.robot.hp = Math.max(0, bot.hp);
@@ -6798,6 +7138,7 @@
 	RangeGame.prototype.damageBotByBot = function (bot, amount, attacker, headshot, weaponName, armorPen) {
 		if (!bot || !bot.alive || bot.dead) return false;
 		if (attacker && attacker.team === bot.team) return false;
+		if (attacker && attacker.name) this.recordKillContribution(bot, 'bot_' + attacker.id, attacker.name, attacker.team, amount);
 		amount = this.applyBotArmor(bot, amount, armorPen);
 		bot.hp -= amount;
 		bot.robot.hp = Math.max(0, bot.hp);
@@ -6869,6 +7210,29 @@
 		}
 		this.registerTeamDeath(bot.team, bot);
 		var byPlayer = (killer === 'player' || killer == null || killer === this.player);
+		/* Shared-kill bookkeeping: every attacker that did damage gets credit
+		   when the victim had two or more distinct contributors. */
+		var contributors = [];
+		var contribSeen = {};
+		var dc = bot.damageContributors || {};
+		Object.keys(dc).forEach(function (key) {
+			var rec = dc[key];
+			if (!rec || !(rec.damage > 0)) return;
+			var sig = rec.team + '|' + rec.name;
+			if (contribSeen[sig]) return;
+			contribSeen[sig] = true;
+			contributors.push({ name: rec.name, team: rec.team, damage: rec.damage });
+		});
+		var finalName = byPlayer ? 'YOU' : (killer && killer.name);
+		var finalTeam = byPlayer ? this.playerTeam : (killer && killer.team);
+		if (finalName) {
+			var fsig = finalTeam + '|' + finalName;
+			if (!contribSeen[fsig]) contributors.push({ name: finalName, team: finalTeam, damage: 1 });
+		}
+		if (contributors.length >= 2 && (this.spectatorMode || bot.team === this.enemyTeam)) {
+			this.showSharedKill(contributors, bot.name, bot.team, weaponName || 'RIFLE', headshot, finalName);
+		}
+		bot.damageContributors = {};
 		if (byPlayer) {
 			this.aiRecordPlayerKill(bot);
 			this.match.kills++;
@@ -7258,7 +7622,7 @@
 				puff.position.set(base.x + wobble, base.y + Math.cos(now * 0.0007 + q) * 0.1, base.z + wobble * 0.7);
 				var sc = (base.scale || 2.4) * (0.35 + 0.65 * grow);
 				puff.scale.set(sc, sc, 1);
-				if (puff.material) puff.material.opacity = 0.58 * (0.45 + 0.55 * grow);
+				if (puff.material) puff.material.opacity = 1.0;
 			}
 		}
 		/* fire pools */
@@ -7397,15 +7761,15 @@
 		var group = new THREE.Group();
 		group.position.set(x, 0, z);
 		var puffs = [];
-		for (var i = 0; i < 16; i++) {
+		for (var i = 0; i < 28; i++) {
 			var mat = new THREE.SpriteMaterial({
-				map: this.tex.smoke, color: i % 3 === 0 ? 0xf2f5f3 : 0xd4dad6,
-				transparent: true, opacity: 0.58, depthWrite: false
+				map: this.tex.smoke, color: i % 3 === 0 ? 0xd8ded9 : 0xb7c1bc,
+				transparent: true, opacity: 1.0, depthWrite: true, alphaTest: 0.01
 			});
 			var sprite = new THREE.Sprite(mat);
-			var a = C.rand(0, Math.PI * 2), r = C.rand(0.1, 2.9);
-			sprite.position.set(Math.cos(a) * r, C.rand(0.35, 2.7), Math.sin(a) * r);
-			var scale = C.rand(2.6, 4.4);
+			var a = C.rand(0, Math.PI * 2), r = C.rand(0.1, 3.3);
+			sprite.position.set(Math.cos(a) * r, C.rand(0.35, 2.9), Math.sin(a) * r);
+			var scale = C.rand(3.4, 5.8);
 			sprite.scale.set(scale, scale, 1);
 			sprite.userData.base = { x: sprite.position.x, y: sprite.position.y, z: sprite.position.z, scale: scale };
 			group.add(sprite);
@@ -7577,6 +7941,15 @@
 	   HUD
 	   ====================================================================== */
 	RangeGame.prototype.updateHUD = function () {
+		if (this.spectatorMode) {
+			if (this.el.roundNo) text(this.el.roundNo, this.match ? this.match.round : 1);
+			this.updateRoundTimer();
+			this.updateBuyHint();
+			this.updateSpectatorHUD();
+			return;
+		}
+		if (this.el.hud) this.el.hud.classList.remove('is-spectator');
+		this.updateSpectatorHUD();
 		if (this.el.useHint) {
 			var hint = 'PICK UP / DEFUSE';
 			if (this.playerTeam === 'T' && !this.practice) {
@@ -7704,14 +8077,83 @@
 		}
 	};
 
+	RangeGame.prototype.teamOfFighter = function (name) {
+		if (name === 'YOU') return this.playerTeam;
+		for (var i = 0; i < this.bots.length; i++) {
+			if (this.bots[i].name === name) return this.bots[i].team;
+		}
+		return null;
+	};
+
+	RangeGame.prototype.killColorClass = function (team) {
+		if (!team) return '';
+		var friendly;
+		if (this.spectatorMode) friendly = team === 'CT';
+		else friendly = team === this.playerTeam;
+		return friendly ? 'is-friendly' : 'is-enemy';
+	};
+
+	RangeGame.prototype.recordKillContribution = function (victim, key, name, team, amount) {
+		if (!victim || !(amount > 0)) return;
+		if (!victim.damageContributors) victim.damageContributors = {};
+		var rec = victim.damageContributors[key];
+		if (!rec) {
+			rec = victim.damageContributors[key] = { name: name, team: team, damage: 0 };
+		}
+		rec.damage += amount;
+		rec.name = name;
+		rec.team = team;
+		rec.last = this.now;
+	};
+
+	RangeGame.prototype.clearSharedKills = function () {
+		if (this.el.sharedKills) this.el.sharedKills.innerHTML = '';
+	};
+
+	RangeGame.prototype.showSharedKill = function (contributors, victimName, victimTeam, weaponName, headshot, finalKillerName) {
+		if (!this.el.sharedKills || !contributors || contributors.length < 2) return;
+		var list = contributors.slice();
+		/* final killer first, then the biggest damage contributors */
+		list.sort(function (a, b) {
+			if (a.name === finalKillerName) return -1;
+			if (b.name === finalKillerName) return 1;
+			return (b.damage || 0) - (a.damage || 0);
+		});
+		var shown = list.slice(0, 3);
+		var names = '';
+		for (var i = 0; i < shown.length; i++) {
+			if (i) names += '<i>+</i>';
+			names += '<b class="' + this.killColorClass(shown[i].team) + '">' + escapeHTML(shown[i].name) + '</b>';
+		}
+		if (list.length > shown.length) names += '<i>+' + (list.length - shown.length) + '</i>';
+		names += '<span class="csr-sharedkill__arrow">→</span>' +
+			'<b class="' + this.killColorClass(victimTeam) + '">' + escapeHTML(victimName) + '</b>';
+		var row = doc.createElement('div');
+		row.className = 'csr-sharedkill ' + (this.killColorClass(victimTeam) === 'is-friendly' ? 'is-enemy-kill' : 'is-friendly-kill');
+		row.innerHTML = '<span class="csr-sharedkill__tag">SHARED KILL</span>' +
+			'<div class="csr-sharedkill__names">' + names + '</div>' +
+			'<div class="csr-sharedkill__meta"><span>' + escapeHTML(weaponName || 'RIFLE') + (headshot ? ' · HS' : '') +
+			'</span><b>' + list.length + ' ATTACKERS</b></div>';
+		this.el.sharedKills.appendChild(row);
+		while (this.el.sharedKills.children.length > 3) {
+			this.el.sharedKills.removeChild(this.el.sharedKills.firstChild);
+		}
+		setTimeout(function () {
+			row.classList.add('is-out');
+			setTimeout(function () { if (row.parentNode) row.parentNode.removeChild(row); }, 300);
+		}, 5600);
+	};
+
 	RangeGame.prototype.addKillFeed = function (killer, victim, weaponName, headshot, playerKill) {
 		if (!this.el.killfeed) return;
 		var row = doc.createElement('div');
 		row.className = 'csr-kill' + (playerKill ? ' is-player' : '');
-		row.innerHTML = '<b>' + escapeHTML(killer) + '</b>' +
+		var kTeam = this.teamOfFighter(killer);
+		var vTeam = this.teamOfFighter(victim);
+		row.innerHTML = '<b class="csr-kill__name ' + this.killColorClass(kTeam) + '">' + escapeHTML(killer) + '</b>' +
 			'<em>[' + escapeHTML(weaponName) + ']</em>' +
 			(headshot ? '<span class="csr-kill__hs">HS</span>' : '') +
-			'<b>' + escapeHTML(victim) + '</b>';
+			'<b class="csr-kill__name ' + this.killColorClass(vTeam) + '">' + escapeHTML(victim) + '</b>';
 		this.el.killfeed.appendChild(row);
 		if (global.CSRangeI18n) global.CSRangeI18n.apply(row);
 		this.killFeed.push(row);
@@ -7740,6 +8182,7 @@
 	   buy menu
 	   ====================================================================== */
 	RangeGame.prototype.openBuy = function () {
+		if (this.spectatorMode) { this.toast('Spectators do not use the armory.'); return; }
 		if (this.state !== 'playing' || !this.round) return;
 		this.closeScoreboard();
 		if (!this.practice && this.round.phase !== 'freeze') {
@@ -7958,8 +8401,8 @@
 			text(this.el.boardCt, this.match.ct);
 			text(this.el.boardT, this.match.t);
 		}
-		var playerRow = '<div class="csr-board__row is-player' + (this.player.alive ? '' : ' is-dead') + '">' +
-			'<span>YOU <small style="opacity:.5">' + this.playerTeam + '</small></span><span>' + this.match.kills + '</span><span>' + this.match.deaths + '</span><span>' + this.match.hs + '</span><span>LOCAL</span></div>';
+		var playerRow = this.spectatorMode ? '' : ('<div class="csr-board__row is-player' + (this.player.alive ? '' : ' is-dead') + '">' +
+			'<span>YOU <small style="opacity:.5">' + this.playerTeam + '</small></span><span>' + this.match.kills + '</span><span>' + this.match.deaths + '</span><span>' + this.match.hs + '</span><span>LOCAL</span></div>');
 		var ctBots = '';
 		var tBots = '';
 		for (var i = 0; i < this.bots.length; i++) {
@@ -8007,7 +8450,9 @@
 	RangeGame.prototype.enableFallbackLook = function () {
 		if (this.fallbackLook) return;
 		this.fallbackLook = true;
-		this.toast('Mouse lock unavailable — free look is active. Click to fire.');
+		this.toast(this.spectatorMode
+			? 'Mouse lock unavailable — free look is active. Drag to look; E or click a robot to watch.'
+			: 'Mouse lock unavailable — free look is active. Click to fire.');
 	};
 	RangeGame.prototype.releaseLock = function (quiet) {
 		if (doc.pointerLockElement) {
@@ -8091,7 +8536,7 @@
 		   the page. Gameplay keys still fall through: holding CTRL to crouch and
 		   pressing S must crouch-walk backwards, not open the Save dialog. */
 		if (combo) {
-			var gameKeyForCombo = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', 'enter', '1', '2', '3', '4', '5', 'g', 'e', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+			var gameKeyForCombo = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', 'enter', '1', '2', '3', '4', '5', 'g', 'e', 'f', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
 			var isGameKey = gameKeyForCombo.indexOf(k === ' ' ? ' ' : code) !== -1;
 			ev.preventDefault();
 			ev.stopPropagation();
@@ -8118,6 +8563,7 @@
 			if (k === 'Escape') { this.closeTeamSelect(); return; }
 			if (k === '1') { this.chooseTeam('CT'); return; }
 			if (k === '2') { this.chooseTeam('T'); return; }
+			if (k === '3') { this.chooseSpectate(); return; }
 			return;
 		}
 		/* controls is a modal layer above menu/pause: close it with Esc / H / Enter */
@@ -8130,7 +8576,7 @@
 			return;
 		}
 		if (this.state === 'menu' || this.state === 'boot' || this.state === 'error') return;
-		var gameKeys = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', '1', '2', '3', '4', '5', 'g', 'e', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+		var gameKeys = ['w', 'a', 's', 'd', 'shift', 'control', ' ', 'r', 'b', 'tab', 'escape', '1', '2', '3', '4', '5', 'g', 'e', 'f', 'm', 'h', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
 		if (this.state !== 'playing' && this.state !== 'paused' && this.state !== 'roundover' && this.state !== 'buy' && this.state !== 'matchover') return;
 		if (gameKeys.indexOf(k === ' ' ? ' ' : code) !== -1) {
 			if (ev.target && ev.target.tagName === 'INPUT') return;
@@ -8159,6 +8605,10 @@
 		}
 		if (this.state === 'matchover') {
 			if (k === 'Enter') this.playAgain();
+			return;
+		}
+		if (this.spectatorMode && (this.state === 'playing' || this.state === 'roundover')) {
+			this.handleSpectatorKey(ev, code);
 			return;
 		}
 		if (this.state === 'roundover') {
@@ -8237,6 +8687,18 @@
 	};
 
 	RangeGame.prototype.onMouseMove = function (ev) {
+		if (this.spectatorMode) {
+			if (this.state !== 'playing' && this.state !== 'roundover') return;
+			if (!this.locked && !(this.fallbackLook && !this.isTouch)) return;
+			var sc = this.initSpectatorCamera();
+			var cs = 0.0021 * Number(this.settings.sens || 1);
+			var cmx = ev.movementX || 0, cmy = ev.movementY || 0;
+			sc.yaw -= cmx * cs;
+			sc.pitch = clamp(sc.pitch - cmy * cs, -1.45, 1.45);
+			this.player.yaw = sc.yaw;
+			this.player.pitch = sc.pitch;
+			return;
+		}
 		if ((!this.locked && !(this.fallbackLook && !this.isTouch)) || this.state !== 'playing' || !this.player.alive) return;
 		var scale = 0.0021 * Number(this.settings.sens || 1);
 		if (this.scoped) scale *= 0.33;
@@ -8249,6 +8711,17 @@
 	};
 
 	RangeGame.prototype.onCanvasMouseDown = function (ev) {
+		if (this.spectatorMode) {
+			if (this.state !== 'playing' && this.state !== 'roundover') return;
+			if (!this.isTouch && !this.locked && !this.fallbackLook) { this.requestLock(); return; }
+			if (ev.button === 2) {
+				ev.preventDefault();
+				this.exitSpecFollow();
+				return;
+			}
+			if (ev.button === 0) this.specSelectBot();
+			return;
+		}
 		if (this.player && !this.player.alive) {
 			if (this.state === 'playing' || this.state === 'roundover') {
 				if (ev.button === 0) {
@@ -8280,6 +8753,12 @@
 	};
 
 	RangeGame.prototype.onWheel = function (ev) {
+		if (this.spectatorMode) {
+			if (this.state !== 'playing' && this.state !== 'roundover') return;
+			ev.preventDefault();
+			if (this.specFollow) this.specNextBot();
+			return;
+		}
 		if (this.state !== 'playing') return;
 		ev.preventDefault();
 		this.cycleWeapon(ev.deltaY > 0 ? 1 : -1);
@@ -8289,7 +8768,8 @@
 		var self = this;
 		if (this.el.touch) this.el.touch.hidden = false;
 		this.on(this.el.canvas, 'pointerdown', function (ev) {
-			if (!self.isTouch || self.player.alive) return;
+			if (!self.isTouch || self.spectatorMode) return;
+			if (self.player.alive) return;
 			if (self.state !== 'playing' && self.state !== 'roundover') return;
 			if (self.spectating) self.cycleSpectateTarget(1);
 			else self.beginSpectate();
@@ -8329,6 +8809,10 @@
 			this.on(this.el.touchFire, 'pointerdown', function (ev) {
 				ev.preventDefault();
 				self.sound.ensure();
+				if (self.spectatorMode) {
+					if (self.specFollow) self.specNextBot(); else self.specSelectBot();
+					return;
+				}
 				self.input.fire = true;
 				var def = self.weaponDef(self.currentWeapon);
 				if (!def.auto) self.semiQueued = true;
@@ -8353,6 +8837,10 @@
 			this.on(this.el.touchUse, 'pointerdown', function (ev) {
 				ev.preventDefault();
 				self.sound.ensure();
+				if (self.spectatorMode) {
+					if (self.specFollow) self.exitSpecFollow(); else self.specSelectBot();
+					return;
+				}
 				var c4 = self.bomb;
 				var nearC4 = c4 && c4.state === 'planted' && self.player.alive &&
 					Math.hypot(self.player.x - c4.x, self.player.z - c4.z) < 2.2;
@@ -8386,6 +8874,11 @@
 			self.player.yaw -= (ev.clientX - lastX) * scale;
 			self.player.pitch -= (ev.clientY - lastY) * scale;
 			self.player.pitch = clamp(self.player.pitch, -1.48, 1.48);
+			if (self.spectatorMode) {
+				var specCam = self.initSpectatorCamera();
+				specCam.yaw = self.player.yaw;
+				specCam.pitch = self.player.pitch;
+			}
 			lastX = ev.clientX; lastY = ev.clientY;
 		});
 		var endLook = function (ev) { if (ev.pointerId === lookId) lookId = null; };
@@ -8398,7 +8891,8 @@
 	   ====================================================================== */
 	RangeGame.prototype.render = function () {
 		if (!this.renderer) return;
-		var overlayState = this.state === 'paused' || this.state === 'buy' || this.state === 'roundover' || this.state === 'matchover';
+		var overlayState = this.state === 'paused' || this.state === 'buy' ||
+			(this.state === 'roundover' && !this.spectatorMode) || this.state === 'matchover';
 		/* Freeze the 3D view under a modal overlay: the backdrop blur is static,
 		   so repainting the WebGL scene behind it every frame is wasted work. */
 		if (overlayState && this._overlayDrawn) return;
@@ -8469,6 +8963,10 @@
 			loadoutEquipment: this.loadout ? this.loadout.equipment : null,
 			drops: this.drops.map(function (d) { return { weapon: d.weaponId, x: +d.x.toFixed(2), z: +d.z.toFixed(2), mag: d.ammo.mag, reserve: d.ammo.reserve, life: +d.life.toFixed(1) }; }),
 			locked: this.locked,
+			spectatorMode: !!this.spectatorMode,
+			specFollow: this.specFollow ? { name: this.specFollow.name, team: this.specFollow.team, hp: Math.round(this.specFollow.hp), visible: this.specFollow.root ? this.specFollow.root.visible : null } : null,
+			specCam: this.specCam ? { x: +this.specCam.x.toFixed(2), y: +this.specCam.y.toFixed(2), z: +this.specCam.z.toFixed(2), yaw: +this.specCam.yaw.toFixed(2), pitch: +this.specCam.pitch.toFixed(2) } : null,
+			sharedKills: this.el && this.el.sharedKills ? this.el.sharedKills.children.length : 0,
 			practice: !!this.practice,
 			practiceStats: this.practiceStats,
 			targets: this.targets.map(function (t) { return { x: +t.x.toFixed(2), z: +t.z.toFixed(2), down: t.down, kind: t.kind, move: t.move }; }),
@@ -8532,6 +9030,17 @@
 
 	RangeGame.prototype.debugPractice = function () {
 		this.startPractice();
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugSpectate = function () {
+		this.chooseSpectate();
+		return this.debugState();
+	};
+
+	RangeGame.prototype.debugFollow = function (index) {
+		var b = this.bots[Math.max(0, Math.min(this.bots.length - 1, index || 0))];
+		if (b) this.specFollowBot(b);
 		return this.debugState();
 	};
 

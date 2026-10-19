@@ -7,16 +7,19 @@ browser. It is a self-contained insert for the Hayneko site, mounted at
 ## Play
 
 Open **Games / Dust Range** (or go directly to #/range), then press
-**DEPLOY** and choose a side:
+**DEPLOY** and choose a side, or pick **SPECTATOR** to watch:
 
 - **COUNTER-TERRORISTS** — you join four CT robots at CT spawn. Hold A and B,
   rotate on the plant and defuse the C4.
 - **TERRORISTS** — you join four T robots at T spawn and carry the C4. Hold
   **E** on a bombsite to plant; your robot squad covers the site.
+- **SPECTATOR** — five CT robots against five T robots, with no player body.
+  Fly a free camera through Dust 2, enter any robot's first-person view, and
+  keep moving after one side is wiped.
 
-**PRACTICE RANGE** still opens the free target range directly. Every match is
+**PRACTICE RANGE** still opens the free target range directly. Every normal match is
 the full Dust 2 lineup of five against five; the player fills one slot on the
-chosen side.
+chosen side. A spectator match is five robots against five robots.
 
 | Input | Action |
 | --- | --- |
@@ -25,6 +28,11 @@ chosen side.
 | Left mouse | Fire |
 | Right mouse | Scope (AWP / SSG 08 / SCAR-20 / G3SG1 / SG 553 / AUG / FAMAS) |
 | Left mouse (dead) | Switch to the next living robot (first-person spectate) |
+| W A S D / Space / Ctrl | Spectator: free-fly forward-left-back-right / rise / descend |
+| Shift | Spectator: boost the free-fly camera (walk in a match) |
+| E (spectator) | Enter the robot under the crosshair, or leave its view |
+| Left mouse (spectator) | Select a robot; while watching one, cycle to the next |
+| F (spectator) | Leave a robot's view for the free camera |
 | R | Reload |
 | 1 2 3 | Pistol / primary / knife |
 | 4 | Cycle grenades (HE / flash / smoke / incendiary / decoy) |
@@ -45,6 +53,13 @@ chosen side.
 - **5 v 5, bomb defusal.** The player joins one side with four robot
   teammates; the other side fields five robots. First to **13 rounds** wins
   (MR12-length match).
+- **Spectator mode.** Choosing Spectator starts a full five-CT-versus-five-T
+  match with no player slot. The camera starts as a free-fly observer, **E** or
+  a click enters the aimed robot's first-person view (the robot model is hidden
+  while you watch), **LMB** cycles living robots, **F** returns to free flight,
+  and **WASD / Space / Ctrl** fly. The observer keeps free movement throughout
+  the round, including after one side is eliminated and during the round
+  banner; the next round starts automatically.
 - **Round win conditions** follow CS2. The CTs win by eliminating every
   terrorist before the bomb is planted, by defusing the C4, or by running the
   clock out without a plant. The Ts win by eliminating every CT, or by letting
@@ -77,7 +92,8 @@ chosen side.
   round starts automatically after a short banner.
 - **Round banner.** A round ends with a wide banner showing the winning side,
   the reason, the updated score and the player's reward. It clears itself and
-  the next round begins after roughly three seconds (Space advances early).
+  the next round begins after roughly three seconds (Space advances early in a
+  normal match; Enter advances in spectator mode, where Space flies up).
 
 ## The Dust 2 map
 
@@ -107,7 +123,11 @@ hand-waved box. Walls are generated around that footprint and offset
 
 Perimeter walls carry pilasters, stone trim courses, shuttered wall niches and
 concrete caps; the empty blocks are filled with low-rise buildings, rooftop
-tanks and AC units so the skyline reads as Dust 2 from every angle. All static
+tanks and AC units so the skyline reads as Dust 2 from every angle. Large
+non-walkable building cores are now **solid volumes** (walls, brick, collision)
+rather than hollow visual blocks, so a round cannot cross a whole building and
+emerge in the courtyard behind it; thin boards, narrow corners and ordinary
+wall segments keep their sub-0.5 m collider and remain wallbangable. All static
 boxes are merged per material at load time, keeping the detailed geometry at a
 few hundred draw calls.
 
@@ -155,9 +175,17 @@ few hundred draw calls.
   nearest free spot at round start, and a blocked robot tries a short
   tangential slide and skips an unreachable waypoint instead of pushing into
   the wall.
-- **Overhead health bars** exist only for the player's own side, in blue.
-  Enemy HP and names are never drawn, independent of which side the player
-  chose.
+- **Overhead health bars.** In a normal match only the player's own side gets
+  bars, in blue; enemy HP and names are never drawn. In spectator mode both
+  squads get bars (CT blue, T red) so the observer can read both sides; the
+  followed robot's HP also appears in the spectator card.
+- **Shared-kill prompt.** When an enemy is brought down by two or more distinct
+  attackers (the player and/or robots), a SHARED KILL card appears under the
+  radar at top-left, showing every attacker, the final killer first, the
+  weapon/headshot and the attacker count. Names use the request's team colours:
+  friendly sides are blue and enemy sides are red. The normal kill feed in the
+  top-right uses the same colours; headshot and weapon tags keep their gold
+  accents.
 - **C4 recovery.** When a C4 carrier dies, the two or three closest
   terrorists converge on the dropped bomb; one picks it up, the rest regroup
   on the nearest site and cover the plant. The new carrier takes a direct
@@ -228,6 +256,11 @@ few hundred draw calls.
   teammate's head (the robot model is hidden), not behind it. The HUD and the
   spectate card show that robot's live HP and current magazine ammo; LMB cycles
   teammates.
+- **Spectator robot view.** A spectator can enter any living robot's head with
+  E or a click and cycle with LMB. The followed robot is hidden from its own
+  camera, the spectator card shows its HP, weapon and magazine/reserve ammo, and
+  the radar marks the followed robot with a gold ring. If that robot dies or the
+  round ends, the camera returns to free flight at its last position.
 - **Chickens.** Robots collide with chickens. If a chicken sits in their path
   they steer around it; at close range there is a chance they simply kill it,
   so a chicken can no longer pin a robot against a doorway.
@@ -309,8 +342,9 @@ few hundred draw calls.
   after a few seconds.
 - **Thrown utility.** Five CS2 grenades can be bought, carried (four slots,
   flashbang capped at two) and thrown with **4** to cycle and LMB / **G** to
-  throw. HE deals distance-falloff blast damage; flashbangs create a real
-  screen-white blind scaled by distance and view angle; smoke lasts 18 s and
+  throw. HE deals distance-falloff blast damage; a flashbang creates a real
+  white screen blind for up to **3 s** when the explosion is in view (robots
+  lose sight for the same **3 s**); smoke lasts 18 s, is dense/opaque, and
   blocks robot line of sight (not just the player's view); incendiary/molotov
   leaves a seven-second fire pool that ticks damage and is extinguished by
   smoke; decoys rattle off fake shots before a small pop. Projectiles bounce
@@ -349,11 +383,16 @@ few hundred draw calls.
 - A third-person death camera followed by first-person teammate spectating
   with **LMB cycling**; the killer's name, weapon and headshot callout are in
   the kill feed. Round results are shown as a banner, not a page.
+- **Spectator mode** with a free-fly camera (WASD, Space/Ctrl, Shift boost),
+  E/click robot views, LMB cycling, a gold radar ring for the followed robot,
+  and uninterrupted free movement after a side wipe and through the round
+  banner.
 - A practical round economy, a grouped side-specific buy menu with the full
   arsenal, five grenades, the CT defuse kit and the Zeus x27 (the practice
   armory unlocks everything), a large 252 px radar with teammate and C4
-  markers (never enemy positions), kill feed, scoreboard, freeze time and a
-  first-to-thirteen match.
+  markers in normal play (never enemy positions; spectator mode shows both
+  squads), a team-coloured kill feed, shared-kill assists, scoreboard, freeze
+  time and a first-to-thirteen match.
 - Wandering chickens with physical footprints and bullet hitboxes that never
   affect the round result.
 - Practice Range: no robots, twelve target boards across A site, infinite
@@ -373,7 +412,7 @@ few hundred draw calls.
 | bootstrap.js | Tiny lazy loader loaded by the root page. Fetches the heavy assets only when #/range opens. |
 | content.js | Full weapon + utility catalogue, bot catalogue, procedural textures, the Dust 2 map, nav grid/A*, the procedural gun foundry, robot models with category-specific guns, grenade models, the C4 model and the sound synthesiser. |
 | i18n.js | Game-specific translation dictionaries and the static/dynamic translation helper for five locales. |
-| game.js | Match state machine, player controller, combat, robot economy/loadouts, team AI and revenge, thrown-utility simulation, C4/defuse logic, grouped buy menu, HUD, radar and rendering loop. |
+| game.js | Match state machine, player controller, free-fly spectator/robot-view camera, shared-kill contribution tracking, combat, robot economy/loadouts, team AI and revenge, thrown-utility simulation, C4/defuse logic, grouped buy menu, HUD, radar and rendering loop. |
 | vendor/three.min.js | Vendored Three.js r158 (MIT, license header preserved). |
 
 The loader order is three.min.js -> content.js -> i18n.js -> game.js; the route is
@@ -385,7 +424,9 @@ registered in scripts/router.js and the entry card in views/games.html.
   (headless browsers and some embedded views do); real desktop browsers use
   pointer lock normally.
 - Touch devices get an on-screen stick, look-drag, fire, reload, jump, crouch,
-  scope, use/defuse and armory controls.
+  scope, use/defuse and armory controls. In spectator mode the stick and look
+  drag fly the camera, the use button toggles a robot view, and the fire button
+  selects/cycles robots (up/down flight stays keyboard-only).
 - Browser shortcuts are intercepted while #/range is mounted: Ctrl/Cmd+S,
   Ctrl/Cmd+F/P/D/A/R and the common F-key/Alt-Arrow combos no longer open
   save/find/print/bookmark/reload dialogs. Gameplay keys still pass through, so
