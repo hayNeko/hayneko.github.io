@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """One-command updater for the Hayneko static site.
 
-Target : http://SERVER_ADDRESS/   (Arch Linux + nginx)
+Target : Arch Linux + nginx host given at runtime (--host / DEPLOY_HOST)
 Webroot: /usr/share/nginx/html
 
 What it does
@@ -17,9 +17,9 @@ What it does
 
 Usage
 -----
-    python deploy.py                 # interactive
+    python deploy.py --host <addr>   # interactive (address may also be DEPLOY_HOST)
     python deploy.py --dry-run       # pack only, show what would be sent
-    python deploy.py --rollback      # restore html.prev
+    python deploy.py --rollback --host <addr>  # restore html.prev
     python deploy.py --yes           # skip the confirmation prompt
 
 Password: DEPLOY_PASS environment variable, or an interactive prompt.
@@ -46,7 +46,7 @@ except Exception:
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-DEFAULT_HOST = "SERVER_ADDRESS"
+DEFAULT_HOST = os.environ.get("DEPLOY_HOST", "")
 DEFAULT_USER = "hayneko"
 DEFAULT_PORT = 22
 DEFAULT_ROOT = "/usr/share/nginx/html"
@@ -401,7 +401,7 @@ def do_deploy(args):
 
     print("")
     print("  Source : {}".format(HERE))
-    print("  Target : {}@{}  ->  {}".format(args.user, args.host, args.root))
+    print("  Target : {}@{}  ->  {}".format(args.user, args.host or "(host not set)", args.root))
     print("  Files  : {}  ({})".format(len(files), human_size(total_bytes)))
     if skipped:
         print("  Skipped: {}".format(", ".join(sorted(skipped)[:8]) +
@@ -543,7 +543,8 @@ def do_rollback(args):
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Deploy the Hayneko static site to the Arch/nginx host.")
-    parser.add_argument("--host", default=DEFAULT_HOST)
+    parser.add_argument("--host", default=DEFAULT_HOST,
+                        help="server address (default: DEPLOY_HOST environment variable)")
     parser.add_argument("--user", default=DEFAULT_USER)
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--root", default=DEFAULT_ROOT,
@@ -558,6 +559,15 @@ def main(argv=None):
 
     if not args.root.startswith("/"):
         parser.error("--root must be an absolute path")
+
+    if not args.host and not args.dry_run:
+        if sys.stdin.isatty():
+            try:
+                args.host = input("Server address (or set DEPLOY_HOST): ").strip()
+            except EOFError:
+                args.host = ""
+        if not args.host:
+            parser.error("server address required: use --host or DEPLOY_HOST")
 
     try:
         if args.rollback:

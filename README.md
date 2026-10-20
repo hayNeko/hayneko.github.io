@@ -44,14 +44,14 @@ python -m http.server 8125 --directory archive/dsh-terminal
 
 ## 部署
 
-线上地址 **http://SERVER_ADDRESS/**（Arch Linux + nginx，站点根目录 `/usr/share/nginx/html`）。
+线上环境为 Arch Linux + nginx，站点根目录 `/usr/share/nginx/html`。**仓库是公开的，服务器地址、密码等不要写进任何文件**；服务器地址在运行时通过 `--host` 或环境变量 `DEPLOY_HOST` 传入。
 
 更新只需在仓库根目录执行：
 
 ```bat
 deploy.cmd
 :: 或
-python deploy.py
+python deploy.py --host <服务器地址>
 ```
 
 脚本流程：打包当前工作树（自动排除 `archive/`、`prism-1.30.0/`、`.git/`、`README.md` 等）→ SFTP 上传并校验 SHA256 → 服务端解包到 `html.new` → 备份旧站到 `/var/backups/` → 目录切换（旧版保留在 `html.prev`）→ `nginx -t` + reload → 双端 HTTP 校验关键资源；任一步失败自动回滚。
@@ -60,7 +60,7 @@ python deploy.py
 
 ```bat
 python deploy.py --dry-run    :: 只打包并显示清单，不连接服务器
-python deploy.py --rollback   :: 回滚到上一次部署（html.prev）
+python deploy.py --rollback --host <服务器地址>   :: 回滚到上一次部署（html.prev）
 python deploy.py --yes        :: 跳过确认提示
 ```
 
