@@ -1,0 +1,67 @@
+/* ============================================================================
+   ch2-projectile-energy.css — 第二章 II.c–II.d · 拋體與能量
+   ----------------------------------------------------------------------------
+   07 projectile-split 拋體分解 / 08 projectile-apps 拋體應用 / 09 energy-coaster 過山車與滑梯
+   共用語彙(.dl-lab__grid / .dl-panel__* / .dl-field / .dl-btn / .dl-readout …)
+   在 styles/labs/dse-labs.css —— 這裡只補共用語彙沒有給的東西, 前綴一律 pe-。
+   ========================================================================== */
+
+/* ----------------------------------------------------------------------------
+   ① 面板裡的公式列
+   KaTeX 會把 a + b = c 排版成比容器寬的盒子; 讓每一列自己橫向捲動, 不然手機
+   上整頁會被一條公式撐寬(這是 320px 實測過的老問題, 不是保險)。
+   -------------------------------------------------------------------------- */
+.pe-tex {
+	display: grid;
+	gap: 5px;
+	padding: 8px 10px;
+	border: 1px solid var(--line-faint);
+	background: var(--paper-1);
+}
+
+.pe-tex__row {
+	display: block;
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.pe-tex__row .katex { font-size: 1em; }
+
+/* ----------------------------------------------------------------------------
+   ② 讀數值
+   值不換行也不撐破格子: 溢出就省略 —— 完整數字同時寫在公式列與畫布上。
+   390px 實測: 兩欄各約 168px, '30.29 m' 這類值留得下。
+   -------------------------------------------------------------------------- */
+.pe-rd .dl-readout { overflow: hidden; }
+
+.pe-rd .dl-readout__v {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* '判定' / '所需角度' 這種要整行讀的讀數 */
+.pe-wide { grid-column: 1 / -1; }
+
+/* 紅 = 這一格正在說的重點(最高點那一刻 / 命中 / 停在此處), 灰 = 不適用 */
+.pe-acc { color: var(--accent); }
+
+.pe-mute { color: var(--fg-ghost); }
+
+/* 滑桿右邊那一格: 共用 CSS 在 420px 以下只給 54px, '20.0 m/s' 會折成兩行 */
+.pe-panel .dl-field__val { white-space: nowrap; }
+
+/* .dl-field 是 display:grid, 會蓋掉 [hidden] 的 display:none; 08 的投放高度只在
+   無人機情境出現, 靠這條切換 */
+.pe-panel .dl-field[hidden] { display: none; }
+
+@media (max-width: 420px) {
+	.pe-panel .dl-field__val { font-size: 11px; }
+
+	.pe-tex { padding: 7px 8px; }
+
+	.pe-tex__row { font-size: 12.5px; }
+}

@@ -1,0 +1,74 @@
+/* ============================================================================
+   ch2-kinematics.css — 第二章 II.a · 運動的描述
+   ----------------------------------------------------------------------------
+   01 motion-graphs 運動圖像 / 02 ticker-tape 打點計時器 / 03 fbd-newton 受力圖
+   共用語彙(.dl-lab__grid / .dl-panel__* / .dl-field / .dl-btn / .dl-readout …)
+   在 styles/labs/dse-labs.css —— 不要在這裡重寫, 否則 18 個實驗會各長一套。
+   三個 3D 實驗的 canvas 尺寸(.dl-lab--3d canvas 的 width / aspect-ratio /
+   max-height / touch-action)也由 dse-labs.css 決定, 本檔只補 canvas 之外的東西。
+   本檔保留的前綴: kn-  (例如 .kn-cursor(時間游標)、.kn-tape(紙帶點距))
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   kn- · 三個實驗共用的小件
+   只補共用語彙沒有的四件事: 面板內的即時關係式、跨欄的讀數、被鎖定的欄位、
+   由公式算出(而非滑桿設定)的量。其餘一律交給 .dl-*。
+   ------------------------------------------------------------------------- */
+
+/* 面板裡的即時關係式: 上面一行 KaTeX, 下面一行把當前數字代進去 */
+.kn-formula {
+	display: grid;
+	gap: 3px;
+	min-width: 0;
+}
+
+.kn-formula__tex {
+	font-size: 14px;
+	line-height: 1.5;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.kn-formula__tex .katex { font-size: 1em; }
+
+.kn-formula__sub {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.02em;
+	color: var(--fg-faint);
+	overflow-wrap: break-word;
+}
+
+/* 兩欄讀數格裡要佔滿一行的那一格(方向、性質這種一句話的值) */
+.kn-wide { grid-column: 1 / -1; }
+
+/* 讀數值不加小數以外的空白: 手機上一行放得下「-6.0 m s⁻¹」 */
+.kn-rd .dl-readout { min-width: 0; }
+.kn-rd .dl-readout__v { white-space: nowrap; }
+.kn-rd .dl-readout__k { white-space: nowrap; }
+
+/* 由公式算出、不是滑桿設定的量: 換成本期的油墨色, 一眼分出誰是自變量 */
+.dl-readout__v.kn-acc { color: var(--accent); }
+
+/* 無效值(除以零、未起動)退成註腳色, 不要用紅字嚇人 */
+.dl-readout__v.kn-mute { color: var(--fg-ghost); }
+
+/* 該模式用不到的欄位整列收起來, 而不是留在那裡滑不動 */
+.kn-off { display: none !important; }
+
+/* 由滑桿決定但此刻被別的參數鎖住(例如斜面上沒有施力 F): 退色且不可拖 */
+.kn-field--off .dl-field__label,
+.kn-field--off .dl-field__val { color: var(--fg-ghost); }
+
+.kn-field--off input[type="range"].dl-range { cursor: not-allowed; }
+
+.kn-field--off input[type="range"].dl-range::-webkit-slider-thumb {
+	background: var(--line-strong);
+}
+
+.kn-field--off input[type="range"].dl-range::-moz-range-thumb {
+	background: var(--line-strong);
+}

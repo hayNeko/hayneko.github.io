@@ -407,6 +407,15 @@
 				"desc": "A block, a force, and a live readout of velocity and acceleration.",
 				"title": "Force & motion"
 			},
+			"dse": {
+				"title": "DSE physics lab",
+				"desc": "Chapters II and III of the DSE physics lab: 30 draggable experiments, five of them in 3D, and a formula page for each chapter.",
+				"card": {
+					"title": "DSE physics lab · chapters II-III: forces and motion, waves",
+					"desc": "Thirty draggable experiments across two chapters — motion graphs and ticker tape, force diagrams and Newton's laws, moments and balance, projectiles, work and energy, momentum and collisions, then circular motion, a roller-coaster loop, spin drying, orbits and planetary gravity as five interactive 3D scenes, followed by waves, optics and sound — each with live readouts, above two full formula sheets.",
+					"open": "Open the lab"
+				}
+			},
 			"lens": {
 				"desc": "Drag the object, move the focal point, and follow the ray diagram as the image forms.",
 				"title": "Lenses"
@@ -544,6 +553,9 @@
 		"meta": {
 			"hint": "Press <kbd>Ctrl</kbd>+<kbd>K</kbd> for the contents page"
 		}
+	},
+	"sim": {
+		"dse": "dse physics · chapters II-III"
 	},
 	"storage": {
 		"file": {

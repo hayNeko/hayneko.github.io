@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="color-scheme" content="light dark">
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2efe9">
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15120d">
+	<title>DSE 物理虛擬實驗室 · II 力和運動 · III 波動 · Hayneko Labs</title>
+
+	<link rel="icon" href="../../../medias/pictures/miku.JPG" sizes="32x32">
+	<link rel="stylesheet" href="../../../styles/tokens.css">
+	<link rel="stylesheet" href="../../../styles/lab.css">
+	<link rel="stylesheet" href="../../../katex-0.16.11/dist/katex.min.css">
+	<link rel="stylesheet" href="../../../styles/labs/dse-labs.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch2-kinematics.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch2-forces.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch2-projectile-energy.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch2-power-momentum.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch2-circular3d.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch2-gravity3d.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch3-basics.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch3-medium.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch3-ray.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch3-waveoptics.css">
+	<link rel="stylesheet" href="../../../styles/labs/ch3-sound.css">
+</head>
+<body>
+<div class="lab-page">
+	<header class="lab-head">
+		<span class="lab-head__prompt">hayneko</span><span>:</span><span class="lab-head__path">~/labs/dse-physics</span>
+		<span class="lab-head__spacer"></span>
+		<span class="lab-head__tag">labs · ch2–3</span>
+		<a class="lab-back" href="../../../index.html#/labs">← 返回實驗室</a>
+	</header>
+
+	<section class="dl-hero">
+		<p class="dl-hero__kicker">DSE PHYSICS · 選修/必修</p>
+		<h1 class="dl-hero__title">DSE 物理虛擬實驗室</h1>
+		<p class="dl-hero__lede">第二、三章 · 30 個可拖動的實驗，含 5 個 3D，加上兩整頁公式表。</p>
+		<p class="dl-hero__meta">
+			<span class="dl-chip">30 個實驗</span>
+			<span class="dl-chip">45 條關係式</span>
+			<span class="dl-chip">13 個分組</span>
+			<span class="dl-chip">Ⅱ·Ⅲ 已開放</span>
+		</p>
+	</section>
+
+	<nav class="dl-chapbar" aria-label="章節">
+		<div class="dl-chapbar__inner">
+			<span class="dl-chap is-locked" aria-disabled="true">
+				<span class="dl-chap__n">I</span><span>熱和氣體</span><span class="dl-chap__lock">未開放</span>
+			</span>
+			<a class="dl-chap" href="#ch2" data-chap="ch2">
+				<span class="dl-chap__n">II</span><span>力和運動</span>
+			</a>
+			<a class="dl-chap" href="#ch3" data-chap="ch3">
+				<span class="dl-chap__n">III</span><span>波動</span>
+			</a>
+			<span class="dl-chap is-locked" aria-disabled="true">
+				<span class="dl-chap__n">IV</span><span>電和磁</span><span class="dl-chap__lock">未開放</span>
+			</span>
+			<span class="dl-chap is-locked" aria-disabled="true">
+				<span class="dl-chap__n">V</span><span>放射現象和核能</span><span class="dl-chap__lock">未開放</span>
+			</span>
+		</div>
+	</nav>
+
+	<section id="ch2" class="dl-chapter">
+		<header class="dl-chapter__head">
+			<p class="dl-chapter__kicker">CHAPTER II · 力和運動</p>
+			<h2 class="dl-chapter__title">II. 力和運動</h2>
+			<p class="dl-chapter__lede">從運動圖像到衛星軌道：18 個實驗，其中 5 個是可以拖動視角的 3D 場景；每一格都對應公式表裡的一組。</p>
+		</header>
+
+		<div class="dl-chapter__nav">
+			<nav class="dl-subnav" aria-label="第二章實驗索引">
+				<a href="#lab-motion-graphs"><span class="dl-subnav__n">01</span>運動圖像</a>
+				<a href="#lab-ticker-tape"><span class="dl-subnav__n">02</span>打點計時</a>
+				<a href="#lab-fbd-newton"><span class="dl-subnav__n">03</span>受力圖</a>
+				<a href="#lab-elevator-scale"><span class="dl-subnav__n">04</span>電梯視重</a>
+				<a href="#lab-seesaw"><span class="dl-subnav__n">05</span>蹺蹺板</a>
+				<a href="#lab-balance-arms"><span class="dl-subnav__n">06</span>天平槓桿</a>
+				<a href="#lab-projectile-split"><span class="dl-subnav__n">07</span>拋體分解</a>
+				<a href="#lab-projectile-apps"><span class="dl-subnav__n">08</span>拋體應用</a>
+				<a href="#lab-energy-coaster"><span class="dl-subnav__n">09</span>過山車</a>
+				<a href="#lab-braking"><span class="dl-subnav__n">10</span>煞車距離</a>
+				<a href="#lab-power"><span class="dl-subnav__n">11</span>功率</a>
+				<a href="#lab-collision"><span class="dl-subnav__n">12</span>碰撞</a>
+				<a href="#lab-airbag"><span class="dl-subnav__n">13</span>氣囊</a>
+				<a href="#lab-circular-3d"><span class="dl-subnav__n">14</span>圓周運動</a>
+				<a href="#lab-loop-3d"><span class="dl-subnav__n">15</span>圓環</a>
+				<a href="#lab-washer-3d"><span class="dl-subnav__n">16</span>脫水</a>
+				<a href="#lab-orbit-3d"><span class="dl-subnav__n">17</span>衛星軌道</a>
+				<a href="#lab-planets-3d"><span class="dl-subnav__n">18</span>行星重力</a>
+				<a href="#ch2-formula"><span class="dl-subnav__n">§</span>公式表</a>
+			</nav>
+		</div>
+
+		<section class="dl-section" id="ch2-formula">
+			<header class="dl-section__head">
+				<span class="dl-section__no">II · FORMULAE</span>
+				<h2 class="dl-section__title">II · 公式表</h2>
+				<p class="dl-section__lede">照章節分組；每一列右邊那一欄是這一條最常出錯的地方。</p>
+			</header>
+
+			<div class="dl-formulas">
+				<div class="dl-subsec">
+					<h3 class="dl-subsec__title"><span class="dl-subsec__mark">01</span>勻加速直線運動</h3>
+					<table class="dl-ftable">
+						<thead>
+							<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( v = u + at \)</td>
+								<td class="dl-ftable__sym" data-k="符號">u 初速、v 末速、a 加速度、t 時間</td>
+								<td class="dl-ftable__note" data-k="注意">只適用加速度恆定、各量沿同一正方向</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( s = ut + \tfrac{1}{2}at^2 \)</td>
+								<td class="dl-ftable__sym" data-k="符號">s 位移</td>
+								<td class="dl-ftable__note" data-k="注意">減速時 a 取負</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( v^2 = u^2 + 2as \)</td>
+								<td class="dl-ftable__sym" data-k="符號">不含 t</td>
+								<td class="dl-ftable__note" data-k="注意">適合求距離或末速</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( s = \tfrac{1}{2}(u+v)t \)</td>
+								<td class="dl-ftable__sym" data-k="符號">平均速度法</td>
+								<td class="dl-ftable__note" data-k="注意">加速度須恆定</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( \bar v = \tfrac{\Delta s}{\Delta t} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">平均速度</td>
+								<td class="dl-ftable__note" data-k="注意">彎曲路徑時 Δs 是位移不是路程</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( a = \tfrac{\Delta v}{\Delta t} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">加速度</td>
+								<td class="dl-ftable__note" data-k="注意">v–t 圖的斜率</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="dl-subsec">
+					<h3 class="dl-subsec__title"><span class="dl-subsec__mark">02</span>力與牛頓定律</h3>
+					<table class="dl-ftable">
+						<thead>
+							<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( F_{net} = ma \)</td>
+								<td class="dl-ftable__sym" data-k="符號">F_net 合力、m 質量</td>
+								<td class="dl-ftable__note" data-k="注意">不是某一個力；先畫隔離體圖</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( W = mg \)</td>
+								<td class="dl-ftable__sym" data-k="符號">g = 9.81 m s⁻²</td>
+								<td class="dl-ftable__note" data-k="注意">質量 kg 與重量 N 不可混淆</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( \tau = F d_\perp \)</td>
+								<td class="dl-ftable__sym" data-k="符號">d⊥ 支點到作用線的垂直距離</td>
+								<td class="dl-ftable__note" data-k="注意">平衡要 ΣF = 0 且 Στ = 0</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">平衡條件 \( \Sigma F = 0 \)、\( \Sigma \tau = 0 \)</td>
+								<td class="dl-ftable__sym" data-k="符號">—</td>
+								<td class="dl-ftable__note" data-k="注意">兩個條件缺一不可</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="dl-subsec">
+					<h3 class="dl-subsec__title"><span class="dl-subsec__mark">03</span>拋體運動</h3>
+					<table class="dl-ftable">
+						<thead>
+							<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( x = (u\cos\theta)t \)</td>
+								<td class="dl-ftable__sym" data-k="符號">水平等速 a_x = 0</td>
+								<td class="dl-ftable__note" data-k="注意">兩方向的唯一連結是 t</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( y = (u\sin\theta)t - \tfrac{1}{2}gt^2 \)</td>
+								<td class="dl-ftable__sym" data-k="符號">垂直等加速，向上為正</td>
+								<td class="dl-ftable__note" data-k="注意">a_y = −g</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( v_y = u\sin\theta - gt \)</td>
+								<td class="dl-ftable__sym" data-k="符號">垂直速度</td>
+								<td class="dl-ftable__note" data-k="注意">最高點 v_y = 0，但 v_x ≠ 0、a 仍為 g</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="dl-subsec">
+					<h3 class="dl-subsec__title"><span class="dl-subsec__mark">04</span>功、能量與功率</h3>
+					<table class="dl-ftable">
+						<thead>
+							<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( W = Fs\cos\theta \)</td>
+								<td class="dl-ftable__sym" data-k="符號">θ 力與位移的夾角</td>
+								<td class="dl-ftable__note" data-k="注意">垂直時不做功</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( E_k = \tfrac{1}{2}mv^2 \)</td>
+								<td class="dl-ftable__sym" data-k="符號">動能</td>
+								<td class="dl-ftable__note" data-k="注意">與 v² 成正比</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( W_{net} = \Delta E_k \)</td>
+								<td class="dl-ftable__sym" data-k="符號">功–能定理</td>
+								<td class="dl-ftable__note" data-k="注意">不等於末動能本身</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( \Delta E_p = mgh \)</td>
+								<td class="dl-ftable__sym" data-k="符號">h 高度變化</td>
+								<td class="dl-ftable__note" data-k="注意">近地面近似</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( P = \tfrac{W}{t} = Fv \)</td>
+								<td class="dl-ftable__sym" data-k="符號">功率；F 與 v 同向</td>
+								<td class="dl-ftable__note" data-k="注意">功率不是能量</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="dl-subsec">
+					<h3 class="dl-subsec__title"><span class="dl-subsec__mark">05</span>動量</h3>
+					<table class="dl-ftable">
+						<thead>
+							<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( p = mv \)</td>
+								<td class="dl-ftable__sym" data-k="符號">動量（向量）</td>
+								<td class="dl-ftable__note" data-k="注意">方向正負要保留</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( F\Delta t = \Delta p \)</td>
+								<td class="dl-ftable__sym" data-k="符號">衝量–動量定理</td>
+								<td class="dl-ftable__note" data-k="注意">延長 Δt 可減小 F</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( m_Au_A + m_Bu_B = m_Av_A + m_Bv_B \)</td>
+								<td class="dl-ftable__sym" data-k="符號">一維碰撞</td>
+								<td class="dl-ftable__note" data-k="注意">合外力為零；動能不一定守恆</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="dl-subsec">
+					<h3 class="dl-subsec__title"><span class="dl-subsec__mark">06</span>勻速圓周運動</h3>
+					<table class="dl-ftable">
+						<thead>
+							<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( v = \tfrac{2\pi r}{T} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">T 週期、r 半徑</td>
+								<td class="dl-ftable__note" data-k="注意">速率不變但方向時刻在變</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( a_c = \tfrac{v^2}{r} = r\omega^2 \)</td>
+								<td class="dl-ftable__sym" data-k="符號">向心加速度</td>
+								<td class="dl-ftable__note" data-k="注意">指向圓心</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( F_c = \tfrac{mv^2}{r} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">向心力</td>
+								<td class="dl-ftable__note" data-k="注意">是合力的效果，不是額外的力</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="dl-subsec">
+					<h3 class="dl-subsec__title"><span class="dl-subsec__mark">07</span>引力</h3>
+					<table class="dl-ftable">
+						<thead>
+							<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( F = \tfrac{GMm}{r^2} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">G = 6.67×10⁻¹¹</td>
+								<td class="dl-ftable__note" data-k="注意">r 從天體中心量起</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( v = \sqrt{\tfrac{GM}{r}} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">圓軌道速率</td>
+								<td class="dl-ftable__note" data-k="注意">由 F_G = F_c 推得</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( T = 2\pi\sqrt{\tfrac{r^3}{GM}} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">軌道週期</td>
+								<td class="dl-ftable__note" data-k="注意">T² ∝ r³</td>
+							</tr>
+							<tr>
+								<td class="dl-ftable__tex" data-k="關係式">\( g = \tfrac{GM}{R^2} \)</td>
+								<td class="dl-ftable__sym" data-k="符號">表面重力</td>
+								<td class="dl-ftable__note" data-k="注意">月球 1.62、地球 9.81 m s⁻²</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<p class="dl-fnote">七組二十八條，全部出自 HKEAA《數據、公式和關係式》；g 取 9.81 m s⁻²。第二章的 3D 實驗以拖動視角為主，數值仍是教學示意。</p>
+		</section>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">II.a</span>運動的描述</h3>
+
+			<section class="dl-lab" id="lab-motion-graphs" data-lab="motion-graphs">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">01</span>
+					<h3 class="dl-lab__title">運動圖像：s–t 與 v–t</h3>
+					<span class="dl-lab__tag">II.a</span>
+				</header>
+				<p class="dl-lab__desc">拖動時間游標：s–t 的斜率是速度、v–t 的面積是位移，兩個圖永遠在同一時刻。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( \bar v = \tfrac{\Delta s}{\Delta t} \)、\( a = \tfrac{\Delta v}{\Delta t} \)</div>
+				<ul class="dl-lab__notes">
+					<li>斜率與面積最常被對調</li>
+					<li>v–t 圖線在時間軸下方代表反向位移</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-ticker-tape" data-lab="ticker-tape">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">02</span>
+					<h3 class="dl-lab__title">打點計時器與汽車 0–100</h3>
+					<span class="dl-lab__tag">II.a</span>
+				</header>
+				<p class="dl-lab__desc">紙帶上點距變大就是加速；同一組公式換成汽車，看 0–100 km/h 要幾秒幾米。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( v = u + at \)、\( s = ut + \tfrac{1}{2}at^2 \)</div>
+				<ul class="dl-lab__notes">
+					<li>50 Hz 每點 0.02 s</li>
+					<li>100 km/h = 27.8 m s⁻¹</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">II.b</span>力、力矩與平衡</h3>
+
+			<section class="dl-lab" id="lab-fbd-newton" data-lab="fbd-newton">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">03</span>
+					<h3 class="dl-lab__title">受力圖與 F = ma</h3>
+					<span class="dl-lab__tag">II.b</span>
+				</header>
+				<p class="dl-lab__desc">拖動施力方向：先畫隔離體圖再算合力，不是把某一個推力當成 F_net。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( F_{net} = ma \)、\( W = mg \)</div>
+				<ul class="dl-lab__notes">
+					<li>正向力不一定等於 mg</li>
+					<li>F 的垂直分量可能把物體抬起</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-elevator-scale" data-lab="elevator-scale">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">04</span>
+					<h3 class="dl-lab__title">電梯裡的視重</h3>
+					<span class="dl-lab__tag">II.b</span>
+				</header>
+				<p class="dl-lab__desc">電梯磅秤讀的是正向力 N，不是重量 W；加速上升會超重，自由落體時失重。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( N = m(g+a) \)</div>
+				<ul class="dl-lab__notes">
+					<li>等速時 N = W</li>
+					<li>a = −g 時 N = 0</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-seesaw" data-lab="seesaw">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">05</span>
+					<h3 class="dl-lab__title">蹺蹺板與力矩</h3>
+					<span class="dl-lab__tag">II.b</span>
+				</header>
+				<p class="dl-lab__desc">把砝碼拖到不同位置：平衡看的是力矩，不是重量。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( \tau = F d_\perp \)、\( \Sigma\tau = 0 \)</div>
+				<ul class="dl-lab__notes">
+					<li>d⊥ 是垂直距離</li>
+					<li>同重不同距就不平衡</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-balance-arms" data-lab="balance-arms">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">06</span>
+					<h3 class="dl-lab__title">天平與骨骼槓桿</h3>
+					<span class="dl-lab__tag">II.b</span>
+				</header>
+				<p class="dl-lab__desc">等臂天平比較質量；前臂是費力槓桿，二頭肌的力臂只有幾公分。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( F_1 d_1 = F_2 d_2 \)</div>
+				<ul class="dl-lab__notes">
+					<li>人體槓桿多為費力槓桿</li>
+					<li>力臂比決定機械優勢</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">II.c</span>拋體運動</h3>
+
+			<section class="dl-lab" id="lab-projectile-split" data-lab="projectile-split">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">07</span>
+					<h3 class="dl-lab__title">拋體：兩個方向分開看</h3>
+					<span class="dl-lab__tag">II.c</span>
+				</header>
+				<p class="dl-lab__desc">水平等速、垂直等加速；最高點垂直速度為零，水平速度不為零，加速度仍是 g。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( x = (u\cos\theta)t \)、\( y = (u\sin\theta)t - \tfrac{1}{2}gt^2 \)</div>
+				<ul class="dl-lab__notes">
+					<li>兩方向只靠 t 連結</li>
+					<li>最高點 a 仍為 g</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-projectile-apps" data-lab="projectile-apps">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">08</span>
+					<h3 class="dl-lab__title">拋體應用：投籃、發球、水柱</h3>
+					<span class="dl-lab__tag">II.c</span>
+				</header>
+				<p class="dl-lab__desc">四個日常情境：調角度與初速，看能不能投進、過網、澆到火點、準確投遞。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( R = \tfrac{u^2\sin 2\theta}{g} \)</div>
+				<ul class="dl-lab__notes">
+					<li>無阻力時 45° 射程最大</li>
+					<li>有高度差時最佳角不是 45°</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">II.d</span>功、能量與功率</h3>
+
+			<section class="dl-lab" id="lab-energy-coaster" data-lab="energy-coaster">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">09</span>
+					<h3 class="dl-lab__title">過山車與滑梯的能量</h3>
+					<span class="dl-lab__tag">II.d</span>
+				</header>
+				<p class="dl-lab__desc">從高處滑下，位能變動能；打開摩擦，看能量去了哪裡。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( mgh = \tfrac{1}{2}mv^2 \)、\( W_{net} = \Delta E_k \)</div>
+				<ul class="dl-lab__notes">
+					<li>摩擦使力學能不守恆</li>
+					<li>同一高度速率與路徑無關</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-braking" data-lab="braking">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">10</span>
+					<h3 class="dl-lab__title">煞車距離為何與 v² 成正比</h3>
+					<span class="dl-lab__tag">II.d</span>
+				</header>
+				<p class="dl-lab__desc">車速加倍，煞車距離變四倍；摩擦力做的功把動能吃掉。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( s = \tfrac{v^2}{2\mu g} \)</div>
+				<ul class="dl-lab__notes">
+					<li>制動距離與質量無關</li>
+					<li>加上反應時間才是總距離</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-power" data-lab="power">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">11</span>
+					<h3 class="dl-lab__title">功率：升降機與短跑</h3>
+					<span class="dl-lab__tag">II.d</span>
+				</header>
+				<p class="dl-lab__desc">同樣的功，時間越短功率越大；P = W/t = Fv。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( P = \tfrac{W}{t} = Fv \)</div>
+				<ul class="dl-lab__notes">
+					<li>功率不是能量</li>
+					<li>效率令輸入功率更大</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">II.e</span>動量與衝量</h3>
+
+			<section class="dl-lab" id="lab-collision" data-lab="collision">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">12</span>
+					<h3 class="dl-lab__title">碰撞與反衝</h3>
+					<span class="dl-lab__tag">II.e</span>
+				</header>
+				<p class="dl-lab__desc">兩台車相撞：動量一定守恆，動能不一定；反衝是同一條式子的另一半。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( m_Au_A + m_Bu_B = m_Av_A + m_Bv_B \)</div>
+				<ul class="dl-lab__notes">
+					<li>完全非彈性碰撞動能損失最大</li>
+					<li>爆炸前動量為零</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-airbag" data-lab="airbag">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">13</span>
+					<h3 class="dl-lab__title">氣囊：延長 Δt 減小 F</h3>
+					<span class="dl-lab__tag">II.e</span>
+				</header>
+				<p class="dl-lab__desc">同樣的動量變化，碰撞時間由 0.02 s 拉長到 0.2 s，峰值力降一個數量級。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( F = \tfrac{\Delta p}{\Delta t} \)</div>
+				<ul class="dl-lab__notes">
+					<li>氣囊不消除衝量</li>
+					<li>F–t 圖面積就是 Δp</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">II.f</span>圓周運動</h3>
+
+			<section class="dl-lab dl-lab--3d" id="lab-circular-3d" data-lab="circular-3d">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">14</span>
+					<h3 class="dl-lab__title">圓周運動（3D）</h3>
+					<span class="dl-lab__tag">II.f</span>
+					<span class="dl-lab__tag dl-lab__tag--3d">3D</span>
+				</header>
+				<p class="dl-lab__desc">可拖動視角：速度沿切線、向心力指向圓心；傾斜彎道讓正向力分擔向心力。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( a_c = \tfrac{v^2}{r} \)、\( F_c = \tfrac{mv^2}{r} \)</div>
+				<ul class="dl-lab__notes">
+					<li>向心力是合力</li>
+					<li>速率不變，速度在變</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab dl-lab--3d" id="lab-loop-3d" data-lab="loop-3d">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">15</span>
+					<h3 class="dl-lab__title">過山車圓環（3D）</h3>
+					<span class="dl-lab__tag">II.f</span>
+					<span class="dl-lab__tag dl-lab__tag--3d">3D</span>
+				</header>
+				<p class="dl-lab__desc">圓環最高點：重力加正向力提供向心力；N = 0 時就是維持圓周的最小速率。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( mg + N = \tfrac{mv^2}{R} \)、\( v_{min} = \sqrt{gR} \)</div>
+				<ul class="dl-lab__notes">
+					<li>最高點最小速率 √(gR)</li>
+					<li>底部需 √(5gR)</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab dl-lab--3d" id="lab-washer-3d" data-lab="washer-3d">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">16</span>
+					<h3 class="dl-lab__title">洗衣機脫水（3D）</h3>
+					<span class="dl-lab__tag">II.f</span>
+					<span class="dl-lab__tag dl-lab__tag--3d">3D</span>
+				</header>
+				<p class="dl-lab__desc">滾筒高速旋轉，水滴來不及轉彎就沿切線飛出；離心力不是真實的力。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( a_c = r\omega^2 \)、\( v = r\omega \)</div>
+				<ul class="dl-lab__notes">
+					<li>慣性讓水滴走直線</li>
+					<li>ω 加倍，向心加速度四倍</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">II.g</span>引力與軌道</h3>
+
+			<section class="dl-lab dl-lab--3d" id="lab-orbit-3d" data-lab="orbit-3d">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">17</span>
+					<h3 class="dl-lab__title">衛星軌道（3D）</h3>
+					<span class="dl-lab__tag">II.g</span>
+					<span class="dl-lab__tag dl-lab__tag--3d">3D</span>
+				</header>
+				<p class="dl-lab__desc">拖動軌道半徑：v = √(GM/r)、T = 2π√(r³/GM)，同步衛星只能待在一個半徑。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( v = \sqrt{\tfrac{GM}{r}} \)、\( T = 2\pi\sqrt{\tfrac{r^3}{GM}} \)</div>
+				<ul class="dl-lab__notes">
+					<li>r 從地心量起</li>
+					<li>同步衛星 T = 24 h</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab dl-lab--3d" id="lab-planets-3d" data-lab="planets-3d">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">18</span>
+					<h3 class="dl-lab__title">行星與月球重力（3D）</h3>
+					<span class="dl-lab__tag">II.g</span>
+					<span class="dl-lab__tag dl-lab__tag--3d">3D</span>
+				</header>
+				<p class="dl-lab__desc">比較各行星的 T²/r³，再把 1 kg 拿到月球上秤——重量約為地球的 1/6。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( F = \tfrac{GMm}{r^2} \)、\( g = \tfrac{GM}{R^2} \)</div>
+				<ul class="dl-lab__notes">
+					<li>T² ∝ r³</li>
+					<li>g 由天體質量與半徑決定</li>
+				</ul>
+			</section>
+		</div>
+	</section>
+
+	<section id="ch3" class="dl-chapter">
+	<nav class="dl-subnav" aria-label="第三章實驗索引">
+		<a href="#lab-wave-basics"><span class="dl-subnav__n">01</span>行波</a>
+		<a href="#lab-transverse-longitudinal"><span class="dl-subnav__n">02</span>橫波／縱波</a>
+		<a href="#lab-standing-wave"><span class="dl-subnav__n">03</span>弦駐波</a>
+		<a href="#lab-ripple-refraction"><span class="dl-subnav__n">04</span>水波折射</a>
+		<a href="#lab-single-slit"><span class="dl-subnav__n">05</span>單縫</a>
+		<a href="#lab-refraction-tir"><span class="dl-subnav__n">06</span>折射全反射</a>
+		<a href="#lab-thin-lens"><span class="dl-subnav__n">07</span>薄透鏡</a>
+		<a href="#lab-young-double-slit"><span class="dl-subnav__n">08</span>雙縫</a>
+		<a href="#lab-grating"><span class="dl-subnav__n">09</span>光柵</a>
+		<a href="#lab-polarisation"><span class="dl-subnav__n">10</span>偏振</a>
+		<a href="#lab-echo-ranging"><span class="dl-subnav__n">11</span>回聲</a>
+		<a href="#lab-pipe-standing"><span class="dl-subnav__n">12</span>管中駐波</a>
+		<a href="#formula"><span class="dl-subnav__n">§</span>公式表</a>
+	</nav>
+
+	<section class="dl-section" id="formula">
+		<header class="dl-section__head">
+			<span class="dl-section__no">III · FORMULAE</span>
+			<h2 class="dl-section__title">III · 公式表</h2>
+			<p class="dl-section__lede">照章節分組；每一列右邊那一欄是這一條最常出錯的地方。</p>
+		</header>
+
+		<div class="dl-formulas">
+			<div class="dl-subsec">
+				<h3 class="dl-subsec__title"><span class="dl-subsec__mark">01</span>波的基本關係</h3>
+				<table class="dl-ftable">
+					<thead>
+						<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( v = f\lambda \)</td>
+							<td class="dl-ftable__sym" data-k="符號">v 波速 (m s⁻¹)、f 頻率 (Hz)、λ 波長 (m)</td>
+							<td class="dl-ftable__note" data-k="注意">跨越介面時 f 不變，v 與 λ 一起改變</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( f = \dfrac{1}{T} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">T 週期 (s)</td>
+							<td class="dl-ftable__note" data-k="注意">由 y–t 圖讀 T，由 y–x 圖讀 λ</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( d = \dfrac{v t}{2} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">d 距離、t 往返總時間</td>
+							<td class="dl-ftable__note dl-ftable__warn" data-k="注意">最常見的失分：忘記除以 2</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="dl-subsec">
+				<h3 class="dl-subsec__title"><span class="dl-subsec__mark">02</span>折射與全反射</h3>
+				<table class="dl-ftable">
+					<thead>
+						<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( n = \dfrac{\sin i}{\sin r} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">由空氣射入介質，i、r 均自法線量起</td>
+							<td class="dl-ftable__note dl-ftable__warn" data-k="注意">角度不可從表面量</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( n_1\sin\theta_1 = n_2\sin\theta_2 \)</td>
+							<td class="dl-ftable__sym" data-k="符號">任意兩介質的斯涅耳定律</td>
+							<td class="dl-ftable__note" data-k="注意">更一般的形式</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( n = \dfrac{c}{v} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">c = 3.00 × 10⁸ m s⁻¹，v 為介質中光速</td>
+							<td class="dl-ftable__note" data-k="注意">—</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( \sin C = \dfrac{1}{n} \) 或 \( \sin C = \dfrac{n_2}{n_1} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">C 臨界角</td>
+							<td class="dl-ftable__note dl-ftable__warn" data-k="注意">必須由光密射向光疏；入射角大於 C 才全反射</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="dl-subsec">
+				<h3 class="dl-subsec__title"><span class="dl-subsec__mark">03</span>薄透鏡</h3>
+				<table class="dl-ftable">
+					<thead>
+						<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( \dfrac{1}{u} + \dfrac{1}{v} = \dfrac{1}{f} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">u 物距、v 像距、f 焦距（實正虛負）</td>
+							<td class="dl-ftable__note dl-ftable__warn" data-k="注意">這裡的 v 是像距不是速率；凹透鏡 f 取負</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( M = \left|\dfrac{h_i}{h_o}\right| = \left|\dfrac{v}{u}\right| \)</td>
+							<td class="dl-ftable__sym" data-k="符號">M 放大率大小</td>
+							<td class="dl-ftable__note" data-k="注意">M &gt; 1 只表示放大，不代表正立或實像</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="dl-subsec">
+				<h3 class="dl-subsec__title"><span class="dl-subsec__mark">04</span>干涉與繞射</h3>
+				<table class="dl-ftable">
+					<thead>
+						<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( \Delta x = m\lambda \) 相長、\( \Delta x = \left(m + \tfrac{1}{2}\right)\lambda \) 相消</td>
+							<td class="dl-ftable__sym" data-k="符號">Δx 程差（兩路徑長之差），m = 0, 1, 2…</td>
+							<td class="dl-ftable__note" data-k="注意">適用同相相干源；反相波源條件對調</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( L = \dfrac{n\lambda}{2} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">兩端固定弦上駐波，n 為波腹數</td>
+							<td class="dl-ftable__note dl-ftable__warn" data-k="注意">相鄰波節相距 λ/2，不是 λ</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( \Delta y = \dfrac{\lambda D}{a} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">a 雙縫間距、D 縫到屏距離、Δy 相鄰亮紋間距</td>
+							<td class="dl-ftable__note" data-k="注意">遠屏小角度近似；不能套用在光柵</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( d\sin\theta = n\lambda \)</td>
+							<td class="dl-ftable__sym" data-k="符號">d 相鄰刻線間距、n 級數</td>
+							<td class="dl-ftable__note" data-k="注意">正入射；d = 1/ℓ，ℓ 為每單位長度刻線數（每毫米→每米）</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="dl-subsec">
+				<h3 class="dl-subsec__title"><span class="dl-subsec__mark">05</span>聲音</h3>
+				<table class="dl-ftable">
+					<thead>
+						<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( v = f\lambda \)</td>
+							<td class="dl-ftable__sym" data-k="符號">空氣中 0 °C ≈ 331 m s⁻¹、20 °C ≈ 343 m s⁻¹</td>
+							<td class="dl-ftable__note" data-k="注意">聲速由介質與溫度決定，與頻率無關</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( d = \dfrac{v t}{2} \)</td>
+							<td class="dl-ftable__sym" data-k="符號">回聲測距</td>
+							<td class="dl-ftable__note" data-k="注意">同上，t 為往返</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<div class="dl-subsec">
+				<h3 class="dl-subsec__title"><span class="dl-subsec__mark">06</span>延伸（非必修核心）</h3>
+				<table class="dl-ftable">
+					<thead>
+						<tr><th scope="col">關係式</th><th scope="col">符號</th><th scope="col">注意</th></tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( I = I_0\cos^2\theta \)</td>
+							<td class="dl-ftable__sym" data-k="符號">Malus 定律，θ 為兩偏振片夾角</td>
+							<td class="dl-ftable__note" data-k="注意">兩片正交時全暗</td>
+						</tr>
+						<tr>
+							<td class="dl-ftable__tex" data-k="關係式">\( L = \dfrac{(2n-1)\lambda}{4} \) 閉管、\( L = \dfrac{n\lambda}{2} \) 開管</td>
+							<td class="dl-ftable__sym" data-k="符號">管中駐波共振</td>
+							<td class="dl-ftable__note" data-k="注意">閉管基頻為開管的一半</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<p class="dl-fnote">標「延伸」的兩條不在必修核心之內，只作旁證與加分。整表以 HKEAA《數據、公式和關係式》為底，數值按 2024 年版；薄透鏡一節的 v 是像距，不是速率。</p>
+	</section>
+
+	<section class="dl-section" id="ch3-labs">
+		<header class="dl-section__head">
+			<span class="dl-section__no">III · LABS</span>
+			<h2 class="dl-section__title">III. 波動 · 實驗</h2>
+			<p class="dl-section__lede">十二個實驗分三組：波的本質、光、聲音。每一格都可以直接拖動，讀數就在畫布旁邊。</p>
+		</header>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">III.a</span>波的本質和特性</h3>
+
+			<section class="dl-lab" id="lab-wave-basics" data-lab="wave-basics">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">01</span>
+					<h3 class="dl-lab__title">行波與 v = fλ</h3>
+					<span class="dl-lab__tag">III.a</span>
+				</header>
+				<p class="dl-lab__desc">繩上一列行波：改頻率、改波長，看 v = fλ 如何被鎖住；同一條波在 y–x 圖是空間、在 y–t 圖是時間。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( v = f\lambda \)　\( f = \dfrac{1}{T} \)</div>
+				<ul class="dl-lab__notes">
+					<li>圖上讀 λ 看 y–x；讀 T 看 y–t</li>
+					<li>質點只上下振動，波形整體向右前進</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-transverse-longitudinal" data-lab="transverse-longitudinal">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">02</span>
+					<h3 class="dl-lab__title">橫波與縱波</h3>
+					<span class="dl-lab__tag">III.a</span>
+				</header>
+				<p class="dl-lab__desc">同一列波的兩種版本：質點振動方向與傳播方向垂直或平行，壓縮與稀疏的間距就是波長。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( v = f\lambda \)</div>
+				<ul class="dl-lab__notes">
+					<li>橫波不需要介質的只有電磁波</li>
+					<li>縱波用密度的疏密表示，質點並不隨波前進</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-standing-wave" data-lab="standing-wave">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">03</span>
+					<h3 class="dl-lab__title">弦上駐波</h3>
+					<span class="dl-lab__tag">III.a</span>
+				</header>
+				<p class="dl-lab__desc">兩端固定的弦：調頻率與弦長，找出駐波的模式，數波節、量 λ/2。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( L = \dfrac{n\lambda}{2} \)　\( v = f\lambda \)</div>
+				<ul class="dl-lab__notes">
+					<li>相鄰波節相距 λ/2</li>
+					<li>波節不動，波腹振幅最大</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-ripple-refraction" data-lab="ripple-refraction">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">04</span>
+					<h3 class="dl-lab__title">水波跨介質：f 不變</h3>
+					<span class="dl-lab__tag">III.a</span>
+				</header>
+				<p class="dl-lab__desc">波前斜射進淺水區：頻率被波源鎖住不變，波速與波長一起變小，波前因此轉向。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( v = f\lambda \)　\( \dfrac{\sin i}{\sin r} = \dfrac{v_1}{v_2} \)</div>
+				<ul class="dl-lab__notes">
+					<li>頻率由波源決定，跨介質不變</li>
+					<li>波速變小則波長變短，波前向法線靠攏</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-single-slit" data-lab="single-slit">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">05</span>
+					<h3 class="dl-lab__title">單縫繞射</h3>
+					<span class="dl-lab__tag">III.a</span>
+				</header>
+				<p class="dl-lab__desc">把縫開大開小：縫寬接近波長時，波繞到縫後整個區域；縫遠大於波長時，幾乎只是一道光柱。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( a \approx \lambda \) 時繞射最明顯</div>
+				<ul class="dl-lab__notes">
+					<li>繞射是波繞過障礙物邊緣</li>
+					<li>孔徑越小，繞射越明顯</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">III.b</span>光</h3>
+
+			<section class="dl-lab" id="lab-refraction-tir" data-lab="refraction-tir">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">06</span>
+					<h3 class="dl-lab__title">折射與全內反射</h3>
+					<span class="dl-lab__tag">III.b</span>
+				</header>
+				<p class="dl-lab__desc">拖動入射角：超過臨界角，折射線消失、只剩反射線。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( n = \dfrac{\sin i}{\sin r} \)　\( \sin C = \dfrac{1}{n} \)</div>
+				<ul class="dl-lab__notes">
+					<li>i 自法線量起</li>
+					<li>只有由光密射向光疏才可能全反射</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-thin-lens" data-lab="thin-lens">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">07</span>
+					<h3 class="dl-lab__title">薄透鏡成像</h3>
+					<span class="dl-lab__tag">III.b</span>
+				</header>
+				<p class="dl-lab__desc">拖動蠟燭：實像會倒立、虛像會正立；1/u + 1/v = 1/f 把三者綁在一起。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( \dfrac{1}{u} + \dfrac{1}{v} = \dfrac{1}{f} \)　\( M = \left|\dfrac{v}{u}\right| \)</div>
+				<ul class="dl-lab__notes">
+					<li>凹透鏡 f 取負</li>
+					<li>u &lt; f 時成正立虛像</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-young-double-slit" data-lab="young-double-slit">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">08</span>
+					<h3 class="dl-lab__title">楊氏雙縫</h3>
+					<span class="dl-lab__tag">III.b</span>
+				</header>
+				<p class="dl-lab__desc">在屏上拖動一點：程差是整數倍波長就亮、半整數倍就暗；條紋間距 Δy = λD/a。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( \Delta y = \dfrac{\lambda D}{a} \)</div>
+				<ul class="dl-lab__notes">
+					<li>a 是雙縫間距，不是縫寬</li>
+					<li>白光時中央白、兩側呈彩色</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-grating" data-lab="grating">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">09</span>
+					<h3 class="dl-lab__title">衍射光柵</h3>
+					<span class="dl-lab__tag">III.b</span>
+				</header>
+				<p class="dl-lab__desc">改刻線密度：亮點在 d sinθ = nλ 的位置散開，級數 n 有限。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( d\sin\theta = n\lambda \)</div>
+				<ul class="dl-lab__notes">
+					<li>ℓ 每毫米→每米要換算</li>
+					<li>光柵不能套楊氏雙縫公式</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-polarisation" data-lab="polarisation">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">10</span>
+					<h3 class="dl-lab__title">偏振與 Malus 定律</h3>
+					<span class="dl-lab__tag">III.b · 延伸</span>
+				</header>
+				<p class="dl-lab__desc">轉第二片偏振片：透射強度隨 cos²θ 變化，正交時全暗。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( I = I_0\cos^2\theta \)</div>
+				<ul class="dl-lab__notes">
+					<li>標示為延伸（必修只到定性）</li>
+					<li>兩片正交即全暗</li>
+				</ul>
+			</section>
+		</div>
+
+		<div class="dl-subsec">
+			<h3 class="dl-subsec__title"><span class="dl-subsec__mark">III.c</span>聲音</h3>
+
+			<section class="dl-lab" id="lab-echo-ranging" data-lab="echo-ranging">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">11</span>
+					<h3 class="dl-lab__title">回聲測距</h3>
+					<span class="dl-lab__tag">III.c</span>
+				</header>
+				<p class="dl-lab__desc">拖動峭壁：發出一個脈衝，量往返時間，d = vt/2。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( d = \dfrac{v t}{2} \)</div>
+				<ul class="dl-lab__notes">
+					<li>t 是往返總時間</li>
+					<li>溫度改變聲速，不改頻率</li>
+				</ul>
+			</section>
+
+			<section class="dl-lab" id="lab-pipe-standing" data-lab="pipe-standing">
+				<header class="dl-lab__head">
+					<span class="dl-lab__no">12</span>
+					<h3 class="dl-lab__title">管中駐波與音調</h3>
+					<span class="dl-lab__tag">III.c · 延伸</span>
+				</header>
+				<p class="dl-lab__desc">管子一端封閉一端開口：只有奇次諧波能共振，基頻時 L = λ/4。</p>
+				<div class="dl-lab__mount" data-mount></div>
+				<div class="dl-lab__formula">\( L = \dfrac{(2n-1)\lambda}{4} \)　\( f = \dfrac{v}{\lambda} \)</div>
+				<ul class="dl-lab__notes">
+					<li>閉管基頻是開管的一半</li>
+					<li>開管兩端都是波腹</li>
+				</ul>
+			</section>
+		</div>
+	</section>
+	</section>
+
+	<footer class="dl-foot">
+		<p class="dl-foot__note">公式以 HKEAA《數據、公式和關係式》為底；標示為延伸的項目不在必修核心之內。第一、四、五章（熱和氣體、電和磁、放射現象和核能）仍未開放。圖與數值都是教學示意，不用作實驗室量度。</p>
+		<p class="dl-foot__ver">dse-physics · ch2–3 · v1.1 · 2026</p>
+		<a class="lab-back" href="../../../index.html#/labs">← 返回實驗室</a>
+	</footer>
+</div>
+
+<script defer src="../../../katex-0.16.11/dist/katex.min.js"></script>
+<script defer src="../../../katex-0.16.11/dist/contrib/auto-render.min.js"></script>
+<script defer src="../../../scripts/labs/dse/draw.js"></script>
+<script defer src="../../../scripts/labs/dse/dse-labs.js"></script>
+<script defer src="../../../three-0.149.0/build/three.min.js"></script>
+<script defer src="../../../scripts/labs/dse/three-kit.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-motion-graphs.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-ticker-tape.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-fbd-newton.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-elevator-scale.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-seesaw.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-balance-arms.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-projectile-split.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-projectile-apps.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-energy-coaster.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-braking.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-power.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-collision.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-airbag.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-circular-3d.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-loop-3d.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-washer-3d.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-orbit-3d.js"></script>
+<script defer src="../../../scripts/labs/dse/ch2-planets-3d.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-wave-basics.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-transverse-longitudinal.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-standing-wave.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-ripple-refraction.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-single-slit.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-refraction-tir.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-thin-lens.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-young-double-slit.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-grating.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-polarisation.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-echo-ranging.js"></script>
+<script defer src="../../../scripts/labs/dse/ch3-pipe-standing.js"></script>
+	<script>
+	/* 兩個活章節: 章節列要跟著捲動換狀態。取「已經越過章節列底線」的最後一章 —— 錨點跳轉
+	   會停在列的下面約 22px, 用「誰包含這條線」判斷會永遠停在上一章。rAF 節流, 不是每幀輪詢 */
+	(function () {
+		'use strict';
+		var win = window;
+		var bar = win.document.querySelector('.dl-chapbar');
+		var chips = win.document.querySelectorAll('.dl-chap[data-chap]');
+		var ids = ['ch2', 'ch3'];
+		var queued = false;
+
+		function paint(id) {
+			for (var i = 0; i < chips.length; i++) {
+				var on = chips[i].getAttribute('data-chap') === id;
+				if (on) {
+					chips[i].classList.add('is-current');
+					chips[i].setAttribute('aria-current', 'true');
+				} else {
+					chips[i].classList.remove('is-current');
+					chips[i].removeAttribute('aria-current');
+				}
+			}
+		}
+
+		function update() {
+			queued = false;
+			var line = (bar ? bar.getBoundingClientRect().bottom : 0) + 40;
+			var active = null;
+			var below = null;
+			var gap = Infinity;
+			for (var i = 0; i < ids.length; i++) {
+				var el = win.document.getElementById(ids[i]);
+				if (!el) continue;
+				var top = el.getBoundingClientRect().top;
+				if (top <= line) active = ids[i];
+				else if (top - line < gap) { gap = top - line; below = ids[i]; }
+			}
+			paint(active || below || ids[0]);
+		}
+
+		function schedule() {
+			if (queued) return;
+			queued = true;
+			if (win.requestAnimationFrame) win.requestAnimationFrame(update);
+			else win.setTimeout(update, 16);
+		}
+
+		win.addEventListener('scroll', schedule, { passive: true });
+		win.addEventListener('resize', schedule);
+		if ('onscrollend' in win) win.addEventListener('scrollend', update);
+		win.addEventListener('hashchange', function () { win.setTimeout(update, 60); });
+		win.addEventListener('load', update);
+		update();
+	})();
+	</script>
+</body>
+</html>

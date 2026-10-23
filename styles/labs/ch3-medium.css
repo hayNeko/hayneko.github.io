@@ -1,0 +1,56 @@
+/* ============================================================================
+   ch3-medium.css — 波跨介面
+   ----------------------------------------------------------------------------
+   這一組(弦上駐波 / 水波跨介質 / 單縫繞射)只補共用語彙沒有交代的七件事:
+   畫布浮水提示的紙底與左右位置、面板裡的公式行、手機上放不下單位的那一欄、
+   讀數鍵的物理符號大小寫 (λ 不是 Λ)、單縫的三級判斷字色、3 個讀數時最後一格的欄寬。
+   共用語彙(.dl-lab__grid / .dl-panel__* / .dl-field / .dl-btn / .dl-readout …)
+   在 styles/labs/dse-labs.css —— 這裡不重寫任何一條。
+   ========================================================================== */
+
+/* 提示會壓在 canvas 上, 底下是細線與波前: 給它紙底才讀得出來 */
+.md-hint {
+	padding: 1px 4px;
+	background: var(--paper-0);
+}
+
+/* 駐波的 λ/2 量尺在左下, 提示讓到右下才不會蓋住刻度值 */
+.md-hint--r {
+	left: auto;
+	right: 8px;
+}
+
+/* 面板裡的即時公式: 一條細線隔開讀數, 內容太寬就自己橫捲(不外溢) */
+.md-formula {
+	margin: 0;
+	padding-top: 8px;
+	border-top: 1px solid var(--line-faint);
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.md-formula .katex { font-size: 1.02em; }
+
+/* 水波那格的值帶單位 ("1.20 m/s"), 共用 54px 的值欄在手機上會折成兩行 */
+@media (max-width: 420px) {
+	.md-field { grid-template-columns: 74px minmax(0, 1fr) 62px; }
+}
+
+/* 單縫只有 3 個讀數, 2 欄格線的右下會留一個沒內容的格子 (被格線底色畫成淺塊);
+   讓最後一格橫跨兩欄, 整列填滿 */
+.md-readout--wide {
+	grid-column: span 2;
+}
+
+/* 讀數的鍵含物理符號 (λ, v, f, θ): 共用的 text-transform:uppercase 會把它們
+   變成另一個量 (λ→Λ, v→V), 所以這一組的鍵保留原本的大小寫 */
+.md-key {
+	text-transform: none;
+	letter-spacing: 0.04em;
+}
+
+/* 單縫的三級判斷是這一格實驗的結論, 用紅筆 */
+.md-verdict { color: var(--accent); }

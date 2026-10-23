@@ -1,0 +1,113 @@
+/* ============================================================================
+   ch2-power-momentum.css — 第二章 II.d–II.e · 功率與動量
+   ----------------------------------------------------------------------------
+   10 braking 煞車距離 / 11 power 功率 / 12 collision 碰撞與反衝 / 13 airbag 氣囊
+   共同語彙(.dl-lab__grid / .dl-panel__* / .dl-field / .dl-btn / .dl-readout …)
+   在 styles/labs/dse-labs.css, 本檔不重寫, 只補這四個實驗自己的零件:
+     .pm-tex     面板裡的一列公式 (KaTeX)
+     .pm-gauge   功率尺 (11 power): 兩根等尺度的長條
+     .pm-mute    讀數不適用 (顯示「—」) 時收淡
+   顏色一律走 tokens: 紙 / 墨 / 勃艮第紅, 不在這裡出現第二套色票。
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 公式列 */
+
+.pm-tex {
+	display: grid;
+	/* 一定要 minmax(0,1fr): 否則長公式會把整條 grid 撐寬, 面板跟著溢出 */
+	grid-template-columns: minmax(0, 1fr);
+	gap: 3px;
+	min-width: 0;
+	font-size: 13px;
+	line-height: 1.95;
+	overflow-x: auto;
+	overflow-y: hidden;
+	color: var(--fg);
+}
+
+.pm-tex__row {
+	white-space: nowrap;
+}
+
+/* KaTeX 預設 1.21em, 面板寬度只有 320, 這裡收回一級 */
+.pm-tex__row .katex {
+	font-size: 1.06em;
+}
+
+/* ---------------------------------------------------------------- 功率尺 */
+
+.pm-gauge {
+	display: grid;
+	gap: 6px;
+}
+
+.pm-gauge__row {
+	display: grid;
+	grid-template-columns: 38px minmax(0, 1fr) 66px;
+	align-items: center;
+	gap: 8px;
+}
+
+.pm-gauge__k {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.06em;
+	color: var(--fg-faint);
+}
+
+.pm-gauge__bar {
+	position: relative;
+	display: block;
+	height: 9px;
+	border: 1px solid var(--line-faint);
+	background: var(--paper-2);
+}
+
+.pm-gauge__fill {
+	display: block;
+	height: 100%;
+	width: 0;
+	background: var(--accent);
+	transition: width var(--dur-2) var(--ease-out);
+}
+
+/* 參照用的長條: 同一把尺上的 100%, 不再用強調色 */
+.pm-gauge__fill--loss {
+	background: var(--line-strong);
+}
+
+.pm-gauge__v {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	color: var(--fg);
+}
+
+.pm-gauge__foot {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.02em;
+	color: var(--fg-faint);
+}
+
+/* ---------------------------------------------------------------- 讀數狀態 */
+
+.pm-mute {
+	color: var(--fg-ghost);
+}
+
+/* 「不會相撞」這類狀態字: 用強調色, 但它描述的是狀態不是量 */
+.pm-acc {
+	color: var(--accent);
+}
+
+/* 手機: 功率尺的數值欄收窄, 但不換行 */
+@media (max-width: 420px) {
+	.pm-gauge__row { grid-template-columns: 34px minmax(0, 1fr) 58px; gap: 6px; }
+	.pm-gauge__v { font-size: 11px; }
+	/* 320 面板只有 292px: 公式縮一級才不會出現橫向捲軸 */
+	.pm-tex { font-size: 12px; }
+	.pm-tex__row .katex { font-size: 1.02em; }
+}

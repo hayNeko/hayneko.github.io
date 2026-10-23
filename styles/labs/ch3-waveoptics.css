@@ -1,0 +1,51 @@
+/* ============================================================================
+   ch3-waveoptics.css — III.b 波動光學（楊氏雙縫 / 衍射光柵 / 偏振）
+   ----------------------------------------------------------------------------
+   這一組只補共用語彙（dse-labs.css）沒有的三件小東西：
+   波長色票、實驗體內的公式行、把當下數值代進公式的那一行。
+   配色一律走 tokens；這裡不寫任何色值，色票的顏色由 JS 依 λ 算出後寫進 style。
+   ========================================================================== */
+
+/* 色票：10×8 的細線方框，顏色＝當前 λ。尺寸固定，避免滑桿拖動時版面跳動。 */
+.wo-swatch {
+	display: inline-block;
+	width: 10px;
+	height: 8px;
+	margin-left: 4px;
+	border: 1px solid var(--line);
+	vertical-align: baseline;
+}
+
+/* 實驗體內的關係式：語氣與 .dl-lab__formula 一致（上面一條細線），字級小一號。 */
+.wo-formula {
+	margin: 0;
+	padding-top: 9px;
+	border-top: 1px solid var(--line-faint);
+	/* 15px：KaTeX 的分數上下欄是 0.7em，14px 會掉到 9.8px（低於 10px 下限） */
+	font-size: 15px;
+	line-height: 1.85;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.wo-formula .katex { font-size: 1em; }
+
+/* 把讀數代回公式的那一行：等寬、逐位對齊，長算式可以斷行。 */
+.wo-live {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.7;
+	letter-spacing: 0.02em;
+	font-variant-numeric: tabular-nums;
+	color: var(--fg-faint);
+	overflow-wrap: break-word;
+}
+
+/* .dl-btn 會把標籤轉大寫；按鈕上寫的是公式（cos²θ）時保留原本大小寫。 */
+.wo-lower { text-transform: none; letter-spacing: 0.06em; }
+
+/* canvas 需要鍵盤可達（拖不動的量用方向鍵微調），但 .dl-lab__canvaswrap 會裁掉
+   往外 2px 的聚焦外框，所以只在這一個框內把外框收進去。 */
+.dl-lab__canvaswrap canvas:focus-visible { outline-offset: -2px; }

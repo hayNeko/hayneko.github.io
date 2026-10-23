@@ -1,0 +1,83 @@
+/* ============================================================================
+   ch2-gravity3d.css — 第二章 II.g · 引力與軌道(3D)
+   ----------------------------------------------------------------------------
+   17 orbit-3d 衛星軌道 / 18 planets-3d 行星與月球重力
+   共用語彙(.dl-lab__grid / .dl-panel__* / .dl-field / .dl-btn / .dl-readout …)
+   在 styles/labs/dse-labs.css —— 不要在這裡重寫, 否則 18 個實驗會各長一套。
+   三個 3D 實驗的 canvas 尺寸(.dl-lab--3d canvas 的 width / aspect-ratio /
+   max-height / touch-action)也由 dse-labs.css 決定, 本檔只補 canvas 之外的東西。
+   本檔保留的前綴: g3-  (例如 .g3-hud、.g3-scale(對數半徑尺)。canvas 尺寸同樣交給 dse-labs.css 的 .dl-lab--3d)
+
+   這一組只補四件共用語彙沒給的事:
+   ① 深底舞台上的拖動提示(預設的 .dl-hint 是深墨色, 壓在 #0b1220 上看不見)
+   ② 面板裡的公式列(KaTeX 會撐寬, 所以自己當橫向捲動容器, 不推倒版面)
+   ③ 讀數值一格一行的寬度控制 + 需要整行讀的格子
+   ④ 模式切換時整組控件/讀數的顯示與隱藏([hidden] 打不過 display:flex)
+   ========================================================================== */
+
+/* ① 深底舞台上的提示: 共用 .dl-hint 的定位與字級沿用, 只換成全站唯一的深底樣式 */
+.g3-hint {
+	padding: 2px 7px;
+	border-radius: var(--radius-sm);
+	background: rgba(11, 18, 32, 0.62);
+	color: rgba(240, 235, 224, 0.78);
+	font-size: 10.5px;
+}
+
+/* ② 面板公式列: 兩行, 每行自己橫向捲動 */
+.g3-tex {
+	display: grid;
+	gap: 5px;
+	padding: 8px 10px;
+	border: 1px solid var(--line-faint);
+	background: var(--paper-1);
+}
+
+/* 一定要 block: 行內元素吃不到 overflow, 手機上長公式會把整頁撐寬 */
+.g3-tex__row {
+	display: block;
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.g3-tex__row .katex { font-size: 1em; }
+
+/* ③ 讀數: 一格一行, 不換行不撐破格子; 需要整行讀的格子跨兩欄 */
+.g3-rd .dl-readout { overflow: hidden; }
+
+.g3-rd .dl-readout__v {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.g3-wide { grid-column: 1 / -1; }
+
+/* 滑桿右邊那一格: 共用 CSS 在 420px 以下只給 54px, '35786 km' 這種值會折行 */
+.g3-panel .dl-field__val { white-space: nowrap; }
+
+/* 五顆行星的按鈕在 320px 上靠 flex-wrap 折成兩列, 收一點內距讓一列放得下四顆 */
+.g3-panel .dl-seg .dl-btn { padding: 6px 10px; letter-spacing: 0.08em; }
+
+@media (max-width: 420px) {
+	.g3-panel .dl-field__val { font-size: 11px; }
+	.g3-panel .dl-seg .dl-btn { padding: 6px 9px; letter-spacing: 0.06em; }
+}
+
+/* 讀數值的語意色: 強調色只給「這一格就是結論」的量 */
+.g3-acc { color: var(--accent); }
+
+.g3-mute { color: var(--fg-ghost); }
+
+/* 徽章只在成立時出現 (同步軌道 / T ≈ 24 h) */
+.g3-badge {
+	align-self: flex-start;
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+/* ④ 模式切換: [hidden] 的 UA display:none 打不過 .dl-panel__group 的 display:flex */
+.g3-hide { display: none !important; }

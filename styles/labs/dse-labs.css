@@ -1,0 +1,948 @@
+/* ============================================================================
+   dse-labs.css — DSE 物理虛擬實驗室(pages/labs/dse-physics/)的設計系統與外殼
+   ----------------------------------------------------------------------------
+   一頁放 12 個實驗, 所以樣式分三層:
+     .dl-hero / .dl-chapbar / .dl-ftable      這一頁自己的版式(本檔寫死)
+     .dl-lab__*                               實驗卡外框(本檔)
+     .dl-lab__grid / .dl-panel__* / .dl-field / .dl-range / .dl-btn / .dl-badge
+                                              12 支模組在 mount 裡自己組出來的內部:
+                                              這裡只提供語彙, 不替任何一個實驗排版。
+   顏色全部走 tokens.css 的紙 / 墨 / 細線; 無陰影、無漸變、無玻璃、無霓虹。
+   圓角上限 3px, 分隔一律 1px 實線。
+   ========================================================================== */
+
+html {
+	-webkit-tap-highlight-color: transparent;
+	-webkit-text-size-adjust: 100%;
+}
+
+/* 錨點跳轉要避開黏住的章節列(scroll-padding-top 由 tokens 給 66px, 這裡只補一點空隙) */
+.dl-lab,
+.dl-subsec,
+.dl-section { scroll-margin-top: 8px; }
+
+/* ---------------------------------------------------------------- 首圖 / 導言 */
+
+.dl-hero {
+	padding: 4px 0 clamp(20px, 3vw, 32px);
+	border-bottom: 1px solid var(--line-strong);
+}
+
+.dl-hero__kicker {
+	margin: 0 0 10px;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--accent);
+}
+
+h1.dl-hero__title {
+	margin: 0 0 10px;
+	font-size: clamp(28px, 5vw, 52px);
+	line-height: 1.05;
+	letter-spacing: -0.025em;
+	color: var(--fg);
+}
+
+.dl-hero__lede {
+	max-width: 62ch;
+	margin: 0 0 14px;
+	font-size: clamp(14.5px, 1.6vw, 17px);
+	line-height: 1.7;
+	color: var(--fg-dim);
+}
+
+.dl-hero__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+}
+
+.dl-chip {
+	display: inline-flex;
+	align-items: center;
+	min-height: 24px;
+	padding: 2px 9px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.12em;
+	color: var(--fg-dim);
+	white-space: nowrap;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.dl-chip--locked {
+	border-style: dashed;
+	color: var(--fg-ghost);
+}
+
+/* ---------------------------------------------------------------- 章節列(黏) */
+
+.dl-chapbar {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	padding-top: env(safe-area-inset-top, 0px);
+	background: var(--paper-1);
+	border-block: 1px solid var(--line);
+}
+
+.dl-chapbar__inner {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 0;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	scrollbar-width: none;
+}
+
+.dl-chapbar__inner::-webkit-scrollbar { display: none; }
+
+.dl-chap {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 7px;
+	flex: 0 0 auto;
+	scroll-snap-align: start;
+	white-space: nowrap;
+	min-height: 34px;
+	padding: 7px 11px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	font-size: 13px;
+	line-height: 1.2;
+	color: var(--fg-dim);
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+	transition: color var(--dur-1) var(--ease-out),
+		border-color var(--dur-1) var(--ease-out),
+		background var(--dur-1) var(--ease-out);
+}
+
+.dl-chap__n {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.16em;
+	color: var(--fg-ghost);
+}
+
+.dl-chap.is-current {
+	color: var(--fg);
+	border-color: var(--line-strong);
+	background: var(--paper-0);
+}
+
+.dl-chap.is-current .dl-chap__n { color: var(--accent); }
+
+.dl-chap.is-locked {
+	border-style: dashed;
+	color: var(--fg-ghost);
+	cursor: not-allowed;
+}
+
+.dl-chap__lock {
+	font-family: var(--font-mono);
+	font-size: 9.5px;
+	letter-spacing: 0.1em;
+	color: var(--fg-ghost);
+}
+
+/* ---------------------------------------------------------------- 12 個實驗的分項導覽 */
+
+.dl-subnav {
+	display: flex;
+	gap: 2px;
+	padding: 4px 0 2px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.dl-subnav::-webkit-scrollbar { display: none; }
+
+.dl-subnav a {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 5px;
+	flex: 0 0 auto;
+	min-height: 34px;
+	padding: 7px 9px;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	font-size: 12.5px;
+	line-height: 1.2;
+	color: var(--fg-faint);
+	white-space: nowrap;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+	transition: color var(--dur-1) var(--ease-out),
+		border-color var(--dur-1) var(--ease-out);
+}
+
+.dl-subnav__n {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	color: var(--fg-ghost);
+}
+
+/* 桌面上換行, 手機上維持單列橫捲(橫捲才不會吃掉三行高度) */
+@media (min-width: 900px) {
+	.dl-subnav {
+		flex-wrap: wrap;
+		overflow-x: visible;
+	}
+}
+
+/* ---------------------------------------------------------------- 節 */
+
+.dl-section { padding: clamp(26px, 4vw, 44px) 0 0; }
+
+.dl-section__head {
+	display: grid;
+	gap: 6px;
+	padding-bottom: 12px;
+	margin-bottom: clamp(16px, 2.4vw, 26px);
+	border-bottom: 1px solid var(--line-strong);
+}
+
+.dl-section__no {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	letter-spacing: 0.24em;
+	color: var(--accent);
+}
+
+h2.dl-section__title {
+	margin: 0;
+	font-size: clamp(22px, 3.4vw, 34px);
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	color: var(--fg);
+}
+
+.dl-section__lede {
+	max-width: 54ch;
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	line-height: 1.7;
+	letter-spacing: 0.04em;
+	color: var(--fg-faint);
+}
+
+.dl-subsec { padding-top: clamp(20px, 2.8vw, 32px); }
+
+h3.dl-subsec__title {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	margin: 0 0 10px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid var(--line);
+	font-size: clamp(15px, 1.8vw, 18px);
+	letter-spacing: 0.01em;
+	color: var(--fg);
+}
+
+.dl-subsec__mark {
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.18em;
+	color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- 公式表 */
+
+.dl-formulas { display: block; }
+
+.dl-ftable {
+	width: 100%;
+	max-width: 100%;
+	margin: 0 0 22px;
+	border-collapse: collapse;
+	table-layout: fixed;
+	font-size: 14px;
+}
+
+.dl-ftable th {
+	padding: 5px 10px;
+	border-bottom: 1px solid var(--line-strong);
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 400;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	text-align: left;
+	color: var(--fg-faint);
+}
+
+.dl-ftable td {
+	padding: 10px;
+	border-bottom: 1px solid var(--line-faint);
+	vertical-align: top;
+	line-height: 1.6;
+	color: var(--fg-dim);
+	overflow-wrap: break-word;
+}
+
+.dl-ftable tbody tr:last-child td { border-bottom: 1px solid var(--line); }
+
+/* 這四條要寫成 td.xxx: .dl-ftable td 是 (0,1,1), 單一個類名壓不住它 */
+.dl-ftable td.dl-ftable__tex {
+	width: 33%;
+	color: var(--fg);
+	overflow-x: auto;
+}
+
+.dl-ftable__tex .katex { font-size: 1.04em; }
+
+.dl-ftable td.dl-ftable__sym { width: 34%; }
+
+.dl-ftable td.dl-ftable__note {
+	width: 33%;
+	font-size: 12.5px;
+	color: var(--fg-faint);
+}
+
+/* 常見失分: 用出版物的紅筆 */
+.dl-ftable td.dl-ftable__warn { color: var(--accent); }
+
+.dl-fnote {
+	margin: 0 0 24px;
+	padding-top: 10px;
+	border-top: 1px solid var(--line-faint);
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.75;
+	letter-spacing: 0.03em;
+	color: var(--fg-faint);
+}
+
+/* 720px 以下: 每列變成一張卡, 儲存格用 data-k 帶出自己的欄名 */
+@media (max-width: 720px) {
+	/* 堆疊模式不用表格排版; 寫明 auto, 免得日後有人把 display 改回 table 時
+	   table-layout: fixed 又回來把每一格壓成三分之一 */
+	.dl-ftable {
+		display: block;
+		table-layout: auto;
+	}
+
+	.dl-ftable thead { display: none; }
+
+	/* 選擇器必須跟桌面上那三條等強度: td.dl-ftable__sym 是 (0,2,1),
+	   只寫 .dl-ftable td 是 (0,1,1) —— 壓不住 33/34/33% 的寬度,
+	   每一格就只佔表格的三分之一, 卡片右邊整片留白。 */
+	.dl-ftable tbody,
+	.dl-ftable tr,
+	.dl-ftable td,
+	.dl-ftable td.dl-ftable__tex,
+	.dl-ftable td.dl-ftable__sym,
+	.dl-ftable td.dl-ftable__note {
+		display: block;
+		width: auto;
+	}
+
+	.dl-ftable tr {
+		padding: 10px 0 12px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.dl-ftable td {
+		padding: 2px 0;
+		border: 0;
+	}
+
+	.dl-ftable td::before {
+		content: attr(data-k);
+		display: block;
+		margin-bottom: 2px;
+		font-family: var(--font-mono);
+		font-size: 9.5px;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--fg-ghost);
+	}
+
+	.dl-ftable td.dl-ftable__tex {
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+}
+
+/* ---------------------------------------------------------------- 實驗卡 */
+
+.dl-lab {
+	padding: clamp(16px, 2.4vw, 26px) 0;
+	border-top: 1px solid var(--line);
+}
+
+.dl-lab:first-of-type { border-top: 0; }
+
+.dl-lab__head {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 5px;
+}
+
+.dl-lab__no {
+	flex: 0 0 auto;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	letter-spacing: 0.18em;
+	color: var(--accent);
+}
+
+h3.dl-lab__title {
+	margin: 0;
+	font-size: clamp(17px, 2vw, 21px);
+	line-height: 1.25;
+	letter-spacing: -0.015em;
+	color: var(--fg);
+}
+
+.dl-lab__tag {
+	flex: 0 0 auto;
+	padding: 2px 7px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	font-family: var(--font-mono);
+	font-size: 9.5px;
+	letter-spacing: 0.12em;
+	white-space: nowrap;
+	color: var(--fg-faint);
+}
+
+.dl-lab__desc {
+	max-width: 70ch;
+	margin: 0 0 12px;
+	font-size: 14px;
+	line-height: 1.72;
+	color: var(--fg-dim);
+}
+
+.dl-lab__mount { min-width: 0; }
+
+/* 模組沒載入 / 載入失敗: 兩種狀態都留在 mount 裡, 不破壞其他實驗 */
+.dl-lab__pending {
+	margin: 0;
+	padding: 14px 12px;
+	border: 1px dashed var(--line);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	letter-spacing: 0.12em;
+	color: var(--fg-ghost);
+}
+
+.dl-lab__error {
+	padding: 12px;
+	border: 1px solid var(--accent);
+	background: var(--accent-soft);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	line-height: 1.65;
+	color: var(--accent);
+	overflow-wrap: break-word;
+}
+
+.dl-lab__formula {
+	margin: 12px 0 0;
+	padding-top: 10px;
+	border-top: 1px solid var(--line-faint);
+	font-size: 15px;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.dl-lab__notes {
+	display: grid;
+	gap: 3px;
+	margin: 8px 0 0;
+	font-size: 12.5px;
+	line-height: 1.65;
+	color: var(--fg-faint);
+}
+
+.dl-lab__notes li {
+	position: relative;
+	padding-left: 15px;
+}
+
+.dl-lab__notes li::before {
+	content: "—";
+	position: absolute;
+	left: 0;
+	color: var(--fg-ghost);
+}
+
+/* ------------------------------------------------- 實驗內部(12 支模組共用語彙) */
+
+.dl-lab__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 320px;
+	gap: 18px;
+	align-items: start;
+}
+
+.dl-lab__grid > * { min-width: 0; }
+
+.dl-lab__stage {
+	min-width: 0;
+	padding: 10px;
+	border: 1px solid var(--line);
+	background: var(--paper-0);
+}
+
+.dl-lab__canvaswrap {
+	position: relative;
+	overflow: hidden;
+}
+
+.dl-lab__panel {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	min-width: 0;
+}
+
+.dl-panel__group {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--line-faint);
+}
+
+.dl-panel__group:last-child {
+	padding-bottom: 0;
+	border-bottom: 0;
+}
+
+.dl-panel__label {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.18em;
+	/* 分組標題是各實驗自己寫的(例: 諧波 n), 大寫會把 n 變成 N */
+	text-transform: none;
+	color: var(--fg-faint);
+}
+
+/* 手機: 面板落到畫布下面, 畫布限高, 免得面板被推到兩屏之外 */
+@media (max-width: 900px) {
+	.dl-lab__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.dl-canvas {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	max-height: min(64vh, 420px);
+	background: var(--paper-0);
+	border: 0;
+	border-radius: 0;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.dl-canvas--drag {
+	touch-action: none;
+	cursor: grab;
+}
+
+.dl-canvas--drag:active { cursor: grabbing; }
+
+.dl-hint {
+	position: absolute;
+	left: 8px;
+	bottom: 6px;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	letter-spacing: 0.04em;
+	color: var(--fg-faint);
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* ---------------------------------------------------------------- 控件 */
+
+.dl-field {
+	display: grid;
+	grid-template-columns: 92px minmax(0, 1fr) 64px;
+	align-items: center;
+	gap: 8px;
+}
+
+.dl-field__label {
+	font-size: 12.5px;
+	line-height: 1.3;
+	color: var(--fg-dim);
+}
+
+.dl-field__val {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	color: var(--fg);
+}
+
+@media (max-width: 420px) {
+	.dl-field { grid-template-columns: 74px minmax(0, 1fr) 54px; }
+}
+
+input[type="range"].dl-range {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 100%;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	background: transparent;
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+input[type="range"].dl-range::-webkit-slider-runnable-track {
+	height: 4px;
+	border-radius: 0;
+	background: var(--line-strong);
+}
+
+/* 18px 的方塊置中在 4px 的軌上: (18 − 4) / 2 */
+input[type="range"].dl-range::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 18px;
+	height: 18px;
+	margin-top: -7px;
+	border: 0;
+	border-radius: 0;
+	background: var(--accent);
+}
+
+input[type="range"].dl-range::-moz-range-track {
+	height: 4px;
+	background: var(--line-strong);
+}
+
+input[type="range"].dl-range::-moz-range-thumb {
+	width: 18px;
+	height: 18px;
+	border: 0;
+	border-radius: 0;
+	background: var(--accent);
+}
+
+.dl-seg {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.dl-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 34px;
+	padding: 7px 13px;
+	border: 1px solid var(--line-strong);
+	border-radius: var(--radius-sm);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	line-height: 1.2;
+	letter-spacing: 0.12em;
+	/* 按鈕標籤可能是公式(cos²θ 曲線)或符號, 大寫會改寫作者寫的東西 */
+	text-transform: none;
+	color: var(--fg);
+	background: none;
+	cursor: pointer;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+	transition: color var(--dur-1) var(--ease-out),
+		border-color var(--dur-1) var(--ease-out),
+		background var(--dur-1) var(--ease-out);
+}
+
+.dl-btn.is-on,
+.dl-btn[aria-pressed="true"] {
+	color: var(--paper-0);
+	background: var(--fg);
+	border-color: var(--fg);
+}
+
+.dl-btn:disabled,
+.dl-btn[aria-disabled="true"] {
+	color: var(--fg-ghost);
+	border-color: var(--line);
+	background: none;
+	cursor: not-allowed;
+}
+
+.dl-badge {
+	display: inline-flex;
+	align-items: center;
+	min-height: 20px;
+	padding: 1px 7px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	font-family: var(--font-mono);
+	font-size: 9.5px;
+	letter-spacing: 0.14em;
+	/* 徽章裡是物理量代號(v 固定 · λ = v/f), 不再強制大寫 */
+	text-transform: none;
+	color: var(--fg-faint);
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.dl-readouts {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1px;
+	border: 1px solid var(--line-faint);
+	background: var(--line-faint);
+}
+
+.dl-readout {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 9px;
+	background: var(--paper-0);
+}
+
+.dl-readout__k {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	/* 不可大寫: 這裡的鍵就是物理量本身(u / v / f / i / r / λ), 大寫等於換一個量 */
+	text-transform: none;
+	color: var(--fg-faint);
+}
+
+.dl-readout__v {
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	font-variant-numeric: tabular-nums;
+	color: var(--fg);
+}
+
+/* 讀數格固定兩欄, 半格空白只會出現在「已用格數」是奇數時。這裡自我偵測, 不必每個實驗自己補 span:
+   ① 整組沒有 *-wide 子項 → 已用格數 = 讀數個數, 最後一格落在奇數位置時讓它橫跨兩欄;
+   ② 最後一格本身就是 *-wide → 已用格數 = 個數 + 1, 讀數個數為偶數時才會缺半格,
+      此時補在倒數第二格(該格必然是奇數位置)。
+   已經 wide 的格子本來就跨兩欄, 兩條對它們都是 no-op; 其他組也一律不動。
+   新增的 wide 修飾字必須保留 "wide" 後綴(kn-wide / pe-wide / c3-wide / g3-wide / ry-wide / …--wide),
+   上面的偵測就是靠這個後綴。 */
+.dl-readouts:not(:has(> .dl-readout[class*="wide"])) > .dl-readout:last-child:nth-child(odd),
+.dl-readouts:has(> .dl-readout[class*="wide"]:last-child) > .dl-readout:nth-last-child(2):nth-child(odd) {
+	grid-column: 1 / -1;
+}
+
+.dl-note {
+	margin: 0;
+	font-size: 11.5px;
+	line-height: 1.7;
+	color: var(--fg-faint);
+}
+
+/* ---------------------------------------------------------------- 頁腳 */
+
+.dl-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 10px 18px;
+	margin-top: clamp(32px, 5vw, 56px);
+	padding-top: 14px;
+	border-top: 1px solid var(--line-strong);
+	font-family: var(--font-mono);
+	font-size: 11px;
+	line-height: 1.7;
+	letter-spacing: 0.06em;
+	color: var(--fg-faint);
+}
+
+.dl-foot__note {
+	flex: 1 1 260px;
+	max-width: 62ch;
+	margin: 0;
+}
+
+.dl-foot__ver {
+	margin: 0;
+	white-space: nowrap;
+	color: var(--fg-ghost);
+}
+
+/* ---------------------------------------------------------------- 指標適配 */
+
+@media (pointer: coarse) {
+	.dl-btn,
+	.dl-chap,
+	.dl-subnav a,
+	.dl-chip { min-height: 44px; }
+
+	input[type="range"].dl-range { height: 40px; }
+
+	input[type="range"].dl-range::-webkit-slider-thumb {
+		width: 22px;
+		height: 22px;
+		margin-top: -9px;
+	}
+
+	input[type="range"].dl-range::-moz-range-thumb {
+		width: 22px;
+		height: 22px;
+	}
+}
+
+/* ---------------------------------------------------------------- 懸停 */
+/* 只在真的能懸停的精細指標上做反饋: 觸控裝置不會卡住 hover 狀態 */
+
+@media (hover: hover) and (pointer: fine) {
+	.dl-chap:hover { color: var(--fg); border-color: var(--line-strong); }
+
+	.dl-chap.is-locked:hover { color: var(--fg-ghost); border-color: var(--line); }
+
+	.dl-subnav a:hover {
+		color: var(--fg);
+		border-color: var(--line);
+		background: var(--tint-hover);
+	}
+
+	.dl-subnav a:hover .dl-subnav__n { color: var(--accent); }
+
+	.dl-btn:hover:not(:disabled):not([aria-disabled="true"]) {
+		color: var(--paper-0);
+		background: var(--fg);
+		border-color: var(--fg);
+	}
+
+	.dl-btn.is-on:hover { color: var(--paper-0); background: var(--fg); }
+
+	.dl-lab__notes a:hover { color: var(--accent); }
+
+	input[type="range"].dl-range:hover::-webkit-slider-thumb { background: var(--fg); }
+
+	input[type="range"].dl-range:hover::-moz-range-thumb { background: var(--fg); }
+}
+
+/* ---------------------------------------------------------------- 減少動態 */
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition-duration: 1ms !important;
+		animation-duration: 1ms !important;
+	}
+}
+
+
+/* ============================================================================
+   第二章 力和運動(兩章版頁面用的新殼)
+   ----------------------------------------------------------------------------
+   只加新殼與 3D 舞台需要的規則, 第三章既有的每一條都不動:
+   新類別一律掛在 .dl-chapter / .dl-lab--3d 底下, 不會碰到既有實驗卡。
+   ========================================================================== */
+
+/* 錨點要避開黏住的章節列; 數值與 .dl-lab / .dl-section 一致(列高由 tokens 的 scroll-padding 補) */
+.dl-chapter { scroll-margin-top: 8px; }
+
+.dl-chapter__head {
+	display: grid;
+	gap: 6px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--line-strong);
+}
+
+.dl-chapter__kicker {
+	margin: 0;
+	font-family: var(--font-mono);
+	font-size: 10.5px;
+	letter-spacing: 0.18em;
+	color: var(--accent);
+}
+
+h2.dl-chapter__title {
+	margin: 0;
+	font-size: clamp(26px, 4vw, 38px);
+	line-height: 1.08;
+	letter-spacing: -0.025em;
+	color: var(--fg);
+}
+
+.dl-chapter__lede {
+	max-width: 68ch;
+	margin: 0;
+	font-size: 14.5px;
+	line-height: 1.75;
+	color: var(--fg-dim);
+}
+
+/* 18 個錨點: 900px 以上換成兩列, 以下維持單列橫捲 + 對齊吸附 */
+.dl-chapter__nav {
+	margin: 10px 0 clamp(6px, 1.2vw, 12px);
+	border-bottom: 1px solid var(--line);
+}
+
+.dl-chapter__nav .dl-subnav { scroll-snap-type: x proximity; }
+
+.dl-chapter__nav .dl-subnav a { scroll-snap-align: start; }
+
+@media (min-width: 900px) {
+	.dl-chapter__nav .dl-subnav {
+		flex-wrap: wrap;
+		overflow-x: visible;
+		scroll-snap-type: none;
+	}
+}
+
+/* 3D 標記: 幾何沿用 .dl-lab__tag, 只把顏色換成強調色 */
+.dl-lab__tag--3d {
+	color: var(--accent);
+	border-color: var(--accent);
+	text-transform: none;
+}
+
+/* 3D 舞台: WebGL 的 canvas 沒有 intrinsic size, 尺寸必須由 CSS 明確給 */
+.dl-lab--3d .dl-lab__canvaswrap { position: relative; }
+
+.dl-lab--3d canvas {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 16 / 10;
+	max-height: min(64vh, 460px);
+	touch-action: none;      /* 拖動視角時頁面不要跟著滾 */
+	background: #0b1220;     /* 首幀之前是深底, 不會先閃一下白 */
+}
+
+/* WebGL 不可用 / context 丟失時, three-kit.js 把這段文字插進 mount */
+.dl-gl-fallback {
+	display: grid;
+	place-items: center;
+	padding: clamp(16px, 3vw, 28px) 14px;
+	background: var(--paper-2);
+	border: 1px dashed var(--line);
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	line-height: 1.7;
+	letter-spacing: 0.06em;
+	color: var(--fg-faint);
+	text-align: center;
+}

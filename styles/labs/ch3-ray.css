@@ -1,0 +1,77 @@
+/* ============================================================================
+   ch3-ray.css — 光線與成像
+   ----------------------------------------------------------------------------
+   這一組實驗的內部樣式由負責的模組作者填寫, 現在只有這段抬頭。
+   共用語彙(.dl-lab__grid / .dl-panel__* / .dl-field / .dl-btn / .dl-readout …)
+   在 styles/labs/dse-labs.css —— 不要在這裡重寫, 否則 12 個實驗會各長一套。
+   ========================================================================== */
+
+/* ----------------------------------------------------------------------------
+   折射/全反射 + 薄透鏡: 只補共用語彙沒有給的三樣東西
+   ① 面板裡的公式列(KaTeX 會撐寬, 所以自己當橫向捲動容器, 不推倒版面)
+   ② 讀數值的語意色(紅=這一格要看的量, 灰=不適用)
+   ③ 全反射的即時提示條
+   一律以 ry- 開頭, 不外洩到別組的實驗。
+   -------------------------------------------------------------------------- */
+
+.ry-tex {
+	display: grid;
+	gap: 5px;
+	padding: 8px 10px;
+	border: 1px solid var(--line-faint);
+	background: var(--paper-1);
+}
+
+/* 一定要 block: 行內元素吃不到 overflow, 手機上長公式會把整頁撐寬 */
+.ry-tex__row {
+	display: block;
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.ry-tex__row .katex { font-size: 1em; }
+
+/* 讀數值不換行也不撐破格子: 溢出就省略, 數字本身仍然完整寫在公式列 */
+.ry-rd .dl-readout { overflow: hidden; }
+
+.ry-rd .dl-readout__v {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* '性質' / 'sin i / sin r' 這種要整行讀的讀數 */
+.ry-wide { grid-column: 1 / -1; }
+
+.ry-acc { color: var(--accent); }
+
+.ry-mute { color: var(--fg-ghost); }
+
+.ry-alert {
+	margin: 0;
+	padding: 5px 9px;
+	border-left: 2px solid var(--accent);
+	background: var(--accent-soft);
+	font-size: 11.5px;
+	line-height: 1.6;
+	color: var(--fg);
+}
+
+.ry-alert[hidden] { display: none; }
+
+/* 滑桿右邊那一格: 共用 CSS 在 420px 以下只給 54px, '-10.0 cm' 這種帶單位的值
+   會折成兩行。這裡鎖住不斷行, 並把字級收到 11px 讓 8 個字元仍在一行內。 */
+.ry-panel .dl-field__val { white-space: nowrap; }
+
+@media (max-width: 420px) {
+	.ry-panel .dl-field__val { font-size: 11px; }
+}
+
+@media (max-width: 420px) {
+	.ry-tex { padding: 7px 8px; }
+
+	.ry-tex__row { font-size: 12.5px; }
+}

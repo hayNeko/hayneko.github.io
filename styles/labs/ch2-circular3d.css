@@ -1,0 +1,48 @@
+/* ============================================================================
+   ch2-circular3d.css — 第二章 II.f · 圓周運動(3D)
+   ----------------------------------------------------------------------------
+   14 circular-3d 圓周運動 / 15 loop-3d 過山車圓環 / 16 washer-3d 洗衣機脫水
+   這一組實驗的內部樣式由負責的模組作者填寫, 現在只有這段抬頭。
+   共用語彙(.dl-lab__grid / .dl-panel__* / .dl-field / .dl-btn / .dl-readout …)
+   在 styles/labs/dse-labs.css —— 不要在這裡重寫, 否則 18 個實驗會各長一套。
+   三個 3D 實驗的 canvas 尺寸(.dl-lab--3d canvas 的 width / aspect-ratio /
+   max-height / touch-action)也由 dse-labs.css 決定, 本檔只補 canvas 之外的東西。
+   本檔保留的前綴: c3-  (例如 .c3-hud(疊在 canvas 上的讀數)、.c3-legend。canvas 尺寸由 dse-labs.css 的 .dl-lab--3d 決定, 這裡不要改尺寸)
+   ========================================================================== */
+
+/* 面板裡的那一條活動關係(KaTeX)。手機上長式子會撐破面板, 所以自己可橫捲,
+   頁面本身不可以橫捲 —— overflow 只給這一格。 */
+.c3-tex {
+	min-width: 0;
+	padding: 8px 9px;
+	border: 1px solid var(--line-faint);
+	border-radius: var(--radius-sm);
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--fg);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.c3-tex .katex { font-size: 1em; }
+
+/* 模式切換時把該模式用不到的欄位收起來。用類別而不是 [hidden]:
+   .dl-field 自己有 display: grid, 會壓過 UA 的 [hidden]。 */
+.c3-off { display: none; }
+
+/* 滑桿右邊的數值: 一律不換行, 否則 320px 時「1600 rpm」會斷成兩行。 */
+.c3-out { white-space: nowrap; }
+
+/* 狀態讀數跨滿兩欄, 320px 時也放得下「脫軌（N < 0）」這種長字串。 */
+.c3-wide { grid-column: 1 / -1; }
+
+/* 狀態讀數: 只有「關鍵量 / 關鍵狀態」才上強調色, 其餘保持墨色。 */
+.c3-warn { color: var(--accent); }
+.c3-mute { color: var(--fg-ghost); }
+
+/* 顏色說明(綠=速度、紅=力)直接寫在 .dl-note 裡, 用文字不用色塊:
+   UI 配色只有紙與墨, canvas 內才允許實物顏色。 */
+
+@media (max-width: 420px) {
+	.c3-tex { font-size: 12px; }
+}

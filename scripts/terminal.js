@@ -31,6 +31,7 @@
 			'2  phy-ntlaw2    Newtons second law',
 			'3  phy-lens      Lenses',
 			'4  phy-wave      Water waves (interference, diffraction, refraction)',
+			'5  dse-physics   DSE Physics labs - chapters II-III',
 			'',
 			'Run "sim 2" to open one.'
 		],
@@ -61,7 +62,8 @@
 		{ name: 'phy-default', href: 'pages/labs/phy-default/' },
 		{ name: 'phy-ntlaw2', href: 'pages/labs/phy-ntlaw2/' },
 		{ name: 'phy-lens', href: 'pages/labs/phy-lens/' },
-		{ name: 'phy-wave', href: 'pages/labs/phy-wave/' }
+		{ name: 'phy-wave', href: 'pages/labs/phy-wave/' },
+		{ name: 'dse-physics', href: 'pages/labs/dse-physics/' }
 	];
 
 	/* 小游戏页有没有加载成功兜底: 清单以 scripts/games.js 为准(alias 也要跟着来) */

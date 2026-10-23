@@ -1,0 +1,86 @@
+/* ============================================================================
+   ch3-sound.css — 聲音（11 回聲測距 / 12 管中駐波）
+   ----------------------------------------------------------------------------
+   只補共用語彙沒有的兩小塊：公式列 (.sd-rel) 與整列讀數 (.sd-series)。
+   共用 class (.dl-* / .dl-lab__*) 一律不覆寫 —— 覆寫下去，12 個實驗就會各長
+   一套，整頁立刻不像同一本書。前綴 sd- 只在這一頁的兩支模組裡使用。
+   ========================================================================== */
+
+/* 公式列：一行一條關係式，左邊 KaTeX、右邊單寬代入值。 */
+.sd-rel {
+	display: grid;
+	gap: 2px;
+	padding-top: 8px;
+	border-top: 1px solid var(--line-faint);
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.sd-rel__row {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 4px 10px;
+	min-height: 24px;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--fg);
+}
+
+/* 同一條管子只會有一種模式成立，另一條降成 ghost 當對照 */
+.sd-rel__row.is-off { color: var(--fg-ghost); }
+
+.sd-rel__row .katex { font-size: 1.02em; }
+
+.sd-rel__num {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.02em;
+	color: var(--fg-faint);
+}
+
+/* 唯一會用 accent 的數字：這一格的值與「真值」不同。
+   放自己的 class，不去覆寫共用 .dl-readout__v 的顏色 */
+.sd-hot { color: var(--accent); }
+
+/* 整列讀數：.dl-readouts 是兩欄，這種「一列放一句話」的資訊放不進去 */
+.sd-series {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 2px 10px;
+	padding: 6px 9px;
+	border: 1px solid var(--line-faint);
+	background: var(--paper-0);
+}
+
+.sd-series__k {
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--fg-faint);
+}
+
+.sd-series__v {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 2px 8px;
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	font-variant-numeric: tabular-nums;
+	color: var(--fg);
+}
+
+/* 手機：一列放不下就上下疊，避免兩條長字串互相擠壓 */
+@media (max-width: 420px) {
+	.sd-series {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.sd-rel__row { white-space: normal; }
+}

@@ -59,7 +59,8 @@
 		{ href: 'pages/labs/phy-default/', key: 'sim.default', icon: 'flask' },
 		{ href: 'pages/labs/phy-ntlaw2/', key: 'sim.ntlaw2', icon: 'grid' },
 		{ href: 'pages/labs/phy-lens/', key: 'sim.lens', icon: 'search' },
-		{ href: 'pages/labs/phy-wave/', key: 'sim.wave', icon: 'grid' }
+		{ href: 'pages/labs/phy-wave/', key: 'sim.wave', icon: 'grid' },
+		{ href: 'pages/labs/dse-physics/', key: 'sim.dse', icon: 'flask' }
 	];
 
 	var LANGS = [
