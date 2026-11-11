@@ -60,7 +60,9 @@
 		{ href: 'pages/labs/phy-ntlaw2/', key: 'sim.ntlaw2', icon: 'grid' },
 		{ href: 'pages/labs/phy-lens/', key: 'sim.lens', icon: 'search' },
 		{ href: 'pages/labs/phy-wave/', key: 'sim.wave', icon: 'grid' },
-		{ href: 'pages/labs/dse-physics/', key: 'sim.dse', icon: 'flask' }
+		{ href: 'pages/labs/dse-physics/', key: 'sim.dse', icon: 'flask' },
+		/* 自写 i486DX 计算机: 独立页面, 新开标签页 */
+		{ href: 'i486/index.html', key: 'i486.card', icon: 'term' }
 	];
 
 	var LANGS = [

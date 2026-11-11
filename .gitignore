@@ -14,3 +14,7 @@ medias/files/programming/
 
 # mnemon
 .mnemon/
+
+world_execute_me_delivery/*.mp4
+
+mv/out/*

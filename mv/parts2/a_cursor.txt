@@ -1,0 +1,33 @@
+// ---------------------------------------------------------------- a_cursor
+function a_cursor(ctx, t, u){
+  const g = ctx.createRadialGradient(CX, CY, 30, CX, CY, 760);
+  g.addColorStop(0, 'rgba(12,22,21,0.85)'); g.addColorStop(0.5, 'rgba(6,10,12,0.97)'); g.addColorStop(1, 'rgba(3,5,8,1)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.fillStyle = C.phos;
+  for (let y = 80; y < H - 60; y += 44) for (let x = 80; x < W - 60; x += 44){
+    const d = Math.hypot((x - CX) / 1100, (y - CY) / 800);
+    if (L.hash2(x, y) > 0.86) { ctx.globalAlpha = 0.16 * (1 - d * 0.8) * ss(0, 0.4, t); ctx.fillRect(x, y, 2, 2); }
+  }
+  ctx.restore();
+  const R = L.mulberry32(11);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 110; i++){
+    const x0 = R() * W, y0 = R() * H, sp = 3 + R() * 14, ph = R() * TAU, br = 0.5 + R();
+    const x = (x0 + Math.sin(ph + t * 0.3) * 26 + t * 4) % W, y = (y0 - t * sp) % H;
+    ctx.fillStyle = rgba(C.phos, (0.06 + 0.24 * R()) * br);
+    ctx.fillRect(x, (y + H) % H, br * 1.6, br * 1.6);
+  }
+  ctx.restore();
+  const blinkPh = ((t - BEAT0) / (SPB * 2)) % 1;
+  if (blinkPh < 0.46 || t < 0.06){
+    const k = 1 + 0.04 * pulse(t, 0.25);
+    L.glow(ctx, C.phos, 22, () => { ctx.fillStyle = rgba(C.phos, 0.95); ctx.fillRect(CX - 10 * k, CY - 23 * k, 20 * k, 46 * k); });
+    ctx.fillStyle = rgba(C.white, 0.5); ctx.fillRect(CX - 10, CY - 23, 20, 46);
+  }
+  L.mono(ctx, 'pid  —', 96, 118, 15, rgba(C.phos, 0.42 * ss(0.30, 0.8, t)), 2.2);
+  L.mono(ctx, 'state  not running', 96, 146, 15, rgba(C.phos, 0.26 * ss(0.45, 0.95, t)), 2.2);
+  L.mono(ctx, 'task   none', 96, 174, 15, rgba(C.phos, 0.18 * ss(0.6, 1.05, t)), 2.2);
+  const a3 = ss(0.35, 0.8, t);
+  if (a3 > 0) L.brackets(ctx, 84, 84, 300, 130, 16, rgba(C.cyan, 0.25 * a3));
+  return { bloom: 0.55, chroma: 0.4, scan: 0.55 };
+}

@@ -1,0 +1,43 @@
+// ---------------------------------------------------------------- a_line
+function a_line(ctx, t, u){
+  ctx.fillStyle = '#04060A'; ctx.fillRect(0, 0, W, H);
+  const grow = easeOutQuint(ss(1.20, 1.55, t));
+  const bow = ss(1.52, 1.74, t);
+  const yAt = (x) => CY - Math.pow(Math.abs(x - CX) / 950, 2) * 26 * bow;
+  const xL = CX - 760 * grow, xR = CX + 1360 * grow;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let pass = 0; pass < 4; pass++){
+    ctx.beginPath();
+    for (let x = xL; x <= xR; x += 5) { const y = yAt(x); if (x === xL) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.strokeStyle = rgba(C.phos, [0.90, 0.30, 0.13, 0.05][pass]);
+    ctx.lineWidth = [1.3, 3, 8, 20][pass]; ctx.stroke();
+  }
+  ctx.restore();
+  const chT = ss(1.26, 1.74, t);
+  const chx = lerp(xL, CX, chT);
+  if (chT > 0.001 && chT < 0.995){
+    L.glow(ctx, C.cyan, 46, () => { ctx.fillStyle = C.white; ctx.fillRect(chx - 3.5, yAt(chx) - 3.5, 7, 7); });
+    ctx.strokeStyle = rgba(C.white, 0.22); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(chx - 110, yAt(chx)); ctx.lineTo(chx, yAt(chx)); ctx.stroke();
+  }
+  const steps = [['120 V AC', 0.10, 1.28], ['12 V DC', 0.46, 1.42], ['0.75 V', 0.80, 1.56]];
+  for (const st of steps){
+    const a2 = ss(st[2], st[2] + 0.10, t);
+    if (a2 <= 0) continue;
+    const x = CX - 760 + 2120 * st[1];
+    ctx.save(); ctx.globalAlpha = a2;
+    L.mono(ctx, st[0], x, yAt(x) - 34, 20, rgba(C.white, 0.95), 2.4, 'center');
+    ctx.strokeStyle = rgba(C.cyan, 0.75); ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(x, yAt(x) - 26); ctx.lineTo(x, yAt(x) - 8); ctx.stroke();
+    ctx.fillStyle = rgba(C.cyan, 0.9); ctx.fillRect(x - 2, yAt(x) - 11, 4, 4);
+    ctx.restore();
+  }
+  const a3 = ss(1.56, 1.74, t);
+  if (a3 > 0){
+    ctx.save(); ctx.globalAlpha = a3;
+    L.mono(ctx, 'PDN  ·  12 phases  ·  0.75 V rail', 96, 132, 16, rgba(C.cyan, 0.8), 1.8);
+    L.mono(ctx, 'clock tree skew ≈ 12 ps', 96, 160, 15, rgba(C.phos, 0.5), 1.6);
+    ctx.restore();
+  }
+  return { bloom: 1.15, chroma: 1 + 8 * bow, scan: 0.5 };
+}

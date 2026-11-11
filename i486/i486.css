@@ -1,0 +1,1195 @@
+/* ============================================================================
+   i486.css — HY486 workstation (i486DX emulator page), standalone.
+   ----------------------------------------------------------------------------
+   01 tokens            08 panels            15 files
+   02 reset / base      09 editor            16 terminal
+   03 page head         10 disassembly       17 cheat sheet
+   04 sections          11 console           18 footer / noscript
+   05 workbench bar     12 VGA screen        19 responsive
+   06 toolbar           13 registers/flags   20 a11y / motion
+   07 buttons / inputs  14 stack / memory
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- 01 tokens */
+
+:root {
+  color-scheme: dark;
+  --bg: #070b07;
+  --bg-deep: #040604;
+  --panel: #0b100b;
+  --panel-2: #0e150f;
+  --line: #1b2a1c;
+  --line-strong: #2c4430;
+  --line-faint: #141f15;
+  --fg: #c8f7d0;
+  --fg-dim: #6f9c78;
+  --fg-faint: #4d6b54;
+  --fg-ghost: #33472f;
+  --green: #7dfa9a;
+  --green-deep: #2f7a45;
+  --green-soft: rgba(125, 250, 154, 0.1);
+  --amber: #f2c14e;
+  --amber-soft: rgba(242, 193, 78, 0.12);
+  --red: #ff5f56;
+  --red-soft: rgba(255, 95, 86, 0.12);
+  --cyan: #62d8ff;
+  --magenta: #d78bff;
+  --blue: #7aa2ff;
+  --mono: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, "DejaVu Sans Mono", monospace;
+  --radius: 2px;
+  --gap: 10px;
+  --ed-lh: 19px;
+  --ed-font: 12.5px;
+}
+
+/* ------------------------------------------------------------ 02 reset/base */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image: radial-gradient(1100px 520px at 50% -12%, rgba(125, 250, 154, 0.05), transparent 70%);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* CRT scanlines: 1px dark line every 3px, low alpha, never blocks input */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px);
+  opacity: 0.55;
+}
+
+::selection { background: rgba(125, 250, 154, 0.28); color: var(--bg-deep); }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); }
+
+h1, h2, h3, p, dl, dd, pre, ol, ul { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 6px 10px;
+  background: var(--amber);
+  color: var(--bg-deep);
+  font-size: 11px;
+  text-decoration: none;
+}
+.skip-link:focus { left: 8px; top: 8px; }
+
+.wrap {
+  width: 100%;
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 18px 22px 36px;
+}
+
+/* -------------------------------------------------------------- 03 page head */
+
+.page-head {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.folio {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.folio__no { color: var(--amber); }
+.folio__rule {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 46px;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.page-head__title {
+  margin-top: 9px;
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  text-shadow: 0 0 22px rgba(125, 250, 154, 0.12);
+}
+
+.page-head__sub {
+  max-width: 82ch;
+  margin-top: 8px;
+  color: var(--fg-dim);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+/* -------------------------------------------------------------- 04 sections */
+
+.section { margin-top: 18px; min-width: 0; }
+
+.section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin-bottom: 9px;
+}
+.section__title {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.section__title::before { content: "## "; color: var(--green-deep); }
+.section__sub {
+  font-size: 11.5px;
+  color: var(--fg-faint);
+}
+
+/* --------------------------------------------------------- 05 workbench bar */
+
+.wb {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.wb-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.wb-bar--assets { background: var(--bg-deep); }
+
+.wb-bar__brand {
+  padding: 2px 6px;
+  border: 1px solid var(--green-deep);
+  color: var(--green);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+}
+.wb-bar__group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.wb-bar__group--grow { flex: 0 1 auto; }
+.wb-bar__label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.wb-bar__sep {
+  width: 1px;
+  height: 16px;
+  background: var(--line-strong);
+}
+.wb-bar__meta {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--fg-ghost);
+  letter-spacing: 0.04em;
+}
+
+.wb-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--amber);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.wb-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.wb-status[data-state="running"] { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+.wb-status[data-state="halted"] { border-color: var(--amber); color: var(--amber); }
+.wb-status[data-state="fault"] { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+
+.wb-cur {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--fg-dim);
+}
+.wb-cur__k {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-ghost);
+}
+.wb-cur__v { color: var(--amber); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- 06 toolbar */
+
+.wb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+.wb-toolbar__spacer { flex: 1 1 auto; }
+.wb-toolbar__hint {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--fg-ghost);
+  white-space: nowrap;
+}
+
+.wb-rate { display: inline-flex; align-items: center; gap: 5px; }
+.wb-rate__unit {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-ghost);
+}
+
+/* ------------------------------------------------------- 07 buttons / inputs */
+
+.wb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--fg-dim);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms linear, color 120ms linear, border-color 120ms linear;
+}
+.wb-btn:hover { background: var(--green); border-color: var(--green); color: var(--bg-deep); }
+.wb-btn:active { transform: translateY(1px); }
+.wb-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+.wb-btn[disabled]:hover { background: transparent; border-color: var(--line-strong); color: var(--fg-dim); }
+.wb-btn--accent { border-color: var(--amber); color: var(--amber); }
+.wb-btn--accent:hover { background: var(--amber); border-color: var(--amber); color: var(--bg-deep); }
+.wb-btn--run { border-color: var(--green-deep); color: var(--green); }
+.wb-btn--ghost { border-color: var(--line); color: var(--fg-faint); }
+.wb-btn[data-key]::after {
+  content: attr(data-key);
+  font-size: 9px;
+  letter-spacing: 0;
+  opacity: 0.55;
+}
+
+.wb-input,
+.wb-select {
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-deep);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 11.5px;
+}
+.wb-input {
+  width: 9ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.wb-select { max-width: 26ch; }
+.wb-select--sm { max-width: 13ch; }
+
+.wb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  color: var(--fg-faint);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.asm-status {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--fg-ghost);
+  white-space: nowrap;
+}
+.asm-status.is-ok { color: var(--green); }
+.asm-status.is-err { color: var(--red); }
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 1px solid var(--amber);
+  outline-offset: 1px;
+}
+
+/* --------------------------------------------------------------- 08 panels */
+
+.wb-grid {
+  display: flex;
+  align-items: stretch;
+  gap: var(--gap);
+}
+.wb-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;
+}
+.wb-col--main { flex: 1.5 1 0; }
+.wb-col--side { flex: 1 1 0; }
+
+.wb-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+/* The head is a toolbar: it must never be shrunk below its content (a wrapped
+   toolbar that shrinks paints its buttons over the list below and swallows
+   their clicks) and it owns its own layer above the scrolling body. */
+.wb-panel__head {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  pointer-events: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 27px;
+  padding: 4px 9px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--fg-dim);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.wb-panel__title::before {
+  content: "▪";
+  margin-right: 5px;
+  color: var(--green-deep);
+  font-size: 9px;
+  vertical-align: 1px;
+}
+/* One ellipsised line: a hint that wraps would push the head over the list. */
+.wb-panel__hint {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--fg-ghost);
+}
+.wb-panel__tools {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* The code panel gets a definite height: a window list pads its container to
+   represent the rows it is not rendering, so a content-sized panel would grow
+   with the padding forever. The console takes whatever is left over. */
+.wb-panel--studio { flex: 0 0 auto; min-height: 372px; max-height: 640px; height: 52vh; }
+.wb-panel--console { flex: 1 1 auto; min-height: 132px; }
+.wb-panel--stack { flex: 0 0 auto; min-height: 158px; max-height: 260px; height: 173px; } /* head + 8 dword rows */
+.wb-panel--mem { flex: 0 0 auto; min-height: 176px; max-height: 280px; height: 200px; }
+
+.wb-panel--mem .wb-input { width: 11ch; text-align: left; }
+
+/* a full 0x00000000 must stay readable in the disassembly toolbar (13ch minus
+   the 6px side padding leaves room for 11 glyphs) */
+[data-i486="dis-goto"] { width: 13ch; text-align: left; }
+
+/* ------------------------------------------- 08b shared code panel (rev 2) --
+   The editor and the disassembly share one panel and switch with tabs; the
+   console stays below. One pane at a time, the other carries [hidden]. */
+
+.wb-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.wb-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: -1px;
+  padding: 4px 9px 3px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  background: transparent;
+  color: var(--fg-faint);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.wb-tab:hover { color: var(--fg); }
+.wb-tab.is-on { border-color: var(--line); background: var(--panel); color: var(--green); }
+.wb-tab__dot { width: 5px; height: 5px; background: transparent; }
+.wb-tab.has-dot .wb-tab__dot { background: var(--amber); }
+.wb-tabs__hint {
+  margin-left: auto;
+  padding-bottom: 4px;
+  color: var(--fg-ghost);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.wb-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.wb-pane[hidden] { display: none !important; }
+.wb-pane:focus-visible { outline: 1px solid var(--amber); outline-offset: -2px; }
+
+/* follow / pin indicator next to a panel title */
+.wb-pin { padding: 0 5px; border: 1px solid var(--line); color: var(--fg-faint); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; }
+.wb-pin.is-on { border-color: var(--green-deep); color: var(--green); }
+.wb-pin.is-off { border-color: var(--amber); color: var(--amber); }
+
+/* ---------------------------------------------------------------- 09 editor */
+
+.ed {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--bg-deep);
+}
+
+.ed-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ed-gutter {
+  flex: 0 0 auto;
+  width: calc(var(--ed-digits, 2) * 1ch + 22px);
+  overflow: hidden;
+  border-right: 1px solid var(--line-faint);
+  background: var(--bg-deep);
+  font-size: 11px;
+  user-select: none;
+}
+.ed-gutter__inner { padding: 8px 0; will-change: transform; }
+
+.gc-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: var(--ed-lh);
+  line-height: var(--ed-lh);
+  padding: 0 6px 0 4px;
+  color: var(--fg-ghost);
+  cursor: pointer;
+}
+.gc-line:hover { background: rgba(125, 250, 154, 0.05); color: var(--fg-dim); }
+.gc-dot { flex: 0 0 auto; width: 5px; height: 5px; background: transparent; }
+.gc-line.is-bp .gc-dot { background: var(--red); box-shadow: 0 0 5px rgba(255, 95, 86, 0.75); }
+.gc-err { display: none; font-size: 10px; line-height: 1; color: var(--red); }
+.gc-line.is-err { background: rgba(255, 95, 86, 0.1); }
+.gc-line.is-err .gc-err { display: inline; }
+.gc-line.is-err .gc-no { color: var(--red); }
+.gc-no { margin-left: auto; font-variant-numeric: tabular-nums; }
+.gc-line.is-active .gc-no { color: var(--green); }
+
+.ed-code {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ed-active,
+.ed-caret {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--ed-lh);
+  z-index: 0;
+  pointer-events: none;
+}
+.ed-active {
+  border-left: 2px solid var(--amber);
+  background: rgba(242, 193, 78, 0.09);
+}
+.ed-caret {
+  border-left: 2px solid rgba(125, 250, 154, 0.35);
+  background: rgba(125, 250, 154, 0.055);
+}
+
+.ed-pre {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: var(--ed-font);
+  line-height: var(--ed-lh);
+  letter-spacing: 0;
+  word-spacing: 0;
+  white-space: pre;
+  tab-size: 2;
+  pointer-events: none;
+  will-change: transform;
+}
+.ed-pre .code-line { display: block; }
+.ed-pre .code-line::after { content: "\200b"; }
+
+.t-com { color: var(--fg-faint); font-style: italic; }
+.t-str { color: var(--amber); }
+.t-num { color: var(--magenta); }
+.t-reg { color: var(--cyan); }
+.t-mnem { color: var(--green); }
+.t-dir { color: var(--blue); }
+.t-lab { color: #e8d18b; }
+.t-pfx { color: #ff9d6b; }
+.t-punct { color: var(--fg-faint); }
+
+.ed-input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow: auto;
+  background: transparent;
+  color: var(--fg);
+  caret-color: var(--green);
+  font-family: var(--mono);
+  font-size: var(--ed-font);
+  line-height: var(--ed-lh);
+  letter-spacing: 0;
+  word-spacing: 0;
+  white-space: pre;
+  tab-size: 2;
+}
+.ed-shell.is-mounted .ed-input { color: transparent; }
+.ed-input::selection { background: rgba(125, 250, 154, 0.28); }
+.ed-input:focus-visible { outline: 1px solid var(--amber); outline-offset: -1px; }
+
+/* ----------------------------------------------------------- 10 disassembly */
+
+/* The three window lists (disassembly, stack, memory) are virtualised: the
+   viewport scrolls, the list inside it pads for the rows it is not rendering.
+   ui.js owns scrollTop, so scroll anchoring must stay out of the way. */
+.ds-view,
+.mem-view,
+.stack-view { position: relative; z-index: 0; flex: 1 1 auto; min-height: 0; overflow: auto; overflow-anchor: none; }
+.ds-view:focus-visible,
+.mem-view:focus-visible,
+.stack-view:focus-visible,
+.ds:focus-visible,
+.mem:focus-visible,
+.stack:focus-visible { outline: 1px solid var(--amber); outline-offset: -2px; }
+
+.ds {
+  padding: 0;
+  font-size: 12px;
+  line-height: 19px;
+}
+.ds > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 9ch 14ch minmax(0, 1fr);
+  gap: 0 10px;
+  padding: 0 8px 0 14px;
+  white-space: pre;
+  cursor: pointer;
+}
+.ds > li::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2px;
+  background: transparent;
+}
+.ds > li[data-bp="1"]::before { background: var(--red); box-shadow: 0 0 5px rgba(255, 95, 86, 0.8); }
+.ds > li:hover { background: rgba(125, 250, 154, 0.06); }
+.ds-addr { color: var(--fg-faint); }
+.ds-bytes { color: var(--green-deep); overflow: hidden; text-overflow: ellipsis; }
+.ds-text { color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; }
+.ds > li.is-curr,
+.ds > li.is-curr:hover { background: var(--amber); grid-template-columns: 9ch 14ch minmax(0, 1fr) 13ch; }
+.ds > li.is-curr .ds-addr,
+.ds > li.is-curr .ds-bytes { color: rgba(4, 6, 4, 0.55); }
+.ds > li.is-curr .ds-text { color: var(--bg-deep); }
+.ds-ea { color: rgba(4, 6, 4, 0.6); text-align: right; overflow: hidden; }
+
+/* follow toggle: green while following, amber once the list is unpinned */
+.ds-follow.is-on { border-color: var(--green-deep); color: var(--green); }
+.ds-follow.is-off { border-color: var(--amber); color: var(--amber); }
+
+/* --------------------------------------------------------------- 11 console */
+
+.console {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 7px 9px;
+  overflow: auto;
+  background: var(--bg-deep);
+  color: var(--fg-dim);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.console:focus-visible { outline: 1px solid var(--amber); outline-offset: -1px; }
+.console .err,
+.console .error { color: var(--red); }
+.console .ok { color: var(--green); }
+.console .dim { color: var(--fg-ghost); }
+
+/* ------------------------------------------------------------ 12 VGA screen */
+
+.screen { padding: 9px 9px 0; }
+
+.screen__bezel {
+  padding: 7px 7px 0;
+  border: 1px solid var(--green-deep);
+  background: #030703;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.85);
+}
+
+.screen__frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #16301c;
+  background: #000;
+}
+
+.screen__static {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+  color: var(--green);
+  font-size: clamp(6px, 1.35vw, 10px);
+  line-height: 1.35;
+  white-space: pre;
+  opacity: 0.55;
+  text-shadow: 0 0 4px rgba(125, 250, 154, 0.35);
+}
+
+.screen__canvas {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 5;
+  background: transparent;
+  image-rendering: pixelated;
+}
+
+.screen__caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 1px 7px;
+  color: var(--green-deep);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.kb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 6px 9px;
+  border-top: 1px solid var(--line);
+}
+.kb__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--fg-faint);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.kb__label input { width: 12px; height: 12px; margin: 0; accent-color: var(--green); }
+.kb__hint { margin-left: auto; color: var(--fg-ghost); font-size: 10px; }
+
+/* ------------------------------------------------------ 13 registers/flags */
+
+.regs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); /* fits "eflags 0x00000002" */
+  gap: 1px 8px;
+  padding: 7px 9px 6px;
+  font-size: 11.5px;
+}
+.reg { display: flex; align-items: baseline; gap: 6px; min-width: 0; padding: 1px 0; }
+.reg__name { min-width: 4ch; color: var(--blue); }
+.reg__val {
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+}
+.reg__val:hover { color: var(--amber); }
+.reg.is-edited .reg__val { color: var(--amber); }
+
+.flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 9px 7px;
+  border-top: 1px solid var(--line-faint);
+}
+.flag {
+  min-width: 22px;
+  padding: 1px 4px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--fg-ghost);
+  font-family: inherit;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.flag:hover { border-color: var(--amber); color: var(--amber); }
+.flag.is-on { background: var(--green); border-color: var(--green); color: var(--bg-deep); }
+.flag--sys { opacity: 0.72; }
+.flags__rule { flex: 0 0 auto; width: 1px; height: 14px; margin: 0 3px; background: var(--line-strong); }
+
+.state {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 0 12px;
+  padding: 6px 9px 8px;
+  border-top: 1px solid var(--line-faint);
+  font-size: 10.5px;
+}
+.state__row { display: flex; gap: 6px; min-width: 0; }
+.state dt {
+  flex: 0 0 5ch;
+  color: var(--fg-faint);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.state dd {
+  margin: 0;
+  color: var(--fg-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------- 14 stack / memory */
+
+.stack,
+.mem { padding: 0; }
+
+.stack { font-size: 11.5px; }
+.stack li {
+  display: grid;
+  grid-template-columns: 9ch minmax(0, 1fr);
+  gap: 8px;
+  padding: 0 9px;
+  line-height: 18px;
+}
+.stack li.is-sp { background: rgba(122, 162, 255, 0.1); }
+.st__addr { color: var(--fg-faint); }
+.st__val { color: var(--fg-dim); }
+.stack li.is-sp .st__val { color: var(--fg); }
+
+.mem { font-size: 11px; }
+.mem li {
+  display: grid;
+  grid-template-columns: 9ch 26ch minmax(0, 1fr);
+  gap: 8px;
+  padding: 0 9px;
+  line-height: 18px;
+  white-space: pre;
+}
+.mem__addr { color: var(--fg-faint); }
+.mem__hex { color: var(--fg-dim); }
+.mem__asc { color: var(--green-deep); overflow: hidden; text-overflow: ellipsis; }
+
+/* ----------------------------------------------------------------- 15 files */
+
+.wb-files {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.files { display: flex; flex-wrap: wrap; }
+.files > li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 5px 9px;
+  border-top: 1px solid var(--line-faint);
+  font-size: 11.5px;
+}
+.files > li:hover { background: var(--green-soft); }
+.file__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file__size { color: var(--fg-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.file__run {
+  padding: 1px 5px;
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: var(--fg-faint);
+  font-family: inherit;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.file__run:hover { background: var(--green); border-color: var(--green); color: var(--bg-deep); }
+
+/* -------------------------------------------------------------- 16 terminal */
+
+.term {
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+}
+
+.term__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 9px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.term__dots { display: inline-flex; gap: 4px; flex: 0 0 auto; }
+.term__dots i { display: block; width: 7px; height: 7px; border: 1px solid var(--line-strong); }
+.term__title {
+  min-width: 0;
+  color: var(--fg-faint);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.term__tag {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 0 5px;
+  border: 1px solid var(--line-strong);
+  color: var(--green-deep);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.term__body {
+  min-height: 172px;
+  max-height: 260px;
+  padding: 8px 10px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.62;
+}
+.term__body:focus-visible { outline: 1px solid var(--amber); outline-offset: -1px; }
+.term__line { color: var(--fg-dim); white-space: pre-wrap; overflow-wrap: anywhere; }
+.term__line--out { color: var(--green); }
+.term__ps1 { color: var(--green-deep); }
+.term__cmd { color: var(--fg); }
+.term__caret { color: var(--green); animation: term-blink 1.1s steps(1) infinite; }
+
+@keyframes term-blink { 50% { opacity: 0; } }
+
+.term__prompt-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+}
+.term__ps1 { flex: 0 0 auto; }
+.term__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 1px 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--fg);
+  caret-color: var(--green);
+  font-family: inherit;
+  font-size: 12.5px;
+}
+.term__input::placeholder { color: var(--fg-ghost); }
+.term__input:focus-visible { outline: 1px solid var(--amber); outline-offset: 2px; }
+
+.term-suggest { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.term-suggest button {
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg-faint);
+  font-family: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+.term-suggest button:hover { background: var(--green); border-color: var(--green); color: var(--bg-deep); }
+
+/* ------------------------------------------------------------ 17 cheat sheet */
+
+.cheat {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--gap);
+}
+.cheat__group {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.cheat__group h3 {
+  margin-bottom: 6px;
+  color: var(--green-deep);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.cheat__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 8px;
+  padding: 1px 0;
+  font-size: 11px;
+}
+.cheat__item code { color: var(--fg); font-family: inherit; overflow-wrap: anywhere; }
+.cheat__item span { color: var(--fg-faint); overflow-wrap: anywhere; }
+
+/* ------------------------------------------------------ 18 footer / noscript */
+
+.site-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 22px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--fg-ghost);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.noscript {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--amber);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 11.5px;
+}
+
+/* ------------------------------------------------------------- 19 responsive */
+
+@media (max-width: 1100px) {
+  .wb-grid { flex-direction: column; }
+  .wb-col--main,
+  .wb-col--side { flex: 1 1 auto; }
+  .wb-panel--studio { min-height: 320px; }
+  .wb-panel--stack { min-height: 150px; }
+  .wb-panel--mem { min-height: 170px; }
+  .wb-toolbar { position: static; }
+  .screen__static { font-size: 9.5px; }
+}
+
+@media (max-width: 760px) {
+  .wrap { padding: 14px 12px 28px; }
+  .page-head__title { font-size: 24px; }
+  .wb-bar__meta { margin-left: 0; }
+  .wb-toolbar__hint { display: none; }
+  .wb-panel__hint { display: none; }
+  .cheat { grid-template-columns: 1fr; }
+  .term__body { min-height: 150px; }
+  .files > li { flex: 1 1 100%; }
+}
+
+@media (max-width: 560px) {
+  .mem li { grid-template-columns: 9ch minmax(0, 1fr); }
+  .mem__asc { display: none; }
+  .screen__caption { font-size: 8px; letter-spacing: 0.1em; }
+  /* 390px: "eflags" + a 10-char hex value no longer fit a 3-column grid at 11.5px */
+  .regs { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); font-size: 10.5px; }
+  .state { grid-template-columns: repeat(auto-fill, minmax(106px, 1fr)); font-size: 10px; }
+  .state dt { flex-basis: 4.5ch; }
+}
+
+@media (max-width: 420px) {
+  .wrap { padding: 12px 9px 24px; }
+  .page-head__title { font-size: 21px; }
+  .folio { gap: 6px; font-size: 9px; letter-spacing: 0.1em; }
+  .folio__rule { width: 24px; }
+  .wb-btn { padding: 3px 6px; font-size: 10px; }
+  .ds > li { grid-template-columns: 9ch 12ch minmax(0, 1fr); gap: 0 7px; }
+  .cheat__item { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .cheat__item span { color: var(--fg-ghost); }
+}
+
+/* ------------------------------------------------------- 20 a11y / motion */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .term__caret { animation: none; }
+}
+
+/* ===========================================================================
+   21 ui.js additions — appended by the wiring module; nothing above is
+   restructured. Every selector is either a new class or a tighter variant of
+   an existing one, so the static shell looks the same without ui.js.
+   ========================================================================= */
+
+/* 16- and 8-bit register rows added next to the 32-bit ones */
+.reg--narrow { gap: 4px; }
+.reg--narrow .reg__name { min-width: 3ch; color: var(--fg-dim); font-size: 10.5px; }
+.reg--narrow .reg__val { font-size: 10.5px; }
+
+/* inline register editor (click a value, type, Enter commits) */
+.reg.is-editing .reg__val { display: none; }
+.reg__input {
+  width: 9ch;
+  padding: 0 2px;
+  border: 1px solid var(--amber);
+  background: var(--bg-deep);
+  color: var(--amber);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 14px;
+}
+.reg__input:focus-visible { outline: 1px solid var(--green); outline-offset: 0; }
+
+/* memory rows carry 16 bytes, so the hex column takes the free space while the
+   ASCII column keeps a fixed 18ch */
+.mem > li.mem__row { grid-template-columns: 9ch minmax(0, 1fr) 18ch; }
+.mem > li.mem__row .mem__hex { overflow: hidden; }
+.mem > li.mem__row .mem__asc { overflow: hidden; text-overflow: ellipsis; }
+
+/* keyboard capture: the CRT gets the focus ring the checkbox promises */
+.screen__frame.is-capturing {
+  outline: 1px solid var(--amber);
+  outline-offset: -1px;
+  box-shadow: inset 0 0 0 1px rgba(242, 193, 78, 0.35);
+}
+
+/* empty states for the disassembly listing and the disk panel */
+.ds > li.ds-empty { grid-template-columns: minmax(0, 1fr); padding: 4px 9px; cursor: default; color: var(--fg-ghost); }
+.ds > li.ds-empty:hover { background: transparent; }
+.files > li.files__empty { color: var(--fg-ghost); }
+
+/* the disk entry under the cursor in the files panel */
+.files > li.is-sel { background: rgba(125, 250, 154, 0.08); }
+.files > li.is-sel .file__name { color: var(--green); }

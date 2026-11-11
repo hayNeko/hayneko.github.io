@@ -1,0 +1,7 @@
+{
+  "name": "i486",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Browser i486DX PC emulator + mini IDE"
+}

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070b07">
+<title>i486DX — HY486 terminal</title>
+<meta name="description" content="A self-written i486DX personal computer in the browser: BIOS POST, VGA text, an HYFS disk and the HY486 real-mode shell, with a mini assembly IDE.">
+<link rel="stylesheet" href="i486.css">
+<link rel="icon" href="data:,">
+</head>
+<body class="page">
+<a class="skip-link" href="#workbench">Skip to the workbench</a>
+
+<div class="wrap">
+  <header class="page-head">
+    <div class="folio">
+      <span class="folio__no">04.2</span>
+      <span>Labs</span>
+      <span class="folio__rule" aria-hidden="true"></span>
+      <span>~/labs/i486</span>
+    </div>
+    <h1 class="page-head__title">i486DX personal computer</h1>
+    <p class="page-head__sub">
+      A whole 80486DX in a browser tab: our own BIOS, real-mode HY486 kernel, HYFS disk and VGA text card.
+      Write NASM-style assembly on the left, boot the machine on the right, watch registers, stack and memory move.
+    </p>
+  </header>
+
+  <noscript>
+    <p class="noscript" role="status">
+      <strong>JavaScript is off.</strong> This is the static shell: the editor, registers and CRT are placeholders.
+      Enable scripting to assemble and boot the machine.
+    </p>
+  </noscript>
+
+  <main id="main">
+    <section class="section wb" id="workbench" data-i486="root" aria-label="i486DX workbench">
+
+      <div class="wb-bar">
+        <span class="wb-bar__brand" aria-hidden="true">HY486</span>
+
+        <span class="wb-bar__group">
+          <button type="button" class="wb-btn wb-btn--accent" data-i486="power" aria-pressed="false">Power on</button>
+          <button type="button" class="wb-btn" data-i486="reset" title="Hardware RESET pin — CPU returns to 0xF000:0xFFF0">Reset</button>
+          <button type="button" class="wb-btn" data-i486="boot" title="Full BIOS POST, then boot sector 0 from the disk">Boot</button>
+        </span>
+
+        <span class="wb-bar__group">
+          <span class="wb-status" data-i486="status" role="status" aria-live="polite">READY</span>
+          <span class="wb-cur"><span class="wb-cur__k">cs:eip</span><span class="wb-cur__v" data-i486="eip">0x0000:0x010D</span></span>
+        </span>
+
+        <span class="wb-bar__group wb-bar__group--grow">
+          <label class="wb-bar__label" for="i486-project">project</label>
+          <select class="wb-select" id="i486-project" data-i486="project" aria-label="Saved projects">
+            <option value="demo-hello">demo/hello-486.asm</option>
+            <option value="demo-fib">demo/fib16.asm</option>
+            <option value="demo-boot">demo/boot-sector.asm</option>
+            <option value="demo-flat32">demo/flat32-ring0.asm</option>
+          </select>
+          <button type="button" class="wb-btn" data-i486="project-new" title="New project">New</button>
+          <button type="button" class="wb-btn" data-i486="project-save" title="Save project to localStorage (i486.projects.v1)">Save</button>
+          <button type="button" class="wb-btn wb-btn--ghost" data-i486="project-del" title="Delete this project">Delete</button>
+        </span>
+
+        <span class="wb-bar__group">
+          <label class="wb-bar__label" for="i486-sample">sample</label>
+          <select class="wb-select wb-select--sm" id="i486-sample" data-i486="sample" aria-label="Sample programs">
+            <option value="hello">hello — INT 10h teletype</option>
+            <option value="fib">fib — 16-bit arithmetic</option>
+            <option value="boot">boot — 512-byte sector</option>
+            <option value="flat32">flat32 — protected mode</option>
+          </select>
+          <button type="button" class="wb-btn" data-i486="sample-load">Load</button>
+        </span>
+      </div>
+
+      <div class="wb-bar wb-bar--assets">
+        <span class="wb-bar__label">source</span>
+        <button type="button" class="wb-btn" data-i486="import">Import…</button>
+        <input type="file" data-i486="import-file" accept=".asm,.bin,.img" hidden>
+        <button type="button" class="wb-btn" data-i486="download-asm">Download .asm</button>
+        <button type="button" class="wb-btn" data-i486="download-bin">Download .bin</button>
+        <span class="wb-bar__sep" aria-hidden="true"></span>
+        <span class="wb-bar__label">disk</span>
+        <button type="button" class="wb-btn" data-i486="disk-import">Import .img</button>
+        <input type="file" data-i486="disk-file" accept=".img" hidden>
+        <button type="button" class="wb-btn" data-i486="disk-download">Save .img</button>
+        <button type="button" class="wb-btn wb-btn--ghost" data-i486="disk-format">Format HYFS</button>
+        <span class="wb-bar__meta">hyfs.img · 65536 sectors · 32 MB</span>
+      </div>
+
+      <div class="wb-toolbar" role="toolbar" aria-label="Execution controls">
+        <button type="button" class="wb-btn wb-btn--run" data-i486="run" data-key="F9">▶ Run</button>
+        <button type="button" class="wb-btn" data-i486="pause" data-key="F10" disabled>⏸ Pause</button>
+        <button type="button" class="wb-btn" data-i486="step" data-key="F7">⤵ Step</button>
+        <button type="button" class="wb-btn" data-i486="over" data-key="F8">⤴ Over</button>
+        <button type="button" class="wb-btn" data-i486="out" data-key="Ctrl+F8">↩ Out</button>
+        <label class="wb-rate" for="i486-speed">
+          <span class="wb-bar__label">speed</span>
+          <input class="wb-input" id="i486-speed" data-i486="speed" type="number" min="1" max="2000000" step="1000" value="200000" inputmode="numeric" aria-label="Instructions per frame">
+          <span class="wb-rate__unit">ips</span>
+        </label>
+        <span class="wb-toolbar__spacer"></span>
+        <span class="wb-toolbar__hint">F7 step · F8 over · F9 run · Ctrl+Enter assemble</span>
+        <button type="button" class="wb-btn wb-btn--ghost" data-i486="clear-bp">Clear breakpoints</button>
+      </div>
+
+      <div class="wb-grid">
+        <div class="wb-col wb-col--main">
+
+          <section class="wb-panel wb-panel--studio" aria-label="Editor and disassembly">
+            <div class="wb-tabs" role="tablist" aria-label="Code panel">
+              <button type="button" class="wb-tab is-on" role="tab" id="i486-tab-editor" data-i486="tab-editor" aria-selected="true" aria-controls="i486-pane-editor" tabindex="0">editor<span class="wb-tab__dot" aria-hidden="true"></span></button>
+              <button type="button" class="wb-tab" role="tab" id="i486-tab-disasm" data-i486="tab-disasm" aria-selected="false" aria-controls="i486-pane-disasm" tabindex="-1">disassembly<span class="wb-tab__dot" aria-hidden="true"></span></button>
+              <span class="wb-tabs__hint">Ctrl+1 editor · Ctrl+2 disassembly</span>
+            </div>
+
+            <div class="wb-pane" id="i486-pane-editor" data-i486="pane-editor" role="tabpanel" aria-labelledby="i486-tab-editor" tabindex="0">
+              <header class="wb-panel__head">
+                <span class="wb-panel__title">editor</span>
+                <span class="wb-panel__hint">Ctrl+Enter assemble · Ctrl+B breakpoint · Tab indent · no wrap</span>
+                <span class="wb-panel__tools">
+                  <button type="button" class="wb-btn wb-btn--accent" data-i486="assemble">Assemble</button>
+                  <button type="button" class="wb-btn" data-i486="run-guest">Run in guest</button>
+                  <button type="button" class="wb-btn" data-i486="run-com">Run .COM</button>
+                  <button type="button" class="wb-btn" data-i486="run-flat32">Run flat32</button>
+                  <span class="asm-status" data-i486="asm-status">not assembled</span>
+                </span>
+              </header>
+              <div class="ed" data-i486="editor-host">
+                <div class="ed-shell">
+                  <div class="ed-gutter" data-i486="gutter" aria-hidden="true"><div class="ed-gutter__inner"></div></div>
+                  <div class="ed-code">
+                    <div class="ed-active" hidden></div>
+                    <div class="ed-caret" hidden></div>
+                    <pre class="ed-pre" data-i486="highlight" aria-hidden="true"><span class="code-line"></span></pre>
+                    <textarea class="ed-input" id="i486-source" data-i486="source" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" wrap="off" aria-label="Assembly source">; HY486 demo — INT 10h teletype, 16-bit real mode
+; Ctrl+Enter assemble · F9 run · F7 step · Ctrl+B breakpoint
+bits 16
+org 0x100
+
+start:
+    mov ax, 0x0003        ; 80x25 text mode
+    int 0x10
+    mov si, msg
+    mov ah, 0x0E          ; teletype, AL = character
+.loop:
+    lodsb
+    test al, al
+    jz short .done
+    int 0x10
+    jmp short .loop
+.done:
+    mov ax, 0x4C00        ; INT 21h exit(0)
+    int 0x21
+
+msg: db 'Hello from HY486 on a 486DX!', 13, 10, 0
+</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wb-pane" id="i486-pane-disasm" data-i486="pane-disasm" role="tabpanel" aria-labelledby="i486-tab-disasm" tabindex="0" hidden>
+              <header class="wb-panel__head">
+                <span class="wb-panel__title">disassembly</span>
+                <span class="wb-pill ds-bits" data-ds-bits>16-bit</span>
+                <span class="wb-panel__hint">wheel unpins · Ctrl+Home follows · click a row: breakpoint</span>
+                <span class="wb-panel__tools">
+                  <button type="button" class="wb-btn ds-follow is-on" data-i486="dis-follow" aria-pressed="true" title="Follow CS:EIP (Ctrl+Home)">FOLLOW</button>
+                  <label class="wb-bar__label" for="i486-dis-goto">goto</label>
+                  <input class="wb-input" id="i486-dis-goto" data-i486="dis-goto" value="0x00000100" spellcheck="false" aria-label="Disassemble at address (hex)">
+                  <button type="button" class="wb-btn" data-i486="dis-eip" title="Jump to CS:EIP · double click restores follow">CS:EIP</button>
+                </span>
+              </header>
+              <div class="ds-view">
+                <ol class="ds" data-i486="disasm" role="list" aria-label="Disassembly listing" tabindex="0">
+                  <li class="ds-empty"><span class="ds-text">waiting for the I486 core …</span></li>
+                </ol>
+              </div>
+            </div>
+          </section>
+
+          <section class="wb-panel wb-panel--console" aria-label="Assembler output">
+            <header class="wb-panel__head">
+              <span class="wb-panel__title">assemble output</span>
+              <span class="wb-panel__hint">stdout · stderr · diagnostics with line numbers</span>
+            </header>
+            <pre class="console" data-i486="console" role="log" aria-label="Assembler console" tabindex="0">waiting for I486 core ...
+[ ok ] page shell · highlight.js · editor.js
+[ .. ] bus · cpu · devices · asm · disasm · disk · guest · bios · machine
+[ -- ] ui.js wiring — controls stay in demo mode until the core loads
+hint  Ctrl+Enter assembles as soon as I486.Assembler is present</pre>
+          </section>
+        </div>
+
+        <div class="wb-col wb-col--side">
+
+          <section class="wb-panel wb-panel--screen" aria-label="VGA screen">
+            <header class="wb-panel__head">
+              <span class="wb-panel__title">vga screen</span>
+              <span class="wb-panel__tools">
+                <span class="wb-pill" data-i486="screen-mode">mode 03h · 80×25</span>
+                <span class="wb-pill" data-i486="screen-cursor">cursor 0,0</span>
+                <button type="button" class="wb-btn wb-btn--ghost" data-i486="screen-clear">Clear</button>
+              </span>
+            </header>
+            <div class="screen">
+              <div class="screen__bezel">
+                <div class="screen__frame">
+                  <div class="screen__static" aria-hidden="true">HY486 BIOS v0.10        (c) 2026 Hayneko Labs
+i486DX 33 MHz · FPU 387 · 32768 KB RAM
+
+Memory test .......... 32768 KB OK
+8259A PIC ............ ok
+8254 PIT ............. ok
+8042 keyboard ........ ok
+HYFS disk ............ 65536 sectors
+
+Boot sector AA55 found — loading HY486 kernel
+hy486&gt; _</div>
+                  <canvas class="screen__canvas" data-i486="screen" width="640" height="400" role="img" aria-label="VGA display, 640 by 400 backing store"></canvas>
+                </div>
+                <p class="screen__caption"><span>CRT · P22 phosphor</span><span>640×400 · 70 Hz</span></p>
+              </div>
+            </div>
+            <div class="kb">
+              <label class="kb__label" for="i486-kb"><input type="checkbox" id="i486-kb" data-i486="kb-capture"> capture keyboard</label>
+              <span class="kb__hint" data-i486="kb-hint">scancode set 1 → port 0x60 · IRQ1</span>
+            </div>
+          </section>
+
+          <section class="wb-panel wb-panel--regs" aria-label="Registers and flags">
+            <header class="wb-panel__head">
+              <span class="wb-panel__title">registers / flags</span>
+              <span class="wb-panel__hint">click a value to edit · click a flag to toggle</span>
+            </header>
+            <div class="regs" data-i486="regs">
+              <div class="reg" data-reg="eax" data-width="32"><span class="reg__name">eax</span><span class="reg__val" data-edit>0x00000E48</span></div>
+              <div class="reg" data-reg="ecx" data-width="32"><span class="reg__name">ecx</span><span class="reg__val" data-edit>0x00000000</span></div>
+              <div class="reg" data-reg="edx" data-width="32"><span class="reg__name">edx</span><span class="reg__val" data-edit>0x00000000</span></div>
+              <div class="reg" data-reg="ebx" data-width="32"><span class="reg__name">ebx</span><span class="reg__val" data-edit>0x00000000</span></div>
+              <div class="reg" data-reg="esp" data-width="32"><span class="reg__name">esp</span><span class="reg__val" data-edit>0x0000FFE0</span></div>
+              <div class="reg" data-reg="ebp" data-width="32"><span class="reg__name">ebp</span><span class="reg__val" data-edit>0x00000000</span></div>
+              <div class="reg" data-reg="esi" data-width="32"><span class="reg__name">esi</span><span class="reg__val" data-edit>0x00000119</span></div>
+              <div class="reg" data-reg="edi" data-width="32"><span class="reg__name">edi</span><span class="reg__val" data-edit>0x00000000</span></div>
+              <div class="reg" data-reg="eip" data-width="32"><span class="reg__name">eip</span><span class="reg__val" data-edit>0x0000010D</span></div>
+              <div class="reg" data-reg="eflags" data-width="32"><span class="reg__name">eflags</span><span class="reg__val" data-edit>0x00000206</span></div>
+            </div>
+            <div class="flags" data-i486="flags" role="group" aria-label="EFLAGS bits">
+              <button type="button" class="flag" data-flag="cf" aria-pressed="false" title="carry">CF</button>
+              <button type="button" class="flag is-on" data-flag="pf" aria-pressed="true" title="parity">PF</button>
+              <button type="button" class="flag" data-flag="af" aria-pressed="false" title="auxiliary carry">AF</button>
+              <button type="button" class="flag" data-flag="zf" aria-pressed="false" title="zero">ZF</button>
+              <button type="button" class="flag" data-flag="sf" aria-pressed="false" title="sign">SF</button>
+              <button type="button" class="flag" data-flag="tf" aria-pressed="false" title="trap">TF</button>
+              <button type="button" class="flag is-on" data-flag="if" aria-pressed="true" title="interrupt enable">IF</button>
+              <button type="button" class="flag" data-flag="df" aria-pressed="false" title="direction">DF</button>
+              <button type="button" class="flag" data-flag="of" aria-pressed="false" title="overflow">OF</button>
+              <span class="flags__rule" aria-hidden="true"></span>
+              <button type="button" class="flag flag--sys" data-flag="iopl" aria-pressed="false">IOPL</button>
+              <button type="button" class="flag flag--sys" data-flag="nt" aria-pressed="false">NT</button>
+              <button type="button" class="flag flag--sys" data-flag="rf" aria-pressed="false">RF</button>
+              <button type="button" class="flag flag--sys" data-flag="vm" aria-pressed="false">VM</button>
+              <button type="button" class="flag flag--sys" data-flag="ac" aria-pressed="false">AC</button>
+              <button type="button" class="flag flag--sys" data-flag="vif" aria-pressed="false">VIF</button>
+              <button type="button" class="flag flag--sys" data-flag="vip" aria-pressed="false">VIP</button>
+              <button type="button" class="flag flag--sys" data-flag="id" aria-pressed="false">ID</button>
+            </div>
+            <dl class="state" data-i486="state">
+              <div class="state__row"><dt>cs</dt><dd>0x0000</dd></div>
+              <div class="state__row"><dt>ds</dt><dd>0x0000</dd></div>
+              <div class="state__row"><dt>es</dt><dd>0x0000</dd></div>
+              <div class="state__row"><dt>ss</dt><dd>0x0000</dd></div>
+              <div class="state__row"><dt>fs</dt><dd>0x0000</dd></div>
+              <div class="state__row"><dt>gs</dt><dd>0x0000</dd></div>
+              <div class="state__row"><dt>cr0</dt><dd>0x60000010</dd></div>
+              <div class="state__row"><dt>cr2</dt><dd>0x00000000</dd></div>
+              <div class="state__row"><dt>cr3</dt><dd>0x00000000</dd></div>
+              <div class="state__row"><dt>mode</dt><dd>real16</dd></div>
+              <div class="state__row"><dt>gdt</dt><dd>0000:0000</dd></div>
+              <div class="state__row"><dt>idt</dt><dd>0000:03FF</dd></div>
+              <div class="state__row"><dt>cycles</dt><dd>1 284</dd></div>
+              <div class="state__row"><dt>ips</dt><dd>0</dd></div>
+              <div class="state__row"><dt>halted</dt><dd>no</dd></div>
+            </dl>
+          </section>
+
+          <section class="wb-panel wb-panel--stack" aria-label="Stack window">
+            <header class="wb-panel__head">
+              <span class="wb-panel__title">stack</span>
+              <span class="wb-pin is-on" data-stack-pin>follow esp</span>
+              <span class="wb-panel__hint">wheel walks the stack · double click a row sends memory</span>
+            </header>
+            <div class="stack-view">
+            <ol class="stack" data-i486="stack" tabindex="0" aria-label="Stack window">
+              <li class="is-sp" data-addr="0x0000FFE0"><span class="st__addr">0000FFE0</span><span class="st__val">0x0146</span></li>
+              <li data-addr="0x0000FFE2"><span class="st__addr">0000FFE2</span><span class="st__val">0x0000</span></li>
+              <li data-addr="0x0000FFE4"><span class="st__addr">0000FFE4</span><span class="st__val">0x0100</span></li>
+              <li data-addr="0x0000FFE6"><span class="st__addr">0000FFE6</span><span class="st__val">0x0000</span></li>
+              <li data-addr="0x0000FFE8"><span class="st__addr">0000FFE8</span><span class="st__val">0x0000</span></li>
+              <li data-addr="0x0000FFEA"><span class="st__addr">0000FFEA</span><span class="st__val">0x0100</span></li>
+              <li data-addr="0x0000FFEC"><span class="st__addr">0000FFEC</span><span class="st__val">0x0000</span></li>
+              <li data-addr="0x0000FFEE"><span class="st__addr">0000FFEE</span><span class="st__val">0x0000</span></li>
+            </ol>
+            </div>
+          </section>
+
+          <section class="wb-panel wb-panel--mem" aria-label="Memory dump">
+            <header class="wb-panel__head">
+              <span class="wb-panel__title">memory</span>
+              <span class="wb-panel__tools">
+                <label class="wb-bar__label" for="i486-mem-base">base</label>
+                <input class="wb-input" id="i486-mem-base" data-i486="mem-base" value="0x00000118" spellcheck="false" aria-label="Memory base address">
+                <label class="wb-bar__label" for="i486-mem-follow">follow</label>
+                <select class="wb-select wb-select--sm" id="i486-mem-follow" data-i486="mem-follow" aria-label="Follow register">
+                  <option value="esp" selected>esp</option>
+                  <option value="none">none</option>
+                  <option value="eip">cs:eip</option>
+                  <option value="esi">esi</option>
+                  <option value="edi">edi</option>
+                </select>
+              </span>
+            </header>
+            <div class="mem-view">
+            <ol class="mem" data-i486="mem" tabindex="0" aria-label="Memory dump">
+              <li><span class="mem__addr">00000118</span><span class="mem__hex">48 65 6C 6C 6F 20 66 72</span><span class="mem__asc">|Hello fr|</span></li>
+              <li><span class="mem__addr">00000120</span><span class="mem__hex">6F 6D 20 48 59 34 38 36</span><span class="mem__asc">|om HY486|</span></li>
+              <li><span class="mem__addr">00000128</span><span class="mem__hex">20 6F 6E 20 61 20 34 38</span><span class="mem__asc">| on a 48|</span></li>
+              <li><span class="mem__addr">00000130</span><span class="mem__hex">36 44 58 21 0D 0A 00 00</span><span class="mem__asc">|6DX!....|</span></li>
+              <li><span class="mem__addr">00000138</span><span class="mem__hex">00 00 00 00 00 00 00 00</span><span class="mem__asc">|........|</span></li>
+              <li><span class="mem__addr">00000140</span><span class="mem__hex">00 00 00 00 00 00 00 00</span><span class="mem__asc">|........|</span></li>
+              <li><span class="mem__addr">00000148</span><span class="mem__hex">00 00 00 00 00 00 00 00</span><span class="mem__asc">|........|</span></li>
+              <li><span class="mem__addr">00000150</span><span class="mem__hex">00 00 00 00 00 00 00 00</span><span class="mem__asc">|........|</span></li>
+            </ol>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section class="wb-files" aria-label="Disk contents">
+        <header class="wb-panel__head">
+          <span class="wb-panel__title">disk · hyfs.img</span>
+          <span class="wb-panel__hint">6 files · FAT-less HYFS, 4-sector clusters</span>
+          <span class="wb-panel__tools">
+            <button type="button" class="wb-btn" data-i486="file-add">Add current binary</button>
+            <button type="button" class="wb-btn wb-btn--ghost" data-i486="file-del">Delete</button>
+          </span>
+        </header>
+        <ul class="files" data-i486="files">
+          <li data-name="HELLO.COM"><span class="file__name">HELLO.COM</span><span class="file__size">512 B</span><button type="button" class="file__run" data-run aria-label="Run HELLO.COM">run</button></li>
+          <li data-name="FIB.COM"><span class="file__name">FIB.COM</span><span class="file__size">768 B</span><button type="button" class="file__run" data-run aria-label="Run FIB.COM">run</button></li>
+          <li data-name="KERNEL.SYS"><span class="file__name">KERNEL.SYS</span><span class="file__size">49 152 B</span><button type="button" class="file__run" data-run aria-label="Boot KERNEL.SYS">run</button></li>
+          <li data-name="BOOT.BIN"><span class="file__name">BOOT.BIN</span><span class="file__size">512 B</span><button type="button" class="file__run" data-run aria-label="Boot BOOT.BIN">run</button></li>
+          <li data-name="SHELL.ASM"><span class="file__name">SHELL.ASM</span><span class="file__size">2 816 B</span><button type="button" class="file__run" data-run aria-label="Load SHELL.ASM">run</button></li>
+          <li data-name="README.TXT"><span class="file__name">README.TXT</span><span class="file__size">1 024 B</span><button type="button" class="file__run" data-run aria-label="Type README.TXT">run</button></li>
+        </ul>
+      </section>
+    </section>
+
+    <section class="section" aria-labelledby="term-title">
+      <header class="section__head">
+        <h2 class="section__title" id="term-title">terminal</h2>
+        <p class="section__sub">hy486 shell — every button has a command and every command has a button.</p>
+      </header>
+      <div class="term">
+        <div class="term__bar">
+          <span class="term__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="term__title">hy486@i486dx: ~/labs/i486</span>
+          <span class="term__tag">hyfs · tty0</span>
+        </div>
+        <div class="term__body" data-i486="term" role="log" aria-label="Terminal output" tabindex="0">
+          <p class="term__line"><span class="term__ps1">hy486&gt;</span> <span class="term__cmd">help</span></p>
+          <p class="term__line">  help dir type FILE run FILE del FILE mem [addr] [len]</p>
+          <p class="term__line">  ver time date cls reboot halt boot FILE regs</p>
+          <p class="term__line"><span class="term__ps1">hy486&gt;</span> <span class="term__cmd">ver</span></p>
+          <p class="term__line">HY486 0.1 · i486DX 33 MHz · 32768 KB RAM · HYFS 32 MB · VGA mode 03h</p>
+          <p class="term__line"><span class="term__ps1">hy486&gt;</span> <span class="term__cmd">dir</span></p>
+          <p class="term__line">HELLO.COM  512   FIB.COM  768   KERNEL.SYS  49152   README.TXT  1024</p>
+          <p class="term__line"><span class="term__ps1">hy486&gt;</span> <span class="term__cmd">run HELLO.COM</span></p>
+          <p class="term__line term__line--out">Hello from HY486 on a 486DX!</p>
+          <p class="term__line"><span class="term__ps1">hy486&gt;</span> <span class="term__caret" aria-hidden="true">_</span></p>
+        </div>
+        <div class="term__prompt-line">
+          <span class="term__ps1" aria-hidden="true">hy486&gt;</span>
+          <input class="term__input" data-i486="term-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="HY486 command" placeholder="help · dir · run HELLO.COM · mem 0x118 64">
+        </div>
+      </div>
+      <div class="term-suggest" data-i486="term-suggest" role="group" aria-label="Command shortcuts">
+        <button type="button" data-cmd="help">help</button>
+        <button type="button" data-cmd="dir">dir</button>
+        <button type="button" data-cmd="run HELLO.COM">run HELLO.COM</button>
+        <button type="button" data-cmd="type README.TXT">type README.TXT</button>
+        <button type="button" data-cmd="mem 0x118 64">mem 0x118 64</button>
+        <button type="button" data-cmd="regs">regs</button>
+        <button type="button" data-cmd="ver">ver</button>
+        <button type="button" data-cmd="time">time</button>
+        <button type="button" data-cmd="cls">cls</button>
+        <button type="button" data-cmd="boot KERNEL.SYS">boot KERNEL.SYS</button>
+        <button type="button" data-cmd="del README.TXT">del README.TXT</button>
+        <button type="button" data-cmd="halt">halt</button>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="cheat-title">
+      <header class="section__head">
+        <h2 class="section__title" id="cheat-title">cheat sheet</h2>
+        <p class="section__sub">shell commands, machine keys and the debugger — one page, no manual.</p>
+      </header>
+      <div class="cheat">
+        <div class="cheat__group">
+          <h3>shell</h3>
+          <div class="cheat__item"><code>help</code><span>every command, one screen</span></div>
+          <div class="cheat__item"><code>dir</code><span>list files on hyfs.img</span></div>
+          <div class="cheat__item"><code>type FILE</code><span>print a text file</span></div>
+          <div class="cheat__item"><code>run FILE</code><span>load a .COM at 0x100 and run it</span></div>
+          <div class="cheat__item"><code>del FILE</code><span>remove a directory entry</span></div>
+          <div class="cheat__item"><code>cls</code><span>clear the VGA text screen</span></div>
+        </div>
+        <div class="cheat__group">
+          <h3>machine</h3>
+          <div class="cheat__item"><code>boot FILE</code><span>chain-load a kernel or sector</span></div>
+          <div class="cheat__item"><code>mem addr len</code><span>dump physical memory</span></div>
+          <div class="cheat__item"><code>regs</code><span>print the register file</span></div>
+          <div class="cheat__item"><code>reboot</code><span>triple-fault-free reset</span></div>
+          <div class="cheat__item"><code>halt</code><span>HLT until the next interrupt</span></div>
+          <div class="cheat__item"><code>time · date</code><span>read the CMOS RTC</span></div>
+        </div>
+        <div class="cheat__group">
+          <h3>debugger</h3>
+          <div class="cheat__item"><code>Ctrl+Enter</code><span>assemble the editor buffer</span></div>
+          <div class="cheat__item"><code>F7</code><span>step into one instruction</span></div>
+          <div class="cheat__item"><code>F8</code><span>step over a call</span></div>
+          <div class="cheat__item"><code>F9</code><span>run / continue</span></div>
+          <div class="cheat__item"><code>Ctrl+B</code><span>toggle a breakpoint line</span></div>
+          <div class="cheat__item"><code>click gutter</code><span>same breakpoint, with the mouse</span></div>
+        </div>
+        <div class="cheat__group">
+          <h3>files</h3>
+          <div class="cheat__item"><code>import</code><span>.asm · .bin · .img from disk</span></div>
+          <div class="cheat__item"><code>download .asm</code><span>save the current source</span></div>
+          <div class="cheat__item"><code>download .bin</code><span>save the assembled bytes</span></div>
+          <div class="cheat__item"><code>format HYFS</code><span>blank 32 MB disk image</span></div>
+          <div class="cheat__item"><code>save .img</code><span>eject the disk to a file</span></div>
+          <div class="cheat__item"><code>localStorage</code><span>projects key i486.projects.v1</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <span>HY486 · i486DX @ 33 MHz · 32 MB RAM · HYFS 32 MB</span>
+    <span class="site-foot__meta">standalone page · no network · every asset loads from this directory</span>
+  </footer>
+</div>
+
+<script defer src="lib/bus.js"></script>
+<script defer src="lib/cpu.js"></script>
+<script defer src="lib/devices.js"></script>
+<script defer src="lib/asm.js"></script>
+<script defer src="lib/disasm.js"></script>
+<script defer src="lib/disk.js"></script>
+<script defer src="lib/guest.js"></script>
+<script defer src="lib/bios.js"></script>
+<script defer src="lib/machine.js"></script>
+<script defer src="lib/highlight.js"></script>
+<script defer src="lib/editor.js"></script>
+<script defer src="lib/samples.js"></script>
+<script defer src="lib/ui.js"></script>
+</body>
+</html>

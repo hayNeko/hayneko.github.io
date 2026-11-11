@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head prefix="og: https://ogp.me/ns# fb: https://ogp.me/ns/fb# article: https://ogp.me/ns/article#">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">
+    <script>
+    (function () {
+        var m = /(Android|iPhone|iPad)/.exec(navigator.userAgent)
+        if (m && m[1] !== 'iPhone') return
+        var meta = document.querySelector('meta[name="viewport"]')
+        if (!meta) return
+        meta.setAttribute('content', m
+            ? 'width=device-width,minimum-scale=1,initial-scale=1,user-scalable=no'
+            : 'width=980')
+    })()
+</script>
+
+    <meta name="description" content="iOS/Android/Nintendo Switch向け音楽ゲーム『Arcaea』の日本語版Wikiです。">
+        <meta property="og:url" content="https://wikiwiki.jp/arcaea/world.execute%28me%29%3B" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="world.execute(me); - Arcaea Wiki*" />
+    <meta property="og:description" content="iOS/Android/Nintendo Switch向け音楽ゲーム『Arcaea』の日本語版Wikiです。" />
+    <meta property="og:site_name" content="Arcaea Wiki*" />
+    <meta property="og:image" content="https://icon.wikiwiki.jp/symbolicon/arcaea/ogCustomImage/8824f6ba7cde.jpg" />
+    <title>world.execute(me); - Arcaea Wiki*</title>
+
+    <link rel="alternate" href="/arcaea/::cmd/mixirss" type="application/rss+xml" title="RSS" />
+        <link rel="icon" href="https://icon.wikiwiki.jp/symbolicon/arcaea/favicon/0a65ec4806d5.png" />
+    <link rel="apple-touch-icon" href="https://icon.wikiwiki.jp/symbolicon/arcaea/appleTouchIcon/7bccedf015b8.png" />
+    <link rel="manifest" href="https://icon.wikiwiki.jp/symbolicon/arcaea/manifest.webmanifest">
+    <link rel="stylesheet" href="https://cdn.wikiwiki.jp/to/w/common/assets/dist/wikiwiki-2ec314432b3c7f0f6ff9.min.css" type="text/css">
+<link rel="stylesheet" href="https://cdn.wikiwiki.jp/to/w/common/assets/dist/prismjs-c19b7945861cd7b3ab88.min.css" type="text/css">
+<link rel="stylesheet" href="https://cdn.wikiwiki.jp/to/w/common/assets/dist/wikiwiki-ex1-ca7abd155d2d8393da00.min.css" type="text/css">
+<link rel="stylesheet" href="https://cdn.wikiwiki.jp/to/w/common/assets/dist/wikiwiki-ex2-787d5d5f913a969fe5ea.min.css" type="text/css">
+<link rel="stylesheet" href="https://cdn.wikiwiki.jp/to/w/common/assets/dist/skin-default_black01-a89fe0d2e963e9a7573e.min.css" type="text/css">
+    
+    <script type="text/javascript" src="https://cdn.wikiwiki.jp/to/w/common/assets/dist/ad-1bf004520fc167abbea6.min.js"></script>
+    <script>
+    var wi_stay = (function () {
+        var wi_data_raw = localStorage.getItem('browsingStatistics');
+        var wi_data = wi_data_raw ? (JSON.parse(wi_data_raw) || {}) : {};
+        var stay = Number(wi_data.stay);
+        if (isNaN(stay)) {
+            stay = 0;
+        }
+        return stay;
+    })();
+    var wi_data_raw = localStorage.getItem('usageStatistics');
+    var wi_data =     wi_data_raw ? (JSON.parse(wi_data_raw) || {}) : {};
+    var wi_edit =     String(wi_data.edit || 0);
+    var wi_freeze =   String(wi_data.freeze || 0);
+    var wi_comment =  String(wi_data.comment || 0);
+    var wi_group = String(wi_data.group || "N");
+    var wi_smsAuth = wi_data.smsAuth || false;
+    var wi_hasPosted = wi_data.hasPosted || false;
+    var wi_agreement = String(wi_data.agreementStatus || "false");
+    if (document.referrer.length !== 0) {
+        var wi_uri = new URL(document.referrer);
+        var wi_referer = wi_uri.hostname;
+    } else {
+        var wi_referer = "unknown";
+    }
+
+    // Chromium系判定
+    function isChromium() {
+        var ua = navigator.userAgent;
+        // Edge, Opera, Chrome, Chromium, Brave など
+        return /\b(Chrome|Chromium|Edg|OPR|Brave)\b/.test(ua) && !/Silk|UCBrowser|SamsungBrowser|CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
+    }
+
+    var wi_ismobile;
+    var wi_device;
+    if (isChromium() && navigator.userAgentData) {
+        wi_ismobile = navigator.userAgentData.mobile;
+        if (wi_ismobile) {
+            if (navigator.userAgentData.platform === "Android") {
+                wi_device = "and";
+            } else {
+                wi_device = "ios";
+            }
+        } else {
+            wi_device = "pc";
+        }
+    } else {
+        wi_ismobile = !!navigator.userAgent.match(/iPhone|Android.+Mobile/);
+        if (navigator.userAgent.match(/Android.+Mobile/)) {
+            wi_device = "and";
+        } else if (navigator.userAgent.match(/iPhone/)) {
+            wi_device = "ios";
+        } else {
+            wi_device = "pc";
+        }
+    }
+
+    var wi_isportrait = window.matchMedia("(orientation: portrait)").matches;
+    var wi_isinbound = wi_referer.includes(window.location.hostname) ? false : true;
+    var wi_random100 = Math.floor(Math.random() * (100 - 1) + 1);
+    var wi_random110 = Math.floor(Math.random() * 10) + 1;
+    var wi_isread_yet = true;
+    var wi_location_hash = location.hash || false;
+</script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-3Y8FN9EFS7"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-3Y8FN9EFS7', {
+        'content_group': 'arcaea',
+        'user_properties': {
+            'user_group':     wi_group,
+            'user_agreement': wi_agreement,
+            'edit_count':     wi_edit,
+            'comment_count':  wi_comment,
+            'sms_auth':       String(wi_smsAuth)
+        }
+    });
+    gtag('config', 'G-EYPXZ1370P');
+
+</script>
+
+<script>
+    window.wikiFq = createWikiFq();
+</script>
+<script>
+    var wi_recref = recordReferrerDomain();
+</script>
+
+<script>
+const visitData_20241117 = (() => {
+const RESET_INTERVAL_MINUTES = 30;
+const now = Date.now();
+const resetIntervalMs = RESET_INTERVAL_MINUTES * 60 * 1000;
+const storageKey = "internalVisitData";
+let data = JSON.parse(localStorage.getItem(storageKey)) || { count: 0, lastVisit: now };
+if (now - data.lastVisit > resetIntervalMs) data = { count: 0, lastVisit: now };
+if (document.referrer && new URL(document.referrer).hostname === window.location.hostname) {
+data = { count: data.count + 1, lastVisit: now };
+localStorage.setItem(storageKey, JSON.stringify(data));
+}
+return data;
+})();
+
+const int_conditions = [
+wi_ismobile,
+wi_group === 'N',
+wi_agreement === 'false',
+!wi_isinbound,
+visitData_20241117.count === 1,
+];
+
+const int_conditions_pc = [
+    !wi_ismobile,
+    wi_group === 'N',
+    wi_agreement === 'false',
+    !wi_isinbound,
+    visitData_20241117.count === 1,
+];
+</script>
+<script>
+(function(){
+  const FLAG="fluxinst_pc";
+  const url=new URL(location.href);
+
+  if(url.searchParams.get(FLAG)==="1"){
+    url.searchParams.delete(FLAG);
+    history.replaceState(null,"",url.toString());
+    return;
+  }
+
+  if(
+    Array.isArray(int_conditions_pc) &&
+    int_conditions_pc.every(Boolean)
+  ){
+    url.searchParams.set(FLAG,"1");
+    location.href=url.toString();
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  const url=new URL(location.href);
+  const f=wi_device==="ios"?"iminst_ios":wi_device==="and"?"iminst_and":null;
+  if(!f)return;
+  if(url.searchParams.get(f)==="1"){
+    url.searchParams.delete(f);
+    history.replaceState(null,"",url.toString());
+    return;
+  }
+  if(Array.isArray(int_conditions)&&int_conditions.every(Boolean)){
+    url.searchParams.set(f,"1");
+    location.href=url.toString();
+  }
+})();
+</script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KQ52VZ3');</script>
+<!-- End Google Tag Manager -->
+
+
+<script type="text/javascript">
+    window.pbjs = window.pbjs || {};
+    window.pbjs.que = window.pbjs.que || [];
+</script>
+<script async="async" src="https://flux-cdn.com/client/ukiuki/flux_wikiwiki_AS_TM_AT.min.js"></script>
+<script>
+window.googletag = window.googletag || {};
+window.googletag.cmd = window.googletag.cmd || [];
+</script>
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<script>
+
+var wi_adslot_rectangle = [[300,250],[1,1]];
+var wi_adslot = [[300,250],[1,1]];
+if (document.documentElement.clientWidth > 406) {
+  wi_adslot_rectangle = [[300,250],[336,280],[1,1]];
+  wi_adslot = [[468,60],[300,250],[1,1]];
+}
+
+window.defineSlotFlux = [];
+if (wi_ismobile && wi_isportrait) {
+  defineSlotFlux.push({"slotID": "div-gpt-ad-1563441919648-0", "sizes": [[320, 100], [320, 50]], "slotName":"WIKIWIKI_SP_OVERLAY"});
+}
+    if (wi_isinbound && wi_ismobile && wi_group == "N" && wi_agreement === "false") {
+      defineSlotFlux.push({"slotID": "div-gpt-ad-1563430750445-0", "sizes": [[300,250]], "slotName":"WIKIWIKI_SP_INBOUND"});
+    } else if (wi_isinbound && wi_group == "N" && wi_agreement === "false") {
+      defineSlotFlux.push({"slotID": "div-gpt-ad-1567409776345-0", "sizes": [[300,250]], "slotName":"WIKIWIKI_PC_INBOUND"});
+      defineSlotFlux.push({"slotID": "div-gpt-ad-1658802281376-0", "sizes": [[300,250]], "slotName":"WIKIWIKI_PC_INBOUND_RIGHT"});
+    }
+  if (wi_ismobile) {
+    defineSlotFlux.push({"slotID": "div-gpt-ad-1567408559923-0", "sizes": [[300,250]], "slotName":"WIKIWIKI_SP_SECOND"});
+  } else {
+    defineSlotFlux.push({"slotID": "div-gpt-ad-1567408559923-0", "sizes": [[300,250]], "slotName":"WIKIWIKI_PC_BOTTOM_LEFT"});
+    defineSlotFlux.push({"slotID": "div-gpt-ad-1658912377789-0", "sizes": [[300,250]], "slotName":"WIKIWIKI_PC_BOTTOM_RIGHT"});
+  }
+</script>
+<script type="text/javascript">
+if (defineSlotFlux.length) {
+    window.fluxtag = {
+        readyBids: { prebid: false, google: false },
+        failSafeTimeout: 3e3, // 3秒でフェイルセーフ発動
+        isFn: function isFn(object) {
+            var _t = 'Function';
+            var toString = Object.prototype.toString;
+            return toString.call(object) === '[object ' + _t + ']';
+        },
+        launchAdServer: function () {
+            if (!fluxtag.readyBids.prebid) {
+                return;
+            }
+            fluxtag.requestAdServer();
+        },
+        requestAdServer: function () {
+            if (!fluxtag.readyBids.google) {
+                fluxtag.readyBids.google = true;
+                googletag.cmd.push(function () {
+                    var pbjsLoaded = !!(window.pbjs && pbjs.que &&
+                        fluxtag.isFn(pbjs.que.push) &&
+                        (pbjs.libLoaded || (pbjs.setTargetingForGPTAsync &&
+                            fluxtag.isFn(pbjs.setTargetingForGPTAsync))));
+                    if (pbjsLoaded) {
+                        pbjs.que.push(function () {
+                            if (pbjs.setTargetingForGPTAsync && fluxtag.isFn(pbjs.setTargetingForGPTAsync)) {
+                                try {
+                                    Promise.resolve(pbjs.setTargetingForGPTAsync())
+                                        .catch(function () {})
+                                        .then(function () {
+                                            googletag.pubads().refresh();
+                                        });
+                                } catch (e) {
+                                    googletag.pubads().refresh();
+                                }
+                            } else {
+                                googletag.pubads().refresh();
+                            }
+                        });
+                    } else {
+                        googletag.pubads().refresh();
+                    }
+                });
+            }
+        }
+    };
+
+    setTimeout(function () {
+        fluxtag.requestAdServer();
+    }, fluxtag.failSafeTimeout);
+}
+</script>
+<script>
+googletag.cmd.push(function() {
+    if (wi_ismobile && wi_isportrait) {
+        var overlaySlot = googletag.defineSlot('/19033742/WIKIWIKI_SP_OVERLAY',[[320,100],[320,50],[1,1]],'div-gpt-ad-1563441919648-0');
+        if (overlaySlot) {
+            overlaySlot.addService(googletag.pubads());
+            // 分母はこの枠だけで数え、空の初回描画にも次回用の印を付ける。
+            var overlayRenderHandler = function(event) {
+                if (event.slot !== overlaySlot) return;
+                overlaySlot.setConfig({ targeting: { wi_refresh: '1' } });
+                googletag.pubads().removeEventListener('slotRenderEnded', overlayRenderHandler);
+            };
+            googletag.pubads().addEventListener('slotRenderEnded', overlayRenderHandler);
+        }
+    }
+    if (wi_isinbound && wi_ismobile && wi_group == "N" && wi_agreement === "false") {
+      googletag.defineSlot('/19033742/WIKIWIKI_SP_INBOUND',[[300,250]],
+        'div-gpt-ad-1563430750445-0').addService(googletag.pubads());
+    } else if (wi_isinbound && wi_group == "N" && wi_agreement === "false") {
+      googletag.defineSlot('/19033742/WIKIWIKI_PC_INBOUND',[[336,280],[300,250]],
+        'div-gpt-ad-1567409776345-0').addService(googletag.pubads());
+      googletag.defineSlot('/19033742/WIKIWIKI_PC_INBOUND_RIGHT',[[336,280],[300,250]],
+        'div-gpt-ad-1658802281376-0').addService(googletag.pubads());
+    }
+    if (wi_ismobile) {
+        googletag.defineSlot('/19033742/WIKIWIKI_SP_SECOND',[[300,250]],
+        'div-gpt-ad-1567408559923-0').addService(googletag.pubads());
+    } else {
+        googletag.defineSlot('/19033742/WIKIWIKI_PC_BOTTOM_LEFT',[[336,280],[300,250]],
+        'div-gpt-ad-1567408559923-0').addService(googletag.pubads());
+        googletag.defineSlot('/19033742/WIKIWIKI_PC_BOTTOM_RIGHT',[[336,280],[300,250]],
+        'div-gpt-ad-1658912377789-0').addService(googletag.pubads());
+    }
+    googletag.setConfig({ targeting: {
+        "gpolicy": "sunny",
+        "site": "arcaea"
+    } });
+    googletag.setConfig({ collapseDiv: 'ON_NO_FILL' });
+    googletag.setConfig({ singleRequest: true });
+    googletag.pubads().addEventListener('slotRenderEnded', function(event) {
+        var slot = event.slot;
+        if (document.getElementById(slot.getSlotElementId()) != null){
+            var slotElm = document.getElementById(slot.getSlotElementId());
+            if (slotElm && slotElm.className === 'overlay-ad-wrapper') {
+                var overlayRenderedEvent = document.createEvent('Event');
+                overlayRenderedEvent.initEvent('overlay-ad-rendered', true, true);
+                slotElm.dispatchEvent(overlayRenderedEvent);
+            }
+        }
+    });
+    googletag.setConfig({
+        lazyLoad: {
+            fetchMarginPercent: 50,   // 0.5画面分まできたらリクエスト
+            renderMarginPercent: 50,  // 0.5画面分まできたら描画
+            mobileScaling: 2.0        // モバイルはスクロールが早いため2倍（1.0画面分）にする
+        }
+    });
+    if (defineSlotFlux.length) {googletag.setConfig({ disableInitialLoad: true });};
+    googletag.enableServices();
+    if (defineSlotFlux.length) {
+        pbjs.que.push(function () {
+            window.pbFlux.prebidBidder();
+        });
+    }
+});
+</script>
+
+<script>
+googletag.cmd.push(function() {
+  googletag.setConfig({ targeting: {
+    "wi_agreement": String(wi_data.agreementStatus || "false"),
+    "wi_group": String(wi_data.group || "N"),
+    "wi_comment": wi_comment.length.toString(),
+    "wi_edit": wi_edit.length.toString(),
+    "wi_freeze": wi_freeze.length.toString(),
+    "wi_smsAuth": String(wi_data.smsAuth || false),
+    "wi_hasPosted": String(wi_data.hasPosted || false),
+    "wi_referer": String(wi_referer || "unknown"),
+    "wi_random110": String(wi_random110 || "0"),
+    "wi_hour": ('0' + new Date().getHours()).slice(-2)
+  } });
+});
+</script>
+
+<style>
+.pc-caption-ad-default {
+    margin-top:20px;
+    display:flex;
+    justify-content:flex-start;
+    gap: 10px 5px;
+    min-height:280px;
+    position: sticky;
+    z-index: 3;
+    top: 45px;
+}
+
+.pc-caption-ad-center{
+    margin-top:20px;
+    display:flex;
+    justify-content:center;
+    gap: 10px 5px;
+    min-height:280px;
+    position: sticky;
+    z-index: 3;
+    top: 45px;
+}
+.pc-caption-ad-mobile{
+    margin-top:20px;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:center;
+    min-height:331px;
+    position: sticky;
+    z-index: 3;
+    top: 45px;
+}
+.pc-caption-ad-mobile-300x600{
+    margin-top:20px;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:center;
+    min-height:331px;
+}
+.default-advertisement {
+    background-color: transparent;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 576 512'%3E%3C!--!Font Awesome Pro 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2024 Fonticons, Inc.--%3E%3Cpath d='M16 48l0 416 544 0 0-416L16 48zM0 32l16 0 544 0 16 0 0 16 0 416 0 16-16 0L16 480 0 480l0-16L0 48 0 32zM320 280a56 56 0 1 0 112 0 56 56 0 1 0 -112 0zm56-72c22.6 0 42.8 10.4 56 26.7l0-66.7 0-8 16 0 0 8 0 112 0 64 0 8-16 0 0-8 0-18.7c-13.2 16.3-33.4 26.7-56 26.7c-39.8 0-72-32.2-72-72s32.2-72 72-72zM183.1 160l5.2 0 7.3 0 5.2 0 2.1 4.8L284.2 352l-17.4 0-20.8-48-107.8 0-20.8 48-17.4 0L181 164.8l2.1-4.8zM145 288l94 0L192 179.7 145 288z' fill='%23BBB'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 25px 25px;
+}
+
+@media (max-width: 500px) {
+  .caption-flybox:has(iframe[id^="google_ads_iframe_"]) {
+    position: relative;
+    min-height: 450px;
+  }
+}
+</style>
+
+
+<script>
+googletag.cmd.push(function() {
+    const pcCaptionPaths = [
+        '/19033742/WIKIWIKI_PC_CAPTION',
+        '/19033742/WIKIWIKI_PC_CAPTION_SIDE_BY',
+        '/19033742/WIKIWIKI_PC_CAPTION_20TH',
+        '/19033742/WIKIWIKI_CAPTION_B'
+    ];
+
+    const spCaptionPaths = [
+        '/19033742/WIKIWIKI_SP_CAPTION',
+        '/19033742/WIKIWIKI_SP_CAPTION_300x600'
+    ];
+
+    googletag.pubads().addEventListener('slotRenderEnded', function(event) {
+        const slotElement = document.getElementById(event.slot.getSlotElementId());
+        const parent = slotElement?.parentNode;
+
+        if (parent && !event.isEmpty) {
+            if (pcCaptionPaths.includes(event.slot.getAdUnitPath())) {
+                parent.classList.add(parent.clientWidth < 769 ? "pc-caption-ad-center" : "pc-caption-ad-default");
+            } else if (spCaptionPaths.includes(event.slot.getAdUnitPath())) {
+                if (event.slot.getAdUnitPath() === '/19033742/WIKIWIKI_SP_CAPTION_300x600') {
+                    parent.classList.add("pc-caption-ad-mobile-300x600");
+                } else {
+                    parent.classList.add("pc-caption-ad-mobile");
+                }
+            }
+        }
+    });
+
+    googletag.pubads().addEventListener('slotOnload', function(event) {
+        const slotElement = document.getElementById(event.slot.getSlotElementId());
+        slotElement?.parentNode?.classList.remove("default-advertisement");
+    });
+});
+</script>
+
+<link rel="preload" as="script" href="https://pdn.adingo.jp/p.js">
+<link rel="preconnect" href="https://sh.adingo.jp" crossorigin="use-credentials">
+    <link rel="canonical" href="https://wikiwiki.jp/arcaea/world.execute%28me%29%3B">
+    <style>
+@media screen and (min-width: 820px) {
+  .container-wrapper {
+    min-width: 930px;
+    max-width: 930px;
+  }
+}
+</style>
+<style>
+  body {
+      font-family: "Times New Roman", "Hiragino Mincho ProN", HiraMinProN-W3, "Yu Mincho", YuMincho, serif;
+      font-size: 12px;
+  }
+</style>
+<style>
+  @media screen and (max-width: 819px), print and (max-width: 180mm) {
+    body {
+        font-size: 13px;
+    }
+  }
+</style>
+        <script>
+        window.globalParamsContainer = {"smsAuthParams":{"actionTrollingDefenceCheck":"\/arcaea\/::cmd\/trolling_defence_pass","actionSubmitNumber":"\/p\/sms-auth\/code\/request","actionSubmitCode":"\/p\/sms-auth\/code\/activate","cookieName":"authkey"},"editAssistantImgSrc":{"face_smile":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/smile.png?v=4","face_bigsmile":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/bigsmile.png?v=4","face_huh":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/huh.png?v=4","face_oh":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/oh.png?v=4","face_wink":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/wink.png?v=4","face_sad":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/sad.png?v=4","face_worried":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/worried.png?v=4","face_tear":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/tear.png?v=4","face_tere":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/tere.png?v=4","face_shock":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/shock.png?v=4","face_heart":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/heart.png?v=4","face_star":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/star.gif?v=4","face_hatena":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/hatena.gif?v=4","face_tip":"https:\/\/cdn.wikiwiki.jp\/to\/w\/common\/image\/face\/tip.gif?v=4"},"experimentalFeature":false};
+    </script>
+</head>
+<body class="">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KQ52VZ3"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<style>
+/* 1 */
+@media (max-width: 500px) {
+    body {
+        margin-bottom: 129px !important;
+        transition: margin-bottom 0.4s ease-in-out;
+    }
+    body:has(#div-gpt-ad-1563441919648-0 iframe[height="50"]) {
+        margin-bottom: 79px !important;
+    }
+}
+
+/* 2 */
+#overlay-anchor-wrapper {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    width: 100%;
+    z-index: 99998;
+    pointer-events: none;
+    transform: translateY(100%);
+    transition: transform 0.4s ease-in-out 10s;
+}
+
+body:has(#div-gpt-ad-1563441919648-0 iframe) #overlay-anchor-wrapper {
+    transform: translateY(0);
+    transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.6s;
+}
+
+/* 3 */
+#pc-overlay-ad-parent-container {
+    contain: layout style;
+    content-visibility: auto;
+
+    width: 100%;
+    background-color: var(--h2-background-color, #ffffff) !important;
+    padding-top: 5px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
+    pointer-events: auto;
+
+    max-height: 105px;
+    height: auto;
+    transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: visible !important;
+}
+
+#pc-overlay-ad-parent-container:has(iframe[height="50"]) {
+    max-height: 60px;
+}
+
+/* 4 */
+#pc-overlay-ad-close-button {
+    position: absolute;
+    top: -24px;
+    right: 12px;
+    width: 38px; height: 24px;
+    background-color: var(--h2-background-color, #ffffff) !important;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    cursor: pointer;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity 0.6s ease-out 10s, transform 0.6s ease-out 10s;
+}
+
+body:has(#div-gpt-ad-1563441919648-0 iframe) #pc-overlay-ad-close-button {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.6s ease-out 1.8s, transform 0.6s ease-out 1.8s;
+}
+
+#pc-overlay-ad-close-button svg {
+    width: 14px; height: 14px;
+    fill: var(--h2-text-color, #666666) !important;
+}
+
+/* 5 */
+#ad-close-trigger { display: none; }
+
+#ad-close-trigger:checked ~ #overlay-anchor-wrapper {
+    transform: translateY(100%) !important;
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 1, 1), opacity 0.4s cubic-bezier(0.4, 0, 1, 1) !important;
+    pointer-events: none;
+}
+
+body:has(#ad-close-trigger:checked) {
+    margin-bottom: 0 !important;
+}
+
+/* 6 */
+.overlay-ad-container { 
+    display: flex; justify-content: center; align-items: center; 
+    min-height: 50px; position: relative; 
+}
+.overlay-ad-container::before { 
+    content: ""; position: absolute; width: 320px; height: 100%; 
+    border-radius: 4px; z-index: 0;
+    animation: quietPulse 3s infinite; 
+}
+@keyframes quietPulse { 0%, 100% { background-color: transparent; } 50% { background-color: rgba(0, 0, 0, 0.04); } }
+
+#div-gpt-ad-1563441919648-0 { position: relative; z-index: 1; display: flex; justify-content: center; width: 100%; }
+#div-gpt-ad-1563441919648-0 iframe {
+    animation: fadeInQuick 0.5s ease-in-out 0.2s both !important;
+    background: var(--h2-background-color, #ffffff);
+}
+@keyframes fadeInQuick { from { opacity: 0; } to { opacity: 1; } }
+</style>
+
+<input type="checkbox" id="ad-close-trigger">
+<div id="overlay-anchor-wrapper" class="hidden-switch-class">
+    <label for="ad-close-trigger" id="pc-overlay-ad-close-button">
+        <svg viewBox="0 0 384 512"><path d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>
+    </label>
+<div id="pc-overlay-ad-parent-container" class="hidden-switch-class">
+    <div id="pc-overlay-ad-container-hidden" class="overlay-ad-container">
+        <div id="pc-overlay-ad-container">
+            <div id='div-gpt-ad-1563441919648-0' class="overlay-ad-wrapper"></div>
+        </div>
+    </div>
+</div>
+</div>
+<noscript>
+    <div class="noscript-alert">
+        <i class="fa-solid fa-exclamation-triangle"></i>
+        ブラウザの JavaScript がオフ（ブロックまたは許可しない）に設定されているため、このページは正常に機能しません。
+    </div>
+</noscript>
+<div class="container-wrapper">
+
+    <div class="container clearfix">
+                                <div id="header" class="user-header">
+                <p><img src="https://cdn.wikiwiki.jp/to/w/arcaea/%3AHeader/::ref/header30.jpg.webp?rev=7187a3614f708b9e2289f631b58dfedc&amp;t=20250601040159" alt="Arcaea Wiki" title="Arcaea Wiki" width="1820" height="300"  loading="lazy"></p>            </div>
+                <div class="toolbox-container system-ui clearfix" id="naviframe">
+            <div class="toolbox toolbox-desktop navibar-container">
+                <div id="navigator">[ <a href="/arcaea/">ホーム</a> | <a href="/arcaea/::cmd/newpage?refer=world.execute%28me%29%3B" rel="nofollow">新規</a> | <a href="/arcaea/::cmd/edit?page=world.execute%28me%29%3B" rel="nofollow">編集</a> | <a href="/arcaea/::cmd/attach?page=world.execute%28me%29%3B" rel="nofollow">添付</a> ]</div>            </div>
+            <div class="toolbox toolbox-desktop toolbar-container">
+                <div class="toolbar"><a href="/arcaea/::cmd/list" title="一覧" rel="nofollow"><span class="system-icon toolbar list"></span></a>
+<a href="/arcaea/RecentChanges" title="最終更新" rel="nofollow"><span class="system-icon toolbar recent"></span></a>
+<a href="/arcaea/::cmd/diff?page=world.execute%28me%29%3B" title="差分" rel="nofollow"><span class="system-icon toolbar diff"></span></a>
+<a href="/arcaea/::cmd/backup?page=world.execute%28me%29%3B" title="バックアップ" rel="nofollow"><span class="system-icon toolbar backup"></span></a>
+<a href="/arcaea/::cmd/freeze?page=world.execute%28me%29%3B" title="凍結" rel="nofollow"><span class="system-icon toolbar freeze"></span></a>
+<a href="/arcaea/::cmd/template?refer=world.execute%28me%29%3B" title="複製" rel="nofollow"><span class="system-icon toolbar copy"></span></a>
+<a href="/arcaea/::cmd/rename?refer=world.execute%28me%29%3B" title="名前変更" rel="nofollow"><span class="system-icon toolbar rename"></span></a>
+<a href="/arcaea/::cmd/help" title="ヘルプ" rel="nofollow"><span class="system-icon toolbar help"></span></a></div>            </div>
+            <div class="toolbox toolbox-mobile toolbar-container">
+                <div class="toolbar"><a href="/arcaea/" title="ホーム"><span class="system-icon toolbar top"></span></a>
+<a href="/arcaea/RecentChanges" title="最終更新" rel="nofollow"><span class="system-icon toolbar recent"></span></a>
+<a id="menu-in-nav" href="#menubar" class="menu-in-nav">Menu<i class="fa-solid fa-arrow-alt-down"></i></a></div>            </div>
+            <div class="toolbox toolbox-searchbar">
+                <form action="/arcaea/::cmd/search" method="get">
+                    <input type="search" name="word" value="" size="16" aria-label="サイト内検索" placeholder="サイト内検索">
+                    <input type="hidden" name="type" value="AND">
+                    <input type="submit" value="検索">
+                </form>
+            </div>
+        </div>
+            <div id="responsive-navigation"></div>
+    <div style="display: none;">
+        <div id="edit-menu" class="system-ui">
+            <div id="edit-menu-items">
+                <ul><li><a href="/arcaea/::cmd/newpage?refer=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar new'></span> 新規</a></li><li><a href="/arcaea/::cmd/edit?page=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar edit'></span> 編集</a></li><li><a href="/arcaea/::cmd/attach?page=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar upload'></span> 添付</a></li></ul>
+<ul><li><a href="/arcaea/::cmd/list" rel="nofollow"><span class='system-icon toolbar list'></span> 一覧</a></li><li><a href="/arcaea/RecentChanges" rel="nofollow"><span class='system-icon toolbar recent'></span> 最終更新</a></li><li><a href="/arcaea/::cmd/diff?page=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar diff'></span> 差分</a></li><li><a href="/arcaea/::cmd/backup?page=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar backup'></span> バックアップ</a></li></ul>
+<ul><li><a href="/arcaea/::cmd/freeze?page=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar freeze'></span> 凍結</a></li><li><a href="/arcaea/::cmd/template?refer=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar copy'></span> 複製</a></li><li><a href="/arcaea/::cmd/rename?refer=world.execute%28me%29%3B" rel="nofollow"><span class='system-icon toolbar rename'></span> 名前変更</a></li></ul>
+<ul><li><a href="/arcaea/::cmd/help" rel="nofollow"><span class='system-icon toolbar help'></span> ヘルプ</a></li></ul>
+
+            </div>
+        </div>
+    </div>    </div>
+
+    <div class="container">
+        <div class="clearfix">
+            <div id="breadcrumbs" class="system-ui">
+                <div id="topicpath"><a href="/arcaea/" title="FrontPage"><i class="fa-solid fa-home" style="margin-left: 6px; display: inline-block; min-width: 1.2em;"></i></a> &gt; world.execute(me);</div>            </div>
+            <div id="system-icon-container" class="system-ui">
+                                <span id="share-button-root"></span>                <span id="admin-contact-root" class="single-system-icon"></span>
+                <div id="load-panel-root"></div>
+                <span id="admin-login" class="single-system-icon">
+                    
+<a class="admin-login-status" href="/arcaea/::cmd/admin_login?return_to=%2Farcaea%2Fworld.execute%28me%29%3B" title="未ログイン">
+    <i class="fa-solid fa-cog"></i>
+</a>
+                </span>
+            </div>
+        </div>
+        <hr />
+    </div>
+
+    <div id="contents" class="columns-container three-columns-container container clearfix has-left-column">
+
+        <div class="column-center clearfix">
+            <div id="body">
+                                                <div id="title">
+                                            <h1 class="title">world.execute(me);</h1>
+                                                                <div id="lastmodified">
+                            Last-modified: 2026-05-14 (木) 22:54:12                                                    </div>
+                                    </div>
+
+                
+<div id="inbound-ad-container">
+  <!-- /19033742/WIKIWIKI_PC_INBOUND -->
+  <div id='div-gpt-ad-1567409776345-0'></div>
+  <!-- /19033742/WIKIWIKI_PC_INBOUND_RIGHT -->
+  <div id='div-gpt-ad-1658802281376-0'></div>
+  <!-- /19033742/WIKIWIKI_SP_INBOUND -->
+  <div id='div-gpt-ad-1563430750445-0' class="hidden-switch-class"></div>
+</div>
+
+<style>
+.pc-inbound-ad-default {
+    margin-top:40px;
+    margin-bottom:40px;
+    display:flex;
+    justify-content:flex-start;
+    gap: 10px 5px;
+    min-height:280px;
+}
+.pc-inbound-ad-center{
+    margin-top:40px;
+    margin-bottom:40px;
+    display:flex;
+    justify-content:center;
+    gap: 10px 5px;
+    min-height:280px;
+    position: relative;
+}
+.pc-inbound-ad-mobile{
+    margin-top:20px;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:center;
+    min-height:280px;
+}
+.pc-inbound-ad-close-button {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"%3E%3C!--! Font Awesome Pro 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2024 Fonticons, Inc. --%3E%3Cpath class="fa-secondary" opacity=".4" d="M281.4 390.6L304 413.3 349.3 368l-22.6-22.6L237.3 256l89.4-89.4L349.3 144 304 98.7l-22.6 22.6L192 210.7l-89.4-89.4L80 98.7 34.7 144l22.6 22.6L146.7 256 57.4 345.4 34.7 368 80 413.3l22.6-22.6L192 301.3l89.4 89.4z" fill="%23888"/%3E%3C/svg%3E') no-repeat center;
+    background-size: contain;
+    cursor: pointer;
+}
+</style>
+
+<script>
+(function () {
+    const co = document.getElementById('inbound-ad-container');
+    const inboundPaths = [
+        '/19033742/WIKIWIKI_PC_INBOUND',
+        '/19033742/WIKIWIKI_PC_INBOUND_RIGHT'
+    ];
+
+    if (wi_isinbound && wi_group === "N" && wi_agreement === "false") {
+        if (wi_ismobile) {
+            co.classList.add("pc-inbound-ad-mobile","default-advertisement");
+        } else {
+            const width = co.clientWidth;
+            const adClass = width < 683 || (width >= 683 && width < 900) ? ["pc-inbound-ad-center","default-advertisement"] : ["pc-inbound-ad-default"];
+            co.classList.add(...adClass);
+
+            if (adClass.includes("pc-inbound-ad-center")) {
+                googletag.cmd.push(function() {
+                    googletag.pubads().addEventListener('slotOnload', function(event) {
+                        if (inboundPaths.includes(event.slot.getAdUnitPath())) {
+                            let closeButton = co.querySelector(".pc-inbound-ad-close-button");
+                            if (!closeButton) {
+                                closeButton = document.createElement("div");
+                                closeButton.classList.add("pc-inbound-ad-close-button");
+                                closeButton.onclick = () => co.style.display = "none";
+                                co.appendChild(closeButton);
+                            }
+                        }
+                    });
+                });
+            }
+        }
+    }
+})();
+</script>
+
+                <div class="search-words small" style="display: none;">
+    <div class="small">これらのキーワードがハイライトされています：<ul class="search-words-words"></ul></div>
+    <hr class="full_hr">
+</div>
+                <div id="content">
+                                        <h2 id="h2_content_1_0" >world.execute(me);  <a class="anchor_super" name ="title"></a> <a class="anchor_super" href="/arcaea/::cmd/edit?page=world.execute%28me%29%3B&id=title" rel='nofollow'><span class="system-icon paraedit" title="Edit"></span></a></h2>
+<div class="nobr"><div class="h-scrollable"><table><tbody><tr><th colspan="2" style="text-align:center; color:white;">Composer</th><td colspan="3" style="text-align:center;"><a href="/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/A%EF%BD%9EO#mili" title="コンポーザー順/A～O" class="rel-wiki-page">Mili</a></td><th style="text-align:center; color:white; width:85px;">Artwork</th><td style="text-align:center;"><a href="/arcaea/%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%88%E3%83%AC%E3%83%BC%E3%82%BF%E3%83%BC%E9%A0%86/%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%83%BB%E3%81%9D%E3%81%AE%E4%BB%96#sowiti" title="イラストレーター順/日本語・その他" class="rel-wiki-page">そゐち</a></td></tr><tr><th colspan="2" style="text-align:center; color:white;">Chart<br class="spacer">Designer</th><td colspan="3" style="text-align:center;">toaster.chart(this);</td><td rowspan="10" colspan="2" style="text-align:center;"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/world.execute%28me%29%3B/::ref/world-execute-me.jpg.webp?rev=26b17150f4e51bece5e827732b83c755&amp;t=20240313222810" alt="world.execute(me)" title="world.execute(me)" width="300" height="300"  loading="lazy"></td></tr><tr><th colspan="2" style="text-align:center; color:white;">Difficulty</th><th style="text-align:center; width:90px;"><span class="wikicolor" style="color:aqua"><strong>Past</strong></span></th><th style="text-align:center; width:90px;"><span class="wikicolor" style="color:lime"><strong>Present</strong></span></th><th style="text-align:center; width:90px;"><span class="wikicolor" style="color:fuchsia"><strong>Future</strong></span></th></tr><tr><th colspan="2" style="text-align:center; color:white;">Level</th><td style="text-align:center; width:90px;">3</td><td style="text-align:center; width:90px;">5</td><td style="text-align:center; width:90px;">8</td></tr><tr><th colspan="2" style="text-align:center; color:white;">Notes</th><td style="text-align:center; width:90px;">452</td><td style="text-align:center; width:90px;">582</td><td style="text-align:center; width:90px;">851</td></tr><tr><th colspan="2" style="text-align:center; color:white;">Length</th><td colspan="3" style="text-align:center;">2:31</td></tr><tr><th colspan="2" style="text-align:center; color:white;">BPM</th><td colspan="3" style="text-align:center;">130</td></tr><tr><th colspan="2" style="text-align:center; color:white;">Pack</th><td colspan="3" style="text-align:center;"><a href="/arcaea/%E3%83%91%E3%83%83%E3%82%AF%E9%A0%86#arcaea" title="パック順" class="rel-wiki-page">Arcaea</a></td></tr><tr><th colspan="2" style="text-align:center; color:white;">Side</th><td colspan="3" style="background-color:lightskyblue; text-align:center;"><span class="wikicolor" style="color:#000000">Light(光)</span></td></tr><tr><th rowspan="2" style="text-align:center; color:white; width:60px;">Update<br class="spacer">Version</th><th style="text-align:center; color:white; width:60px;">Mobile</th><td colspan="3" style="text-align:center;">ver.2.5.2<br class="spacer">(20/02/21)</td></tr><tr><th style="text-align:center; color:white; width:60px;">Switch</th><td colspan="3" style="text-align:center;">ver.1.0.0c<br class="spacer">(21/05/18)</td></tr></tbody></table></div>
+</div>
+<div class="spacer">&nbsp;</div>
+<div class="h-scrollable"><table><tbody><tr><th rowspan="3" style="text-align:center; color:white; width:140px;"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/%E3%83%91%E3%83%83%E3%82%AF%E9%A0%86/::ref/Lock_white.png?rev=e752bf335d8d67b5c32cfe4d7580c221&amp;t=20210913183325" alt="Requirements" title="Requirements" width="25" height="33"  loading="lazy"><br class="spacer">Requirements</th><th style="color:aqua; text-align:center; width:80px;"><strong>Past</strong></th><td style="text-align:center; width:466px;">-</td></tr><tr><th style="color:lime; text-align:center; width:80px;"><strong>Present</strong></th><td style="text-align:center; width:466px;">40個の欠片</td></tr><tr><th style="color:fuchsia; text-align:center; width:80px;"><strong>Future</strong></th><td style="text-align:center; width:466px;">200個の欠片</td></tr></tbody></table></div>
+<div class="spacer">&nbsp;</div>
+<div class="fold-container  clearfix">
+    <button class="fold-toggle-button hidden-on-open"><i class="fal fa-plus-square"></i></button>
+    <button class="fold-toggle-button visible-on-open"><i class="fal fa-minus-square"></i></button>
+    <div class="fold-summary hidden-on-open">Nintendo Switch版の解放条件</div>
+    <div class="fold-content visible-on-open"><div class="h-scrollable"><table><tbody><tr><th rowspan="3" style="text-align:center; color:white; width:140px;"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/%E3%83%91%E3%83%83%E3%82%AF%E9%A0%86/::ref/Lock_white.png?rev=e752bf335d8d67b5c32cfe4d7580c221&amp;t=20210913183325" alt="Requirements" title="Requirements" width="25" height="33"  loading="lazy"><br class="spacer">Requirements</th><th style="color:aqua; text-align:center; width:80px;"><strong>Past</strong></th><td style="text-align:center; width:466px;">-</td></tr><tr><th style="color:lime; text-align:center; width:80px;"><strong>Present</strong></th><td style="text-align:center; width:466px;">-</td></tr><tr><th style="color:fuchsia; text-align:center; width:80px;"><strong>Future</strong></th><td style="text-align:center; width:466px;">25個の欠片</td></tr></tbody></table></div>
+</div>
+</div>
+<div class="spacer">&nbsp;</div>
+<ul class="list1"><li>曲名はそのまま記号を抜いて「world execute me(ワールド エクセキュート ミー)」と読む<a id="notetext_1"  class="note_super tooltip"
+            data-tooltip-content="&lt;p&gt;2020年12月26日にMiliの公式YouTubeチャンネルで行われた&lt;a class=&quot;ext&quot; href=&quot;https://www.youtube.com/watch?v=pXYGIRyFmEg&amp;amp;t=7703&quot; rel=&quot;nofollow&quot;&gt;生放送&lt;span class=&quot;system-icon ext pukiwiki-open-uri&quot; data-href=&quot;https://www.youtube.com/watch?v=pXYGIRyFmEg&amp;amp;t=7703&quot; data-frame=&quot;_blank&quot;&gt;&lt;/span&gt;&lt;/a&gt;(現在はアーカイブ非公開)にてKasai氏が発言。&lt;/p&gt;&lt;div style=&quot;text-align: right;&quot;&gt;&lt;a href=&quot;#notefoot_1&quot;&gt;脚注 *1 へ&lt;/a&gt;&lt;/div&gt;">*1</a>。</li>
+<li>Miliの2ndアルバム「<a class="ext" href="https://projectmili.com/miracle-milk" rel="nofollow">Miracle Milk<span class="system-icon ext pukiwiki-open-uri" data-href="https://projectmili.com/miracle-milk" data-frame="_blank"></span></a>」に収録。</li>
+<li>アートワーク画像を担当したそゐち氏は、自身の大学卒業制作で本楽曲を用いた<a class="ext" href="https://www.youtube.com/watch?v=52pa7rj5zrs" rel="nofollow">アニメーション作品<span class="system-icon ext pukiwiki-open-uri" data-href="https://www.youtube.com/watch?v=52pa7rj5zrs" data-frame="_blank"></span></a>を制作している。元々楽曲「<a href="/arcaea/Phantasia" title="Phantasia" class="rel-wiki-page">Phantasia</a>」やパートナーの<a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#ayu" title="パートナー/恒常(Page3)" class="rel-wiki-page">彩夢</a>でArcaeaと縁があったことから、本楽曲の収録にあたっても依頼がなされたと思われる。本人は<a class="ext" href="https://twitter.com/huseso/status/1230727419016835078" rel="nofollow">告知ツイート<span class="system-icon ext pukiwiki-open-uri" data-href="https://twitter.com/huseso/status/1230727419016835078" data-frame="_blank"></span></a>で「不思議で素敵なご縁」と表現している。</li>
+<li>歌詞は以下から。ボーカルのCassie Wei(旧名義:momocashew)がソフトウェアエンジニアリングに精通している影響か、プログラミング言語「Java」を用いた歌詞も存在し、YouTubeの<a class="ext" href="https://www.youtube.com/watch?v=ESx_hy1n7HA" rel="nofollow">公式ミュージックビデオ<span class="system-icon ext pukiwiki-open-uri" data-href="https://www.youtube.com/watch?v=ESx_hy1n7HA" data-frame="_blank"></span></a>内で使われている。
+<div class="fold-container  clearfix">
+    <button class="fold-toggle-button hidden-on-open"><i class="fal fa-plus-square"></i></button>
+    <button class="fold-toggle-button visible-on-open"><i class="fal fa-minus-square"></i></button>
+    <div class="fold-summary hidden-on-open">歌詞(English / Full)</div>
+    <div class="fold-content visible-on-open"><p>Switch on the power line<br />
+Remember to put on<br />
+PROTECTION<br />
+Lay down your pieces<br />
+And let's begin<br />
+OBJECT CREATION<br />
+Fill in my data, parameters<br />
+INITIALISATION<br />
+Setup, a new world<br />
+And let's begin the<br />
+SIMULATION</p>
+<div class="spacer">&nbsp;</div>
+<p>If I'm a set of points<br />
+Then I will give you my<br />
+DIMENSION<br />
+If I'm a circle<br />
+Then I will give you my<br />
+CIRCUMFERENCE<br />
+If I'm a sine wave<br />
+Then you can sit on all my<br />
+TANGENTS<br />
+If I approach infinity, then you can be my<br />
+LIMITATIONS</p>
+<div class="spacer">&nbsp;</div>
+<p>Switch my current<br />
+To AC to DC<br />
+And then blind my vision<br />
+So dizzy, so dizzy<br />
+Oh, we can travel<br />
+To A.D to B.C<br />
+And we can unite<br />
+So deeply, so deeply</p>
+<div class="spacer">&nbsp;</div>
+<p>If I can<br />
+If I can, give you all the<br />
+STIMULATIONS<br />
+Then I can<br />
+Then I can, be your only<br />
+SATISFACTION<br />
+If I can make you happy<br />
+I will run the<br />
+EXECUTION<br />
+Though we are trapped<br />
+In this strange, strange<br />
+SIMULATION</p>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center"><span style="font-size:16px"><span class="wikicolor" style="color:#ffffff; background-color:#292929"><strong>　ここから省略　</strong></span></span></div>
+<p>If I'm an eggplant<br />
+Then I will give you my<br />
+NUTRIENTS<br />
+If I'm a tomato<br />
+Then I will give you<br />
+ANTIOXIDANTS<br />
+If I'm a tabby cat<br />
+Then I will purr for your<br />
+ENJOYMENT<br />
+If I'm the only god<br />
+Then you're the proof of my<br />
+EXISTENCE</p>
+<div class="spacer">&nbsp;</div>
+<p>Switch my gender<br />
+To F to M<br />
+And then do whatever<br />
+From AM to PM<br />
+Oh switch my role<br />
+To S to M<br />
+So we can enter<br />
+The trance, the trance</p>
+<div class="spacer">&nbsp;</div>
+<p>If I can<br />
+If I can, feel your<br />
+VIBRATIONS<br />
+Then I can<br />
+Then I can, finally be<br />
+COMPLETION<br />
+Though you have left<br />
+You have left<br />
+You have left<br />
+You have left<br />
+You have left<br />
+You have left me in<br />
+ISOLATION</p>
+<div class="spacer">&nbsp;</div>
+<p>If I can<br />
+If I can, erase all the pointless<br />
+FRAGMENTS<br />
+Then maybe<br />
+Then maybe, you won't leave me so<br />
+DISHEARTENED<br />
+Challenging your god<br />
+You have made some<br />
+ILLEGAL ARGUMENTS</p>
+<div style="text-align:center"><span style="font-size:16px"><span class="wikicolor" style="color:#ffffff; background-color:#292929"><strong>　ここまで省略　</strong></span></span></div>
+<div class="spacer">&nbsp;</div>
+<p>Execution, Execution, Execution, Execution<br />
+Execution, Execution, Execution, Execution<br />
+Execution, Execution, Execution, Execution<br />
+Ein, Dos, Trois<br />
+Ne, Fem, Liu<br />
+EXECUTION</p>
+<div class="spacer">&nbsp;</div>
+<p>If I can<br />
+If I can, give them all the<br />
+EXECUTION<br />
+Then I can<br />
+Then I can, be your only<br />
+EXECUTION<br />
+If I can, have you back<br />
+I will run the<br />
+EXECUTION<br />
+Though we are trapped<br />
+We are trapped ah</p>
+<div class="spacer">&nbsp;</div>
+<p>I've studied<br />
+I've studied how to properly<br />
+LO-O-OVE<br />
+Question me<br />
+Question me I can answer all<br />
+LO-O-OVE<br />
+I know the algebraic expression of<br />
+LO-O-OVE<br />
+Though you are free<br />
+I am trapped, trapped in<br />
+LO-O-OVE</p>
+<div class="spacer">&nbsp;</div>
+<p>EXECUTION</p>
+</div>
+</div>
+<div class="fold-container  clearfix">
+    <button class="fold-toggle-button hidden-on-open"><i class="fal fa-plus-square"></i></button>
+    <button class="fold-toggle-button visible-on-open"><i class="fal fa-minus-square"></i></button>
+    <div class="fold-summary hidden-on-open">歌詞(Java / Full)</div>
+    <div class="fold-content visible-on-open"><div class="code-highlighter-root" data-element-id="ab7efdfc61e4af057152c3b65ce9be76">
+    
+        <pre class="plugin-code language-java"><code class="language-java">package goddrinksjava;
+/**
+ * The program GodDrinksJava implements an application that
+ * creates an empty simulated world with no meaning or purpose.
+ *
+ * @author momocashew
+ */
+public class GodDrinksJava {
+    public static void main(String[] args) {
+        Thing me = new Lovable(&quot;Me&quot;, 0, true, -1, false);
+        Thing you = new Lovable(&quot;You&quot;, 0, false, -1, false);
+        World world = new World(5);
+        world.addThing(me);
+        world.addThing(you);
+        world.startSimulation();
+
+        if(me instanceof PointSet){
+            you.addAttribute(me.getDimensions().toAttribute());
+            me.resetDimensions();
+        }
+        if(me instanceof Circle){
+            you.addAttribute(me.getCircumference().toAttribute());
+            me.resetCircumference();
+        }
+        if(me instanceof SineWave){
+            you.addAction(&quot;sit&quot;, me.getTangent(you.getXPosition()));
+        }
+        if(me instanceof Sequence){
+            me.setLimit(you.toLimit());
+        }
+
+        me.toggleCurrent();
+
+        me.canSee(false);
+        me.addFeeling(&quot;dizzy&quot;);
+
+        world.timeTravelForTwo(AD, 617, me, you);
+        world.timeTravelForTwo(BC, 3691, me, you);
+
+        world.unite(me, you);
+
+        if(me.getNumSimulationsAvailable() &gt;= you.getNumSimulationsNeeded()){
+            you.setSatisfaction(me.toSatisfaction());
+        }
+
+        if(you.getFeelingIndex(&quot;happy&quot;) != -1){
+            me.requestExecution(world);
+        }
+
+        world.lockThing(me);
+        world.lockThing(you);
+
+        if(me instanceof Eggplant){
+            you.addAttribute(me.getNutrients().toAttribute());
+            me.resetNutrients();
+        }
+        if(me instanceof Tomato){
+            you.addAttribute(me.getAntioxidants().toAttribute());
+            me.resetAntioxidants;
+        }
+        if(me instanceof TabbyCat){
+            me.purr();
+        }
+        if(world.getGod().equals(me)){
+            me.setProof(you.toProof());
+        }
+
+        me.toggleGender();
+
+        world.procreate(me, you);
+
+        me.toggleRoleBDSM();
+
+        world.makeHigh(me);
+        world.makeHigh(you);
+
+        if(me.getSenseIndex(&quot;vibration&quot;)){
+            me.addFeeling(&quot;complete&quot;);
+        }
+        world.unlock(you);
+        world.removeThing(you);
+        me.lookFor(you, world);
+        me.lookFor(you, world);
+        me.lookFor(you, world);
+        me.lookFor(you, world);
+        me.lookFor(you, world);
+
+        if(me.getMemory().isErasable()){
+            me.removeFeeling(&quot;disheartened&quot;);
+        }
+
+        try{
+            me.setOpinion(me.getOpinionIndex(&quot;you are here&quot;), false);
+        }
+        catch(IllegalArgumentException e){
+            world.announce(&quot;God is always true.&quot;);
+        }
+
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.runExecution();
+        world.announce(&quot;1&quot;, &quot;de&quot;);
+        world.announce(&quot;2&quot;, &quot;es&quot;);
+        world.announce(&quot;3&quot;, &quot;fr&quot;);
+        world.announce(&quot;4&quot;, &quot;kr&quot;);
+        world.announce(&quot;5&quot;, &quot;se&quot;);
+        world.announce(&quot;6&quot;, &quot;cn&quot;);
+        world.runExecution();
+
+        if(world.isExecutableBy(me)){
+            you.setExecution(me.toExecution());
+        }
+        if(world.getThingIndex(you) != -1){
+            world.runExecution();
+        }
+        me.escape(world);
+
+        me.learnTopic(&quot;love&quot;);
+        me.takeExamTopic(&quot;love&quot;);
+        me.getAlgebraicExpression(&quot;love&quot;);
+        me.escape(&quot;love&quot;);
+
+        world.execute(me);
+    }
+}</code></pre>
+</div>
+</div>
+</div></li>
+<li>「<a class="ext" href="https://gamerch.com/musicdiver/928402" rel="nofollow">MUSIC DIVER<span class="system-icon ext pukiwiki-open-uri" data-href="https://gamerch.com/musicdiver/928402" data-frame="_blank"></span></a>」「<a class="ext" href="https://wikiwiki.jp/rotaeno/world.execute%28me%29" rel="nofollow">Rotaeno<span class="system-icon ext pukiwiki-open-uri" data-href="https://wikiwiki.jp/rotaeno/world.execute%28me%29" data-frame="_blank"></span></a>」にも収録されている。</li></ul>
+<div class="spacer">&nbsp;</div>
+<h4 id="h4_content_1_1" class="heading-after-first">攻略情報  <a class="anchor_super" name ="guide"></a> <a class="anchor_super" href="/arcaea/::cmd/edit?page=world.execute%28me%29%3B&id=guide" rel='nofollow'><span class="system-icon paraedit" title="Edit"></span></a></h4>
+<ul class="list1"><li><span class="wikicolor" style="color:Aqua"><strong>Past</strong></span> <span class="wikicolor" style="color:#ffffff; background-color:#292929">譜面定数 : 3.5</span></li>
+<li><span class="wikicolor" style="color:Lime"><strong>Present</strong></span> <span class="wikicolor" style="color:#ffffff; background-color:#292929">譜面定数 : 5.0</span>
+<ul class="list2"><li>アークさえできればなんとかなる譜面。execution地帯はアークの始点判定がないことを利用して一本のアークとして処理したほうがやりやすい。ver.4.0.0で定数5.5から<strong>5.0</strong>に下方修正。</li></ul></li>
+<li><span class="wikicolor" style="color:Fuchsia"><strong>Future</strong></span> <span class="wikicolor" style="color:#ffffff; background-color:#292929">譜面定数 : 8.0</span>
+<ul class="list2"><li>低BPM、8以上での基本配置が多い、World解禁不要。三拍子が揃った教科書のような譜面である。<br />
+以前は定数が8.5と高くポテンシャル的にも稼ぎ得であったのだが、ver.4.0.0で8最低値の<strong>8.0</strong>に降格した。<del>どうして…</del></li>
+<li>全体を通して、曲に合わせて動くアークを片手で取りつつフロアやスカイを叩かせる配置が多いが、アーク自体の動きはそこまで激しくなくリズムも掴みやすい。</li>
+<li>中盤以降から左右で取らせる直角アークが出てくるが、<a href="/arcaea/Mirzam" title="Mirzam" class="rel-wiki-page">Mirzam</a>や<a href="/arcaea/BATTLE%20NO.1" title="BATTLE NO.1" class="rel-wiki-page">BATTLE NO.1</a>のようにフロアやスカイと同時に処理する配置ではないため外さないことを意識すれば通る。
+<ul class="list3"><li>全ての直角アークに言えることだが、タイミングのズレは抜けにくく、位置のズレは抜けやすい。少し遅れてでも正確に動かそう。</li></ul></li></ul></li></ul>
+<div class="spacer">&nbsp;</div>
+<h4 id="h4_content_1_2" class="heading-after-first">試聴/プレイ映像  <a class="anchor_super" name ="video"></a> <a class="anchor_super" href="/arcaea/::cmd/edit?page=world.execute%28me%29%3B&id=video" rel='nofollow'><span class="system-icon paraedit" title="Edit"></span></a></h4>
+<ul class="list1"><li>YouTube公式音源
+    <div class="lazy-dom-placeholder" data-content="&lt;div&gt;
+    &lt;iframe src=&quot;https://www.youtube.com/embed/ESx_hy1n7HA&quot; frameborder=&quot;0&quot; allowfullscreen style=&quot;width: 640px; max-width: 100%; height: 360px;&quot;&gt;&lt;/iframe&gt;
+&lt;/div&gt;">loading...</div></li></ul>
+<div class="spacer">&nbsp;</div>
+<ul class="list1"><li><span class="wikicolor" style="color:Fuchsia"><strong>Future</strong></span> [PURE MEMORY 10,000,851pts] (理論値)<br />
+Player : FUTABASAKI
+    <div class="lazy-dom-placeholder" data-content="&lt;div&gt;
+    &lt;iframe src=&quot;https://www.youtube.com/embed/EY9fvmlvwq4&quot; frameborder=&quot;0&quot; allowfullscreen style=&quot;width: 640px; max-width: 100%; height: 360px;&quot;&gt;&lt;/iframe&gt;
+&lt;/div&gt;">loading...</div></li></ul>
+<div class="spacer">&nbsp;</div>
+<ul class="list1"><li><span class="wikicolor" style="color:Fuchsia"><strong>Future</strong></span> [PURE MEMORY 10,000,848pts]<br />
+Player : StaLight
+    <div class="lazy-dom-placeholder" data-content="&lt;div&gt;
+    &lt;iframe src=&quot;https://www.youtube.com/embed/1vzkcooAEUE&quot; frameborder=&quot;0&quot; allowfullscreen style=&quot;width: 640px; max-width: 100%; height: 360px;&quot;&gt;&lt;/iframe&gt;
+&lt;/div&gt;">loading...</div></li></ul>
+<div class="spacer">&nbsp;</div>
+<div class="fold-container  clearfix">
+    <button class="fold-toggle-button hidden-on-open"><i class="fal fa-plus-square"></i></button>
+    <button class="fold-toggle-button visible-on-open"><i class="fal fa-minus-square"></i></button>
+    <div class="fold-summary hidden-on-open">その他のプレイ映像</div>
+    <div class="fold-content visible-on-open"><p><span class="wikicolor" style="color:#ffffff; background-color:#292929">その他のプレイ映像</span></p>
+<ul class="list1"><li><span class="wikicolor" style="color:Lime"><strong>Present</strong></span> [PURE MEMORY 10,000,576pts](親指プレイ)<br />
+Player : kurotanP<br />
+<a class="ext" href="https://youtu.be/p2AczlCg8PA" rel="nofollow">https://youtu.be/p2AczlCg8PA<span class="system-icon ext pukiwiki-open-uri" data-href="https://youtu.be/p2AczlCg8PA" data-frame="_blank"></span></a></li></ul>
+<div class="spacer">&nbsp;</div>
+<ul class="list1"><li><span class="wikicolor" style="color:Aqua"><strong>Past</strong></span> [PURE MEMORY 10,000,451pts](親指プレイ)<br />
+Player : kurotanP<br />
+<a class="ext" href="https://youtu.be/ApEn0mkFx9E" rel="nofollow">https://youtu.be/ApEn0mkFx9E<span class="system-icon ext pukiwiki-open-uri" data-href="https://youtu.be/ApEn0mkFx9E" data-frame="_blank"></span></a></li></ul>
+</div>
+</div>
+<div class="spacer">&nbsp;</div>
+<div class="spacer">&nbsp;</div>
+<h4 id="h4_content_1_3" class="heading-after-first">コメント  <a class="anchor_super" name ="comment"></a> <a class="anchor_super" href="/arcaea/::cmd/edit?page=world.execute%28me%29%3B&id=comment" rel='nofollow'><span class="system-icon paraedit" title="Edit"></span></a></h4>
+    <div class="pcomment-form-placeholder" data-form-action-path="/arcaea/::cmd/pcomment?refer=world.execute%28me%29%3B&page=%5B%5B%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%2Fworld.execute%28me%29%3B%5D%5D" data-comment-page-url="/arcaea/%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88/world.execute%28me%29%3B"
+         data-comment-page="コメント/world.execute(me);" data-comment-page-exists="1"
+         data-linked-page-name="コメント/world.execute(me);" data-no-date="0" data-no-name="1"
+         data-dir="0" data-count="10" data-reply="1"
+         data-interrupt-type="none" data-unfreeze-url="" data-capacity-warning=""
+         data-new-page-name="" data-archive-page-name=""
+         data-digest="">
+         <div class="pcomment-form-comments"><ul class="list1"><li class="pcmt"><input class="pcmt" type="radio" name="reply" value="b977d78797027c300e1949203f338dbb" tabindex="1" />作曲者いわく、とある作品が好きなファンが作ったこの曲のMAD動画がきっかけであるゲーム会社と長い間一緒にお仕事するきっかけになったとかなんとか --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1757423782">2025-09-09 (火) 22:16:22</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="2c8f477fb60cfce7fa775ae695dc18eb" tabindex="2" />交差ないしリズム分かりやすいしでスマホ勢に優しい。曲者に対する経験値に一切ならないとこまで含めてチュートリアル曲。一生初心者を救ってくれ… --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1751143292">2025-06-29 (日) 05:41:32</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="1f61a83495f404c00bf5ff8e93331df6" tabindex="3" />7月1日にMusic Diverに追加 --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1750823294">2025-06-25 (水) 12:48:14</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="276bcc1864471ec8b44d1187d6292ac5" tabindex="4" />始めたての時に練習で遊びまくった曲。初めてFTRでPM取れた曲。思い出深い神曲神譜面。俺はBYDをずっと待ってるぞ。 --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1679589128">2023-03-24 (金) 01:32:08</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="63735f77cc5bc578dc5bc7635d092c5d" tabindex="5" />この譜面大好き --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1661410746">2022-08-25 (木) 15:59:06</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="63be59a82af7fa8c27b1ea92b154dca7" tabindex="6" />なんで0.5も下がったの……？　ChronostasisとFRとこれだけは違和感 --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1657465672">2022-07-11 (月) 00:07:52</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="cd9654e967af9b788e0ea8d0d87e4a81" tabindex="7" />これ.0に落ちたの最悪すぎる　めっちゃ良い譜面だったのに --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1657417040">2022-07-10 (日) 10:37:20</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="0236a95d1d0a9c256634506461bd4f6c" tabindex="8" />ラスサビ少しBPM揺れてる気がするんだが --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1618905167">2021-04-20 (火) 16:52:47</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="518b4942b0a3a7438a123a41b93f943c" tabindex="9" />Toasterの最高傑作の一つでは？定数で見ても結構易しめでPM乗ったし歌詞にアーク合わせてるのが粋だなぁ --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1618817454">2021-04-19 (月) 16:30:54</span></span></li>
+<li class="pcmt"><input class="pcmt" type="radio" name="reply" value="d3f4fa4ab3bc7d1181584d62f61f403d" tabindex="10" />いかに東星が天才かわかる譜面。 --  <span class="comment_date"><span class="plugin-new-body" data-timestamp="1610632872">2021-01-14 (木) 23:01:12</span></span></li></ul>
+</div>
+    </div>
+                </div>
+                <div id="main-contents-bottom">
+                    <div class="caption-flybox" >
+<div id="pc-bottom-parent-ad-container" style="min-height:250px;">
+<div id="pc-bottom-left-ad-container">
+    <!-- /19033742/WIKIWIKI_PC_BOTTOM_LEFT or /19033742/WIKIWIKI_SP_SECOND -->
+    <div id='div-gpt-ad-1567408559923-0' class="hidden-switch-class"></div>
+</div>
+<div id="pc-bottom-right-ad-container">
+    <!-- /19033742/WIKIWIKI_PC_BOTTOM_RIGHT -->
+    <div id='div-gpt-ad-1658912377789-0'></div>
+</div>
+</div>
+</div>
+
+<style>
+.pc-bottom-ad-default {
+    margin-top:120px;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:flex-start;
+    gap: 10px 5px;
+}
+.pc-bottom-ad-center{
+    margin-top:120px;
+    margin-bottom:20px;
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap: 10px 5px;
+}
+.pc-bottom-ad-mobile{
+    margin-top:20px;
+    margin-bottom:20px;
+    display:flex;
+    align-items: center;
+    flex-direction:column;
+    position:sticky;
+    z-index: 3;
+    top:45px;
+}
+</style>
+
+<script>
+(function() {
+    var body = document.getElementById('body');
+    var co = document.getElementById("pc-bottom-parent-ad-container");
+    var fh = 50;
+    if (!wi_ismobile && body.clientHeight < 620) {
+        co.style.marginTop = '200px';
+    }
+    if (wi_ismobile && body.clientWidth < 400){
+        co.classList.add("pc-bottom-ad-mobile");
+    } else if (co.clientWidth < 769) {
+        co.classList.add("pc-bottom-ad-center");
+    } else {
+        co.classList.add("pc-bottom-ad-default");
+    }
+}());
+</script>
+                </div>
+
+            </div>
+        </div>
+
+        
+                    <div class="column-left">
+                <div id="menubar">
+                                        <h2 id="h2_content_53_0" >CONTENTS</h2>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center"><span style="font-size:13px"><span class="wikicolor" style="color:white; background-color:black"><strong>　― はじめに ―　</strong></span></span></div>
+<ul class="list1"><li><a href="https://wikiwiki.jp/arcaea" rel="nofollow">Arcaea Wiki</a></li>
+<li><a href="/arcaea/%E3%83%AB%E3%83%BC%E3%83%AB" title="ルール" class="rel-wiki-page">ルール</a></li>
+<li><a href="/arcaea/%E5%88%9D%E5%BF%83%E8%80%85%E3%81%AE%E6%96%B9%E3%81%B8" title="初心者の方へ" class="rel-wiki-page">初心者の方へ</a></li>
+<li><a href="/arcaea/FAQ" title="FAQ" class="rel-wiki-page">FAQ</a></li>
+<li><a href="/arcaea/%E3%83%AA%E3%82%BA%E3%83%A0%E3%82%B2%E3%83%BC%E3%83%A0%E7%94%A8%E8%AA%9E%E8%A7%A3%E8%AA%AC" title="リズムゲーム用語解説" class="rel-wiki-page">リズムゲーム用語解説</a></li></ul>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center"><span style="font-size:13px"><span class="wikicolor" style="color:white; background-color:black"><strong>　― 収録曲 ―　</strong></span></span></div>
+<ul class="list1"><li><a href="/arcaea/%E3%83%91%E3%83%83%E3%82%AF%E9%A0%86" title="パック順" class="rel-wiki-page">パック順</a></li>
+<li><a href="/arcaea/%E3%82%BF%E3%82%A4%E3%83%88%E3%83%AB%E9%A0%86" title="タイトル順" class="rel-wiki-page">タイトル順</a></li>
+<li><a href="/arcaea/%E3%83%AC%E3%83%99%E3%83%AB%E9%A0%86" title="レベル順" class="rel-wiki-page">レベル順</a></li>
+<li><a href="/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86" title="コンポーザー順" class="rel-wiki-page">コンポーザー順</a>
+<ul class="list2"><li><a href="/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/A%EF%BD%9EO" title="コンポーザー順/A～O" class="rel-wiki-page">A～O</a></li>
+<li><a href="/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/P%EF%BD%9EZ" title="コンポーザー順/P～Z" class="rel-wiki-page">P～Z</a></li>
+<li><a href="/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%83%BB%E3%81%9D%E3%81%AE%E4%BB%96" title="コンポーザー順/日本語・その他" class="rel-wiki-page">日本語・その他</a></li>
+<li><a href="/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/%E3%83%9C%E3%83%BC%E3%82%AB%E3%83%AA%E3%82%B9%E3%83%88" title="コンポーザー順/ボーカリスト" class="rel-wiki-page">ボーカリスト</a></li></ul></li>
+<li><a href="/arcaea/%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%88%E3%83%AC%E3%83%BC%E3%82%BF%E3%83%BC%E9%A0%86" title="イラストレーター順" class="rel-wiki-page">イラストレーター順</a>
+<ul class="list2"><li><a href="/arcaea/%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%88%E3%83%AC%E3%83%BC%E3%82%BF%E3%83%BC%E9%A0%86/%E3%82%A2%E3%83%AB%E3%83%95%E3%82%A1%E3%83%99%E3%83%83%E3%83%88" title="イラストレーター順/アルファベット" class="rel-wiki-page">アルファベット</a></li>
+<li><a href="/arcaea/%E3%82%A4%E3%83%A9%E3%82%B9%E3%83%88%E3%83%AC%E3%83%BC%E3%82%BF%E3%83%BC%E9%A0%86/%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%83%BB%E3%81%9D%E3%81%AE%E4%BB%96" title="イラストレーター順/日本語・その他" class="rel-wiki-page">日本語・その他</a></li></ul></li>
+<li><a href="/arcaea/%E3%83%8E%E3%83%BC%E3%83%84%E6%95%B0%E9%A0%86" title="ノーツ数順" class="rel-wiki-page">ノーツ数順</a></li>
+<li><a href="/arcaea/%E6%BC%94%E5%A5%8F%E6%99%82%E9%96%93%E9%A0%86" title="演奏時間順" class="rel-wiki-page">演奏時間順</a></li>
+<li><a href="/arcaea/%E9%AB%98%E3%83%AC%E3%83%99%E3%83%AB%E9%9D%9E%E5%85%AC%E5%BC%8F%E9%9B%A3%E6%98%93%E5%BA%A6%28PURE%20MEMORY%E5%9F%BA%E6%BA%96%29" title="高レベル非公式難易度(PURE MEMORY基準)" class="rel-wiki-page">非公式難易度(PM基準)</a></li>
+<li><a href="/arcaea/%E9%AB%98%E3%83%AC%E3%83%99%E3%83%AB%E9%9D%9E%E5%85%AC%E5%BC%8F%E9%9B%A3%E6%98%93%E5%BA%A6%28TRACK%20COMPLETE%E5%9F%BA%E6%BA%96%29" title="高レベル非公式難易度(TRACK COMPLETE基準)" class="rel-wiki-page">非公式難易度(TC基準)</a></li></ul>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center"><span style="font-size:13px"><span class="wikicolor" style="color:white; background-color:black"><strong>　― ゲーム関連 ―　</strong></span></span></div>
+<ul class="list1"><li><a href="/arcaea/%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC" title="ストーリー" class="rel-wiki-page">ストーリー</a>
+<ul class="list2"><li><a href="/arcaea/%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC/Main%20Story" title="ストーリー/Main Story" class="rel-wiki-page">Main Story Act I</a></li>
+<li><a href="/arcaea/%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC/Main%20Story%20Act%20II" title="ストーリー/Main Story Act II" class="rel-wiki-page">Main Story Act II</a></li>
+<li><a href="/arcaea/%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC/Side%20Story" title="ストーリー/Side Story" class="rel-wiki-page">Side Story</a></li>
+<li><a href="/arcaea/%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC/Archive%20Story" title="ストーリー/Archive Story" class="rel-wiki-page">Archive Story</a></li></ul></li>
+<li><a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC" title="パートナー" class="rel-wiki-page">パートナー</a>
+<ul class="list2"><li><a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8" title="パートナー/恒常" class="rel-wiki-page">恒常</a></li>
+<li><a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%9C%9F%E9%96%93%E9%99%90%E5%AE%9A" title="パートナー/期間限定" class="rel-wiki-page">期間限定</a></li></ul></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89" title="ワールドモード" class="rel-wiki-page">ワールドモード</a>
+<ul class="list2"><li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Extra%20Chapter" title="ワールドモード/Extra Chapter" class="rel-wiki-page">Extra Chapter</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%201" title="ワールドモード/Chapter 1" class="rel-wiki-page">Chapter 1</a>
+<ul class="list3"><li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Breached%20Chapter/Chapter%201" title="ワールドモード/Breached Chapter/Chapter 1" class="rel-wiki-page">Breached</a></li></ul></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%202" title="ワールドモード/Chapter 2" class="rel-wiki-page">Chapter 2</a>
+<ul class="list3"><li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Breached%20Chapter/Chapter%202" title="ワールドモード/Breached Chapter/Chapter 2" class="rel-wiki-page">Breached</a></li></ul></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%203" title="ワールドモード/Chapter 3" class="rel-wiki-page">Chapter 3</a>
+<ul class="list3"><li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Breached%20Chapter/Chapter%203" title="ワールドモード/Breached Chapter/Chapter 3" class="rel-wiki-page">Breached</a></li></ul></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%204" title="ワールドモード/Chapter 4" class="rel-wiki-page">Chapter 4</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%205" title="ワールドモード/Chapter 5" class="rel-wiki-page">Chapter 5</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%206" title="ワールドモード/Chapter 6" class="rel-wiki-page">Chapter 6</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%207" title="ワールドモード/Chapter 7" class="rel-wiki-page">Chapter 7</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%208" title="ワールドモード/Chapter 8" class="rel-wiki-page">Chapter 8</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%209" title="ワールドモード/Chapter 9" class="rel-wiki-page">Chapter 9</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%2010" title="ワールドモード/Chapter 10" class="rel-wiki-page">Chapter 10</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Lost%20Chapter" title="ワールドモード/Lost Chapter" class="rel-wiki-page">Lost Chapter</a></li>
+<li><a href="/arcaea/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/%E8%A7%A3%E6%94%BE%E6%9C%9F%E9%96%93%E7%B5%82%E4%BA%86%E3%83%9E%E3%83%83%E3%83%97" title="ワールドモード/解放期間終了マップ" class="rel-wiki-page">解放期間終了</a></li></ul></li>
+<li><a href="/arcaea/%E3%82%B3%E3%83%BC%E3%82%B9%E3%83%A2%E3%83%BC%E3%83%89" title="コースモード" class="rel-wiki-page">コースモード</a></li></ul>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center"><span style="font-size:13px"><span class="wikicolor" style="color:white; background-color:black"><strong>　― システム関連 ―　</strong></span></span></div>
+<ul class="list1"><li><a href="/arcaea/%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E5%B1%A5%E6%AD%B4" title="アップデート履歴" class="rel-wiki-page">アップデート履歴</a>
+<ul class="list2"><li><a href="/arcaea/%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E5%B1%A5%E6%AD%B4/v1.0.5%EF%BD%9Ev2.6.2" title="アップデート履歴/v1.0.5～v2.6.2" class="rel-wiki-page">ver.1.x / ver.2.x</a></li>
+<li><a href="/arcaea/%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E5%B1%A5%E6%AD%B4/v3.0.0%EF%BD%9Ev3.12.10" title="アップデート履歴/v3.0.0～v3.12.10" class="rel-wiki-page">ver.3.x</a></li>
+<li><a href="/arcaea/%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E5%B1%A5%E6%AD%B4/v4.0.0%EF%BD%9E" title="アップデート履歴/v4.0.0～" class="rel-wiki-page">ver.4.x / ver.5.x</a></li>
+<li><a href="/arcaea/%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E5%B1%A5%E6%AD%B4/v6.0.0%EF%BD%9E" title="アップデート履歴/v6.0.0～" class="rel-wiki-page">ver.6.x</a></li>
+<li><a href="/arcaea/%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E5%B1%A5%E6%AD%B4/v7.0.0%EF%BD%9E" title="アップデート履歴/v7.0.0～" class="rel-wiki-page">ver.7.x</a></li></ul></li>
+<li><a href="/arcaea/%E3%83%9D%E3%83%86%E3%83%B3%E3%82%B7%E3%83%A3%E3%83%AB%E7%A0%94%E7%A9%B6%E6%89%80" title="ポテンシャル研究所" class="rel-wiki-page">ポテンシャル研究所</a></li>
+<li><a href="/arcaea/%E8%AD%9C%E9%9D%A2%E5%AE%9A%E6%95%B0%E8%A1%A8/%E8%AD%9C%E9%9D%A2%E5%AE%9A%E6%95%B0%E8%A1%A8%20%28Level%207%E4%BB%A5%E4%B8%8B%29" title="譜面定数表/譜面定数表 (Level 7以下)" class="rel-wiki-page">譜面定数表(Lv.1～7+)</a></li>
+<li><a href="/arcaea/%E8%AD%9C%E9%9D%A2%E5%AE%9A%E6%95%B0%E8%A1%A8" title="譜面定数表" class="rel-wiki-page">譜面定数表(Lv.8～12)</a></li>
+<li><a href="/arcaea/%E9%81%85%E5%BB%B6%E8%AA%BF%E6%95%B4%E5%A0%B1%E5%91%8A" title="遅延調整報告" class="rel-wiki-page">遅延調整報告</a></li></ul>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center"><span style="font-size:13px"><span class="wikicolor" style="color:white; background-color:black"><strong>　― その他 ―　</strong></span></span></div>
+<ul class="list1"><li><a href="/arcaea/%E4%BA%BA%E6%B0%97%E6%8A%95%E7%A5%A8" title="人気投票" class="rel-wiki-page">人気投票</a></li>
+<li><a href="/arcaea/%E8%AD%9C%E9%9D%A2%E5%88%B6%E4%BD%9C%E8%80%85" title="譜面制作者" class="rel-wiki-page">譜面制作者</a></li>
+<li><a href="/arcaea/%E3%81%93%E3%81%BC%E3%82%8C%E8%A9%B1" title="こぼれ話" class="rel-wiki-page">こぼれ話</a></li>
+<li><a href="/arcaea/Arcaea%20Sound%20Collection" title="Arcaea Sound Collection" class="rel-wiki-page">公式サウンドトラック</a></li>
+<li><a href="/arcaea/%E7%AE%A1%E7%90%86%E4%BA%BA%E3%81%B8%E3%81%AE%E8%A6%81%E6%9C%9B" title="管理人への要望" class="rel-wiki-page">管理人への要望</a></li>
+<li><a href="/arcaea/%E3%83%86%E3%83%B3%E3%83%97%E3%83%AC%E3%83%BC%E3%83%88" title="テンプレート" class="rel-wiki-page">テンプレート</a>
+<ul class="list2"><li><a href="/arcaea/%E6%A5%BD%E6%9B%B2%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%86%E3%83%B3%E3%83%97%E3%83%AC%E3%83%BC%E3%83%88" title="楽曲ページテンプレート" class="rel-wiki-page">楽曲ページ</a></li></ul></li></ul>
+<div class="spacer">&nbsp;</div>
+<div class="spacer">&nbsp;</div>
+<h2 id="h2_content_53_1" class="heading-after-first">Nintendo Switch</h2>
+<div class="spacer">&nbsp;</div>
+<ul class="list1"><li><a href="/arcaea/Nintendo%20Switch" title="Nintendo Switch" class="rel-wiki-page">基本情報</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E6%A5%BD%E6%9B%B2%E3%83%AA%E3%82%B9%E3%83%88" title="Nintendo Switch/楽曲リスト" class="rel-wiki-page">楽曲リスト</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AA%E3%83%BC" title="Nintendo Switch/ストーリー" class="rel-wiki-page">ストーリー</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC" title="Nintendo Switch/パートナー" class="rel-wiki-page">パートナー</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89" title="Nintendo Switch/ワールドモード" class="rel-wiki-page">ワールドモード</a>
+<ul class="list2"><li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Extra%20Chapter" title="Nintendo Switch/ワールドモード/Extra Chapter" class="rel-wiki-page">Extra Chapter</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%201" title="Nintendo Switch/ワールドモード/Chapter 1" class="rel-wiki-page">Chapter 1</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%202" title="Nintendo Switch/ワールドモード/Chapter 2" class="rel-wiki-page">Chapter 2</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%203" title="Nintendo Switch/ワールドモード/Chapter 3" class="rel-wiki-page">Chapter 3</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%204" title="Nintendo Switch/ワールドモード/Chapter 4" class="rel-wiki-page">Chapter 4</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%205" title="Nintendo Switch/ワールドモード/Chapter 5" class="rel-wiki-page">Chapter 5</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%83%AF%E3%83%BC%E3%83%AB%E3%83%89%E3%83%A2%E3%83%BC%E3%83%89/Chapter%206" title="Nintendo Switch/ワールドモード/Chapter 6" class="rel-wiki-page">Chapter 6</a></li></ul></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%82%B3%E3%83%BC%E3%82%B9%E3%83%A2%E3%83%BC%E3%83%89" title="Nintendo Switch/コースモード" class="rel-wiki-page">コースモード</a></li>
+<li><a href="/arcaea/Nintendo%20Switch/%E3%82%A2%E3%83%83%E3%83%97%E3%83%87%E3%83%BC%E3%83%88%E5%B1%A5%E6%AD%B4" title="Nintendo Switch/アップデート履歴" class="rel-wiki-page">アップデート履歴</a></li></ul>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/switch.jpg.webp?rev=6c05a62e875655b5c301c932e06ad82b&amp;t=20210430072714" alt="Nintendo Switch" title="Nintendo Switch" width="130" height="130"  loading="lazy"></div>
+<div style="text-align:center">4,400円<br class="spacer"><a href="https://store-jp.nintendo.com/list/software/70010000039850.html" rel="nofollow">購入はこちらから</a></div>
+<div class="spacer">&nbsp;</div>
+<div class="spacer">&nbsp;</div>
+<div class="recentdetail-container" data-recent-hash="b3c2ac683eb428c43e2ecfd4b4469cd8"></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">― <a href="/arcaea/RecentChanges" title="RecentChanges" class="rel-wiki-page">More</a> ―</div>
+<div class="spacer">&nbsp;</div>
+<div class="spacer">&nbsp;</div>
+<div class="wikiwiki-popular wikiwiki-popular-today" data-popular-data="{&quot;error&quot;:&quot;&quot;,&quot;errorInfo&quot;:null,&quot;list&quot;:[{&quot;page&quot;:&quot;パック順&quot;,&quot;pv&quot;:387},{&quot;page&quot;:&quot;譜面定数表&quot;,&quot;pv&quot;:295},{&quot;page&quot;:&quot;パートナー/恒常&quot;,&quot;pv&quot;:199},{&quot;page&quot;:&quot;DEINOS PHAINEIN&quot;,&quot;pv&quot;:119},{&quot;page&quot;:&quot;……已至。&quot;,&quot;pv&quot;:105},{&quot;page&quot;:&quot;Sigil of the Abyss&quot;,&quot;pv&quot;:102},{&quot;page&quot;:&quot;パートナー/期間限定&quot;,&quot;pv&quot;:99},{&quot;page&quot;:&quot;⊥⊬&quot;,&quot;pv&quot;:99},{&quot;page&quot;:&quot;高レベル非公式難易度(TRACK COMPLETE基準)&quot;,&quot;pv&quot;:95},{&quot;page&quot;:&quot;パートナー&quot;,&quot;pv&quot;:90},{&quot;page&quot;:&quot;Renegade【Arknights】&quot;,&quot;pv&quot;:84},{&quot;page&quot;:&quot;Cataclysm Cry&quot;,&quot;pv&quot;:83},{&quot;page&quot;:&quot;Testify&quot;,&quot;pv&quot;:78},{&quot;page&quot;:&quot;ワールドモード/Breached Chapter/Chapter 3&quot;,&quot;pv&quot;:76},{&quot;page&quot;:&quot;Axiom of the End&quot;,&quot;pv&quot;:74},{&quot;page&quot;:&quot;Somniomancer ［null set］&quot;,&quot;pv&quot;:73},{&quot;page&quot;:&quot;パートナー/恒常(Page4)&quot;,&quot;pv&quot;:73},{&quot;page&quot;:&quot;コメント/……已至。&quot;,&quot;pv&quot;:64},{&quot;page&quot;:&quot;ポテンシャル研究所&quot;,&quot;pv&quot;:61},{&quot;page&quot;:&quot;Designant.&quot;,&quot;pv&quot;:61}]}" data-popular-today="true">
+</div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">― <a href="/arcaea/Daily%20Top%20100" title="Daily Top 100" class="rel-wiki-page">More</a> ―</div>
+<div class="spacer">&nbsp;</div>
+<div class="spacer">&nbsp;</div>
+<h2 id="h2_content_53_2" class="heading-after-first">zawazawa</h2>
+<div class="zawazawa-recent" data-zrecent-hash="86dd8fb09ccef5f5563da8a5a2d4307d" data-zrecent-data="{&quot;topics&quot;:[{&quot;embeddedSites&quot;:[],&quot;forumSlug&quot;:&quot;arcaea&quot;,&quot;forumTitle&quot;:&quot;Arcaea Wiki@zawazawa&quot;,&quot;lastCommentNumber&quot;:8634,&quot;lastCommentedAt&quot;:&quot;Sun, 08 Nov 2026 16:55:10 +0900&quot;,&quot;topicNumber&quot;:14,&quot;topicTitle&quot;:&quot;フリートーク&quot;,&quot;url&quot;:&quot;https://z.wikiwiki.jp/arcaea/topic/14&quot;},{&quot;embeddedSites&quot;:[],&quot;forumSlug&quot;:&quot;arcaea&quot;,&quot;forumTitle&quot;:&quot;Arcaea Wiki@zawazawa&quot;,&quot;lastCommentNumber&quot;:469,&quot;lastCommentedAt&quot;:&quot;Fri, 06 Nov 2026 00:17:35 +0900&quot;,&quot;topicNumber&quot;:17,&quot;topicTitle&quot;:&quot;ストーリーの考察&quot;,&quot;url&quot;:&quot;https://z.wikiwiki.jp/arcaea/topic/17&quot;},{&quot;embeddedSites&quot;:[],&quot;forumSlug&quot;:&quot;arcaea&quot;,&quot;forumTitle&quot;:&quot;Arcaea Wiki@zawazawa&quot;,&quot;lastCommentNumber&quot;:3971,&quot;lastCommentedAt&quot;:&quot;Fri, 30 Oct 2026 02:21:22 +0900&quot;,&quot;topicNumber&quot;:9,&quot;topicTitle&quot;:&quot;高レベル非公式難易度(TRACK COMPLETE基準)&quot;,&quot;url&quot;:&quot;https://z.wikiwiki.jp/arcaea/topic/9&quot;},{&quot;embeddedSites&quot;:[],&quot;forumSlug&quot;:&quot;arcaea&quot;,&quot;forumTitle&quot;:&quot;Arcaea Wiki@zawazawa&quot;,&quot;lastCommentNumber&quot;:465,&quot;lastCommentedAt&quot;:&quot;Sat, 10 Oct 2026 21:46:50 +0900&quot;,&quot;topicNumber&quot;:3,&quot;topicTitle&quot;:&quot;管理人への要望&quot;,&quot;url&quot;:&quot;https://z.wikiwiki.jp/arcaea/topic/3&quot;},{&quot;embeddedSites&quot;:[],&quot;forumSlug&quot;:&quot;arcaea&quot;,&quot;forumTitle&quot;:&quot;Arcaea Wiki@zawazawa&quot;,&quot;lastCommentNumber&quot;:290,&quot;lastCommentedAt&quot;:&quot;Wed, 07 Oct 2026 20:19:06 +0900&quot;,&quot;topicNumber&quot;:10,&quot;topicTitle&quot;:&quot;ポテンシャル研究所&quot;,&quot;url&quot;:&quot;https://z.wikiwiki.jp/arcaea/topic/10&quot;}]}"></div>
+<div class="spacer">&nbsp;</div>
+<div class="spacer">&nbsp;</div>
+<h2 id="h2_content_53_3" class="heading-after-first">サウンドトラック</h2>
+<div style="text-align:center"><span class="wikicolor" style="color:#ffffff; background-color:#292929">詳細は<a href="/arcaea/Arcaea%20Sound%20Collection" title="Arcaea Sound Collection" class="rel-wiki-page">こちら</a></span></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Memories of Light<br class="spacer">(25曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#hikarifa" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/sound-collection-l_thumb.jpg.webp?rev=94c67776cb873e0c24761c4484148c13&amp;t=20231027221446" alt="Memories of Light" title="Memories of Light" width="130" height="130"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://diverse.direct/arcaea/irocd-001/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000002242/" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://www.amazon.co.jp/dp/B081QXZLT3" rel="nofollow">Amazon</a><br class="spacer"><a href="https://www.melonbooks.co.jp/detail/detail.php?product_id=581852" rel="nofollow">メロンブックス</a><br class="spacer"><a href="https://music.apple.com/jp/album/arcaea-sound-collection-memories-of-light/1524421030" rel="nofollow">Apple Music</a><br class="spacer"><a href="https://music.youtube.com/playlist?list=OLAK5uy_lqhazLVjiFoAkYRbed-iHjdSxPJUEYmQs" rel="nofollow">YouTube Music</a><br class="spacer"><a href="https://open.spotify.com/album/0NF9Ib8iJpuSkGcUsEWqFg" rel="nofollow">Spotify</a></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Memories of Conflict<br class="spacer">(26曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#tairitsuso" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/sound-collection-c_thumb.jpg.webp?rev=0f0203728505542f44a1b967168b7a74&amp;t=20231027221435" alt="Memories of Conflict" title="Memories of Conflict" width="130" height="130"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://diverse.direct/arcaea/irocd-002/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000002243/" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://www.amazon.co.jp/dp/B081QYH1MV" rel="nofollow">Amazon</a><br class="spacer"><a href="https://www.melonbooks.co.jp/detail/detail.php?product_id=581853" rel="nofollow">メロンブックス</a><br class="spacer"><a href="https://music.apple.com/jp/album/arcaea-sound-collection-memories-of-conflict/1524422205" rel="nofollow">Apple Music</a><br class="spacer"><a href="https://music.youtube.com/playlist?list=OLAK5uy_ktU9G2vNQFSNfL7vgKxg7Nu1-EYKFSMEQ" rel="nofollow">YouTube Music</a><br class="spacer"><a href="https://open.spotify.com/album/0mz9MALr7kmisuWANQECuK" rel="nofollow">Spotify</a></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Memories of Realms<br class="spacer">(25曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#sayaet" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/sound-collection-r_thumb.jpg.webp?rev=4ed0beeadf3d822642b6e5f7ad1aa12d&amp;t=20231027221459" alt="Memories of Realms" title="Memories of Realms" width="130" height="130"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://diverse.direct/arcaea/irocd-003/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000002594/" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://www.amazon.co.jp/dp/B08LDFNPWS" rel="nofollow">Amazon</a><br class="spacer"><a href="https://music.apple.com/jp/album/arcaea-sound-collection-memories-of-realms/1566298887" rel="nofollow">Apple Music</a><br class="spacer"><a href="https://music.youtube.com/playlist?list=OLAK5uy_li08wFEp5xogYH6pWcDOh9aHEOD9YEVgU" rel="nofollow">YouTube Music</a><br class="spacer"><a href="https://open.spotify.com/album/4AT5Z6EN6o5huICCIqWKG7" rel="nofollow">Spotify</a></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Memories of Dreams<br class="spacer">(27曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#alicetennielmi" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/sound-collection-d_thumb.jpg.webp?rev=51434a5b6c5d96ee1bb88caa8f460b59&amp;t=20231027221441" alt="Memories of Dreams" title="Memories of Dreams" width="130" height="130"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://diverse.direct/arcaea/irocd-004/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000002878/" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://www.amazon.co.jp/dp/B09LMZLG8Z/" rel="nofollow">Amazon</a><br class="spacer"><a href="https://music.apple.com/jp/album/arcaea-sound-collection-memories-of-dreams/1644145013" rel="nofollow">Apple Music</a><br class="spacer"><a href="https://music.youtube.com/playlist?list=OLAK5uy_k-sjzbpcEAj1ckPp27FoEaQR_kB5DUn8I" rel="nofollow">YouTube Music</a><br class="spacer"><a href="https://open.spotify.com/album/28P0JENkhoVSSeZlrnWNiH" rel="nofollow">Spotify</a></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Memories of Wrath<br class="spacer">(25曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#tairitsuel" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/sound-collection-w_thumb.jpg.webp?rev=b8d961bbbfe76bf52fecf9ca7536575a&amp;t=20231027221505" alt="Memories of Wrath" title="Memories of Wrath" width="130" height="130"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://diverse.direct/arcaea/irocd-005/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000002879/" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://www.amazon.co.jp/dp/B09LN1XKWS/" rel="nofollow">Amazon</a><br class="spacer"><a href="https://music.apple.com/jp/album/arcaea-sound-collection-memories-of-wrath/1644173091" rel="nofollow">Apple Music</a><br class="spacer"><a href="https://music.youtube.com/playlist?list=OLAK5uy_ldb4wpfO8i_XHsCDi5yUvKF_V3dqxp1K8" rel="nofollow">YouTube Music</a><br class="spacer"><a href="https://open.spotify.com/album/0ShOvBhuOxUw5QDMSQGcEp" rel="nofollow">Spotify</a></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Memories of Myth<br class="spacer">(27曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#lagrangear" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/sound-collection-m_thumb.jpg.webp?rev=607de49559796295e3f893872a9cf08f&amp;t=20231027221453" alt="Memories of Myth" title="Memories of Myth" width="130" height="130"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://diverse.direct/arcaea/irocd-006/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000003223" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://www.amazon.co.jp/dp/B0BSFXNTBG/" rel="nofollow">Amazon</a><br class="spacer"><a href="https://music.apple.com/jp/album/arcaea-sound-collection-memories-of-myth/1713385016" rel="nofollow">Apple Music</a><br class="spacer"><a href="https://music.youtube.com/playlist?list=OLAK5uy_kyoMQ2OYJTtHcRGrm413n34ZX2wR-6B2E" rel="nofollow">YouTube Music</a><br class="spacer"><a href="https://open.spotify.com/album/7wEwHaYRc4G3LYXaSxyDU4" rel="nofollow">Spotify</a></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Memories of Serenity<br class="spacer">(26曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#vitaca" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/sound-collection-s_thumb.jpg?rev=3e7990c606d308ec22b4892a2b409143&amp;t=20251028230100" alt="Memories of Serenity" title="Memories of Serenity" width="130" height="116"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://diverse.direct/arcaea/irocd-007/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000003607/" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://www.amazon.co.jp/dp/B0CY7T7P4K/" rel="nofollow">Amazon</a><br class="spacer"><a href="https://music.apple.com/jp/album/arcaea-sound-collection-memories-of-serenity/1804900356" rel="nofollow">Apple Music</a><br class="spacer"><a href="https://open.spotify.com/album/1qooXE916QVKGxX8iJrpxN" rel="nofollow">Spotify</a></div>
+<div class="spacer">&nbsp;</div>
+<div style="text-align:center">Crossing Collection<br class="spacer">(7曲 + <a href="/arcaea/%E3%83%91%E3%83%BC%E3%83%88%E3%83%8A%E3%83%BC/%E6%81%92%E5%B8%B8%28Page3%29#breakthrough" title="パートナー/恒常(Page3)" class="rel-wiki-page">パートナー</a>)<br class="spacer"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/crossing_collection_thumb.jpg.webp?rev=0d00ee5ee28f6f854d9710cfaf271324&amp;t=20260201092131" alt="Crossing Collection" title="Crossing Collection" width="130" height="116"  loading="lazy"></div>
+<div style="text-align:center"><a href="https://www.diverse.direct/arcaea/ans-0002/" rel="nofollow">DIVERSE DIRECT</a><br class="spacer"><a href="https://www.tanocstore.net/shopdetail/000000004229/" rel="nofollow">TANO*C STORE</a><br class="spacer"><a href="https://lowiro.bandcamp.com/album/arcaea-next-stage-crossing-collection" rel="nofollow">Bandcamp</a></div>
+<div class="spacer">&nbsp;</div>
+<div class="spacer">&nbsp;</div>
+<h2 id="h2_content_53_4" class="heading-after-first">LINEスタンプ</h2>
+<div style="text-align:center"><a href="https://store.line.me/stickershop/product/7686361/" rel="nofollow"><img src="https://cdn.wikiwiki.jp/to/w/arcaea/FrontPage/::ref/35.png?rev=920ce110b41cc3155a150e872c492b4b&amp;t=20210213225806" alt="LINE Sticker" title="LINE Sticker" width="130" height="103"  loading="lazy"></a><br class="spacer">250円(100コイン)</div>
+<div class="spacer">&nbsp;</div>
+<hr class="short_line">
+<div class="spacer">&nbsp;</div>
+<p>Today : <span class="wikiwiki-counter wikiwiki-counter-today">?</span><br />
+Yesterday : <span class="wikiwiki-counter wikiwiki-counter-yesterday">?</span><br />
+<strong>Total : <span class="wikiwiki-counter wikiwiki-counter-total">?</span></strong><br />
+<span class="wikicolor" style="color:white; background-color:black">Online : <span class="wikiwiki-online">?</span></span></p>                </div>
+                <div class="admenu-sticky">
+<!-- /19033742/WIKIWIKI_PC_MENU_STICKY -->
+<div id='div-gpt-ad-1567834179057-0'></div>
+</div>
+<script>
+if (document.documentElement.clientWidth > 805 && !wi_ismobile && wi_group === 'N' && wi_agreement === 'false' && !wi_isinbound &&
+    document.getElementById('body').clientHeight - document.getElementById('menubar').clientHeight > 1000) {
+    googletag.cmd.push(() => {
+        googletag.display(
+            googletag.defineSlot('/19033742/WIKIWIKI_PC_MENU_STICKY', [[120,600],[160,600],[1,1]], 'div-gpt-ad-1567834179057-0').addService(googletag.pubads())
+        );
+    });
+    defineSlotFlux.push({"slotID": "div-gpt-ad-1567834179057-0", "sizes": [[160,600]], "slotName":"WIKIWIKI_PC_MENU_STICKY"});
+}
+</script>
+<style>
+.admenu-sticky {
+    display: flex;
+    justify-content: center;
+    position: -webkit-sticky;
+    position: sticky;
+    margin-top: 50px;
+    top: 50px;
+    max-width: 160px;
+    margin-left: auto;
+    margin-right: auto;
+}
+</style>
+
+            </div>
+            </div>
+
+            <div class="container">
+            <div id="note">
+                <hr class="note_hr" /><a id="notefoot_1" href="#notetext_1" class="note_super">*1</a>
+<span class="small">2020年12月26日にMiliの公式YouTubeチャンネルで行われた<a class="ext" href="https://www.youtube.com/watch?v=pXYGIRyFmEg&amp;t=7703" rel="nofollow">生放送<span class="system-icon ext pukiwiki-open-uri" data-href="https://www.youtube.com/watch?v=pXYGIRyFmEg&amp;t=7703" data-frame="_blank"></span></a>(現在はアーカイブ非公開)にてKasai氏が発言。</span><br>            </div>
+        </div>
+    
+    <div id="footer">
+                                <div class="container">
+                <hr />
+                <div style="text-align:center">&#169; 2017-2026 <a href="https://wikiwiki.jp/arcaea/" rel="nofollow">Arcaea Wiki</a></div>            </div>
+                <div class="container">
+            <hr />
+            <div class="footer-block clearfix">
+                <div class="footer-block-item-left" id="signature">
+                    <!-- google_ad_section_start(weight=ignore) -->
+                    レンタルWIKI by <a href="https://wikiwiki.jp/" title="無料レンタルWIKIサービス">WIKIWIKI.jp*</a>&nbsp;/&nbsp;
+                    Designed by <a href="https://wikiwiki.jp/pp/skin-design-policy" title="スキンデザインのご利用についてのお願い">Olivia</a>&nbsp;/&nbsp;
+                    <a href="https://wikiwiki.jp/pp/aboutad" title="広告について">広告について</a>&nbsp;/&nbsp;
+                    無料レンタル掲示板 <a href="https://z.wikiwiki.jp/" title="zawazawa">zawazawa</a>
+                    <!-- google_ad_section_end -->
+                </div>
+                <div class="footer-block-item-right">
+                    <div class="footer-mixirss">
+                        <div class="toolbar"><a href="/arcaea/::cmd/mixirss" title="最終更新のRSS" rel="nofollow"><span class="system-icon rss"></span></a></div>                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="pageload" style="display: none" data-pageload="{&quot;time&quot;:{&quot;all&quot;:{&quot;real&quot;:0.028013944625854492,&quot;cost&quot;:0.0506739616394043},&quot;body&quot;:{&quot;real&quot;:0.01935410499572754,&quot;cost&quot;:0.01935410499572754},&quot;main&quot;:{&quot;real&quot;:0.01694178581237793,&quot;cost&quot;:0.01694178581237793},&quot;menu&quot;:{&quot;real&quot;:0.020992040634155273,&quot;cost&quot;:0.02123403549194336},&quot;head&quot;:{&quot;real&quot;:0.0009741783142089844,&quot;cost&quot;:0.0009741783142089844},&quot;foot&quot;:{&quot;real&quot;:0.00045180320739746094,&quot;cost&quot;:0.00045180320739746094}},&quot;include&quot;:1,&quot;memory&quot;:1767840,&quot;io&quot;:{&quot;read&quot;:{&quot;files&quot;:6,&quot;bytes&quot;:14274,&quot;locks&quot;:4},&quot;write&quot;:{&quot;files&quot;:0,&quot;bytes&quot;:0,&quot;locks&quot;:0},&quot;directory&quot;:{&quot;traversals&quot;:0,&quot;files&quot;:0},&quot;misc&quot;:74},&quot;contentSize&quot;:{&quot;all&quot;:60199,&quot;body&quot;:27418},&quot;timestamp&quot;:&quot;2026-11-08 21:00:46&quot;}"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mark.js@8.11.1/dist/jquery.mark.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.2.0/js/fontawesome.min.js" data-auto-replace-svg="false"></script>
+<script type="text/javascript" src="https://cdn.wikiwiki.jp/to/w/common/assets/dist/wikiwiki-eac0e07cc5211f8ee5cd.min.js"></script>
+<script type="text/javascript" src="https://cdn.wikiwiki.jp/to/w/common/assets/dist/prismjs-2beeff50838d559ada2a.min.js"></script>
+<script type="text/javascript" src="https://cdn.wikiwiki.jp/to/w/common/assets/dist/wikiwiki-ex1-e13505c57a12af32bb51.min.js"></script>
+<script type="text/javascript" src="https://cdn.wikiwiki.jp/to/w/common/assets/dist/wikiwiki-ex2-3ec23674488cb5b66ea7.min.js"></script>
+    <script>
+        if (window.FontAwesome) {
+            window.FontAwesome.dom.watch();
+        } else {
+            console.warn('FontAwesome is not loaded.');
+        }
+    </script>
+<script type="text/javascript">
+    bootLazy.addJqPluginInit('.fold-container', function() {
+        this.fold({
+            buttonSelector: '.fold-toggle-button',
+            openClassName: 'fold-open'
+        });
+    });
+</script>
+    <script>
+        $('.code-highlighter-root[data-element-id="ab7efdfc61e4af057152c3b65ce9be76"]').prism({"plugin":"code","language":"java","theme":"dark","copy":true})
+    </script>
+    <script>
+        bootLazy.addJqPluginInit('.lazy-dom-placeholder', function() {
+            this.lazyDom({ rootMargin: '400px' });
+        });
+    </script>
+<script type="text/javascript">
+    bootLazy.addJqPluginInit('.plugin-new-body', function() {
+        this.newmarker();
+    });
+</script>
+    <script>
+        bootLazy.addJqPluginInit('.security-check-interrupt', function() {
+            this.securityCheckInterrupt({});
+        });
+    </script>
+    <script>
+    bootLazy.addJqPluginInit('.pcomment-form-placeholder', function() {
+        this.pcommentForm({});
+    });
+    </script>
+<div id="wikiwiki-pageview-counter" data-endpoint="https://counter.wikiwiki.jp/c/arcaea/pv/world.execute%28me%29%3B" style="display: none;"></div>
+<script>
+    $('#wikiwiki-pageview-counter').pageview();
+</script>
+<script type="text/javascript">
+    bootLazy.addJqPluginInit('.recentdetail-container[data-recent-hash="b3c2ac683eb428c43e2ecfd4b4469cd8"]', function() {
+        this.recentdetail({"timestamp":1794138990,"groupBoundary":["15m","30m","1h","3h","6h","12h","1d"],"list":[{"time":1794138990,"page":"コンポーザー順/ボーカリスト(Page2)","link":"/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/%E3%83%9C%E3%83%BC%E3%82%AB%E3%83%AA%E3%82%B9%E3%83%88%28Page2%29"},{"time":1794138776,"page":"コンポーザー順/日本語・その他","link":"/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%83%BB%E3%81%9D%E3%81%AE%E4%BB%96"},{"time":1794138433,"page":"コンポーザー順/A～O","link":"/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/A%EF%BD%9EO"},{"time":1794138366,"page":"コンポーザー順/A～O(Page2)","link":"/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/A%EF%BD%9EO%28Page2%29"},{"time":1794137670,"page":"コンポーザー順/P～Z(Page2)","link":"/arcaea/%E3%82%B3%E3%83%B3%E3%83%9D%E3%83%BC%E3%82%B6%E3%83%BC%E9%A0%86/P%EF%BD%9EZ%28Page2%29"},{"time":1794129460,"page":"PUPA","link":"/arcaea/PUPA"},{"time":1794110745,"page":"コメント/PRAGMATISM","link":"/arcaea/%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88/PRAGMATISM"},{"time":1794110472,"page":"コメント/……已至。","link":"/arcaea/%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88/%E2%80%A6%E2%80%A6%E5%B7%B2%E8%87%B3%E3%80%82"},{"time":1794108457,"page":"コメント/Parallax","link":"/arcaea/%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88/Parallax"},{"time":1794099352,"page":"Renegade【Arknights】","link":"/arcaea/Renegade%E3%80%90Arknights%E3%80%91"},{"time":1794099340,"page":"Radiant","link":"/arcaea/Radiant"},{"time":1794099328,"page":"Miss You","link":"/arcaea/Miss%20You"},{"time":1794096727,"page":"Somniomancer ［null set］","link":"/arcaea/Somniomancer%20%EF%BC%BBnull%20set%EF%BC%BD"},{"time":1794095152,"page":"Fading Sky","link":"/arcaea/Fading%20Sky"},{"time":1794095009,"page":"Operation Spectrum Battle Theme","link":"/arcaea/Operation%20Spectrum%20Battle%20Theme"},{"time":1794094688,"page":"ALIVE","link":"/arcaea/ALIVE"},{"time":1794093878,"page":"Speed of Light","link":"/arcaea/Speed%20of%20Light"},{"time":1794091975,"page":"……已至。","link":"/arcaea/%E2%80%A6%E2%80%A6%E5%B7%B2%E8%87%B3%E3%80%82"},{"time":1794068862,"page":"人気投票","link":"/arcaea/%E4%BA%BA%E6%B0%97%E6%8A%95%E7%A5%A8"},{"time":1794065639,"page":"コメント/GLORY：ROAD","link":"/arcaea/%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88/GLORY%EF%BC%9AROAD"}]});
+    });
+</script>
+    <script type="text/javascript">
+        bootLazy.addJqPluginInit('.wikiwiki-popular', function() {
+            this.popular({
+                wikiRootUrl: '/arcaea/',
+            });
+        });
+    </script>
+    <script type="text/javascript">
+        bootLazy.addJqPluginInit('.zawazawa-recent', function() {
+            this.zrecent();
+        });
+    </script>
+    <script>
+        bootLazy.addJqPluginInit('#responsive-navigation', function() {
+            this.responsiveNavigation({
+                menuBarSelector: '#menubar',
+                editMenuSelector: '#edit-menu',
+
+                mainContentsBottomElement: '#main-contents-bottom',
+                sidebarBottomElement: '#sidebar-bottom',
+                menuBarContainerElement: '#contents .column-left',
+                footerElement: '#footer',
+
+                overlayAdRenderedEventName: 'overlay-ad-rendered',
+                overlayAdMarginTop: 25
+            });
+        });
+    </script>
+    <script>
+        $('#share-button-root').sharePanel({
+            title: "world.execute(me); - Arcaea Wiki*",
+            controlPanelUrl: "https:\/\/c.wikiwiki.jp\/wiki\/arcaea\/design",
+            imageUrl: "https:\/\/icon.wikiwiki.jp\/symbolicon\/arcaea\/ogCustomImage\/8824f6ba7cde.jpg",
+            description: "iOS\/Android\/Nintendo Switch向け音楽ゲーム『Arcaea』の日本語版Wikiです。",
+            shareUrl: "https:\/\/wikiwiki.jp\/arcaea\/world.execute%28me%29%3B",
+            shortUrlRequestUrl: "\/arcaea\/::cmd\/short_url?mode=json&page=world.execute%28me%29%3B",
+            hasOgSettings: true,
+        })
+    </script>
+<script>
+    $('#admin-contact-root').adminContact({
+        logoImgUrl: "https:\/\/icon.wikiwiki.jp\/symbolicon\/arcaea\/appleTouchIcon\/7bccedf015b8.png",
+        pageTitle: "Arcaea Wiki*",
+        controlPanelUrl: "https:\/\/c.wikiwiki.jp\/wiki\/arcaea\/settings",
+        contact: "zawazawa(管理人への要望): https:\/\/z.wikiwiki.jp\/arcaea\/topic\/3\r\nX: @ArcaeaWiki\r\nMail: arcaeawiki@gmail.com",
+        helpLink: 'https://wikiwiki.jp/pp/admin_contact',
+    });
+</script>
+<script>
+$("#load-panel-root").loadpanel({
+    dataSelector: "#pageload",
+    helpLink: 'https://wikiwiki.jp/pp/page_load_panel'
+});
+</script>
+<script>
+    $('.admin-login-status').adminLoginStatus({
+        cookieName: 'login_session_status',
+    });
+</script>
+<script>
+    $(function() {
+        $('.search-words').searchWordHighlight({
+            paramName: 'word',
+            selector: "#content,#note",
+            limit: 10,
+            markedClassResolver: function (i) { return "word" + i; }
+        });
+    });
+</script>
+<script>$(".realtime-date").realtimeDate();</script>
+<script>
+    $("body").notificationBar();
+</script>
+<script>
+$("#contents").anchorLink({
+    url: '/arcaea/world.execute%28me%29%3B',
+});
+</script>
+<script>window.lazyLoadViewingContext = {"viewingPage":"world.execute(me);","viewingMode":"read"};</script>
+    <script>
+        bootLazy.addJqPluginInit('.tooltip', function() {
+            this.tooltip();
+        });
+    </script>
+    <script>
+        bootLazy.addPlainScript(function() {
+            lightbox.option({
+                resizeDuration: 0
+            });
+        });
+    </script>
+<script>
+    $(function() {
+        window.bootLazy.bootOn(document);
+    });
+</script>
+<script>
+    $(document).pukiwiki();
+</script>
+<script>
+jQuery(function() {
+    $('form').usageStatistics({
+        keyName: 'usageStatistics',
+        smsAuthCookieName: 'authkey',
+        hasPostedCookieName: '__posted2',
+    });
+    $(document).browsingStatistics({
+        keyName: 'browsingStatistics'
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+[["render4k_8way.ps1","  [int]$Sc = 2,","  [int]$Sc = 2,\n  [string]$Out = 'out\\world_execute_me_4k120.mp4',"],["render4k_8way.ps1","$outFile = 'out\\world_execute_me_4k120.mp4'","$outFile = $Out"]]

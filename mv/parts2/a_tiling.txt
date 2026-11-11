@@ -1,0 +1,54 @@
+// ---------------------------------------------------------------- a_tiling
+function a_tiling(ctx, t, u){
+  ctx.fillStyle = '#04060A'; ctx.fillRect(0, 0, W, H);
+  const cam = L.makeCam({ pos: [0.4, 3.6 - 0.9 * u, 7.6 - 1.6 * u], yaw: -0.20 + 0.10 * u, pitch: -0.44, fov: 1.0 });
+  K.floorGrid(ctx, cam, 10, 1.0, { alpha: 0.20 });
+  const N = 7, sp = 1.06, t0 = 3.90, stag = 0.0225;
+  const order = [];
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++){
+    order.push({ gx: (i - (N-1)/2) * sp, gz: (j - (N-1)/2) * sp, r: Math.hypot(i - (N-1)/2, j - (N-1)/2), seed: i * 13 + j * 7 });
+  }
+  order.sort((a,b) => a.r - b.r || a.seed - b.seed);
+  order.forEach((d, idx) => {
+    const at = t0 + idx * stag;
+    const k = sat((t - at) / 0.15);
+    if (k <= 0) return;
+    const y = lerp(5.2, 0.03, easeOutQuint(k));
+    const sz = 0.52;
+    const verts = K.CUBE_V.map(v => [d.gx + v[0]*sz, y + (v[1]+1)*0.055, d.gz + v[2]*sz]);
+    const faces = K.sortedFaces(cam, verts, K.CUBE_F);
+    const fresh = 1 - sat((t - at - 0.15) / 0.8);
+    const hue = L.hash2(d.seed, 1) > 0.55 ? C.phos : C.dsLite;
+    for (const f of faces){
+      K.polyFill(ctx, f.P, rgba(hue, 0.05 + 0.09 * (1 - f.d / 15) + 0.30 * fresh), rgba(hue, 0.28 + 0.55 * fresh), 1.1);
+    }
+    if (k >= 1){
+      const imp = sat((t - at - 0.15) / 0.40);
+      if (imp < 1){
+        const c = L.proj(cam, [d.gx, 0.02, d.gz]);
+        if (c){ ctx.strokeStyle = rgba(C.cyan, (1 - imp) * 0.85); ctx.lineWidth = 2.2; L.circle(ctx, c[0], c[1], 6 + 52 * easeOutCubic(imp)); ctx.stroke(); }
+      }
+    }
+  });
+  const mag = ss(4.72, 5.05, t);
+  if (mag > 0){
+    const ms = 500 * easeOutBack(mag, 1.4), mx = 1330 - ms / 2, my = 150;
+    ctx.save(); ctx.globalAlpha = sat(mag);
+    ctx.fillStyle = 'rgba(3,7,9,0.92)'; ctx.fillRect(mx, my, ms, ms);
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++){
+      const x = mx + i * ms / 4, y = my + j * ms / 4;
+      ctx.fillStyle = rgba(C.ds, 0.10); ctx.fillRect(x, y, ms/4 - 1.5, ms/4 - 1.5);
+      ctx.strokeStyle = rgba(C.cyan, 0.55); ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, ms/4 - 2, ms/4 - 2);
+      for (let a2 = 0; a2 < 4; a2++) for (let b2 = 0; b2 < 4; b2++){
+        ctx.strokeStyle = rgba(C.phos, 0.30);
+        ctx.strokeRect(x + a2 * ms/16 + 1.5, y + b2 * ms/16 + 1.5, ms/16 - 3, ms/16 - 3);
+      }
+    }
+    ctx.strokeStyle = rgba(C.cyan, 0.8); ctx.lineWidth = 1.4; ctx.strokeRect(mx + .5, my + .5, ms - 1, ms - 1);
+    L.mono(ctx, 'TILE 128×128  →  4×4  →  4×4', mx + 2, my - 12, 14, rgba(C.cyan, 0.9), 1.6);
+    L.mono(ctx, 'SRAM tile · register tile · thread', mx + 2, my + ms + 22, 13, rgba(C.phos, 0.6), 1.4);
+    ctx.restore();
+  }
+  L.spec(ctx, 96, 172, [['layout','tiled GEMM'],['tile','128 × 128 × 128'],['resident','64 warps / SM']], { alpha: ss(3.98, 4.4, t) * 0.85, color: C.cyan, kw: 82 });
+  return { bloom: 1.2, chroma: 1.4, scan: 0.5 };
+}
