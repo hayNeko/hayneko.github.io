@@ -1,7 +1,12 @@
 'use strict';
 
 /* HY486 machine: bus + devices + CPU + self-written BIOS ROM. Runs headless in
-   Node; only vga.render(canvas) needs a DOM and that belongs to the UI. */
+   Node; only vga.render(canvas) needs a DOM and that belongs to the UI.
+
+   halt() is a hard stop: run(), step() and runUntil() execute nothing until
+   resume() clears it, while the CPU state (including a CPU parked in HLT) is
+   left untouched. */
+
 
 (function (root, factory) {
   'use strict';
@@ -170,8 +175,18 @@
     return this.reboot();
   };
 
+  /* Freeze the machine: run() and step() refuse to execute anything until
+     resume() is called, so a UI stop button cannot be outrun by a step-based
+     loop.  The CPU, PIC and PIT are left exactly as they are. */
   Machine.prototype.halt = function () {
     this._stopped = true;
+    return this;
+  };
+
+  /* Release a halt().  cpu.halted is deliberately not touched: a CPU sitting in
+     HLT stays there until an interrupt arrives, exactly like real hardware. */
+  Machine.prototype.resume = function () {
+    this._stopped = false;
     return this;
   };
 
@@ -227,6 +242,7 @@
 
   Machine.prototype.step = function () {
     var cpu = this.cpu;
+    if (this._stopped) return 0;
     if (cpu.tripleFault) {
       this._reportFault();
       return 0;
@@ -259,7 +275,7 @@
     var limit = maxSteps === undefined ? 2000000 : maxSteps;
     addr = addr >>> 0;
     for (var i = 0; i < limit; i++) {
-      if (this.cpu.tripleFault) return 'halt';
+      if (this._stopped || this.cpu.tripleFault) return 'halt';
       this.step();
       if (this._atAddress(addr)) return 'hit';
       if (this.cpu.halted || this.cpu.tripleFault) return 'halt';
@@ -405,6 +421,7 @@
       eflags: cpu.eflags >>> 0,
       if: (cpu.eflags & 0x200) !== 0,
       halted: cpu.halted === true,
+      stopped: this._stopped === true,
       tripleFault: cpu.tripleFault === true,
       cycles: cpu.cycles >>> 0,
       instructions: this.instructions,

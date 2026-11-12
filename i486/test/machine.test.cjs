@@ -930,6 +930,57 @@ harness.suite('machine api', function () {
     assert(m.rom.symbols.has('post'), 'symbols survive the build');
   });
 
+  harness.test('halt freezes step() and run() until resume()', function () {
+    var m = bootMachine();
+    var program = com(['  mov ax, 0x1234', 'spin:', '  add ax, 1', '  jmp spin']);
+    m.loadProgram(program, { mode: 'com16' });
+    m.run(500);
+    var frozen = {
+      instructions: m.instructions,
+      cycles: m.cpu.cycles,
+      eip: m.cpu.eip,
+      halted: m.cpu.halted,
+      ax: m.cpu.getReg('ax')
+    };
+    assert(m.halt() === m, 'halt() chains');
+    eq(m.state().stopped, true, 'state() reports the stall');
+    var everyStepZero = true;
+    for (var i = 0; i < 1000; i++) {
+      if (m.step() !== 0) everyStepZero = false;
+    }
+    assert(everyStepZero, 'every step() returns 0 while stopped');
+    eq(m.instructions, frozen.instructions, 'instruction counter frozen');
+    eq(m.cpu.cycles, frozen.cycles, 'cycle counter frozen');
+    eq(m.cpu.eip, frozen.eip, 'EIP frozen');
+    eq(m.cpu.halted, frozen.halted, 'CPU halt state untouched');
+    eq(m.cpu.getReg('ax'), frozen.ax, 'registers frozen');
+    eq(m.run(1000), 0, 'run() executes nothing while stopped');
+    eq(m.instructions, frozen.instructions, 'run() left the counter alone');
+    eq(m.runUntil(0xDEAD, 100), 'halt', 'runUntil() reports the stall');
+    eq(m.cpu.eip, frozen.eip, 'runUntil() left EIP alone');
+    assert(m.resume() === m, 'resume() chains');
+    eq(m.state().stopped, false, 'state() clears the stall');
+    eq(m.run(1000), 1000, 'run() works again after resume()');
+    assert(m.instructions > frozen.instructions, 'instructions retire after resume()');
+    assert(m.cpu.cycles > frozen.cycles, 'cycles advance after resume()');
+  });
+
+  harness.test('halt() inside a run stops the loop early', function () {
+    var m = bootMachine();
+    m.loadProgram(com(['  mov ax, 0x0003', '  int 0x10', 'span:', '  add ax, 1', '  jmp span']), { mode: 'com16' });
+    var irqs = 0;
+    m.onIrq = function () { irqs++; m.halt(); };
+    var ran = m.run(200000);
+    assert(irqs > 0, 'the PIT delivered at least one interrupt');
+    assert(ran > 0, 'something executed before the halt');
+    assert(ran < 200000, 'run() returned early, executed ' + ran);
+    eq(m.state().stopped, true, 'the machine is stopped');
+    m.onIrq = null;
+    eq(m.run(1000), 0, 'a following run() still executes nothing');
+    m.resume();
+    eq(m.run(1000), 1000, 'resume() restores execution');
+  });
+
   harness.test('two machines do not share state', function () {
     var a = bootMachine();
     var b = new I486.Machine({ ramMB: 8 });

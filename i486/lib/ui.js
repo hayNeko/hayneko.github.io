@@ -30,7 +30,8 @@
   var RUN_BURST = 60000;
   var POST_BUDGET = 3000000;
   var POST_CHUNK = 25000;
-  var HALT_TICK = 512;
+  var FRAME_BURST_CAP = 400000;  /* hard cap per frame so the page stays responsive */
+  var WAKE_BURST = 512;          /* instructions retired when input wakes a halted CPU */
   var MEM_COLS = 16;
   var DIS_ROW_H = 19;       /* .ds > li line-height in i486.css */
   var MEM_ROW_H = 18;       /* .mem li line-height */
@@ -124,8 +125,12 @@
     machine: null,
     powered: false,
     running: false,
+    stopped: false,
     raf: 0,
     speed: SPEED_DEFAULT,
+    acc: 0,
+    frameClock: 0,
+    keyWake: 0,
     capture: false,
     editor: null,
     asm: null,
@@ -144,6 +149,7 @@
     history: [],
     historyAt: -1,
     tab: 'editor',
+    stateEdit: null,
     disFollow: true,
     disRows: [],
     disBits: 0,
@@ -469,6 +475,7 @@
     try {
       if (S.diskImage) machine.loadDiskImage(S.diskImage);
       machine.powerOn();
+      machineGo();
     } catch (err) {
       log('power on failed: ' + (err && err.message ? err.message : String(err)), 'error');
       return null;
@@ -505,6 +512,7 @@
     stopRun();
     try {
       machine.reboot();
+      machineGo();
     } catch (err) {
       log('reset failed: ' + (err && err.message ? err.message : String(err)), 'error');
       return;
@@ -526,6 +534,7 @@
     }
     try {
       machine.reboot();
+      machineGo();
     } catch (err) {
       log('boot failed: ' + (err && err.message ? err.message : String(err)), 'error');
       return;
@@ -544,7 +553,7 @@
     if (!machine) return 0;
     var done = 0;
     try {
-      done = machine.run(n) | 0;
+      done = withGo(function () { return machine.run(n) | 0; });
     } catch (err) {
       log('run failed: ' + (err && err.message ? err.message : String(err)), 'error');
     }
@@ -571,6 +580,55 @@
     }
   }
 
+  /* The machine's stop latch. PAUSE and the terminal halt both set it through
+     the public API, so no frame, tick or step can retire an instruction behind
+     the user's back; RUN (and every synchronous slice the user asked for)
+     clears it again. */
+  function machineStop() {
+    var machine = S.machine;
+    S.stopped = true;
+    if (!machine) return;
+    try {
+      if (typeof machine.halt === 'function') machine.halt();
+      else machine._stopped = true;
+    } catch (err) {
+      machine._stopped = true;
+      log('halt: ' + errText(err), 'error');
+    }
+  }
+
+  function machineGo() {
+    var machine = S.machine;
+    S.stopped = false;
+    if (!machine) return;
+    try {
+      if (typeof machine.resume === 'function') machine.resume();
+      else machine._stopped = false;
+    } catch (err) {
+      machine._stopped = false;
+      log('resume: ' + errText(err), 'error');
+    }
+  }
+
+  /* A synchronous run slice: clear the latch, execute, restore it afterwards. */
+  function withGo(fn) {
+    var was = S.stopped;
+    machineGo();
+    try { return fn(); }
+    finally { if (was) machineStop(); }
+  }
+
+  /* getFlag returns 0/1 for a single-bit flag, a boolean for some others. */
+  function interruptsOn(cpu) {
+    var v;
+    try {
+      v = cpu.getFlag('if');
+    } catch (err) {
+      return (cpu.eflags & 0x200) !== 0;
+    }
+    return v === true || v === 1 || v === '1' || (typeof v === 'number' && v !== 0);
+  }
+
   function startRun() {
     var machine = ensurePowered();
     if (!machine) return;
@@ -583,6 +641,11 @@
       return;
     }
     if (S.assemblePending) runPending(machine);
+    machineGo();
+    S.acc = 0;
+    S.frameClock = 0;
+    /* The user asked to continue: a halted CPU gets one bounded wake burst. */
+    S.keyWake = WAKE_BURST;
     S.running = true;
     S.ipsBase = { t: Date.now(), n: machine.instructions };
     setStatus('RUNNING', 'running');
@@ -601,12 +664,16 @@
     if (D.run) D.run.disabled = false;
   }
 
+  /* A user pause: the loop stops and the machine latches, so cycles and EIP
+     are frozen until RUN or a single step. */
   function pauseRun(reason) {
     stopRun();
+    machineStop();
+    S.haltNotice = false;
     setStatus('PAUSED', 'halted');
     buildDisasm(false);
     syncPanels(true);
-    if (reason) log(reason, 'dim');
+    log(reason || ('paused at ' + eipText() + ' — the CPU is stopped, nothing is retired'), 'dim');
   }
 
   function schedule() {
@@ -618,16 +685,59 @@
     S.raf = ROOT.requestAnimationFrame(frame);
   }
 
+  function speedTarget() {
+    return clamp(S.speed | 0, SPEED_MIN, SPEED_MAX);
+  }
+
+  /* The speed field means instructions per SECOND: every frame earns
+     speed * dt instructions and the remainder carries into the next frame, so
+     the long-run rate is the number in the field whatever the frame rate is. */
+  function paceBudget(dtMs) {
+    var speed = speedTarget();
+    var acc = (S.acc || 0) + speed * (dtMs / 1000);
+    var cap = 3 * speed / 60 + 5000;
+    if (acc > cap) acc = cap;
+    var n = Math.floor(acc);
+    if (n > FRAME_BURST_CAP) n = FRAME_BURST_CAP;
+    S.acc = acc - n;
+    return n;
+  }
+
+  /* A halted CPU retires nothing until something can wake it: queued keyboard
+     bytes earn one bounded burst, a timer IRQ never does (an idle guest at the
+     prompt must stay at zero instructions per second). */
+  function wakeBudget(machine) {
+    var kb = machine && machine.keyboard;
+    var queued = 0;
+    if (S.keyWake) {
+      S.keyWake = 0;
+      queued = 1;
+    } else if (kb && typeof kb.pending === 'function') {
+      try { queued = kb.pending() | 0; } catch (err) { queued = 0; }
+    }
+    return queued > 0 ? WAKE_BURST : 0;
+  }
+
   function frame() {
     S.raf = 0;
     if (!S.running) return;
+    var machine = S.machine;
+    var cpu = machine ? machine.cpu : null;
+    var halted = !!(cpu && cpu.halted === true);
+    var now = nowMs();
+    var dt = S.frameClock ? clamp(now - S.frameClock, 0, 250) : 16.7;
+    S.frameClock = now;
+    var budget;
+    if (halted) budget = wakeBudget(machine);
+    else { S.keyWake = 0; budget = paceBudget(dt); }
     var result;
-    var halted = S.machine && S.machine.cpu.halted === true;
+    if (budget <= 0) {
+      syncPanels(false);
+      schedule();
+      return;
+    }
     try {
-      /* A halted 486 still needs work: IRQ0 (PIT) and IRQ1 (keyboard) only get
-         delivered from inside machine.step(), so tick a small slice per frame
-         and let the CPU HLT again once the handler returns. */
-      result = advance(halted ? HALT_TICK : S.speed, halted);
+      result = advance(budget, halted);
       syncPanels(false);
     } catch (err) {
       stopRun();
@@ -652,8 +762,8 @@
       if (!S.haltNotice) {
         S.haltNotice = true;
         setStatus('HALTED', 'halted');
-        log('CPU is halted (HLT): ticking ' + group(HALT_TICK) +
-          ' instructions per frame so IRQ0/IRQ1 can wake it', 'dim');
+        log('CPU is halted (HLT) with interrupts ' + (interruptsOn(cpu) ? 'on' : 'off') +
+          ': idle, nothing is retired — a keystroke wakes it with ' + WAKE_BURST + ' instructions', 'dim');
         buildDisasm(false);
         syncPanels(true);
       }
@@ -742,18 +852,33 @@
     else setStatus('PAUSED', 'halted');
   }
 
-  function stepIn(n) {
+  /* One debugger step: the only path that advances while the machine is
+     stopped by the user. It clears the latch, retires the instructions and
+     re-latches, so the CPU is frozen again when the handler returns. */
+  function doStep(count) {
     var machine = ensurePowered();
-    if (!machine) return;
+    if (!machine) return 0;
+    var before = machine.instructions;
     stopRun();
+    machineGo();
     if (machine.cpu.halted) {
       /* HLT waits for an interrupt; a debugger step has to be able to move
          past it, so clear the halt exactly like a delivered interrupt would. */
       machine.cpu.halted = false;
       log('step: HLT cleared for one instruction (an interrupt would do the same)', 'dim');
     }
-    var count = n === undefined ? 1 : clamp(n | 0, 1, SPEED_MAX);
-    advance(count);
+    try {
+      advance(count);
+    } finally {
+      machineStop();
+    }
+    return (machine.instructions - before) | 0;
+  }
+
+  function stepIn(n) {
+    var machine = ensureMachine();
+    if (!machine) { coreMissing('step'); return; }
+    doStep(n === undefined ? 1 : clamp(n | 0, 1, SPEED_MAX));
     afterStep();
   }
 
@@ -761,6 +886,7 @@
     var machine = ensurePowered();
     if (!machine) return;
     stopRun();
+    machineGo();
     S.bpSkip = 0;
     var ins = instrAtEip();
     var target = 0;
@@ -776,6 +902,7 @@
       machine.step();
       if (ins && ins.mnemonic === 'call') log('step over: indirect call, stepped into it', 'dim');
     }
+    machineStop();
     afterStep();
   }
 
@@ -783,6 +910,7 @@
     var machine = ensurePowered();
     if (!machine) return;
     stopRun();
+    machineGo();
     S.bpSkip = 0;
     var bits = cpuBits();
     var cpu = machine.cpu;
@@ -801,6 +929,7 @@
       var why = machine.runUntil(target, 2000000);
       log('step out: running to the return address ' + hex(target, 4) + ' (' + why + ')', 'dim');
     }
+    machineStop();
     afterStep();
   }
 
@@ -982,6 +1111,116 @@
     input.addEventListener('blur', function () { finish(false); });
   }
 
+  /* CS/DS/ES/FS/GS/SS and CR0/CR2/CR3 are written through the CPU API; every
+     rejection is logged and leaves the machine untouched. */
+  var STATE_WRITE = {
+    cs: 'seg', ds: 'seg', es: 'seg', fs: 'seg', gs: 'seg', ss: 'seg',
+    cr0: 'cr', cr2: 'cr', cr3: 'cr'
+  };
+
+  function stateEditInit() {
+    var map = stateMap();
+    var key, dd;
+    for (key in STATE_WRITE) {
+      if (!hasOwn(STATE_WRITE, key)) continue;
+      dd = map[key];
+      if (!dd) continue;
+      dd.setAttribute('data-edit', '');
+      dd.setAttribute('data-state-key', key);
+      dd.setAttribute('title', 'click to edit (0x1234, 1234h or decimal)');
+      dd.classList.add('state-val');
+    }
+  }
+
+  function stateRawValue(cpu, key) {
+    if (key === 'cr0') return hex(cpu.cr0 >>> 0, 8);
+    if (key === 'cr2' || key === 'cr3') {
+      try { return hex(cpu.getCR(key === 'cr2' ? 2 : 3) >>> 0, 8); } catch (err) { return '00000000'; }
+    }
+    try { return hex(cpu.getSeg(key).sel >>> 0, 4); } catch (err) { return '0000'; }
+  }
+
+  function applyStateWrite(key, kind, text) {
+    var machine = S.machine;
+    var cpu = machine && machine.cpu;
+    var value = parseAddr(text, NaN);
+    var seg, idx;
+    if (!cpu) { log('state: no machine to edit', 'error'); return; }
+    if (value !== value) {
+      log('state ' + key + ': "' + text + '" is not a number (use 0x1234, 1234h or decimal)', 'error');
+      return;
+    }
+    if (kind === 'cr') {
+      idx = key === 'cr0' ? 0 : (key === 'cr2' ? 2 : 3);
+      try {
+        cpu.setCR(idx, value >>> 0);
+        log('control register ' + key + ' = 0x' + hex(value >>> 0, 8), 'ok');
+      } catch (err) {
+        log('control register ' + key + ': ' + errText(err) + ' — ' + key.toUpperCase() + ' unchanged', 'error');
+      }
+      syncPanels(true);
+      return;
+    }
+    if (key === 'cs' && (cpu.cr0 & 1) === 0) {
+      /* In real mode CS is the instruction-fetch base and writing it silently
+         re-targets the fetch pointer; the panel refuses it and says why. */
+      log('cs: real-mode CS is the fetch base of the running code — use a far jump ' +
+        '(or edit it in protected mode); CS unchanged', 'error');
+      return;
+    }
+    try {
+      cpu.setSeg(key, value & 0xFFFF);
+      seg = cpu.getSeg(key);
+      log('segment ' + key + ' = 0x' + hex(seg.sel >>> 0, 4) +
+        ' · base 0x' + hex(seg.base >>> 0, 8) + ' · limit 0x' + hex(seg.limit >>> 0, 4), 'ok');
+    } catch (err) {
+      log('segment ' + key + ': ' + errText(err) + ' — ' + key.toUpperCase() + ' unchanged', 'error');
+    }
+    syncPanels(true);
+  }
+
+  function beginStateEdit(key, dd) {
+    var machine = S.machine;
+    if (!machine) { log('state: no machine to edit', 'error'); return; }
+    if (S.stateEdit) return;
+    var kind = STATE_WRITE[key];
+    var row = dd.parentNode;
+    if (!kind || !row) return;
+    var input = doc.createElement('input');
+    input.className = 'reg__input';
+    input.type = 'text';
+    input.value = stateRawValue(machine.cpu, key);
+    input.setAttribute('aria-label', 'new value for ' + key);
+    dd.hidden = true;
+    row.classList.add('is-editing');
+    row.appendChild(input);
+    S.stateEdit = { key: key, input: input, dd: dd, row: row };
+    input.focus();
+    input.select();
+
+    var finish = function (commit) {
+      if (!S.stateEdit || S.stateEdit.input !== input) return;
+      S.stateEdit = null;
+      var text = String(input.value || '').trim();
+      if (input.parentNode) input.parentNode.removeChild(input);
+      row.classList.remove('is-editing');
+      dd.hidden = false;
+      if (!commit) return;
+      try {
+        applyStateWrite(key, kind, text);
+      } catch (err) {
+        log('state ' + key + ': ' + errText(err), 'error');
+      }
+    };
+
+    input.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+      else if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+      event.stopPropagation();
+    });
+    input.addEventListener('blur', function () { finish(false); });
+  }
+
   function updateFlags(cpu) {
     if (!D.flags) return;
     var buttons = D.flags.querySelectorAll('.flag');
@@ -1037,6 +1276,19 @@
     if (map[key]) setText(map[key], value);
   }
 
+  /* base/limit never get a row of their own: they ride in the value tooltip. */
+  function stateTitle(map, key, text) {
+    var dd = map[key];
+    if (dd && text && dd.title !== text) dd.title = text;
+  }
+
+  function segTitle(name, seg) {
+    if (!seg) return name;
+    return name + ' 0x' + hex(seg.sel >>> 0, 4) +
+      ' · base 0x' + hex(seg.base >>> 0, 8) +
+      ' · limit 0x' + hex(seg.limit >>> 0, 4);
+  }
+
   function modeText(machine) {
     var st = machine.state();
     if (st.mode === 'v86') return machine.cpu.cs.big ? 'v86-32' : 'v86-16';
@@ -1068,6 +1320,12 @@
     putState(map, 'ss', '0x' + hex(cpu.getReg('ss'), 4));
     putState(map, 'fs', '0x' + hex(cpu.getReg('fs'), 4));
     putState(map, 'gs', '0x' + hex(cpu.getReg('gs'), 4));
+    stateTitle(map, 'cs', segTitle('cs', cpu.cs));
+    stateTitle(map, 'ds', segTitle('ds', cpu.getSeg('ds')));
+    stateTitle(map, 'es', segTitle('es', cpu.getSeg('es')));
+    stateTitle(map, 'fs', segTitle('fs', cpu.getSeg('fs')));
+    stateTitle(map, 'gs', segTitle('gs', cpu.getSeg('gs')));
+    stateTitle(map, 'ss', segTitle('ss', cpu.getSeg('ss')));
     putState(map, 'cr0', '0x' + hex(cpu.cr0 >>> 0, 8));
     putState(map, 'cr2', '0x' + hex(cpu.getCR(2) >>> 0, 8));
     putState(map, 'cr3', '0x' + hex(cpu.getCR(3) >>> 0, 8));
@@ -1246,18 +1504,48 @@
     return true;
   }
 
+  var MEM_FOLLOW_NAMES = ['none', 'eip', 'eax', 'ecx', 'edx', 'ebx', 'esp', 'ebp', 'esi', 'edi',
+    'cs', 'ds', 'es', 'fs', 'gs', 'ss'];
+
   function memFollowReg() {
     return D['mem-follow'] ? String(D['mem-follow'].value || 'none') : 'none';
   }
 
+  function memFollowValid(name) {
+    for (var i = 0; i < MEM_FOLLOW_NAMES.length; i++) {
+      if (MEM_FOLLOW_NAMES[i] === name) return true;
+    }
+    return false;
+  }
+
+  function memIsSegment(name) {
+    return name === 'cs' || name === 'ds' || name === 'es' ||
+      name === 'fs' || name === 'gs' || name === 'ss';
+  }
+
+  /* Following a segment register means following its base; eip means CS:EIP;
+     every other name is a general register read on each refresh. */
   function memFollowAddr(machine, reg) {
     var cpu = machine && machine.cpu;
-    var value = 0;
+    var value = 0, seg;
     if (!cpu || reg === 'none') return null;
     if (reg === 'eip') return (linearEip() & ~0xF) >>> 0;
+    if (memIsSegment(reg)) {
+      try { seg = cpu.getSeg(reg); } catch (err) { seg = null; }
+      value = seg ? (seg.base >>> 0) : 0;
+      return (value & ~0xF) >>> 0;
+    }
     try { value = cpu.getReg(reg) >>> 0; } catch (err) { value = 0; }
-    if (cpuBits() === 16) value = value & 0xFFFF;
     return (value & ~0xF) >>> 0;
+  }
+
+  function memFollowPin() {
+    var el = doc.querySelector('[data-mem-pin]');
+    var reg = memFollowReg();
+    if (!el) return;
+    setText(el, reg === 'none' ? 'base frozen' : 'follow ' + reg);
+    el.classList.toggle('is-on', reg !== 'none');
+    el.classList.toggle('is-off', reg === 'none');
   }
 
   function memSetInput(addr) {
@@ -1295,16 +1583,18 @@
     S.memBase = base;
     S.memFollowAddr = -1;
     memSetInput(base);
+    memFollowPin();
     try { store().setItem(MEM_FOLLOW_KEY, 'none'); } catch (err) { /* private mode */ }
     log('memory: unpinned at 0x' + hex(base, 8) + ' — the base is frozen, the dump keeps growing', 'dim');
   }
 
   function memSetFollow(reg) {
     var el = D['mem-follow'];
-    var name = reg === 'eip' || reg === 'esi' || reg === 'edi' || reg === 'none' ? reg : 'esp';
+    var name = memFollowValid(reg) ? String(reg) : 'esp';
     if (el && el.value !== name) el.value = name;
-    if (name === 'none') S.memFollowAddr = -1;
-    else { S.memFollowAddr = -1; S.memReg = name; }
+    S.memFollowAddr = -1;
+    if (name !== 'none') S.memReg = name;
+    memFollowPin();
     try { store().setItem(MEM_FOLLOW_KEY, name); } catch (err) { /* private mode */ }
     return name;
   }
@@ -1315,6 +1605,7 @@
     if (el && el.value !== 'none') el.value = 'none';
     try { store().setItem(MEM_FOLLOW_KEY, 'none'); } catch (err) { /* private mode */ }
     S.memFollowAddr = -1;
+    memFollowPin();
     memEnsure();
     memRebase(addr);
     memSetInput(addr);
@@ -1426,6 +1717,7 @@
   function sendKey(code, down) {
     var machine = S.machine;
     if (!machine || !S.powered) return;
+    S.keyWake = WAKE_BURST;
     var extended = code > 0xFF;
     var base = code & 0x7F;
     if (extended && machine.keyboard && typeof machine.keyboard.queue === 'function') {
@@ -2470,19 +2762,22 @@
 
   function runChunks(budget, stop) {
     var machine = S.machine;
-    var done = 0, chunk = 50000;
-    while (done < budget) {
-      if (!machine || machine.cpu.tripleFault) break;
-      var slice = Math.min(chunk, budget - done);
-      machine.run(slice);
-      done += slice;
-      if (stop && stop()) break;
-      if (machine.cpu.halted && !machine.cpu.canInterrupt()) {
-        /* HLT with interrupts off never wakes up: stop burning the budget */
-        break;
+    if (!machine) return 0;
+    return withGo(function () {
+      var done = 0, chunk = 50000, slice;
+      while (done < budget) {
+        if (machine.cpu.tripleFault) break;
+        slice = Math.min(chunk, budget - done);
+        machine.run(slice);
+        done += slice;
+        if (stop && stop()) break;
+        if (machine.cpu.halted && !machine.cpu.canInterrupt()) {
+          /* HLT with interrupts off never wakes up: stop burning the budget */
+          break;
+        }
       }
-    }
-    return done;
+      return done;
+    });
   }
 
   function typeText(text, per) {
@@ -2543,6 +2838,7 @@
     try {
       machine.loadDiskImage(S.diskImage);
       machine.reboot();
+      machineGo();
     } catch (err) {
       log('run in guest: boot failed — ' + errText(err), 'dim');
       return directRun(result, budget, S.asmMode);
@@ -3103,8 +3399,8 @@
     if (cmd === 'dis') return cmdDis(args);
     if (cmd === 'halt') {
       if (!machine) return termLine('halt: core not loaded');
-      machine.halt();
-      termLine('halt: the CPU will stop at the next instruction boundary');
+      pauseRun('halt — the CPU is stopped at ' + eipText() + ' (RUN or step to continue)');
+      termLine('halt: CPU stopped at ' + eipText() + ' — press RUN to resume');
       return;
     }
     termLine('unknown command: ' + cmd + ' — try help');
@@ -3303,6 +3599,9 @@
     var machine = S.machine;
     if (!machine) { termLine('mem: core not loaded'); return; }
     var base = args[0] ? parseAddr(args[0], 0) : memoryBase(machine);
+    if (!args[0] && memFollowReg() !== 'none') {
+      termLine('follow: ' + memFollowReg() + ' · base 0x' + hex(base >>> 0, 8));
+    }
     var len = args[1] ? clamp(parseNum(args[1]) | 0, 1, 4096) : 64;
     var off, raw, txt, asc, j, i;
     for (off = 0; off < len; off += 16) {
@@ -3465,12 +3764,9 @@
         try {
           var machine = ensureMachine();
           if (!machine) return { eip: 0, cs: 0, steps: 0 };
-          stopRun();
-          var before = machine.instructions;
           var want = n === undefined ? 1 : clamp(n | 0, 1, 2000000);
           if (!S.powered) powerOn(true);
-          advance(want);
-          count = machine.instructions - before;
+          count = doStep(want);
           syncPanels(true);
           return { eip: machine.cpu.eip >>> 0, cs: machine.cpu.cs.sel & 0xFFFF, steps: count };
         } catch (err) {
@@ -3535,7 +3831,10 @@
             eip: st.eip >>> 0,
             halted: st.halted === true,
             cycles: st.cycles >>> 0,
-            status: String(S.status)
+            status: String(S.status),
+            stopped: st.stopped === true || S.stopped === true,
+            cr0: machine.cpu.cr0 >>> 0,
+            cr3: machine.cpu.getCR(3) >>> 0
           };
         } catch (err) {
           return { mode: 'unknown', eip: 0, halted: false, cycles: 0, status: String(S.status) };
@@ -3707,6 +4006,15 @@
         syncPanels(false);
       });
     }
+    if (D.state) {
+      D.state.addEventListener('click', function (event) {
+        var dd = event.target && event.target.closest ? event.target.closest('dd[data-edit]') : null;
+        if (!dd || (D.state.contains && !D.state.contains(dd))) return;
+        var key = dd.getAttribute('data-state-key');
+        if (!key) return;
+        beginStateEdit(key, dd);
+      });
+    }
     if (D['mem-base']) {
       D['mem-base'].addEventListener('change', function () {
         memGoto(parseAddr(D['mem-base'].value, 0));
@@ -3721,10 +4029,7 @@
     }
     if (D['mem-follow']) {
       D['mem-follow'].addEventListener('change', function () {
-        var reg = memFollowReg();
-        try { store().setItem(MEM_FOLLOW_KEY, reg); } catch (err) { /* private mode */ }
-        if (reg !== 'none') S.memReg = reg;
-        S.memFollowAddr = -1;
+        memSetFollow(memFollowReg());
         syncPanels(false);
       });
     }
@@ -3872,13 +4177,15 @@
   function applyStoredMemFollow() {
     var reg = 'esp';
     try {
-      var saved = store().getItem(MEM_FOLLOW_KEY);
-      if (saved === 'esp' || saved === 'eip' || saved === 'esi' || saved === 'edi' || saved === 'none') reg = saved;
+      var saved = String(store().getItem(MEM_FOLLOW_KEY) || '');
+      if (memFollowValid(saved)) reg = saved;
     } catch (err) { reg = 'esp'; }
     if (D['mem-follow']) D['mem-follow'].value = reg;
     S.memReg = reg === 'none' ? 'esp' : reg;
     S.memFollowAddr = -1;
+    memFollowPin();
     stackPin();
+    log('memory: follow ' + reg + ' (base = value & ~0xF)', 'dim');
   }
 
   function wireStudio() {
@@ -4060,6 +4367,7 @@
       collectBuiltins();
       mountEditor();
       buildRegRows();
+      stateEditInit();
       prepareCanvas();
       refreshSampleSelect();
       refreshProjectSelect();

@@ -100,7 +100,7 @@
         <button type="button" class="wb-btn" data-i486="out" data-key="Ctrl+F8">↩ Out</button>
         <label class="wb-rate" for="i486-speed">
           <span class="wb-bar__label">speed</span>
-          <input class="wb-input" id="i486-speed" data-i486="speed" type="number" min="1" max="2000000" step="1000" value="200000" inputmode="numeric" aria-label="Instructions per frame">
+          <input class="wb-input" id="i486-speed" data-i486="speed" type="number" min="1" max="2000000" step="1000" value="20000" inputmode="numeric" aria-label="Instructions per frame">
           <span class="wb-rate__unit">ips</span>
         </label>
         <span class="wb-toolbar__spacer"></span>
@@ -312,6 +312,7 @@ hy486&gt; _</div>
           <section class="wb-panel wb-panel--mem" aria-label="Memory dump">
             <header class="wb-panel__head">
               <span class="wb-panel__title">memory</span>
+              <span class="wb-pin is-on" data-mem-pin>follow esp</span>
               <span class="wb-panel__tools">
                 <label class="wb-bar__label" for="i486-mem-base">base</label>
                 <input class="wb-input" id="i486-mem-base" data-i486="mem-base" value="0x00000118" spellcheck="false" aria-label="Memory base address">
@@ -320,8 +321,19 @@ hy486&gt; _</div>
                   <option value="esp" selected>esp</option>
                   <option value="none">none</option>
                   <option value="eip">cs:eip</option>
+                  <option value="eax">eax</option>
+                  <option value="ecx">ecx</option>
+                  <option value="edx">edx</option>
+                  <option value="ebx">ebx</option>
+                  <option value="ebp">ebp</option>
                   <option value="esi">esi</option>
                   <option value="edi">edi</option>
+                  <option value="cs">cs base</option>
+                  <option value="ds">ds base</option>
+                  <option value="es">es base</option>
+                  <option value="fs">fs base</option>
+                  <option value="gs">gs base</option>
+                  <option value="ss">ss base</option>
                 </select>
               </span>
             </header>

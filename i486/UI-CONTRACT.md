@@ -273,3 +273,40 @@ windowed, live views over the whole address space.
   with the base frozen; the stack panel behaves the same way.
 * No console errors at any point; the page stays responsive while the disassembly list grows
   to thousands of rows.
+## 11. Revision 4: true halt, editable system registers, follow any register
+
+### 11.1 HALT must stop execution completely
+* PAUSE (button) and the terminal `halt` command must both bring the machine to a full stop:
+  no animation frames, no HALT_TICK, no instruction retired, `cycles` and `EIP` frozen.
+* While the CPU is stopped by the user the status is `PAUSED` (reason logged); the guest HLT
+  tick (512 instructions/frame) is only legitimate while the user asked to RUN and the CPU
+  is waiting inside HLT with interrupts enabled.
+* RUN after a halt resumes execution: the UI must clear the machine's stopped state through a
+  public API (`machine.resume()`), never by poking `_stopped`.
+* `Machine.step()` must respect the stopped state (return 0, retire nothing) so an IDE that
+  single-steps while stopped cannot advance the CPU.
+
+### 11.2 Editable segment and control registers
+* The state panel rows for `CS DS ES FS GS SS` are click-to-edit like the general registers:
+  inline input accepting `0x1234`, `1234h` or decimal, Enter commits through
+  `cpu.setSeg(name, selector)`, Esc/blur cancels. Invalid selectors (descriptor missing,
+  privilege violation, bad limit) must be reported in the console and leave the CPU unchanged.
+* `CR0`, `CR2`, `CR3` are click-to-edit through `cpu.setCR(index, value)` (same input rules,
+  full 32-bit hex display). A rejected write is logged, never thrown.
+* Editing must refresh the whole panel immediately (base/limit/mode/PE fields included).
+
+### 11.3 Memory follow may name any register
+* `[data-i486=mem-follow]` offers: `none`, `eip` (means CS:EIP), `eax ecx edx ebx esp ebp esi
+  edi`, and the six segment registers `cs ds es fs gs ss` (following a segment means its base).
+  The chosen register is read on every refresh; the base is `value & ~15`.
+* The choice is persisted (`localStorage['i486.mem.follow']`) and the `esp` default is kept.
+* The console/terminal summary should name what is being followed (e.g. `follow: eax`).
+
+### 11.4 Acceptance
+* Boot to `hy486>`, press PAUSE, wait 1.5 s: `state().cycles` and `state().eip` unchanged;
+  press RUN: cycles increase again. Repeat with the terminal `halt` command.
+* Set `ds` selector to `0x0000` and `0x0100` via the UI: `cpu.getSeg('ds').sel` and `.base`
+  follow; set `cr3` to `0x00002000`: `state().cr0/cr3` reflect it; an invalid `cs` write logs an
+  error and leaves `cs.sel` unchanged.
+* Select `eax` in the memory follow list: the base equals `(eax & ~15)` and tracks a change of
+  EAX; select `ds`: the base equals the DS base; all 16 options exist.

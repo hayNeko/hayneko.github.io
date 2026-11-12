@@ -285,6 +285,8 @@ ol, ul { padding: 0; list-style: none; }
 }
 
 .wb-rate { display: inline-flex; align-items: center; gap: 5px; }
+/* 2 000 000 has to fit next to the spinner arrows */
+#i486-speed { width: 13ch; text-align: right; }
 .wb-rate__unit {
   font-size: 10px;
   letter-spacing: 0.1em;
@@ -667,6 +669,7 @@ ol, ul { padding: 0; list-style: none; }
 .stack:focus-visible { outline: 1px solid var(--amber); outline-offset: -2px; }
 
 .ds {
+  --ds-bytes: 34ch;
   padding: 0;
   font-size: 12px;
   line-height: 19px;
@@ -674,7 +677,7 @@ ol, ul { padding: 0; list-style: none; }
 .ds > li {
   position: relative;
   display: grid;
-  grid-template-columns: 9ch 14ch minmax(0, 1fr);
+  grid-template-columns: 9ch minmax(var(--ds-bytes), max-content) minmax(0, 1fr);
   gap: 0 10px;
   padding: 0 8px 0 14px;
   white-space: pre;
@@ -693,10 +696,10 @@ ol, ul { padding: 0; list-style: none; }
 .ds > li[data-bp="1"]::before { background: var(--red); box-shadow: 0 0 5px rgba(255, 95, 86, 0.8); }
 .ds > li:hover { background: rgba(125, 250, 154, 0.06); }
 .ds-addr { color: var(--fg-faint); }
-.ds-bytes { color: var(--green-deep); overflow: hidden; text-overflow: ellipsis; }
+.ds-bytes { color: var(--green-deep); white-space: nowrap; overflow: visible; text-overflow: clip; }
 .ds-text { color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; }
 .ds > li.is-curr,
-.ds > li.is-curr:hover { background: var(--amber); grid-template-columns: 9ch 14ch minmax(0, 1fr) 13ch; }
+.ds > li.is-curr:hover { background: var(--amber); grid-template-columns: 9ch minmax(var(--ds-bytes), max-content) minmax(0, 1fr) 13ch; }
 .ds > li.is-curr .ds-addr,
 .ds > li.is-curr .ds-bytes { color: rgba(4, 6, 4, 0.55); }
 .ds > li.is-curr .ds-text { color: var(--bg-deep); }
@@ -851,13 +854,15 @@ ol, ul { padding: 0; list-style: none; }
 
 .state {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); /* 4 columns at 1440 */
   gap: 0 12px;
   padding: 6px 9px 8px;
   border-top: 1px solid var(--line-faint);
   font-size: 10.5px;
 }
 .state__row { display: flex; gap: 6px; min-width: 0; }
+.state dd[data-edit] { cursor: pointer; }
+.state dd[data-edit]:hover { color: var(--amber); }
 .state dt {
   flex: 0 0 5ch;
   color: var(--fg-faint);
@@ -1129,7 +1134,9 @@ ol, ul { padding: 0; list-style: none; }
   .folio { gap: 6px; font-size: 9px; letter-spacing: 0.1em; }
   .folio__rule { width: 24px; }
   .wb-btn { padding: 3px 6px; font-size: 10px; }
-  .ds > li { grid-template-columns: 9ch 12ch minmax(0, 1fr); gap: 0 7px; }
+  .ds { --ds-bytes: 16ch; }
+  .ds > li { grid-template-columns: 9ch minmax(var(--ds-bytes), max-content) minmax(0, 1fr); gap: 0 7px; }
+  .ds-bytes { font-size: 10px; }
   .cheat__item { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .cheat__item span { color: var(--fg-ghost); }
 }

@@ -45,7 +45,9 @@ and nothing is fetched at runtime.
   banner, memory size, device table, E820 entry count and the disk geometry, then boots the HY486
   kernel, which prints its own banner and a `hy486>` prompt.
 * **RUN / PAUSE / STEP / OVER / OUT / RESTART** — execution controls; the speed box is instructions
-  per animation frame. Breakpoints: click the gutter, `Ctrl+B`, or click a disassembly row.
+  per second (1–2,000,000 IPS, measured against a monotonic clock). PAUSE and the terminal `halt`
+  stop the machine completely (the CPU latch is set, nothing is retired, cycles and EIP freeze); RUN
+  resumes it. Breakpoints: click the gutter, `Ctrl+B`, or click a disassembly row.
 * **Keyboard** — tick *capture keyboard* on the screen panel, then type; the page feeds set-1
   scancodes to the 8042, so the guest shell receives real keystrokes (including `Enter`, arrows and
   function keys). `Esc` releases capture.
@@ -68,10 +70,15 @@ and nothing is fetched at runtime.
   address you can name, the `CS:EIP` chip returns to the program counter, and clicking a row arms a
   breakpoint there. Nothing is pre-decoded: every row is decoded from the bus on demand, so even
   `0xFFFFFFFF` shows real bytes (or `db 0xFF` where the bus is open).
-* **Stack and memory follow the CPU** — the stack follows `ESP` and the memory dump follows `ESP`
-  too by default. Scroll either one and it unpins (the pin chip turns amber, the memory selector
-  switches to `none`) so you can walk the whole 4 GiB in both directions; `Ctrl+Home` or the pin
-  chip snaps back to the register, and double-clicking a stack row sends the memory dump there.
+* **Stack and memory follow the CPU** — the stack follows `ESP` and the memory dump follows any
+  register you pick (`eax`…`edi`, `eip`, or a segment base `cs`…`ss`; `esp` is the default). Scroll
+  either one and it unpins (the pin chip turns amber, the memory selector switches to `none`) so you
+  can walk the whole 4 GiB in both directions; `Ctrl+Home` or the pin chip snaps back to the
+  register, and double-clicking a stack row sends the memory dump there.
+* **Editable registers** — click any value in the registers grid to type a new one, and the same for
+  the segment registers (`CS DS ES FS GS SS`) and `CR0 CR2 CR3` in the state panel. Segment values
+  commit through `cpu.setSeg` (base/limit shown in the tooltip and the console), control registers
+  through `cpu.setCR`; an illegal write is reported in the console and leaves the CPU untouched.
 
 ## The guest
 
